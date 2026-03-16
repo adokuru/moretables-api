@@ -8,11 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Restaurant extends Model
+class Restaurant extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\RestaurantFactory> */
     use HasFactory;
+
+    use InteractsWithMedia;
 
     protected $fillable = [
         'organization_id',
@@ -44,11 +50,6 @@ class Restaurant extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
-    }
-
-    public function media(): HasMany
-    {
-        return $this->hasMany(RestaurantMedia::class);
     }
 
     public function cuisines(): HasMany
@@ -94,5 +95,22 @@ class Restaurant extends Model
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('featured')->singleFile();
+        $this->addMediaCollection('gallery');
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->fit(Fit::Crop, 320, 240)
+            ->nonQueued();
+
+        $this->addMediaConversion('card')
+            ->fit(Fit::Crop, 900, 640)
+            ->nonQueued();
     }
 }

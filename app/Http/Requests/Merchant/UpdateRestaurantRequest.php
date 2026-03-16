@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Merchant;
 
+use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateRestaurantRequest extends FormRequest
 {
+    use HasMediaUploadFields;
+
     public function authorize(): bool
     {
         return true;
@@ -29,10 +32,6 @@ class UpdateRestaurantRequest extends FormRequest
             'status' => ['nullable', Rule::enum(RestaurantStatus::class)],
             'cuisines' => ['nullable', 'array'],
             'cuisines.*' => ['string', 'max:100'],
-            'media' => ['nullable', 'array'],
-            'media.*.url' => ['required_with:media', 'url'],
-            'media.*.collection' => ['nullable', 'string', 'max:50'],
-            'media.*.alt_text' => ['nullable', 'string', 'max:255'],
             'hours' => ['nullable', 'array'],
             'hours.*.day_of_week' => ['required_with:hours', 'integer', 'between:0,6'],
             'hours.*.opens_at' => ['nullable', 'date_format:H:i'],
@@ -45,6 +44,7 @@ class UpdateRestaurantRequest extends FormRequest
             'policy.min_party_size' => ['nullable', 'integer', 'min:1'],
             'policy.max_party_size' => ['nullable', 'integer', 'gte:policy.min_party_size'],
             'policy.deposit_required' => ['nullable', 'boolean'],
+            ...$this->mediaUploadRules(),
         ];
     }
 }

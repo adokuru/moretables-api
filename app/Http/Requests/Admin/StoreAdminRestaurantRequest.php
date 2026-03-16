@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreAdminRestaurantRequest extends FormRequest
 {
+    use HasMediaUploadFields;
+
     public function authorize(): bool
     {
         return true;
@@ -29,6 +32,7 @@ class StoreAdminRestaurantRequest extends FormRequest
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            ...$this->mediaUploadRules(),
         ];
     }
 }

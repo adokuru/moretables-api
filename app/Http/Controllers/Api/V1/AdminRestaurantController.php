@@ -14,12 +14,15 @@ use App\Models\RestaurantPolicy;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Services\MediaLibraryService;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Illuminate\Http\JsonResponse;
 
 class AdminRestaurantController extends Controller
 {
+    public function __construct(protected MediaLibraryService $mediaLibraryService) {}
+
     public function index(): JsonResponse
     {
         abort_unless(request()->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
@@ -37,11 +40,17 @@ class AdminRestaurantController extends Controller
 
         $validated = $request->validated();
         $restaurant = Restaurant::query()->create([
-            ...$validated,
+            ...collect($validated)->except([
+                'featured_image',
+                'featured_image_alt_text',
+                'gallery_images',
+                'gallery_image_alt_texts',
+            ])->toArray(),
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
         ]);
 
         RestaurantPolicy::query()->firstOrCreate(['restaurant_id' => $restaurant->id]);
+        $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
 
         return response()->json([
             'message' => 'Restaurant created successfully.',
@@ -72,7 +81,16 @@ class AdminRestaurantController extends Controller
             $validated['slug'] = str($validated['name'])->slug()->toString();
         }
 
-        $restaurant->update($validated);
+        $restaurant->update(
+            collect($validated)->except([
+                'featured_image',
+                'featured_image_alt_text',
+                'gallery_images',
+                'gallery_image_alt_texts',
+            ])->toArray(),
+        );
+
+        $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
 
         return response()->json([
             'message' => 'Restaurant updated successfully.',

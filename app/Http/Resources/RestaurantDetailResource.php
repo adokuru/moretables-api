@@ -9,6 +9,17 @@ class RestaurantDetailResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $featuredImage = null;
+        $galleryImages = collect();
+
+        if ($this->relationLoaded('media')) {
+            $featuredImage = $this->media->firstWhere('collection_name', 'featured');
+            $galleryImages = $this->media
+                ->where('collection_name', 'gallery')
+                ->sortBy('order_column')
+                ->values();
+        }
+
         return [
             'id' => $this->id,
             'organization_id' => $this->organization_id,
@@ -23,16 +34,13 @@ class RestaurantDetailResource extends JsonResource
             'timezone' => $this->timezone,
             'address_line_1' => $this->address_line_1,
             'address_line_2' => $this->address_line_2,
-            'latitude' => $this->latitude,
-            'longitude' => $this->longitude,
+            'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'description' => $this->description,
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
-            'media' => $this->whenLoaded('media', fn () => $this->media->map(fn ($media) => [
-                'id' => $media->id,
-                'collection' => $media->collection,
-                'url' => $media->url,
-                'alt_text' => $media->alt_text,
-            ])->values()),
+            'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
+            'gallery_images' => MediaAssetResource::collection($galleryImages),
+            'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
                 'day_of_week' => $hour->day_of_week,
                 'opens_at' => $hour->opens_at,
@@ -51,13 +59,7 @@ class RestaurantDetailResource extends JsonResource
                 ->groupBy('section_name')
                 ->map(fn ($items, $section) => [
                     'section' => $section,
-                    'items' => $items->map(fn ($item) => [
-                        'id' => $item->id,
-                        'name' => $item->item_name,
-                        'description' => $item->description,
-                        'price' => (float) $item->price,
-                        'currency' => $item->currency,
-                    ])->values(),
+                    'items' => RestaurantMenuItemResource::collection($items),
                 ])
                 ->values()),
             'dining_areas' => DiningAreaResource::collection($this->whenLoaded('diningAreas')),

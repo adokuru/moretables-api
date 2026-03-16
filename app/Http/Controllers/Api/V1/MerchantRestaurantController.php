@@ -7,13 +7,15 @@ use App\Http\Requests\Merchant\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Models\Restaurant;
 use App\Services\AuditLogService;
+use App\Services\MediaLibraryService;
 use Illuminate\Http\JsonResponse;
 
 class MerchantRestaurantController extends Controller
 {
-    public function __construct(protected AuditLogService $auditLogService)
-    {
-    }
+    public function __construct(
+        protected AuditLogService $auditLogService,
+        protected MediaLibraryService $mediaLibraryService,
+    ) {}
 
     public function show(Restaurant $restaurant): RestaurantDetailResource
     {
@@ -24,6 +26,7 @@ class MerchantRestaurantController extends Controller
             'media',
             'hours',
             'policy',
+            'menuItems.media',
             'diningAreas.tables',
         ]));
     }
@@ -35,25 +38,21 @@ class MerchantRestaurantController extends Controller
         $validated = $request->validated();
         $oldValues = $restaurant->toArray();
 
-        $restaurant->fill(collect($validated)->except(['cuisines', 'media', 'hours', 'policy'])->toArray());
+        $restaurant->fill(collect($validated)->except([
+            'cuisines',
+            'hours',
+            'policy',
+            'featured_image',
+            'featured_image_alt_text',
+            'gallery_images',
+            'gallery_image_alt_texts',
+        ])->toArray());
         $restaurant->save();
 
         if (array_key_exists('cuisines', $validated)) {
             $restaurant->cuisines()->delete();
             foreach ($validated['cuisines'] as $cuisine) {
                 $restaurant->cuisines()->create(['name' => $cuisine]);
-            }
-        }
-
-        if (array_key_exists('media', $validated)) {
-            $restaurant->media()->delete();
-            foreach ($validated['media'] as $index => $media) {
-                $restaurant->media()->create([
-                    'collection' => $media['collection'] ?? 'gallery',
-                    'url' => $media['url'],
-                    'alt_text' => $media['alt_text'] ?? null,
-                    'sort_order' => $index,
-                ]);
             }
         }
 
@@ -74,7 +73,9 @@ class MerchantRestaurantController extends Controller
             $restaurant->policy()->updateOrCreate(['restaurant_id' => $restaurant->id], $validated['policy']);
         }
 
-        $restaurant->load(['cuisines', 'media', 'hours', 'policy', 'diningAreas.tables']);
+        $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+
+        $restaurant->load(['cuisines', 'media', 'hours', 'policy', 'menuItems.media', 'diningAreas.tables']);
 
         $this->auditLogService->log(
             action: 'restaurant.updated',

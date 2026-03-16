@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
+use App\Http\Controllers\Api\V1\MerchantMenuItemController;
+use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::get('/', [MerchantRestaurantController::class, 'show']);
     Route::patch('/', [MerchantRestaurantController::class, 'update']);
+    Route::post('media', [MerchantRestaurantMediaController::class, 'store']);
+    Route::patch('media/{media}', [MerchantRestaurantMediaController::class, 'update']);
+    Route::post('media/reorder', [MerchantRestaurantMediaController::class, 'reorder']);
+    Route::post('media/{media}/feature', [MerchantRestaurantMediaController::class, 'feature']);
+    Route::delete('media/{media}', [MerchantRestaurantMediaController::class, 'destroy']);
 
     Route::get('dining-areas', [MerchantDiningAreaController::class, 'index']);
     Route::post('dining-areas', [MerchantDiningAreaController::class, 'store']);
@@ -21,6 +29,17 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
     Route::patch('tables/{table}', [MerchantTableController::class, 'update']);
     Route::patch('tables/{table}/status', [MerchantTableController::class, 'updateStatus']);
     Route::delete('tables/{table}', [MerchantTableController::class, 'destroy']);
+
+    Route::get('menu-items', [MerchantMenuItemController::class, 'index']);
+    Route::post('menu-items', [MerchantMenuItemController::class, 'store']);
+    Route::patch('menu-items/{menuItem}', [MerchantMenuItemController::class, 'update']);
+    Route::delete('menu-items/{menuItem}', [MerchantMenuItemController::class, 'destroy']);
+
+    Route::post('menu-items/{menuItem}/media', [MerchantMenuItemMediaController::class, 'store']);
+    Route::patch('menu-items/{menuItem}/media/{media}', [MerchantMenuItemMediaController::class, 'update']);
+    Route::post('menu-items/{menuItem}/media/reorder', [MerchantMenuItemMediaController::class, 'reorder']);
+    Route::post('menu-items/{menuItem}/media/{media}/feature', [MerchantMenuItemMediaController::class, 'feature']);
+    Route::delete('menu-items/{menuItem}/media/{media}', [MerchantMenuItemMediaController::class, 'destroy']);
 
     Route::get('reservations', [MerchantReservationController::class, 'index']);
     Route::post('reservations', [MerchantReservationController::class, 'store']);

@@ -7,7 +7,6 @@ use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantCuisine;
 use App\Models\RestaurantHour;
-use App\Models\RestaurantMedia;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantTable;
@@ -19,6 +18,7 @@ use App\TableStatus;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
 
 class DummyRestaurantsSeeder extends Seeder
 {
@@ -296,16 +296,21 @@ class DummyRestaurantsSeeder extends Seeder
      */
     protected function seedMedia(Restaurant $restaurant, array $images): void
     {
-        RestaurantMedia::query()->where('restaurant_id', $restaurant->id)->delete();
+        $restaurant->clearMediaCollection('featured');
+        $restaurant->clearMediaCollection('gallery');
 
         foreach (array_values($images) as $index => $image) {
-            RestaurantMedia::query()->create([
-                'restaurant_id' => $restaurant->id,
-                'collection' => $image['collection'],
-                'url' => $image['url'],
-                'alt_text' => $image['alt_text'],
-                'sort_order' => $index,
-            ]);
+            $path = $this->createPlaceholderImage(
+                label: $restaurant->name.' '.($index + 1),
+                seed: $restaurant->slug.'-'.$image['collection'].'-'.$index,
+            );
+
+            $restaurant
+                ->addMedia($path)
+                ->withCustomProperties(['alt_text' => $image['alt_text']])
+                ->toMediaCollection($image['collection'] === 'cover' ? 'featured' : 'gallery');
+
+            File::delete($path);
         }
     }
 
@@ -388,7 +393,7 @@ class DummyRestaurantsSeeder extends Seeder
 
         foreach ($menus as $section => $items) {
             foreach ($items as $item) {
-                RestaurantMenuItem::query()->create([
+                $menuItem = RestaurantMenuItem::query()->create([
                     'restaurant_id' => $restaurant->id,
                     'section_name' => $section,
                     'item_name' => $item['name'],
@@ -398,8 +403,65 @@ class DummyRestaurantsSeeder extends Seeder
                     'sort_order' => $sortOrder,
                 ]);
 
+                $featuredPath = $this->createPlaceholderImage(
+                    label: $item['name'],
+                    seed: $restaurant->slug.'-menu-featured-'.$sortOrder,
+                );
+
+                $galleryPath = $this->createPlaceholderImage(
+                    label: $section.' '.$item['name'],
+                    seed: $restaurant->slug.'-menu-gallery-'.$sortOrder,
+                );
+
+                $menuItem
+                    ->addMedia($featuredPath)
+                    ->withCustomProperties(['alt_text' => $item['name'].' featured image'])
+                    ->toMediaCollection('featured');
+
+                $menuItem
+                    ->addMedia($galleryPath)
+                    ->withCustomProperties(['alt_text' => $item['name'].' gallery image'])
+                    ->toMediaCollection('gallery');
+
+                File::delete([$featuredPath, $galleryPath]);
+
                 $sortOrder++;
             }
         }
+    }
+
+    protected function createPlaceholderImage(string $label, string $seed): string
+    {
+        $directory = storage_path('app/tmp/dummy-media');
+        File::ensureDirectoryExists($directory);
+
+        $path = $directory.'/'.str($seed)->slug()->toString().'.png';
+
+        if (function_exists('imagecreatetruecolor')) {
+            $image = imagecreatetruecolor(1200, 900);
+            $background = imagecolorallocate(
+                $image,
+                hexdec(substr(md5($seed), 0, 2)),
+                hexdec(substr(md5($seed), 2, 2)),
+                hexdec(substr(md5($seed), 4, 2)),
+            );
+            $accent = imagecolorallocate($image, 245, 239, 230);
+            $text = imagecolorallocate($image, 255, 255, 255);
+
+            imagefilledrectangle($image, 0, 0, 1200, 900, $background);
+            imagefilledrectangle($image, 72, 72, 1128, 828, $accent);
+            imagefilledrectangle($image, 96, 96, 1104, 804, $background);
+            imagestring($image, 5, 120, 140, 'MoreTables', $text);
+            imagestring($image, 4, 120, 210, mb_strimwidth($label, 0, 40, '...'), $text);
+
+            imagepng($image, $path);
+            imagedestroy($image);
+
+            return $path;
+        }
+
+        File::put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9YxpoE4AAAAASUVORK5CYII='));
+
+        return $path;
     }
 }

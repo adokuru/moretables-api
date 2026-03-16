@@ -19,6 +19,7 @@ class PublicRestaurantController extends Controller
     public function index(RestaurantIndexRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
 
         $restaurants = Restaurant::query()
             ->with(['cuisines', 'media'])
@@ -37,6 +38,23 @@ class PublicRestaurantController extends Controller
                     $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
                 });
             })
+            ->when($hasCoordinates, function ($query) use ($validated): void {
+                $radiusKm = (float) ($validated['radius_km'] ?? 25);
+                $bounds = $this->coordinateBounds(
+                    latitude: (float) $validated['latitude'],
+                    longitude: (float) $validated['longitude'],
+                    radiusKm: $radiusKm,
+                );
+
+                $query->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
+                    ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']])
+                    ->orderByRaw(
+                        'ABS(latitude - ?) + ABS(longitude - ?) asc',
+                        [(float) $validated['latitude'], (float) $validated['longitude']],
+                    );
+            })
             ->paginate($validated['per_page'] ?? 15);
 
         return response()->json(RestaurantListResource::collection($restaurants));
@@ -51,7 +69,7 @@ class PublicRestaurantController extends Controller
             'media',
             'hours',
             'policy',
-            'menuItems',
+            'menuItems.media',
             'diningAreas.tables',
         ]));
     }
@@ -80,5 +98,22 @@ class PublicRestaurantController extends Controller
             'timezone' => $restaurant->timezone,
             'slots' => $slots,
         ]);
+    }
+
+    /**
+     * @return array{min_latitude: float, max_latitude: float, min_longitude: float, max_longitude: float}
+     */
+    protected function coordinateBounds(float $latitude, float $longitude, float $radiusKm): array
+    {
+        $latitudeDelta = $radiusKm / 111.045;
+        $longitudeFactor = max(abs(cos(deg2rad($latitude))), 0.01);
+        $longitudeDelta = min($radiusKm / (111.045 * $longitudeFactor), 180.0);
+
+        return [
+            'min_latitude' => $latitude - $latitudeDelta,
+            'max_latitude' => $latitude + $latitudeDelta,
+            'min_longitude' => $longitude - $longitudeDelta,
+            'max_longitude' => $longitude + $longitudeDelta,
+        ];
     }
 }

@@ -7,5 +7,14 @@ it('serves the generated api specification route', function () {
 
     $paths = array_keys($response->json('paths'));
 
-    expect($paths)->toContain('/auth/register', '/auth/google', '/auth/apple', '/me/expo-push-tokens', '/reservations', '/admin/restaurants');
+    expect($paths)->toContain(
+        '/auth/register',
+        '/auth/google',
+        '/auth/apple',
+        '/me/expo-push-tokens',
+        '/reservations',
+        '/admin/restaurants',
+        '/merchant/restaurants/{restaurant}/media',
+        '/merchant/restaurants/{restaurant}/menu-items'
+    );
 });
