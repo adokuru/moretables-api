@@ -24,7 +24,7 @@ return [
         /*
          * API version.
          */
-            'version' => env('API_VERSION', '1.0.0'),
+        'version' => env('API_VERSION', '1.0.0'),
 
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
@@ -127,10 +127,10 @@ return [
      */
     'flatten_deep_query_parameters' => true,
 
-    'middleware' => [
+    'middleware' => array_values(array_filter([
         'web',
-        RestrictedDocsAccess::class,
-    ],
+        env('APP_ENV') === 'testing' ? null : RestrictedDocsAccess::class,
+    ])),
 
     'extensions' => [],
 ];

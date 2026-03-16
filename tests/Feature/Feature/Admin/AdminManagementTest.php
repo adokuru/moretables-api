@@ -3,10 +3,11 @@
 use App\Models\AuditLog;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Str;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Laravel\Sanctum\Sanctum;
 
 it('allows business admins to create restaurants and invite owners', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
     $admin = User::factory()->create();
     assignScopedRole($admin, Role::BusinessAdmin);
 
@@ -48,6 +49,7 @@ it('allows business admins to create restaurants and invite owners', function ()
 });
 
 it('returns audit logs to authorized admins', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
     $admin = User::factory()->create();
     assignScopedRole($admin, Role::SuperAdmin);
 

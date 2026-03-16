@@ -1,13 +1,15 @@
 <?php
 
 use App\Models\AuthChallenge;
+use App\Models\Role;
 use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
-use App\Models\Role;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Notification;
 
 it('requires email otp verification for staff login', function () {
     Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
     $manager = User::factory()->create([
@@ -38,5 +40,4 @@ it('requires email otp verification for staff login', function () {
     $verifyResponse->assertOk()
         ->assertJsonStructure(['token', 'token_type', 'user'])
         ->assertJsonPath('user.email', 'manager@example.com');
-});
 });

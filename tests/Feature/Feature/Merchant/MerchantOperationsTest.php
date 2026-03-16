@@ -4,10 +4,12 @@ use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
 it('allows restaurant managers to manage floor resources and walk-in reservations', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     $manager = User::factory()->create();
     assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
@@ -51,6 +53,7 @@ it('allows restaurant managers to manage floor resources and walk-in reservation
 
 it('allows restaurant managers to notify waitlist guests', function () {
     Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
     $manager = User::factory()->create();

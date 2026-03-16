@@ -47,8 +47,7 @@ function assignScopedRole(
     ?\App\Models\Organization $organization = null,
     ?\App\Models\Restaurant $restaurant = null,
     ?\App\Models\User $assignedBy = null,
-): void
-{
+): void {
     $roleId = \App\Models\Role::query()->where('name', $roleName)->value('id');
 
     if (! $roleId) {
@@ -94,7 +93,3 @@ function createBookableRestaurant(): array
 
     return compact('organization', 'restaurant', 'table');
 }
-
-beforeEach(function (): void {
-    $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
-})->in('Feature');
