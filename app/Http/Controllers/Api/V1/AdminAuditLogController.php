@@ -7,8 +7,10 @@ use App\Http\Requests\Admin\IndexAuditLogRequest;
 use App\Http\Resources\AuditLogResource;
 use App\Models\AuditLog;
 use App\Models\Role;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Admin Audit Logs', weight: 56)]
 class AdminAuditLogController extends Controller
 {
     public function index(IndexAuditLogRequest $request): JsonResponse

@@ -14,14 +14,14 @@ use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Services\ReservationService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+#[Group('Merchant Waitlist', weight: 38)]
 class MerchantWaitlistController extends Controller
 {
-    public function __construct(protected ReservationService $reservationService)
-    {
-    }
+    public function __construct(protected ReservationService $reservationService) {}
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {

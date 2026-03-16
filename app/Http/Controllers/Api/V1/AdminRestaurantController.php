@@ -17,8 +17,10 @@ use App\Models\UserRole;
 use App\Services\MediaLibraryService;
 use App\UserAuthMethod;
 use App\UserStatus;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Admin Restaurants', weight: 52)]
 class AdminRestaurantController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}

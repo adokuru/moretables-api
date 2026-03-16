@@ -10,8 +10,10 @@ use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Public Restaurants', weight: 0)]
 class PublicRestaurantController extends Controller
 {
     public function __construct(protected AvailabilityService $availabilityService) {}

@@ -7,8 +7,10 @@ use App\Http\Requests\Auth\SocialLoginRequest;
 use App\Http\Resources\UserResource;
 use App\Services\CustomerSocialAuthService;
 use App\SocialAuthProvider;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Customer Auth', weight: 10)]
 class SocialAuthController extends Controller
 {
     public function __construct(protected CustomerSocialAuthService $customerSocialAuthService) {}

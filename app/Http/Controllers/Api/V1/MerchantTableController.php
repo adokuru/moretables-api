@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
 use App\Events\TableStatusUpdated;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateTableStatusRequest;
@@ -11,13 +11,13 @@ use App\Http\Resources\RestaurantTableResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Services\AuditLogService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Merchant Floor Plan', weight: 32)]
 class MerchantTableController extends Controller
 {
-    public function __construct(protected AuditLogService $auditLogService)
-    {
-    }
+    public function __construct(protected AuditLogService $auditLogService) {}
 
     public function index(Restaurant $restaurant): JsonResponse
     {

@@ -9,9 +9,11 @@ use App\Http\Requests\Merchant\UploadModelMediaRequest;
 use App\Http\Resources\MediaAssetResource;
 use App\Models\Restaurant;
 use App\Services\MediaLibraryService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+#[Group('Merchant Restaurant Profile', weight: 30)]
 class MerchantRestaurantMediaController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}

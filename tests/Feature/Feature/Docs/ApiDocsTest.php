@@ -5,7 +5,8 @@ it('serves the generated api specification route', function () {
 
     $response->assertOk();
 
-    $paths = array_keys($response->json('paths'));
+    $specification = $response->json();
+    $paths = array_keys($specification['paths']);
 
     expect($paths)->toContain(
         '/auth/register',
@@ -17,4 +18,10 @@ it('serves the generated api specification route', function () {
         '/merchant/restaurants/{restaurant}/media',
         '/merchant/restaurants/{restaurant}/menu-items'
     );
+
+    expect($specification['paths']['/auth/register']['post']['tags'][0])->toBe('Customer Auth');
+    expect($specification['paths']['/guest/start']['post']['tags'][0])->toBe('Guest Auth');
+    expect($specification['paths']['/restaurants']['get']['tags'][0])->toBe('Public Restaurants');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/menu-items']['post']['tags'][0])->toBe('Merchant Menu');
+    expect($specification['paths']['/admin/restaurants']['post']['tags'][0])->toBe('Admin Restaurants');
 });

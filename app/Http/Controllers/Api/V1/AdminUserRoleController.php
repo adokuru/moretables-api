@@ -8,8 +8,10 @@ use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Admin RBAC', weight: 54)]
 class AdminUserRoleController extends Controller
 {
     public function update(UpdateUserRolesRequest $request, User $user): JsonResponse

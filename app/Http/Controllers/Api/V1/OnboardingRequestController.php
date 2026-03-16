@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreOnboardingRequestRequest;
 use App\Http\Resources\OnboardingRequestResource;
 use App\Models\OnboardingRequest;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Onboarding Requests', weight: 5)]
 class OnboardingRequestController extends Controller
 {
     public function store(StoreOnboardingRequestRequest $request): JsonResponse

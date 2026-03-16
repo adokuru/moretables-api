@@ -8,8 +8,10 @@ use App\Http\Resources\RestaurantDetailResource;
 use App\Models\Restaurant;
 use App\Services\AuditLogService;
 use App\Services\MediaLibraryService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Merchant Restaurant Profile', weight: 30)]
 class MerchantRestaurantController extends Controller
 {
     public function __construct(

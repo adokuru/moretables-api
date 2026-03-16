@@ -10,8 +10,10 @@ use App\Models\Restaurant;
 use App\Models\RestaurantMenuItem;
 use App\Services\AuditLogService;
 use App\Services\MediaLibraryService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Merchant Menu', weight: 34)]
 class MerchantMenuItemController extends Controller
 {
     public function __construct(

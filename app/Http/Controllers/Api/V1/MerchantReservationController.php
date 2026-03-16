@@ -11,14 +11,14 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Services\ReservationService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+#[Group('Merchant Reservations', weight: 36)]
 class MerchantReservationController extends Controller
 {
-    public function __construct(protected ReservationService $reservationService)
-    {
-    }
+    public function __construct(protected ReservationService $reservationService) {}
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {

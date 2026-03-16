@@ -17,17 +17,17 @@ use App\Models\UserRole;
 use App\Services\AuthChallengeService;
 use App\UserAuthMethod;
 use App\UserStatus;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+#[Group('Customer Auth', weight: 10)]
 class AuthController extends Controller
 {
-    public function __construct(protected AuthChallengeService $authChallengeService)
-    {
-    }
+    public function __construct(protected AuthChallengeService $authChallengeService) {}
 
     public function register(RegisterRequest $request): JsonResponse
     {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
 use App\AuthChallengeType;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\GuestCompleteProfileRequest;
 use App\Http\Requests\Auth\GuestStartRequest;
 use App\Http\Requests\Auth\ResendChallengeRequest;
@@ -16,13 +16,13 @@ use App\Models\UserRole;
 use App\Services\AuthChallengeService;
 use App\UserAuthMethod;
 use App\UserStatus;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Guest Auth', weight: 12)]
 class GuestAuthController extends Controller
 {
-    public function __construct(protected AuthChallengeService $authChallengeService)
-    {
-    }
+    public function __construct(protected AuthChallengeService $authChallengeService) {}
 
     public function start(GuestStartRequest $request): JsonResponse
     {

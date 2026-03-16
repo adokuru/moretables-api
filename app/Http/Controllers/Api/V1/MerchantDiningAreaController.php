@@ -9,13 +9,13 @@ use App\Http\Resources\DiningAreaResource;
 use App\Models\DiningArea;
 use App\Models\Restaurant;
 use App\Services\AuditLogService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Merchant Floor Plan', weight: 32)]
 class MerchantDiningAreaController extends Controller
 {
-    public function __construct(protected AuditLogService $auditLogService)
-    {
-    }
+    public function __construct(protected AuditLogService $auditLogService) {}
 
     public function index(Restaurant $restaurant): JsonResponse
     {

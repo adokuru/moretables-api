@@ -10,9 +10,11 @@ use App\Http\Resources\MediaAssetResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenuItem;
 use App\Services\MediaLibraryService;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+#[Group('Merchant Menu', weight: 34)]
 class MerchantMenuItemMediaController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}

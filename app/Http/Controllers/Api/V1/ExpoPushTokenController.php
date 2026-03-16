@@ -8,8 +8,10 @@ use App\Http\Requests\Public\StoreExpoPushTokenRequest;
 use App\Http\Resources\ExpoPushTokenResource;
 use App\Models\ExpoPushToken;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Customer Devices', weight: 14)]
 class ExpoPushTokenController extends Controller
 {
     public function store(StoreExpoPushTokenRequest $request): JsonResponse

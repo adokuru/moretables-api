@@ -7,8 +7,10 @@ use App\Http\Requests\Admin\StoreOrganizationRequest;
 use App\Http\Requests\Admin\UpdateOrganizationRequest;
 use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
+#[Group('Admin Organizations', weight: 50)]
 class AdminOrganizationController extends Controller
 {
     public function index(): JsonResponse
