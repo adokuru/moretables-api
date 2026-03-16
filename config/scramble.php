@@ -7,7 +7,7 @@ return [
      * Your API path. By default, all routes starting with this path will be added to the docs.
      * If you need to change this behavior, you can add your custom routes resolver using `Scramble::routes()`.
      */
-    'api_path' => 'api',
+    'api_path' => 'api/v1',
 
     /*
      * Your API domain. By default, app domain is used. This is also a part of the default API routes
@@ -24,12 +24,12 @@ return [
         /*
          * API version.
          */
-        'version' => env('API_VERSION', '0.0.1'),
+            'version' => env('API_VERSION', '1.0.0'),
 
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => '',
+        'description' => 'MoreTables reservation and restaurant operations API.',
     ],
 
     /*
@@ -39,7 +39,7 @@ return [
         /*
          * Define the title of the documentation's website. App name is used when this config is `null`.
          */
-        'title' => null,
+        'title' => 'MoreTables API',
 
         /*
          * Define the theme of the documentation. Available options are `light`, `dark`, and `system`.

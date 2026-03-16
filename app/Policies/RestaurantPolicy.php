@@ -4,63 +4,38 @@ namespace App\Policies;
 
 use App\Models\Restaurant;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class RestaurantPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasAnyRole([
+            'organization_owner',
+            'restaurant_manager',
+            'restaurant_staff',
+            'business_admin',
+            'dev_admin',
+            'super_admin',
+        ]);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Restaurant $restaurant): bool
     {
-        return false;
+        return $user->canManageRestaurant($restaurant);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->hasAnyRole(['business_admin', 'dev_admin', 'super_admin']);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Restaurant $restaurant): bool
     {
-        return false;
+        return $user->canManageRestaurant($restaurant);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Restaurant $restaurant): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Restaurant $restaurant): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Restaurant $restaurant): bool
-    {
-        return false;
+        return $user->hasAnyRole(['business_admin', 'super_admin']);
     }
 }

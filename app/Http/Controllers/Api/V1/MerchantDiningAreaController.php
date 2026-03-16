@@ -3,47 +3,72 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Merchant\StoreDiningAreaRequest;
+use App\Http\Requests\Merchant\UpdateDiningAreaRequest;
+use App\Http\Resources\DiningAreaResource;
+use App\Models\DiningArea;
+use App\Models\Restaurant;
+use App\Services\AuditLogService;
+use Illuminate\Http\JsonResponse;
 
 class MerchantDiningAreaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(protected AuditLogService $auditLogService)
     {
-        //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(Restaurant $restaurant): JsonResponse
     {
-        //
+        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+
+        return response()->json(DiningAreaResource::collection(
+            $restaurant->diningAreas()->with('tables')->orderBy('sort_order')->get()
+        ));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreDiningAreaRequest $request, Restaurant $restaurant): JsonResponse
     {
-        //
+        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+
+        $diningArea = $restaurant->diningAreas()->create($request->validated());
+
+        $this->auditLogService->log(
+            action: 'dining_area.created',
+            actor: $request->user(),
+            auditable: $diningArea,
+            restaurant: $restaurant,
+            organization: $restaurant->organization,
+            description: 'Dining area created',
+        );
+
+        return response()->json([
+            'message' => 'Dining area created successfully.',
+            'dining_area' => DiningAreaResource::make($diningArea->load('tables')),
+        ], 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdateDiningAreaRequest $request, Restaurant $restaurant, DiningArea $diningArea): JsonResponse
     {
-        //
+        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
+
+        $diningArea->update($request->validated());
+
+        return response()->json([
+            'message' => 'Dining area updated successfully.',
+            'dining_area' => DiningAreaResource::make($diningArea->refresh()->load('tables')),
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Restaurant $restaurant, DiningArea $diningArea): JsonResponse
     {
-        //
+        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
+
+        $diningArea->delete();
+
+        return response()->json([
+            'message' => 'Dining area deleted successfully.',
+        ]);
     }
 }

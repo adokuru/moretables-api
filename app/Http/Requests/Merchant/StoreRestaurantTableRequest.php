@@ -3,26 +3,26 @@
 namespace App\Http\Requests\Merchant;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use App\TableStatus;
 
 class StoreRestaurantTableRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
+            'name' => ['required', 'string', 'max:120'],
+            'min_capacity' => ['nullable', 'integer', 'min:1'],
+            'max_capacity' => ['required', 'integer', 'min:1', 'gte:min_capacity'],
+            'status' => ['nullable', Rule::enum(TableStatus::class)],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

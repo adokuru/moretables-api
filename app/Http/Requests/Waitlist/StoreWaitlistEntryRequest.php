@@ -6,23 +6,19 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreWaitlistEntryRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'restaurant_id' => ['required', 'integer', 'exists:restaurants,id'],
+            'preferred_starts_at' => ['required', 'date', 'after:now'],
+            'preferred_ends_at' => ['nullable', 'date', 'after:preferred_starts_at'],
+            'party_size' => ['required', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

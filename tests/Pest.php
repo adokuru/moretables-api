@@ -12,7 +12,7 @@
 */
 
 pest()->extend(Tests\TestCase::class)
- // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -41,7 +41,60 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function assignScopedRole(
+    \App\Models\User $user,
+    string $roleName,
+    ?\App\Models\Organization $organization = null,
+    ?\App\Models\Restaurant $restaurant = null,
+    ?\App\Models\User $assignedBy = null,
+): void
 {
-    // ..
+    $roleId = \App\Models\Role::query()->where('name', $roleName)->value('id');
+
+    if (! $roleId) {
+        return;
+    }
+
+    \App\Models\UserRole::query()->create([
+        'user_id' => $user->id,
+        'role_id' => $roleId,
+        'scope_type' => $restaurant ? 'restaurant' : ($organization ? 'organization' : null),
+        'organization_id' => $organization?->id,
+        'restaurant_id' => $restaurant?->id,
+        'assigned_by' => $assignedBy?->id ?? $user->id,
+    ]);
 }
+
+/**
+ * @return array{organization: \App\Models\Organization, restaurant: \App\Models\Restaurant, table: \App\Models\RestaurantTable}
+ */
+function createBookableRestaurant(): array
+{
+    $organization = \App\Models\Organization::factory()->create();
+    $restaurant = \App\Models\Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    \App\Models\RestaurantPolicy::factory()->create([
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    foreach (range(0, 6) as $day) {
+        \App\Models\RestaurantHour::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'day_of_week' => $day,
+        ]);
+    }
+
+    $table = \App\Models\RestaurantTable::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'dining_area_id' => null,
+        'max_capacity' => 4,
+    ]);
+
+    return compact('organization', 'restaurant', 'table');
+}
+
+beforeEach(function (): void {
+    $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+})->in('Feature');

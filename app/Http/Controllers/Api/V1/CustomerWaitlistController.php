@@ -3,47 +3,42 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Waitlist\StoreWaitlistEntryRequest;
+use App\Http\Resources\WaitlistEntryResource;
+use App\Models\Restaurant;
+use App\Services\ReservationService;
+use Illuminate\Http\JsonResponse;
 
 class CustomerWaitlistController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(protected ReservationService $reservationService)
     {
-        //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(): JsonResponse
     {
-        //
+        $entries = request()->user()
+            ->waitlistEntries()
+            ->with(['restaurant.cuisines', 'restaurant.media', 'reservation'])
+            ->latest('preferred_starts_at')
+            ->paginate(15);
+
+        return response()->json(WaitlistEntryResource::collection($entries));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreWaitlistEntryRequest $request): JsonResponse
     {
-        //
-    }
+        $restaurant = Restaurant::query()->findOrFail($request->integer('restaurant_id'));
+        $entry = $this->reservationService->createWaitlistEntry(
+            restaurant: $restaurant,
+            actor: $request->user(),
+            attributes: $request->validated(),
+            customer: $request->user(),
+        );
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'message' => 'Waitlist entry created successfully.',
+            'waitlist_entry' => WaitlistEntryResource::make($entry),
+        ], 201);
     }
 }

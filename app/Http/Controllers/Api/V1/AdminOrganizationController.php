@@ -3,47 +3,60 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\StoreOrganizationRequest;
+use App\Http\Requests\Admin\UpdateOrganizationRequest;
+use App\Http\Resources\OrganizationResource;
+use App\Models\Organization;
+use Illuminate\Http\JsonResponse;
 
 class AdminOrganizationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(): JsonResponse
     {
-        //
+        $this->authorize('viewAny', Organization::class);
+
+        $organizations = Organization::query()->withCount('restaurants')->paginate(20);
+
+        return response()->json(OrganizationResource::collection($organizations));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreOrganizationRequest $request): JsonResponse
     {
-        //
+        $this->authorize('create', Organization::class);
+
+        $validated = $request->validated();
+        $organization = Organization::query()->create([
+            ...$validated,
+            'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Organization created successfully.',
+            'organization' => OrganizationResource::make($organization),
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Organization $organization): OrganizationResource
     {
-        //
+        $this->authorize('view', $organization);
+
+        return OrganizationResource::make($organization->loadCount('restaurants'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
     {
-        //
-    }
+        $this->authorize('update', $organization);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $validated = $request->validated();
+        if (array_key_exists('name', $validated) && empty($validated['slug'])) {
+            $validated['slug'] = str($validated['name'])->slug()->toString();
+        }
+
+        $organization->update($validated);
+
+        return response()->json([
+            'message' => 'Organization updated successfully.',
+            'organization' => OrganizationResource::make($organization->refresh()->loadCount('restaurants')),
+        ]);
     }
 }

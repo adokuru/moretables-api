@@ -3,26 +3,26 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateOrganizationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
+        $organizationId = $this->route('organization')?->id;
+
         return [
-            //
+            'name' => ['sometimes', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('organizations', 'slug')->ignore($organizationId)],
+            'primary_contact_name' => ['nullable', 'string', 'max:255'],
+            'primary_contact_email' => ['nullable', 'email', 'max:255'],
+            'primary_contact_phone' => ['nullable', 'string', 'max:30'],
+            'status' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

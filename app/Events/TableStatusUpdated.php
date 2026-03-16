@@ -2,35 +2,45 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use App\Models\RestaurantTable;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class TableStatusUpdated
+class TableStatusUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct()
-    {
-        //
+    public function __construct(
+        public RestaurantTable $table,
+        public string $action,
+    ) {
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('channel-name'),
+            new PrivateChannel('restaurant.'.$this->table->restaurant_id),
+        ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'table.updated';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'id' => $this->table->id,
+            'name' => $this->table->name,
+            'status' => $this->table->status->value,
+            'action' => $this->action,
         ];
     }
 }

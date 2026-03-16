@@ -2,53 +2,41 @@
 
 namespace App\Notifications;
 
+use App\Models\WaitlistEntry;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class WaitlistAvailabilityNotification extends Notification
+class WaitlistAvailabilityNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
+    public function __construct(protected WaitlistEntry $entry)
     {
-        //
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
+        $restaurantName = $this->entry->restaurant->name;
+
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject('A table is available for your waitlist request')
+            ->greeting('Good news!')
+            ->line("A table may be available at {$restaurantName}.")
+            ->line('Preferred time: '.$this->entry->preferred_starts_at?->toDayDateTimeString())
+            ->line('Please confirm with the restaurant as soon as possible.');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'waitlist_entry_id' => $this->entry->id,
         ];
     }
 }

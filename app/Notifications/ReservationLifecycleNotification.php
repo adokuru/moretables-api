@@ -2,53 +2,45 @@
 
 namespace App\Notifications;
 
+use App\Models\Reservation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ReservationLifecycleNotification extends Notification
+class ReservationLifecycleNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
-    {
-        //
+    public function __construct(
+        protected Reservation $reservation,
+        protected string $action,
+    ) {
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
+        $restaurantName = $this->reservation->restaurant->name;
+
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject("Your reservation was {$this->action}")
+            ->greeting('Hello!')
+            ->line("Your reservation at {$restaurantName} was {$this->action}.")
+            ->line('Reference: '.$this->reservation->reservation_reference)
+            ->line('Time: '.$this->reservation->starts_at?->toDayDateTimeString())
+            ->line('Party size: '.$this->reservation->party_size);
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'reservation_id' => $this->reservation->id,
+            'action' => $this->action,
         ];
     }
 }

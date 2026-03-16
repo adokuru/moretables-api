@@ -6,23 +6,21 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class RestaurantIndexRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'q' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'cuisine' => ['nullable', 'string', 'max:100'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'radius_km' => ['nullable', 'numeric', 'min:0'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

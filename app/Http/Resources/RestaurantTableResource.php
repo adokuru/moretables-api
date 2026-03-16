@@ -7,13 +7,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class RestaurantTableResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'restaurant_id' => $this->restaurant_id,
+            'dining_area_id' => $this->dining_area_id,
+            'name' => $this->name,
+            'min_capacity' => $this->min_capacity,
+            'max_capacity' => $this->max_capacity,
+            'status' => $this->status?->value,
+            'is_active' => $this->is_active,
+            'sort_order' => $this->sort_order,
+        ];
     }
 }

@@ -7,48 +7,37 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AuthChallengeCodeNotification extends Notification
+class AuthChallengeCodeNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
-    {
-        //
+    public function __construct(
+        protected string $code,
+        protected string $purpose,
+        protected int $expiresInMinutes = 10,
+    ) {
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject('Your MoreTables verification code')
+            ->greeting('Hello!')
+            ->line("Use this code to {$this->purpose}:")
+            ->line($this->code)
+            ->line("This code expires in {$this->expiresInMinutes} minutes.")
+            ->line('If you did not request this code, you can ignore this email.');
     }
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'purpose' => $this->purpose,
         ];
     }
 }

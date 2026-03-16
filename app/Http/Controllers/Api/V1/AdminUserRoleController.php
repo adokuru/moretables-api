@@ -3,47 +3,43 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\UpdateUserRolesRequest;
+use App\Http\Resources\UserResource;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\UserRole;
+use Illuminate\Http\JsonResponse;
 
 class AdminUserRoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function update(UpdateUserRolesRequest $request, User $user): JsonResponse
     {
-        //
-    }
+        abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $validated = $request->validated();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        UserRole::query()
+            ->where('user_id', $user->id)
+            ->where('organization_id', $validated['organization_id'] ?? null)
+            ->where('restaurant_id', $validated['restaurant_id'] ?? null)
+            ->delete();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+        $roles = Role::query()->whereIn('name', $validated['roles'])->get(['id', 'name']);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        foreach ($roles as $role) {
+            UserRole::query()->create([
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'scope_type' => isset($validated['restaurant_id']) ? 'restaurant' : (isset($validated['organization_id']) ? 'organization' : null),
+                'organization_id' => $validated['organization_id'] ?? null,
+                'restaurant_id' => $validated['restaurant_id'] ?? null,
+                'assigned_by' => $request->user()->id,
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'User roles updated successfully.',
+            'user' => UserResource::make($user->refresh()->load('roles')),
+        ]);
     }
 }

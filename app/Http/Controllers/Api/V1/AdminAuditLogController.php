@@ -3,47 +3,28 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\IndexAuditLogRequest;
+use App\Http\Resources\AuditLogResource;
+use App\Models\AuditLog;
+use App\Models\Role;
+use Illuminate\Http\JsonResponse;
 
 class AdminAuditLogController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(IndexAuditLogRequest $request): JsonResponse
     {
-        //
-    }
+        abort_unless($request->user()->hasAnyRole([Role::OrganizationOwner, Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        $validated = $request->validated();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $logs = AuditLog::query()
+            ->with('actorUser.roles')
+            ->when(isset($validated['organization_id']), fn ($query) => $query->where('organization_id', $validated['organization_id']))
+            ->when(isset($validated['restaurant_id']), fn ($query) => $query->where('restaurant_id', $validated['restaurant_id']))
+            ->when(isset($validated['action']), fn ($query) => $query->where('action', 'like', '%'.$validated['action'].'%'))
+            ->latest()
+            ->paginate($validated['per_page'] ?? 25);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json(AuditLogResource::collection($logs));
     }
 }
