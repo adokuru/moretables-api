@@ -74,6 +74,16 @@ class User extends Authenticatable
         return $this->hasMany(WaitlistEntry::class);
     }
 
+    public function expoPushTokens(): HasMany
+    {
+        return $this->hasMany(ExpoPushToken::class);
+    }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
     public function roleAssignments(): HasMany
     {
         return $this->hasMany(UserRole::class);

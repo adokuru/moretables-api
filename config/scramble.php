@@ -129,7 +129,7 @@ return [
 
     'middleware' => array_values(array_filter([
         'web',
-        env('APP_ENV') === 'testing' ? null : RestrictedDocsAccess::class,
+        env('APP_ENV') === 'production' ? RestrictedDocsAccess::class : null,
     ])),
 
     'extensions' => [],

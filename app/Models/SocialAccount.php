@@ -2,29 +2,29 @@
 
 namespace App\Models;
 
+use App\SocialAuthProvider;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ExpoPushToken extends Model
+class SocialAccount extends Model
 {
-    /** @use HasFactory<\Database\Factories\ExpoPushTokenFactory> */
+    /** @use HasFactory<\Database\Factories\SocialAccountFactory> */
     use HasFactory;
 
     protected $fillable = [
         'user_id',
-        'expo_token',
-        'device_id',
-        'device_name',
-        'platform',
-        'app_version',
-        'last_seen_at',
+        'provider',
+        'provider_user_id',
+        'provider_email',
+        'last_used_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'last_seen_at' => 'datetime',
+            'provider' => SocialAuthProvider::class,
+            'last_used_at' => 'datetime',
         ];
     }
 

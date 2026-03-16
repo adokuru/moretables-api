@@ -11,17 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('expo_push_tokens', function (Blueprint $table) {
+        Schema::create('social_accounts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('expo_token')->unique();
-            $table->string('device_id')->nullable();
-            $table->string('device_name')->nullable();
-            $table->string('platform', 20);
-            $table->string('app_version', 50)->nullable();
-            $table->timestamp('last_seen_at')->nullable();
+            $table->string('provider');
+            $table->string('provider_user_id');
+            $table->string('provider_email')->nullable();
+            $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
-            $table->index(['user_id', 'device_id']);
+            $table->unique(['provider', 'provider_user_id']);
+            $table->unique(['user_id', 'provider']);
         });
     }
 
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('expo_push_tokens');
+        Schema::dropIfExists('social_accounts');
     }
 };

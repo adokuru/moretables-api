@@ -17,9 +17,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('viewApiDocs', function (?User $user = null): bool {
+            if (! app()->isProduction()) {
+                return true;
+            }
+
             $user ??= request()?->user('sanctum');
 
-            if (!$user) {
+            if (! $user) {
                 return false;
             }
 
