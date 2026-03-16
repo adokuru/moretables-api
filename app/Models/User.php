@@ -153,10 +153,21 @@ class User extends Authenticatable
 
     public function requiresTwoFactor(): bool
     {
+        return $this->requiresStaffLogin() || $this->requiresAdminLogin();
+    }
+
+    public function requiresStaffLogin(): bool
+    {
         return $this->hasAnyRole([
             Role::OrganizationOwner,
             Role::RestaurantManager,
             Role::RestaurantStaff,
+        ]);
+    }
+
+    public function requiresAdminLogin(): bool
+    {
+        return $this->hasAnyRole([
             Role::BusinessAdmin,
             Role::DevAdmin,
             Role::SuperAdmin,

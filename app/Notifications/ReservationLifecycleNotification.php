@@ -20,7 +20,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', ExpoPushChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -34,6 +34,24 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
             ->line('Reference: '.$this->reservation->reservation_reference)
             ->line('Time: '.$this->reservation->starts_at?->toDayDateTimeString())
             ->line('Party size: '.$this->reservation->party_size);
+    }
+
+    public function toExpoPush(object $notifiable): ExpoPushMessage
+    {
+        $restaurantName = $this->reservation->restaurant->name;
+
+        return ExpoPushMessage::make(
+            title: 'Reservation update',
+            body: "Your reservation at {$restaurantName} was {$this->action}.",
+        )->data([
+            'type' => 'reservation_lifecycle',
+            'reservation_id' => $this->reservation->id,
+            'restaurant_id' => $this->reservation->restaurant_id,
+            'status' => $this->reservation->status?->value,
+            'action' => $this->action,
+            'reference' => $this->reservation->reservation_reference,
+            'starts_at' => $this->reservation->starts_at?->toIso8601String(),
+        ]);
     }
 
     public function toArray(object $notifiable): array

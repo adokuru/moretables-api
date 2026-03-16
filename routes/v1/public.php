@@ -25,4 +25,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('me/waitlist-entries', [CustomerWaitlistController::class, 'index']);
     Route::post('waitlist-entries', [CustomerWaitlistController::class, 'store']);
+    Route::post('waitlist-entries/{waitlistEntry}/accept', [CustomerWaitlistController::class, 'accept']);
+    Route::post('waitlist-entries/{waitlistEntry}/decline', [CustomerWaitlistController::class, 'decline']);
 });

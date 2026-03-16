@@ -68,7 +68,13 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user->requiresTwoFactor()) {
+        if ($user->requiresAdminLogin()) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Use the admin login endpoint for this account.'],
+            ]);
+        }
+
+        if ($user->requiresStaffLogin()) {
             throw ValidationException::withMessages([
                 'identifier' => ['Use the staff login endpoint for this account.'],
             ]);
@@ -96,7 +102,13 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! $user->requiresTwoFactor()) {
+        if ($user->requiresAdminLogin()) {
+            throw ValidationException::withMessages([
+                'identifier' => ['Use the admin login endpoint for this account.'],
+            ]);
+        }
+
+        if (! $user->requiresStaffLogin()) {
             throw ValidationException::withMessages([
                 'identifier' => ['This account does not require staff login.'],
             ]);

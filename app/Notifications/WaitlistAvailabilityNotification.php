@@ -18,7 +18,7 @@ class WaitlistAvailabilityNotification extends Notification implements ShouldQue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', ExpoPushChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -31,6 +31,23 @@ class WaitlistAvailabilityNotification extends Notification implements ShouldQue
             ->line("A table may be available at {$restaurantName}.")
             ->line('Preferred time: '.$this->entry->preferred_starts_at?->toDayDateTimeString())
             ->line('Please confirm with the restaurant as soon as possible.');
+    }
+
+    public function toExpoPush(object $notifiable): ExpoPushMessage
+    {
+        $restaurantName = $this->entry->restaurant->name;
+
+        return ExpoPushMessage::make(
+            title: 'Table available',
+            body: "A table may be available at {$restaurantName}.",
+        )->data([
+            'type' => 'waitlist_availability',
+            'waitlist_entry_id' => $this->entry->id,
+            'restaurant_id' => $this->entry->restaurant_id,
+            'status' => $this->entry->status?->value,
+            'preferred_starts_at' => $this->entry->preferred_starts_at?->toIso8601String(),
+            'expires_at' => $this->entry->expires_at?->toIso8601String(),
+        ]);
     }
 
     public function toArray(object $notifiable): array
