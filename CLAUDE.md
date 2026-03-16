@@ -11,13 +11,16 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - php - 8.2.30
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
+- laravel/pulse (PULSE) - v1
 - laravel/reverb (REVERB) - v1
 - laravel/sanctum (SANCTUM) - v4
+- livewire/livewire (LIVEWIRE) - v4
 - laravel/mcp (MCP) - v0
 - laravel/pint (PINT) - v1
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v3
 - phpunit/phpunit (PHPUNIT) - v11
+- laravel-echo (ECHO) - v2
 - tailwindcss (TAILWINDCSS) - v4
 
 ## Conventions
@@ -33,7 +36,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - Do not change the application's dependencies without approval.
 
 ## Frontend Bundling
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `bun run build`, `bun run dev`, or `composer run dev`. Ask them.
 
 ## Replies
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
@@ -111,6 +114,14 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
 
 
+=== tests rules ===
+
+## Test Enforcement
+
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
+
+
 === laravel/core rules ===
 
 ## Do Things the Laravel Way
@@ -154,7 +165,7 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
 
 ### Vite Error
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `bun run build` or ask the user to run `bun run dev` or `composer run dev`.
 
 
 === laravel/v12 rules ===
@@ -177,6 +188,53 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ### Models
 - Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
+
+
+=== livewire/core rules ===
+
+## Livewire Core
+- Use the `search-docs` tool to find exact version specific documentation for how to write Livewire & Livewire tests.
+- Use the `php artisan make:livewire [Posts\CreatePost]` artisan command to create new components
+- State should live on the server, with the UI reflecting it.
+- All Livewire requests hit the Laravel backend, they're like regular HTTP requests. Always validate form data, and run authorization checks in Livewire actions.
+
+## Livewire Best Practices
+- Livewire components require a single root element.
+- Use `wire:loading` and `wire:dirty` for delightful loading states.
+- Add `wire:key` in loops:
+
+    ```blade
+    @foreach ($items as $item)
+        <div wire:key="item-{{ $item->id }}">
+            {{ $item->name }}
+        </div>
+    @endforeach
+    ```
+
+- Prefer lifecycle hooks like `mount()`, `updatedFoo()` for initialization and reactive side effects:
+
+<code-snippet name="Lifecycle hook examples" lang="php">
+    public function mount(User $user) { $this->user = $user; }
+    public function updatedSearch() { $this->resetPage(); }
+</code-snippet>
+
+
+## Testing Livewire
+
+<code-snippet name="Example Livewire component test" lang="php">
+    Livewire::test(Counter::class)
+        ->assertSet('count', 0)
+        ->call('increment')
+        ->assertSet('count', 1)
+        ->assertSee(1)
+        ->assertStatus(200);
+</code-snippet>
+
+
+    <code-snippet name="Testing a Livewire component exists within a page" lang="php">
+        $this->get('/posts/create')
+        ->assertSeeLivewire(CreatePost::class);
+    </code-snippet>
 
 
 === pint/core rules ===
