@@ -3,6 +3,8 @@
 use Laravel\Pulse\Http\Middleware\Authorize;
 use Laravel\Pulse\Pulse;
 use Laravel\Pulse\Recorders;
+use Laravel\Reverb\Pulse\Recorders\ReverbConnections;
+use Laravel\Reverb\Pulse\Recorders\ReverbMessages;
 
 return [
 
@@ -156,6 +158,14 @@ return [
             'ignore' => [
                 // '/^Package\\\\Exceptions\\\\/',
             ],
+        ],
+
+        ReverbConnections::class => [
+            'sample_rate' => env('PULSE_REVERB_CONNECTIONS_SAMPLE_RATE', 1),
+        ],
+
+        ReverbMessages::class => [
+            'sample_rate' => env('PULSE_REVERB_MESSAGES_SAMPLE_RATE', 1),
         ],
 
         Recorders\Queues::class => [

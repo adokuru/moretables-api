@@ -14,9 +14,7 @@ use Illuminate\Http\JsonResponse;
 
 class PublicRestaurantController extends Controller
 {
-    public function __construct(protected AvailabilityService $availabilityService)
-    {
-    }
+    public function __construct(protected AvailabilityService $availabilityService) {}
 
     public function index(RestaurantIndexRequest $request): JsonResponse
     {
@@ -31,10 +29,14 @@ class PublicRestaurantController extends Controller
                         ->orWhere('description', 'like', '%'.$validated['q'].'%');
                 });
             })
-            ->when($request->filled('city'), fn ($query) => $query->where('city', $validated['city']))
-            ->when($request->filled('cuisine'), fn ($query) => $query->whereHas('cuisines', function ($subQuery) use ($validated): void {
-                $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
-            }))
+            ->when($request->filled('city'), function ($query) use ($validated) {
+                $query->where('city', $validated['city']);
+            })
+            ->when($request->filled('cuisine'), function ($query) use ($validated) {
+                $query->whereHas('cuisines', function ($subQuery) use ($validated): void {
+                    $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
+                });
+            })
             ->paginate($validated['per_page'] ?? 15);
 
         return response()->json(RestaurantListResource::collection($restaurants));
@@ -49,6 +51,7 @@ class PublicRestaurantController extends Controller
             'media',
             'hours',
             'policy',
+            'menuItems',
             'diningAreas.tables',
         ]));
     }
@@ -67,7 +70,9 @@ class PublicRestaurantController extends Controller
 
         if ($request->filled('time')) {
             $requestedTime = $request->string('time')->toString();
-            $slots = array_values(array_filter($slots, fn (array $slot): bool => str_contains($slot['local_starts_at'], $requestedTime)));
+            $slots = array_values(array_filter($slots, function (array $slot) use ($requestedTime): bool {
+                return str_contains($slot['local_starts_at'], $requestedTime);
+            }));
         }
 
         return response()->json([

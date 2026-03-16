@@ -47,6 +47,19 @@ class RestaurantDetailResource extends JsonResource
                 'max_party_size' => $this->policy?->max_party_size,
                 'deposit_required' => $this->policy?->deposit_required,
             ]),
+            'menus' => $this->whenLoaded('menuItems', fn () => $this->menuItems
+                ->groupBy('section_name')
+                ->map(fn ($items, $section) => [
+                    'section' => $section,
+                    'items' => $items->map(fn ($item) => [
+                        'id' => $item->id,
+                        'name' => $item->item_name,
+                        'description' => $item->description,
+                        'price' => (float) $item->price,
+                        'currency' => $item->currency,
+                    ])->values(),
+                ])
+                ->values()),
             'dining_areas' => DiningAreaResource::collection($this->whenLoaded('diningAreas')),
         ];
     }
