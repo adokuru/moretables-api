@@ -68,8 +68,8 @@ it('broadcasts waitlist updates to both restaurant and customer channels', funct
     $channels = collect($event->broadcastOn())->map(fn ($channel) => $channel->name)->all();
 
     expect($channels)->toContain(
-        'restaurant.'.$data['restaurant']->id,
-        'App.Models.User.'.$customer->id,
+        'private-restaurant.'.$data['restaurant']->id,
+        'private-App.Models.User.'.$customer->id,
     );
 });
 

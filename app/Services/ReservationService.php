@@ -286,48 +286,145 @@ class ReservationService
 
     public function notifyWaitlistEntry(WaitlistEntry $entry, User $actor, int $expiresInMinutes = 15): WaitlistEntry
     {
-        $entry->forceFill([
-            'status' => WaitlistStatus::Notified,
-            'notified_at' => now(),
-            'expires_at' => now()->addMinutes($expiresInMinutes),
-        ])->save();
+        return DB::transaction(function () use ($entry, $expiresInMinutes): WaitlistEntry {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
-        if ($entry->user) {
-            $entry->user->notify(new WaitlistAvailabilityNotification($entry));
-        }
+            if ($entry->status !== WaitlistStatus::Waiting) {
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['Only waiting entries can be notified.'],
+                ]);
+            }
 
-        $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
-        event(new WaitlistEntryUpdated($entry, 'notified'));
+            $entry->forceFill([
+                'status' => WaitlistStatus::Notified,
+                'notified_at' => now(),
+                'expires_at' => now()->addMinutes($expiresInMinutes),
+            ])->save();
 
-        return $entry;
+            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+
+            if ($entry->user) {
+                $entry->user->notify(new WaitlistAvailabilityNotification($entry));
+            }
+
+            event(new WaitlistEntryUpdated($entry, 'notified'));
+
+            return $entry;
+        });
+    }
+
+    public function acceptWaitlistEntry(WaitlistEntry $entry, User $customer): Reservation
+    {
+        return DB::transaction(function () use ($entry, $customer): Reservation {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+            $entry->loadMissing('restaurant');
+
+            $this->ensureWaitlistEntryBelongsToCustomer($entry, $customer);
+            $this->ensureWaitlistEntryCanBeRespondedTo($entry);
+
+            $table = $this->availabilityService->findAvailableTable(
+                $entry->restaurant,
+                $entry->preferred_starts_at,
+                $entry->party_size,
+            );
+
+            if (! $table) {
+                $this->markWaitlistEntryExpired($entry);
+
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['This waitlist offer is no longer available.'],
+                ]);
+            }
+
+            $reservation = $this->createReservation(
+                actor: $customer,
+                restaurant: $entry->restaurant,
+                source: ReservationSource::Waitlist,
+                attributes: [
+                    'starts_at' => $entry->preferred_starts_at,
+                    'party_size' => $entry->party_size,
+                    'notes' => $entry->notes,
+                    'restaurant_table_id' => $table->id,
+                ],
+                user: $customer,
+                guestContact: $entry->guestContact,
+            );
+
+            $entry->forceFill([
+                'status' => WaitlistStatus::Accepted,
+                'reservation_id' => $reservation->id,
+                'metadata' => array_merge($entry->metadata ?? [], [
+                    'decision' => 'accepted',
+                    'responded_at' => now()->toIso8601String(),
+                ]),
+            ])->save();
+
+            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            event(new WaitlistEntryUpdated($entry, 'accepted'));
+
+            return $reservation;
+        });
+    }
+
+    public function declineWaitlistEntry(WaitlistEntry $entry, User $customer): WaitlistEntry
+    {
+        return DB::transaction(function () use ($entry, $customer): WaitlistEntry {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+
+            $this->ensureWaitlistEntryBelongsToCustomer($entry, $customer);
+            $this->ensureWaitlistEntryCanBeRespondedTo($entry);
+
+            $entry->forceFill([
+                'status' => WaitlistStatus::Declined,
+                'metadata' => array_merge($entry->metadata ?? [], [
+                    'decision' => 'declined',
+                    'responded_at' => now()->toIso8601String(),
+                ]),
+            ])->save();
+
+            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            event(new WaitlistEntryUpdated($entry, 'declined'));
+
+            return $entry;
+        });
     }
 
     public function assignWaitlistEntryToTable(WaitlistEntry $entry, RestaurantTable $table, User $actor): Reservation
     {
-        $reservation = $this->createReservation(
-            actor: $actor,
-            restaurant: $entry->restaurant,
-            source: ReservationSource::Waitlist,
-            attributes: [
-                'starts_at' => $entry->preferred_starts_at,
-                'party_size' => $entry->party_size,
-                'notes' => $entry->notes,
-                'restaurant_table_id' => $table->id,
-            ],
-            user: $entry->user,
-            guestContact: $entry->guestContact,
-        );
+        return DB::transaction(function () use ($entry, $table, $actor): Reservation {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
-        $entry->forceFill([
-            'status' => WaitlistStatus::Seated,
-            'reservation_id' => $reservation->id,
-            'seated_at' => now(),
-        ])->save();
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified], true)) {
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['This waitlist entry can no longer be assigned.'],
+                ]);
+            }
 
-        $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
-        event(new WaitlistEntryUpdated($entry, 'seated'));
+            $reservation = $this->createReservation(
+                actor: $actor,
+                restaurant: $entry->restaurant,
+                source: ReservationSource::Waitlist,
+                attributes: [
+                    'starts_at' => $entry->preferred_starts_at,
+                    'party_size' => $entry->party_size,
+                    'notes' => $entry->notes,
+                    'restaurant_table_id' => $table->id,
+                ],
+                user: $entry->user,
+                guestContact: $entry->guestContact,
+            );
 
-        return $reservation;
+            $entry->forceFill([
+                'status' => WaitlistStatus::Seated,
+                'reservation_id' => $reservation->id,
+                'seated_at' => now(),
+            ])->save();
+
+            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            event(new WaitlistEntryUpdated($entry, 'seated'));
+
+            return $reservation;
+        });
     }
 
     /**
@@ -402,5 +499,43 @@ class ReservationService
         } while (Reservation::query()->where('reservation_reference', $reference)->exists());
 
         return $reference;
+    }
+
+    protected function ensureWaitlistEntryBelongsToCustomer(WaitlistEntry $entry, User $customer): void
+    {
+        abort_unless($entry->user_id === $customer->id, 404);
+    }
+
+    protected function ensureWaitlistEntryCanBeRespondedTo(WaitlistEntry $entry): void
+    {
+        if ($entry->status !== WaitlistStatus::Notified) {
+            throw ValidationException::withMessages([
+                'waitlist_entry' => ['This waitlist entry is not awaiting a response.'],
+            ]);
+        }
+
+        if ($entry->expires_at && $entry->expires_at->isPast()) {
+            $this->markWaitlistEntryExpired($entry);
+
+            throw ValidationException::withMessages([
+                'waitlist_entry' => ['This waitlist offer has expired.'],
+            ]);
+        }
+    }
+
+    protected function markWaitlistEntryExpired(WaitlistEntry $entry): WaitlistEntry
+    {
+        $entry->forceFill([
+            'status' => WaitlistStatus::Expired,
+            'metadata' => array_merge($entry->metadata ?? [], [
+                'decision' => 'expired',
+                'responded_at' => now()->toIso8601String(),
+            ]),
+        ])->save();
+
+        $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+        event(new WaitlistEntryUpdated($entry, 'expired'));
+
+        return $entry;
     }
 }
