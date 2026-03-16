@@ -5,15 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
-use App\Http\Requests\Auth\LoginRequest;
-use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StaffLoginRequest;
 use App\Http\Requests\Auth\VerifyChallengeRequest;
 use App\Http\Resources\UserResource;
-use App\Models\Role;
 use App\Models\User;
-use App\Models\UserRole;
 use App\Services\AuthChallengeService;
 use App\UserAuthMethod;
 use App\UserStatus;
@@ -24,73 +20,10 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-#[Group('Customer Auth', weight: 10)]
+#[Group('Staff Auth', weight: 40)]
 class AuthController extends Controller
 {
     public function __construct(protected AuthChallengeService $authChallengeService) {}
-
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $validated = $request->validated();
-
-        $user = User::query()->create([
-            'name' => $validated['first_name'].' '.$validated['last_name'],
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'password' => $validated['password'],
-            'status' => UserStatus::Active,
-            'auth_method' => UserAuthMethod::Password,
-            'email_verified_at' => now(),
-            'last_active_at' => now(),
-        ]);
-
-        $this->assignRole($user, Role::Customer);
-
-        $token = $user->createToken($request->input('device_name', 'customer-api'))->plainTextToken;
-
-        return response()->json([
-            'message' => 'Registration successful.',
-            'token' => $token,
-            'token_type' => 'Bearer',
-            'user' => UserResource::make($user->load('roles')),
-        ], 201);
-    }
-
-    public function login(LoginRequest $request): JsonResponse
-    {
-        $user = $this->findUserByIdentifier($request->string('identifier')->toString());
-
-        if (! $user || ! $user->password || ! Hash::check($request->string('password')->toString(), $user->password)) {
-            throw ValidationException::withMessages([
-                'identifier' => ['Invalid credentials.'],
-            ]);
-        }
-
-        if ($user->requiresAdminLogin()) {
-            throw ValidationException::withMessages([
-                'identifier' => ['Use the admin login endpoint for this account.'],
-            ]);
-        }
-
-        if ($user->requiresStaffLogin()) {
-            throw ValidationException::withMessages([
-                'identifier' => ['Use the staff login endpoint for this account.'],
-            ]);
-        }
-
-        $user->forceFill(['last_active_at' => now()])->save();
-
-        $token = $user->createToken($request->input('device_name', 'customer-api'))->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login successful.',
-            'token' => $token,
-            'token_type' => 'Bearer',
-            'user' => UserResource::make($user->load('roles')),
-        ]);
-    }
 
     public function staffLogin(StaffLoginRequest $request): JsonResponse
     {
@@ -146,31 +79,13 @@ class AuthController extends Controller
         ]);
     }
 
-    public function me(): JsonResponse
-    {
-        /** @var User $user */
-        $user = request()->user();
-
-        return response()->json([
-            'user' => UserResource::make($user->load('roles')),
-        ]);
-    }
-
-    public function logout(): JsonResponse
-    {
-        /** @var User $user */
-        $user = request()->user();
-
-        $user->currentAccessToken()?->delete();
-
-        return response()->json([
-            'message' => 'Logout successful.',
-        ]);
-    }
-
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        Password::sendResetLink($request->safe()->only('email'));
+        $user = User::query()->where('email', $request->string('email')->toString())->first();
+
+        if ($user?->requiresTwoFactor()) {
+            Password::sendResetLink($request->safe()->only('email'));
+        }
 
         return response()->json([
             'message' => 'If the account exists, a reset link has been sent.',
@@ -179,6 +94,14 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
+        $user = User::query()->where('email', $request->string('email')->toString())->first();
+
+        if ($user && ! $user->requiresTwoFactor()) {
+            throw ValidationException::withMessages([
+                'email' => ['Password reset is only available for staff and admin accounts.'],
+            ]);
+        }
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password): void {
@@ -208,24 +131,5 @@ class AuthController extends Controller
             ->where('email', $identifier)
             ->orWhere('phone', $identifier)
             ->first();
-    }
-
-    protected function assignRole(User $user, string $roleName): void
-    {
-        $roleId = Role::query()->where('name', $roleName)->value('id');
-
-        if (! $roleId) {
-            return;
-        }
-
-        UserRole::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'role_id' => $roleId,
-            'organization_id' => null,
-            'restaurant_id' => null,
-        ], [
-            'scope_type' => null,
-            'assigned_by' => $user->id,
-        ]);
     }
 }

@@ -52,7 +52,13 @@ class CustomerSocialAuthService
                     ->first();
             }
 
-            if ($user && $user->requiresTwoFactor()) {
+            if ($user && $user->requiresAdminLogin()) {
+                throw ValidationException::withMessages([
+                    'id_token' => ['Use the admin login endpoint for this account.'],
+                ]);
+            }
+
+            if ($user && $user->requiresStaffLogin()) {
                 throw ValidationException::withMessages([
                     'id_token' => ['Use the staff login endpoint for this account.'],
                 ]);
@@ -122,7 +128,7 @@ class CustomerSocialAuthService
             'first_name' => $firstName,
             'last_name' => $lastName,
             'status' => UserStatus::Active,
-            'auth_method' => $user->auth_method === UserAuthMethod::Password ? UserAuthMethod::Password : UserAuthMethod::Social,
+            'auth_method' => UserAuthMethod::Social,
             'email_verified_at' => $user->email_verified_at ?? now(),
             'last_active_at' => now(),
         ])->save();

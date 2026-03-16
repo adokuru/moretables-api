@@ -76,7 +76,7 @@ it('links apple sign in to an existing customer account by email', function () {
 
     $response->assertOk()
         ->assertJsonPath('user.email', 'existing-customer@example.com')
-        ->assertJsonPath('user.auth_method', UserAuthMethod::Password->value);
+        ->assertJsonPath('user.auth_method', UserAuthMethod::Social->value);
 
     expect(User::query()->where('email', 'existing-customer@example.com')->count())->toBe(1);
 
