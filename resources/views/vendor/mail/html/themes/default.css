@@ -1,4 +1,10 @@
 /* Base — body: Avenir; headings (h1–h3): Nantes */
+@font-face {
+    font-family: 'Nantes';
+    src: url('https://your-cdn.example.com/nantes.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+}
 
 body,
 body *:not(html):not(style):not(br):not(tr):not(code):not(h1):not(h2):not(h3) {
