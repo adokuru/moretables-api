@@ -1,58 +1,51 @@
-<x-mail::message>
-{{-- Greeting --}}
-@if (! empty($greeting))
-# {{ $greeting }}
-@else
-@if ($level === 'error')
-# @lang('Whoops!')
-@else
-# @lang('Hello!')
-@endif
-@endif
+@php
+    use Illuminate\Contracts\Support\Htmlable;
 
-{{-- Intro Lines --}}
-@foreach ($introLines as $line)
-{{ $line }}
+    $lineToPlain = static function (mixed $line): string {
+        if ($line instanceof Htmlable) {
+            return trim(html_entity_decode(strip_tags($line->toHtml()), ENT_QUOTES, 'UTF-8'));
+        }
 
-@endforeach
-
-{{-- Action Button --}}
-@isset($actionText)
-<?php
-    $color = match ($level) {
-        'success', 'error' => $level,
-        default => 'primary',
+        return trim(html_entity_decode(strip_tags((string) $line), ENT_QUOTES, 'UTF-8'));
     };
-?>
-<x-mail::button :url="$actionUrl" :color="$color">
-{{ $actionText }}
-</x-mail::button>
-@endisset
 
-{{-- Outro Lines --}}
-@foreach ($outroLines as $line)
-{{ $line }}
+    $greetingText = filled($greeting ?? null)
+        ? $lineToPlain($greeting)
+        : (($level ?? 'info') === 'error' ? __('Whoops!') : __('Hello!'));
 
-@endforeach
+    $bodyPrimary = collect($introLines ?? [])->map($lineToPlain)->filter()->implode("\n\n");
+    $bodySecondary = collect($outroLines ?? [])->map($lineToPlain)->filter()->implode("\n\n");
 
-{{-- Salutation --}}
-@if (! empty($salutation))
-{{ $salutation }}
-@else
-@lang('Regards,')<br>
-{{ config('app.name') }}
-@endif
+    $hasAction = filled($actionText ?? null) && filled($actionUrl ?? null);
 
-{{-- Subcopy --}}
-@isset($actionText)
-<x-slot:subcopy>
-@lang(
-    "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\n".
-    'into your web browser:',
-    [
-        'actionText' => $actionText,
-    ]
-) <span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
-</x-slot:subcopy>
-@endisset
-</x-mail::message>
+    $footerNote = $hasAction
+        ? __('If you\'re having trouble clicking the ":actionText" button, copy and paste this URL into your web browser:', ['actionText' => $actionText]).' '.($displayableActionUrl ?? '')
+        : '';
+
+    if (filled($salutation ?? null)) {
+        $closingBlock = trim(html_entity_decode(
+            strip_tags(preg_replace('#<br\s*/?>#i', "\n", (string) $salutation)),
+            ENT_QUOTES,
+            'UTF-8'
+        ));
+        $signOff = 'Thanks,';
+        $signature = 'The MoreTables Team';
+    } else {
+        $closingBlock = null;
+        $signOff = __('Regards,');
+        $signature = config('app.name');
+    }
+@endphp
+@include('emails.moretables-tabular-layout', [
+    'subject' => $subject ?? config('app.name'),
+    'greeting' => $greetingText,
+    'bodyPrimary' => $bodyPrimary,
+    'bodySecondary' => $bodySecondary,
+    'showCta' => $hasAction,
+    'ctaLabel' => $actionText ?? 'Continue',
+    'ctaUrl' => $actionUrl ?? config('app.url'),
+    'closingBlock' => $closingBlock,
+    'signOff' => $signOff,
+    'signature' => $signature,
+    'footerNote' => $footerNote,
+])
