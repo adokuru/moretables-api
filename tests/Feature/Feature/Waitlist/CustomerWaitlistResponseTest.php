@@ -6,8 +6,10 @@ use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\ExpoPushChannel;
 use App\Notifications\WaitlistAvailabilityNotification;
+use App\Notifications\WaitlistOfferExpiredNotification;
 use App\WaitlistStatus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
 it('allows a customer to accept a notified waitlist offer and creates a reservation', function () {
@@ -34,6 +36,30 @@ it('allows a customer to accept a notified waitlist offer and creates a reservat
 
     expect($entry->status)->toBe(WaitlistStatus::Accepted)
         ->and($entry->reservation_id)->not->toBeNull();
+});
+
+it('notifies the customer when they try to accept after the waitlist offer expired', function () {
+    Notification::fake();
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'status' => WaitlistStatus::Notified,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addDay()->setTime(19, 0),
+        'expires_at' => now()->subMinute(),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->postJson('/api/v1/waitlist-entries/'.$entry->id.'/accept');
+
+    $response->assertUnprocessable();
+
+    Notification::assertSentTo($customer, WaitlistOfferExpiredNotification::class);
 });
 
 it('allows a customer to decline a notified waitlist offer', function () {

@@ -11,15 +11,23 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\GuestWaitlistOfferExpiredMailNotification;
+use App\Notifications\GuestWaitlistTableAvailableMailNotification;
+use App\Notifications\GuestWaitlistTableUnavailableMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
+use App\Notifications\WaitlistOfferExpiredNotification;
+use App\Notifications\WaitlistTableNoLongerAvailableNotification;
 use App\ReservationSource;
 use App\ReservationStatus;
 use App\TableStatus;
 use App\UserStatus;
+use App\WaitlistExpiryReason;
 use App\WaitlistStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,8 +36,7 @@ class ReservationService
     public function __construct(
         protected AvailabilityService $availabilityService,
         protected AuditLogService $auditLogService,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -139,6 +146,9 @@ class ReservationService
 
             if ($reservation->user) {
                 $reservation->user->notify(new ReservationLifecycleNotification($reservation, 'updated'));
+            } elseif ($this->guestContactHasEmail($reservation->guestContact)) {
+                Notification::route('mail', $reservation->guestContact->email)
+                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $reservation->guestContact, 'updated'));
             }
 
             return $reservation;
@@ -168,6 +178,9 @@ class ReservationService
 
         if ($reservation->user) {
             $reservation->user->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
+        } elseif ($this->guestContactHasEmail($reservation->guestContact)) {
+            Notification::route('mail', $reservation->guestContact->email)
+                ->notify(new GuestReservationLifecycleMailNotification($reservation, $reservation->guestContact, 'cancelled'));
         }
 
         return $reservation;
@@ -305,6 +318,9 @@ class ReservationService
 
             if ($entry->user) {
                 $entry->user->notify(new WaitlistAvailabilityNotification($entry));
+            } elseif ($this->guestContactHasEmail($entry->guestContact)) {
+                Notification::route('mail', $entry->guestContact->email)
+                    ->notify(new GuestWaitlistTableAvailableMailNotification($entry));
             }
 
             event(new WaitlistEntryUpdated($entry, 'notified'));
@@ -329,7 +345,7 @@ class ReservationService
             );
 
             if (! $table) {
-                $this->markWaitlistEntryExpired($entry);
+                $this->markWaitlistEntryExpired($entry, WaitlistExpiryReason::TableUnavailable);
 
                 throw ValidationException::withMessages([
                     'waitlist_entry' => ['This waitlist offer is no longer available.'],
@@ -486,6 +502,9 @@ class ReservationService
 
             if ($user) {
                 $user->notify(new ReservationLifecycleNotification($reservation, 'created'));
+            } elseif ($this->guestContactHasEmail($guestContact)) {
+                Notification::route('mail', $guestContact->email)
+                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $guestContact, 'created'));
             }
 
             return $reservation;
@@ -515,7 +534,7 @@ class ReservationService
         }
 
         if ($entry->expires_at && $entry->expires_at->isPast()) {
-            $this->markWaitlistEntryExpired($entry);
+            $this->markWaitlistEntryExpired($entry, WaitlistExpiryReason::TimeExpired);
 
             throw ValidationException::withMessages([
                 'waitlist_entry' => ['This waitlist offer has expired.'],
@@ -523,12 +542,13 @@ class ReservationService
         }
     }
 
-    protected function markWaitlistEntryExpired(WaitlistEntry $entry): WaitlistEntry
+    protected function markWaitlistEntryExpired(WaitlistEntry $entry, WaitlistExpiryReason $reason): WaitlistEntry
     {
         $entry->forceFill([
             'status' => WaitlistStatus::Expired,
             'metadata' => array_merge($entry->metadata ?? [], [
                 'decision' => 'expired',
+                'expiry_reason' => $reason->value,
                 'responded_at' => now()->toIso8601String(),
             ]),
         ])->save();
@@ -536,6 +556,42 @@ class ReservationService
         $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
         event(new WaitlistEntryUpdated($entry, 'expired'));
 
+        $this->notifyWaitlistOfferClosed($entry, $reason);
+
         return $entry;
+    }
+
+    protected function notifyWaitlistOfferClosed(WaitlistEntry $entry, WaitlistExpiryReason $reason): void
+    {
+        if ($entry->user) {
+            match ($reason) {
+                WaitlistExpiryReason::TimeExpired => $entry->user->notify(new WaitlistOfferExpiredNotification($entry)),
+                WaitlistExpiryReason::TableUnavailable => $entry->user->notify(new WaitlistTableNoLongerAvailableNotification($entry)),
+            };
+
+            return;
+        }
+
+        if (! $this->guestContactHasEmail($entry->guestContact)) {
+            return;
+        }
+
+        $email = $entry->guestContact->email;
+
+        match ($reason) {
+            WaitlistExpiryReason::TimeExpired => Notification::route('mail', $email)
+                ->notify(new GuestWaitlistOfferExpiredMailNotification($entry)),
+            WaitlistExpiryReason::TableUnavailable => Notification::route('mail', $email)
+                ->notify(new GuestWaitlistTableUnavailableMailNotification($entry)),
+        };
+    }
+
+    protected function guestContactHasEmail(?GuestContact $guestContact): bool
+    {
+        if (! $guestContact?->email) {
+            return false;
+        }
+
+        return filter_var($guestContact->email, FILTER_VALIDATE_EMAIL) !== false;
     }
 }
