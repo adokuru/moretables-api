@@ -27,7 +27,7 @@ it('starts guest onboarding, verifies otp, and completes the profile', function 
 
     $verifyResponse = $this->postJson('/api/v1/auth/verify-otp', [
         'challenge_token' => $challenge->challenge_token,
-        'code' => '123456',
+        'code' => '1234',
         'device_name' => 'test-device',
     ]);
 
@@ -54,7 +54,7 @@ it('lets an existing customer sign in again through the passwordless email otp f
     $customer = User::factory()->create([
         'email' => 'returning@example.com',
         'password' => null,
-        'auth_method' => \App\UserAuthMethod::Passwordless,
+        'auth_method' => UserAuthMethod::Passwordless,
     ]);
 
     $startResponse = $this->postJson('/api/v1/auth/start', [
@@ -69,7 +69,7 @@ it('lets an existing customer sign in again through the passwordless email otp f
 
     $verifyResponse = $this->postJson('/api/v1/auth/verify-otp', [
         'challenge_token' => $challenge->challenge_token,
-        'code' => '123456',
+        'code' => '1234',
         'device_name' => 'returning-device',
     ]);
 

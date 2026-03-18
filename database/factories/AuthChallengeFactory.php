@@ -4,13 +4,14 @@ namespace Database\Factories;
 
 use App\AuthChallengeStatus;
 use App\AuthChallengeType;
+use App\Models\AuthChallenge;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AuthChallenge>
+ * @extends Factory<AuthChallenge>
  */
 class AuthChallengeFactory extends Factory
 {
@@ -26,7 +27,7 @@ class AuthChallengeFactory extends Factory
             'type' => AuthChallengeType::GuestSignup,
             'status' => AuthChallengeStatus::Pending,
             'challenge_token' => (string) Str::uuid(),
-            'code_hash' => Hash::make('123456'),
+            'code_hash' => Hash::make('1234'),
             'code_expires_at' => now()->addMinutes(10),
             'attempts' => 0,
             'max_attempts' => 5,

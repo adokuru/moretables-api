@@ -6,7 +6,7 @@ Use this doc when briefing copywriters or designers. **Placeholders** in `{curly
 |-------------|---------|
 | `{restaurantName}` | Restaurant name |
 | `{guestName}` | Guest first + last name (or omitted) |
-| `{code}` | 6-digit (or configured) OTP |
+| `{code}` | 4-digit (or configured) OTP |
 | `{purpose}` | e.g. `verify your email` or `finish signing in` |
 | `{N}` | Minutes until code expires (default 10) |
 | `{reference}` | Reservation reference string |

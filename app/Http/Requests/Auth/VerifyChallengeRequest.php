@@ -15,7 +15,7 @@ class VerifyChallengeRequest extends FormRequest
     {
         return [
             'challenge_token' => ['required', 'uuid'],
-            'code' => ['required', 'digits:6'],
+            'code' => ['required', 'digits:4'],
             'device_name' => ['nullable', 'string', 'max:100'],
         ];
     }

@@ -32,7 +32,7 @@ it('requires email otp verification for admin login via admin routes', function 
 
     $verifyResponse = $this->postJson('/api/v1/admin/auth/verify-2fa', [
         'challenge_token' => $challenge->challenge_token,
-        'code' => '123456',
+        'code' => '1234',
         'device_name' => 'admin-device',
     ]);
 

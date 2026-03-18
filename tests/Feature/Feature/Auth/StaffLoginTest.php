@@ -33,7 +33,7 @@ it('requires email otp verification for staff login', function () {
 
     $verifyResponse = $this->postJson('/api/v1/auth/staff/verify-2fa', [
         'challenge_token' => $challenge->challenge_token,
-        'code' => '123456',
+        'code' => '1234',
         'device_name' => 'staff-device',
     ]);
 
