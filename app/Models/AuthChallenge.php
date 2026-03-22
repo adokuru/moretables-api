@@ -4,13 +4,14 @@ namespace App\Models;
 
 use App\AuthChallengeStatus;
 use App\AuthChallengeType;
+use Database\Factories\AuthChallengeFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuthChallenge extends Model
 {
-    /** @use HasFactory<\Database\Factories\AuthChallengeFactory> */
+    /** @use HasFactory<AuthChallengeFactory> */
     use HasFactory;
 
     protected $fillable = [

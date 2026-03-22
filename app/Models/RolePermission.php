@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\RolePermissionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RolePermission extends Model
 {
-    /** @use HasFactory<\Database\Factories\RolePermissionFactory> */
+    /** @use HasFactory<RolePermissionFactory> */
     use HasFactory;
 
     protected $fillable = [

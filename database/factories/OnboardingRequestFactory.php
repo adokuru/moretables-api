@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\OnboardingRequest;
 use App\OnboardingRequestStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\OnboardingRequest>
+ * @extends Factory<OnboardingRequest>
  */
 class OnboardingRequestFactory extends Factory
 {

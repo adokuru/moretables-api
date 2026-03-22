@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\RestaurantMediaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RestaurantMedia extends Model
 {
-    /** @use HasFactory<\Database\Factories\RestaurantMediaFactory> */
+    /** @use HasFactory<RestaurantMediaFactory> */
     use HasFactory;
 
     protected $fillable = [

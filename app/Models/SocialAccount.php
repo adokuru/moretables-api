@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\SocialAuthProvider;
+use Database\Factories\SocialAccountFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SocialAccount extends Model
 {
-    /** @use HasFactory<\Database\Factories\SocialAccountFactory> */
+    /** @use HasFactory<SocialAccountFactory> */
     use HasFactory;
 
     protected $fillable = [

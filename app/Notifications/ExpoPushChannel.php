@@ -7,9 +7,7 @@ use Illuminate\Notifications\Notification;
 
 class ExpoPushChannel
 {
-    public function __construct(protected ExpoPushService $expoPushService)
-    {
-    }
+    public function __construct(protected ExpoPushService $expoPushService) {}
 
     public function send(object $notifiable, Notification $notification): void
     {

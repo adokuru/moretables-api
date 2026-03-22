@@ -3,10 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\Restaurant;
+use App\Models\RestaurantPolicy;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RestaurantPolicy>
+ * @extends Factory<RestaurantPolicy>
  */
 class RestaurantPolicyFactory extends Factory
 {

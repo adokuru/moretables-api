@@ -15,8 +15,7 @@ class AuthChallengeCodeNotification extends Notification implements ShouldQueue
         protected string $code,
         protected string $purpose,
         protected int $expiresInMinutes = 10,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

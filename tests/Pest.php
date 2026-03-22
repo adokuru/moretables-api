@@ -1,5 +1,16 @@
 <?php
 
+use App\Models\Organization;
+use App\Models\Restaurant;
+use App\Models\RestaurantHour;
+use App\Models\RestaurantPolicy;
+use App\Models\RestaurantTable;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\UserRole;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,8 +22,8 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -42,19 +53,19 @@ expect()->extend('toBeOne', function () {
 */
 
 function assignScopedRole(
-    \App\Models\User $user,
+    User $user,
     string $roleName,
-    ?\App\Models\Organization $organization = null,
-    ?\App\Models\Restaurant $restaurant = null,
-    ?\App\Models\User $assignedBy = null,
+    ?Organization $organization = null,
+    ?Restaurant $restaurant = null,
+    ?User $assignedBy = null,
 ): void {
-    $roleId = \App\Models\Role::query()->where('name', $roleName)->value('id');
+    $roleId = Role::query()->where('name', $roleName)->value('id');
 
     if (! $roleId) {
         return;
     }
 
-    \App\Models\UserRole::query()->create([
+    UserRole::query()->create([
         'user_id' => $user->id,
         'role_id' => $roleId,
         'scope_type' => $restaurant ? 'restaurant' : ($organization ? 'organization' : null),
@@ -65,27 +76,27 @@ function assignScopedRole(
 }
 
 /**
- * @return array{organization: \App\Models\Organization, restaurant: \App\Models\Restaurant, table: \App\Models\RestaurantTable}
+ * @return array{organization: Organization, restaurant: Restaurant, table: RestaurantTable}
  */
 function createBookableRestaurant(): array
 {
-    $organization = \App\Models\Organization::factory()->create();
-    $restaurant = \App\Models\Restaurant::factory()->create([
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
         'organization_id' => $organization->id,
     ]);
 
-    \App\Models\RestaurantPolicy::factory()->create([
+    RestaurantPolicy::factory()->create([
         'restaurant_id' => $restaurant->id,
     ]);
 
     foreach (range(0, 6) as $day) {
-        \App\Models\RestaurantHour::factory()->create([
+        RestaurantHour::factory()->create([
             'restaurant_id' => $restaurant->id,
             'day_of_week' => $day,
         ]);
     }
 
-    $table = \App\Models\RestaurantTable::factory()->create([
+    $table = RestaurantTable::factory()->create([
         'restaurant_id' => $restaurant->id,
         'dining_area_id' => null,
         'max_capacity' => 4,

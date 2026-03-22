@@ -12,9 +12,7 @@ class WaitlistAvailabilityNotification extends Notification implements ShouldQue
 {
     use Queueable;
 
-    public function __construct(protected WaitlistEntry $entry)
-    {
-    }
+    public function __construct(protected WaitlistEntry $entry) {}
 
     public function via(object $notifiable): array
     {

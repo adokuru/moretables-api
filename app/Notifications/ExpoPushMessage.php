@@ -12,8 +12,7 @@ class ExpoPushMessage
         public string $body,
         public array $data = [],
         public string $sound = 'default',
-    ) {
-    }
+    ) {}
 
     public static function make(string $title, string $body): self
     {

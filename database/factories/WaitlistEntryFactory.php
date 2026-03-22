@@ -4,11 +4,12 @@ namespace Database\Factories;
 
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Models\WaitlistEntry;
 use App\WaitlistStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WaitlistEntry>
+ * @extends Factory<WaitlistEntry>
  */
 class WaitlistEntryFactory extends Factory
 {

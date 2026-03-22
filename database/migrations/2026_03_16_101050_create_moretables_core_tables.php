@@ -6,7 +6,6 @@ use App\OnboardingRequestStatus;
 use App\ReservationSource;
 use App\ReservationStatus;
 use App\RestaurantStatus;
-use App\RoleScopeType;
 use App\TableStatus;
 use App\WaitlistStatus;
 use Illuminate\Database\Migrations\Migration;

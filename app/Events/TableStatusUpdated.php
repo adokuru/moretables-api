@@ -16,8 +16,7 @@ class TableStatusUpdated implements ShouldBroadcast
     public function __construct(
         public RestaurantTable $table,
         public string $action,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): array
     {

@@ -16,8 +16,7 @@ class WaitlistEntryUpdated implements ShouldBroadcast
     public function __construct(
         public WaitlistEntry $entry,
         public string $action,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): array
     {

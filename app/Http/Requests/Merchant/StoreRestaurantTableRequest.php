@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Merchant;
 
+use App\TableStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\TableStatus;
 
 class StoreRestaurantTableRequest extends FormRequest
 {

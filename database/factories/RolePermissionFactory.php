@@ -4,10 +4,11 @@ namespace Database\Factories;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\RolePermission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RolePermission>
+ * @extends Factory<RolePermission>
  */
 class RolePermissionFactory extends Factory
 {

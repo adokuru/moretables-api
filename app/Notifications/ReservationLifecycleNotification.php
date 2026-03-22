@@ -15,8 +15,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
     public function __construct(
         protected Reservation $reservation,
         protected string $action,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

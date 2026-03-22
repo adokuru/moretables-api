@@ -16,8 +16,7 @@ class ReservationUpdated implements ShouldBroadcast
     public function __construct(
         public Reservation $reservation,
         public string $action,
-    ) {
-    }
+    ) {}
 
     public function broadcastOn(): array
     {

@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\WaitlistStatus;
+use Database\Factories\WaitlistEntryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WaitlistEntry extends Model
 {
-    /** @use HasFactory<\Database\Factories\WaitlistEntryFactory> */
+    /** @use HasFactory<WaitlistEntryFactory> */
     use HasFactory;
 
     protected $fillable = [

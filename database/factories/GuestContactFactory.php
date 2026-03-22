@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\GuestContact;
 use App\Models\Restaurant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GuestContact>
+ * @extends Factory<GuestContact>
  */
 class GuestContactFactory extends Factory
 {

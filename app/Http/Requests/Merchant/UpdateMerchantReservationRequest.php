@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Merchant;
 
+use App\ReservationStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\ReservationStatus;
 
 class UpdateMerchantReservationRequest extends FormRequest
 {

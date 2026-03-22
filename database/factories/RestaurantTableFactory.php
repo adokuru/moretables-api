@@ -4,11 +4,12 @@ namespace Database\Factories;
 
 use App\Models\DiningArea;
 use App\Models\Restaurant;
+use App\Models\RestaurantTable;
 use App\TableStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RestaurantTable>
+ * @extends Factory<RestaurantTable>
  */
 class RestaurantTableFactory extends Factory
 {
