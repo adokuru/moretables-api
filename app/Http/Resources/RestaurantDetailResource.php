@@ -11,11 +11,16 @@ class RestaurantDetailResource extends JsonResource
     {
         $featuredImage = null;
         $galleryImages = collect();
+        $menuDocuments = collect();
 
         if ($this->relationLoaded('media')) {
             $featuredImage = $this->media->firstWhere('collection_name', 'featured');
             $galleryImages = $this->media
                 ->where('collection_name', 'gallery')
+                ->sortBy('order_column')
+                ->values();
+            $menuDocuments = $this->media
+                ->where('collection_name', 'menu_documents')
                 ->sortBy('order_column')
                 ->values();
         }
@@ -37,9 +42,22 @@ class RestaurantDetailResource extends JsonResource
             'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'description' => $this->description,
+            'website' => $this->website,
+            'instagram_handle' => $this->instagram_handle,
+            'average_price_range' => $this->average_price_range,
+            'dining_style' => $this->dining_style,
+            'dress_code' => $this->dress_code,
+            'total_seating_capacity' => $this->total_seating_capacity,
+            'number_of_tables' => $this->number_of_tables,
+            'menu_source' => $this->menu_source,
+            'menu_link' => $this->menu_link,
+            'payment_options' => $this->payment_options ?? [],
+            'accessibility_features' => $this->accessibility_features ?? [],
+            'cuisine_type' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->first()),
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'gallery_images' => MediaAssetResource::collection($galleryImages),
+            'menu_documents' => MediaAssetResource::collection($menuDocuments),
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
                 'day_of_week' => $hour->day_of_week,

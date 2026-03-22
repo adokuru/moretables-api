@@ -17,14 +17,9 @@ class MediaLibraryService
         $featuredImage = $payload['featured_image'] ?? null;
 
         if ($featuredImage instanceof UploadedFile) {
-            $fileAdder = $model
-                ->addMedia($featuredImage)
-                ->usingName(pathinfo($featuredImage->getClientOriginalName(), PATHINFO_FILENAME))
-                ->withCustomProperties([
-                    'alt_text' => $payload['featured_image_alt_text'] ?? null,
-                ]);
-
-            $fileAdder->toMediaCollection('featured');
+            $this->addUploadedFileToCollection($model, $featuredImage, 'featured', [
+                'alt_text' => $payload['featured_image_alt_text'] ?? null,
+            ]);
         }
 
         foreach ($payload['gallery_images'] ?? [] as $index => $galleryImage) {
@@ -32,15 +27,39 @@ class MediaLibraryService
                 continue;
             }
 
-            $fileAdder = $model
-                ->addMedia($galleryImage)
-                ->usingName(pathinfo($galleryImage->getClientOriginalName(), PATHINFO_FILENAME))
-                ->withCustomProperties([
-                    'alt_text' => $payload['gallery_image_alt_texts'][$index] ?? null,
-                ]);
-
-            $fileAdder->toMediaCollection('gallery');
+            $this->addUploadedFileToCollection($model, $galleryImage, 'gallery', [
+                'alt_text' => $payload['gallery_image_alt_texts'][$index] ?? null,
+            ]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $customProperties
+     */
+    public function addUploadedFileToCollection(
+        Model&HasMedia $model,
+        UploadedFile $file,
+        string $collectionName,
+        array $customProperties = [],
+    ): Media {
+        $fileAdder = $model
+            ->addMedia($file)
+            ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+
+        if ($customProperties !== []) {
+            $fileAdder->withCustomProperties($customProperties);
+        }
+
+        return $fileAdder->toMediaCollection($collectionName);
+    }
+
+    public function syncMenuDocument(Model&HasMedia $model, ?UploadedFile $menuDocument): ?Media
+    {
+        if (! $menuDocument instanceof UploadedFile) {
+            return null;
+        }
+
+        return $this->addUploadedFileToCollection($model, $menuDocument, 'menu_documents');
     }
 
     public function updateMedia(Model&HasMedia $model, Media $media, ?string $altText): Media

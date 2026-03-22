@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Organization;
+use App\Models\Restaurant;
 use App\RestaurantStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Restaurant>
+ * @extends Factory<Restaurant>
  */
 class RestaurantFactory extends Factory
 {
@@ -37,6 +38,17 @@ class RestaurantFactory extends Factory
             'latitude' => fake()->latitude(6.3, 6.7),
             'longitude' => fake()->longitude(3.2, 3.6),
             'description' => fake()->paragraph(),
+            'website' => fake()->url(),
+            'instagram_handle' => '@'.fake()->userName(),
+            'average_price_range' => '$$',
+            'dining_style' => 'Casual Dining',
+            'dress_code' => 'Casual',
+            'total_seating_capacity' => 80,
+            'number_of_tables' => 20,
+            'menu_source' => 'link',
+            'menu_link' => fake()->url(),
+            'payment_options' => ['Paystack', 'Visa'],
+            'accessibility_features' => ['Wheelchair Accessible', 'Vegetarian Options'],
         ];
     }
 }

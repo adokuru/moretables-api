@@ -48,6 +48,7 @@ class MerchantRestaurantController extends Controller
             'featured_image_alt_text',
             'gallery_images',
             'gallery_image_alt_texts',
+            'menu_document',
         ])->toArray());
         $restaurant->save();
 
@@ -76,6 +77,7 @@ class MerchantRestaurantController extends Controller
         }
 
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+        $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
         $restaurant->load(['cuisines', 'media', 'hours', 'policy', 'menuItems.media', 'diningAreas.tables']);
 

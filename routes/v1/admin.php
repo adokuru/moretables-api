@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminAuditLogController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
+use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminOrganizationController;
 use App\Http\Controllers\Api\V1\AdminRestaurantController;
 use App\Http\Controllers\Api\V1\AdminUserRoleController;
@@ -20,6 +21,7 @@ Route::prefix('admin/auth')->group(function (): void {
 Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::get('organizations', [AdminOrganizationController::class, 'index']);
     Route::post('organizations', [AdminOrganizationController::class, 'store']);
+    Route::post('organizations/onboard', [AdminBusinessOnboardingController::class, 'store']);
     Route::get('organizations/{organization}', [AdminOrganizationController::class, 'show']);
     Route::patch('organizations/{organization}', [AdminOrganizationController::class, 'update']);
 

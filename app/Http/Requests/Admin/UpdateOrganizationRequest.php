@@ -22,6 +22,15 @@ class UpdateOrganizationRequest extends FormRequest
             'primary_contact_name' => ['nullable', 'string', 'max:255'],
             'primary_contact_email' => ['nullable', 'email', 'max:255'],
             'primary_contact_phone' => ['nullable', 'string', 'max:30'],
+            'business_phone' => ['nullable', 'string', 'max:30'],
+            'business_email' => ['nullable', 'email', 'max:255'],
+            'website' => ['nullable', 'url', 'max:2048'],
+            'billing_email' => ['nullable', 'email', 'max:255'],
+            'tax_id' => ['nullable', 'string', 'max:255'],
+            'registration_number' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', 'max:50'],
         ];
     }

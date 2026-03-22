@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\RestaurantStatus;
+use Database\Factories\RestaurantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Restaurant extends Model implements HasMedia
 {
-    /** @use HasFactory<\Database\Factories\RestaurantFactory> */
+    /** @use HasFactory<RestaurantFactory> */
     use HasFactory;
 
     use InteractsWithMedia;
@@ -36,6 +37,17 @@ class Restaurant extends Model implements HasMedia
         'latitude',
         'longitude',
         'description',
+        'website',
+        'instagram_handle',
+        'average_price_range',
+        'dining_style',
+        'dress_code',
+        'total_seating_capacity',
+        'number_of_tables',
+        'menu_source',
+        'menu_link',
+        'payment_options',
+        'accessibility_features',
     ];
 
     protected function casts(): array
@@ -44,6 +56,10 @@ class Restaurant extends Model implements HasMedia
             'status' => RestaurantStatus::class,
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'total_seating_capacity' => 'integer',
+            'number_of_tables' => 'integer',
+            'payment_options' => 'array',
+            'accessibility_features' => 'array',
         ];
     }
 
@@ -101,16 +117,19 @@ class Restaurant extends Model implements HasMedia
     {
         $this->addMediaCollection('featured')->singleFile();
         $this->addMediaCollection('gallery');
+        $this->addMediaCollection('menu_documents')->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->fit(Fit::Crop, 320, 240)
+            ->performOnCollections('featured', 'gallery')
             ->nonQueued();
 
         $this->addMediaConversion('card')
             ->fit(Fit::Crop, 900, 640)
+            ->performOnCollections('featured', 'gallery')
             ->nonQueued();
     }
 }

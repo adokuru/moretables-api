@@ -13,8 +13,8 @@ use App\Models\Restaurant;
 use App\Models\RestaurantPolicy;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\UserRole;
 use App\Services\MediaLibraryService;
+use App\Services\ScopedRoleAssignmentService;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
@@ -23,7 +23,10 @@ use Illuminate\Http\JsonResponse;
 #[Group('Admin Restaurants', weight: 52)]
 class AdminRestaurantController extends Controller
 {
-    public function __construct(protected MediaLibraryService $mediaLibraryService) {}
+    public function __construct(
+        protected MediaLibraryService $mediaLibraryService,
+        protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
+    ) {}
 
     public function index(): JsonResponse
     {
@@ -47,16 +50,26 @@ class AdminRestaurantController extends Controller
                 'featured_image_alt_text',
                 'gallery_images',
                 'gallery_image_alt_texts',
+                'menu_document',
             ])->toArray(),
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
         ]);
 
         RestaurantPolicy::query()->firstOrCreate(['restaurant_id' => $restaurant->id]);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+        $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
         return response()->json([
             'message' => 'Restaurant created successfully.',
-            'restaurant' => RestaurantDetailResource::make($restaurant->load(['organization', 'policy', 'cuisines', 'media'])),
+            'restaurant' => RestaurantDetailResource::make($restaurant->load([
+                'organization',
+                'policy',
+                'cuisines',
+                'media',
+                'hours',
+                'menuItems.media',
+                'diningAreas.tables',
+            ])),
         ], 201);
     }
 
@@ -71,6 +84,7 @@ class AdminRestaurantController extends Controller
             'media',
             'hours',
             'diningAreas.tables',
+            'menuItems.media',
         ]));
     }
 
@@ -89,14 +103,24 @@ class AdminRestaurantController extends Controller
                 'featured_image_alt_text',
                 'gallery_images',
                 'gallery_image_alt_texts',
+                'menu_document',
             ])->toArray(),
         );
 
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+        $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
         return response()->json([
             'message' => 'Restaurant updated successfully.',
-            'restaurant' => RestaurantDetailResource::make($restaurant->refresh()->load(['organization', 'policy', 'cuisines', 'media'])),
+            'restaurant' => RestaurantDetailResource::make($restaurant->refresh()->load([
+                'organization',
+                'policy',
+                'cuisines',
+                'media',
+                'hours',
+                'menuItems.media',
+                'diningAreas.tables',
+            ])),
         ]);
     }
 
@@ -119,8 +143,8 @@ class AdminRestaurantController extends Controller
             'last_active_at' => now(),
         ]);
 
-        $this->assignRole($owner, Role::OrganizationOwner, $restaurant->organization_id, null, $request->user()->id);
-        $this->assignRole($owner, Role::RestaurantManager, $restaurant->organization_id, $restaurant->id, $request->user()->id);
+        $this->scopedRoleAssignmentService->assignOrganizationOwner($owner, $restaurant->organization, $request->user()->id);
+        $this->scopedRoleAssignmentService->assignRestaurantManager($owner, $restaurant, $request->user()->id);
 
         return response()->json([
             'message' => 'Restaurant owner invited successfully.',
@@ -137,25 +161,6 @@ class AdminRestaurantController extends Controller
         return response()->json([
             'message' => 'Restaurant status updated successfully.',
             'restaurant' => RestaurantDetailResource::make($restaurant->refresh()->load(['organization', 'policy'])),
-        ]);
-    }
-
-    protected function assignRole(User $user, string $roleName, ?int $organizationId, ?int $restaurantId, int $assignedBy): void
-    {
-        $roleId = Role::query()->where('name', $roleName)->value('id');
-
-        if (! $roleId) {
-            return;
-        }
-
-        UserRole::query()->firstOrCreate([
-            'user_id' => $user->id,
-            'role_id' => $roleId,
-            'organization_id' => $organizationId,
-            'restaurant_id' => $restaurantId,
-        ], [
-            'scope_type' => $restaurantId ? 'restaurant' : 'organization',
-            'assigned_by' => $assignedBy,
         ]);
     }
 }
