@@ -21,7 +21,7 @@ class MerchantMenuItemMediaController extends Controller
 
     public function store(UploadModelMediaRequest $request, Restaurant $restaurant, RestaurantMenuItem $menuItem): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $this->mediaLibraryService->syncUploadedMedia($menuItem, $request->validated());
@@ -37,7 +37,7 @@ class MerchantMenuItemMediaController extends Controller
 
     public function update(UpdateMediaAssetRequest $request, Restaurant $restaurant, RestaurantMenuItem $menuItem, Media $media): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $updatedMedia = $this->mediaLibraryService->updateMedia($menuItem, $media, $request->validated('alt_text'));
@@ -50,7 +50,7 @@ class MerchantMenuItemMediaController extends Controller
 
     public function reorder(ReorderMediaRequest $request, Restaurant $restaurant, RestaurantMenuItem $menuItem): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $this->mediaLibraryService->reorderGallery($menuItem, $request->validated('media_ids'));
@@ -63,7 +63,7 @@ class MerchantMenuItemMediaController extends Controller
 
     public function feature(Restaurant $restaurant, RestaurantMenuItem $menuItem, Media $media): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $featuredMedia = $this->mediaLibraryService->featureMedia($menuItem, $media);
@@ -76,7 +76,7 @@ class MerchantMenuItemMediaController extends Controller
 
     public function destroy(Restaurant $restaurant, RestaurantMenuItem $menuItem, Media $media): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $this->mediaLibraryService->deleteMedia($menuItem, $media);

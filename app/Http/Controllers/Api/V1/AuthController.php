@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-#[Group('Staff Auth', weight: 40)]
+#[Group('Merchant Staff Auth', weight: 40)]
 class AuthController extends Controller
 {
     public function __construct(protected AuthChallengeService $authChallengeService) {}
@@ -32,6 +32,12 @@ class AuthController extends Controller
         if (! $user || ! $user->password || ! Hash::check($request->string('password')->toString(), $user->password)) {
             throw ValidationException::withMessages([
                 'identifier' => ['Invalid credentials.'],
+            ]);
+        }
+
+        if (! $user->isActive()) {
+            throw ValidationException::withMessages([
+                'identifier' => ['This staff account is not currently active.'],
             ]);
         }
 

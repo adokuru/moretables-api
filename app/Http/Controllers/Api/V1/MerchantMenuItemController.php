@@ -23,7 +23,7 @@ class MerchantMenuItemController extends Controller
 
     public function index(Restaurant $restaurant): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         $menuItems = $restaurant->menuItems()->with('media')->orderBy('section_name')->orderBy('sort_order')->get();
 
@@ -32,7 +32,7 @@ class MerchantMenuItemController extends Controller
 
     public function store(StoreRestaurantMenuItemRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $validated = $request->validated();
         $menuItem = $restaurant->menuItems()->create([
@@ -63,7 +63,7 @@ class MerchantMenuItemController extends Controller
 
     public function update(UpdateRestaurantMenuItemRequest $request, Restaurant $restaurant, RestaurantMenuItem $menuItem): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $validated = $request->validated();
@@ -88,7 +88,7 @@ class MerchantMenuItemController extends Controller
 
     public function destroy(Restaurant $restaurant, RestaurantMenuItem $menuItem): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($menuItem->restaurant_id === $restaurant->id, 404);
 
         $menuItem->delete();

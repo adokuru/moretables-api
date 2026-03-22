@@ -20,14 +20,14 @@ class GenerateTestingData extends Command
     protected $signature = 'app:generate-testing-data
         {--organizations=3 : Number of organizations to create}
         {--restaurants-per-organization=2 : Number of restaurants to create per organization}
-        {--managers-per-restaurant=1 : Number of restaurant managers to create per restaurant}
-        {--staff-per-restaurant=3 : Number of restaurant staff users to create per restaurant}
+        {--managers-per-restaurant=1 : Number of operations staff users to create per restaurant}
+        {--staff-per-restaurant=3 : Number of specialist staff users to create per restaurant}
         {--customers=25 : Number of customer users to create}
         {--featured=2 : Number of generated restaurants to mark as featured}
         {--tables-per-restaurant=10 : Number of tables to create per restaurant}
         {--menu-items-per-restaurant=8 : Number of menu items to create per restaurant}';
 
-    protected $description = 'Generate faker organizations, restaurants, owners, staff, and customers for local testing.';
+    protected $description = 'Generate faker organizations, restaurants, principal admins, specialist staff, and customers for local testing.';
 
     public function __construct(protected ScopedRoleAssignmentService $scopedRoleAssignmentService)
     {
@@ -49,8 +49,10 @@ class GenerateTestingData extends Command
 
         $restaurants = collect();
         $createdOrganizations = 0;
-        $createdRestaurantManagers = 0;
-        $createdRestaurantStaff = 0;
+        $createdOperationsStaff = 0;
+        $createdAnalyticsStaff = 0;
+        $createdMarketingStaff = 0;
+        $createdGuestRelationsStaff = 0;
 
         foreach (range(1, $organizationsCount) as $organizationIndex) {
             $organization = Organization::factory()->create();
@@ -66,7 +68,7 @@ class GenerateTestingData extends Command
                     'total_seating_capacity' => $tablesPerRestaurant * 4,
                 ]);
 
-                $this->scopedRoleAssignmentService->assignRestaurantManager($owner, $restaurant, $owner->id);
+                $this->scopedRoleAssignmentService->assignRestaurantPrincipalAdmin($owner, $restaurant, $owner->id);
                 $restaurants->push($restaurant);
 
                 $this->seedRestaurantRelations(
@@ -75,14 +77,36 @@ class GenerateTestingData extends Command
                     menuItemsPerRestaurant: $menuItemsPerRestaurant,
                 );
 
-                $managers = User::factory()->count($managersPerRestaurant)->create();
-                $staff = User::factory()->count($staffPerRestaurant)->create();
+                $operationsUsers = User::factory()->count($managersPerRestaurant)->create();
+                $createdOperationsStaff += $operationsUsers->count();
+                $this->assignScopedUsers($operationsUsers, Role::Operations, $organization, $restaurant);
 
-                $createdRestaurantManagers += $managers->count();
-                $createdRestaurantStaff += $staff->count();
+                $specialistRoles = [
+                    Role::AnalyticsReporting,
+                    Role::MarketingGrowth,
+                    Role::GuestRelations,
+                ];
 
-                $this->assignScopedUsers($managers, Role::RestaurantManager, $organization, $restaurant);
-                $this->assignScopedUsers($staff, Role::RestaurantStaff, $organization, $restaurant);
+                if ($staffPerRestaurant > 0) {
+                    foreach (range(1, $staffPerRestaurant) as $staffIndex) {
+                        $staffUser = User::factory()->create();
+                        $roleName = $specialistRoles[($staffIndex - 1) % count($specialistRoles)];
+
+                        $this->assignScopedUsers(collect([$staffUser]), $roleName, $organization, $restaurant);
+
+                        switch ($roleName) {
+                            case Role::AnalyticsReporting:
+                                $createdAnalyticsStaff++;
+                                break;
+                            case Role::MarketingGrowth:
+                                $createdMarketingStaff++;
+                                break;
+                            case Role::GuestRelations:
+                                $createdGuestRelationsStaff++;
+                                break;
+                        }
+                    }
+                }
             }
 
             $this->line("Created organization {$organizationIndex}/{$organizationsCount}: {$organization->name}");
@@ -111,8 +135,11 @@ class GenerateTestingData extends Command
                 ['Organizations', $createdOrganizations],
                 ['Organization owners', $totalOwners],
                 ['Restaurants', $totalRestaurants],
-                ['Restaurant managers', $createdRestaurantManagers],
-                ['Restaurant staff', $createdRestaurantStaff],
+                ['Principal admins', $totalOwners],
+                ['Operations staff', $createdOperationsStaff],
+                ['Analytics & reporting staff', $createdAnalyticsStaff],
+                ['Marketing & growth staff', $createdMarketingStaff],
+                ['Guest relations staff', $createdGuestRelationsStaff],
                 ['Customers', $totalCustomers],
                 ['Featured restaurants', $totalFeatured],
             ],

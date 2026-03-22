@@ -22,7 +22,7 @@ class MerchantReservationController extends Controller
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $reservations = $restaurant->reservations()
             ->with(['restaurant', 'table', 'user', 'guestContact'])
@@ -36,7 +36,7 @@ class MerchantReservationController extends Controller
 
     public function store(StoreMerchantReservationRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         $restaurant->loadMissing('policy');
 
         $reservation = $this->reservationService->createMerchantReservation($request->user(), $restaurant, $request->validated());
@@ -49,7 +49,7 @@ class MerchantReservationController extends Controller
 
     public function show(Restaurant $restaurant, Reservation $reservation): ReservationResource
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         return ReservationResource::make($reservation->load(['restaurant', 'table', 'user', 'guestContact']));
@@ -57,7 +57,7 @@ class MerchantReservationController extends Controller
 
     public function update(UpdateMerchantReservationRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         $updatedReservation = $this->reservationService->updateReservation($reservation, $request->user(), $request->validated());
@@ -70,7 +70,7 @@ class MerchantReservationController extends Controller
 
     public function assignTable(AssignReservationTableRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         $table = RestaurantTable::query()
@@ -87,7 +87,7 @@ class MerchantReservationController extends Controller
 
     public function seat(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         $updatedReservation = $this->reservationService->seatReservation($reservation, request()->user());
@@ -100,7 +100,7 @@ class MerchantReservationController extends Controller
 
     public function complete(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         $updatedReservation = $this->reservationService->completeReservation($reservation, request()->user());
@@ -113,7 +113,7 @@ class MerchantReservationController extends Controller
 
     public function cancel(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
         $updatedReservation = $this->reservationService->cancelReservation($reservation, request()->user(), 'cancelled_by_staff');

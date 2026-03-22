@@ -19,7 +19,7 @@ class MerchantDiningAreaController extends Controller
 
     public function index(Restaurant $restaurant): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
         return response()->json(DiningAreaResource::collection(
             $restaurant->diningAreas()->with('tables')->orderBy('sort_order')->get()
@@ -28,7 +28,7 @@ class MerchantDiningAreaController extends Controller
 
     public function store(StoreDiningAreaRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
         $diningArea = $restaurant->diningAreas()->create($request->validated());
 
@@ -49,7 +49,7 @@ class MerchantDiningAreaController extends Controller
 
     public function update(UpdateDiningAreaRequest $request, Restaurant $restaurant, DiningArea $diningArea): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
 
         $diningArea->update($request->validated());
@@ -62,7 +62,7 @@ class MerchantDiningAreaController extends Controller
 
     public function destroy(Restaurant $restaurant, DiningArea $diningArea): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
 
         $diningArea->delete();

@@ -29,6 +29,12 @@ class AdminAuthController extends Controller
             ]);
         }
 
+        if (! $user->isActive()) {
+            throw ValidationException::withMessages([
+                'identifier' => ['This admin account is not currently active.'],
+            ]);
+        }
+
         if ($user->requiresStaffLogin()) {
             throw ValidationException::withMessages([
                 'identifier' => ['Use the staff login endpoint for this account.'],

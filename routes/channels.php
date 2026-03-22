@@ -10,5 +10,5 @@ Broadcast::channel('App.Models.User.{id}', function ($user, int $id) {
 Broadcast::channel('restaurant.{restaurantId}', function ($user, int $restaurantId) {
     $restaurant = Restaurant::query()->find($restaurantId);
 
-    return $restaurant ? $user->canManageRestaurant($restaurant) : false;
+    return $restaurant ? $user->canAccessRestaurant($restaurant) : false;
 });

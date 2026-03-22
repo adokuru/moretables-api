@@ -32,20 +32,56 @@ class ScopedRoleAssignmentService
         );
     }
 
+    public function assignRestaurantPrincipalAdmin(User $user, Restaurant $restaurant, int $assignedBy): void
+    {
+        $this->syncRestaurantRole(
+            user: $user,
+            restaurant: $restaurant,
+            roleName: Role::PrincipalAdmin,
+            assignedBy: $assignedBy,
+        );
+    }
+
+    public function syncRestaurantRole(User $user, Restaurant $restaurant, string $roleName, int $assignedBy): UserRole
+    {
+        UserRole::query()
+            ->where('user_id', $user->id)
+            ->where('restaurant_id', $restaurant->id)
+            ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
+            ->delete();
+
+        return $this->assignRole(
+            user: $user,
+            roleName: $roleName,
+            organization: $restaurant->organization,
+            restaurant: $restaurant,
+            assignedBy: $assignedBy,
+        ) ?? throw new \RuntimeException('Unable to assign the requested restaurant role.');
+    }
+
+    public function removeRestaurantRoles(User $user, Restaurant $restaurant): void
+    {
+        UserRole::query()
+            ->where('user_id', $user->id)
+            ->where('restaurant_id', $restaurant->id)
+            ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
+            ->delete();
+    }
+
     public function assignRole(
         User $user,
         string $roleName,
         ?Organization $organization = null,
         ?Restaurant $restaurant = null,
         ?int $assignedBy = null,
-    ): void {
+    ): ?UserRole {
         $roleId = Role::query()->where('name', $roleName)->value('id');
 
         if (! $roleId) {
-            return;
+            return null;
         }
 
-        UserRole::query()->firstOrCreate([
+        return UserRole::query()->firstOrCreate([
             'user_id' => $user->id,
             'role_id' => $roleId,
             'organization_id' => $organization?->id,

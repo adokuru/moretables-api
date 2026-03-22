@@ -51,7 +51,7 @@ it('allows business admins to onboard a business with multiple restaurants', fun
     expect($restaurants)->toHaveCount(3);
 
     foreach ($restaurants as $restaurant) {
-        expect($owner->hasRole(Role::RestaurantManager, restaurant: $restaurant))->toBeTrue();
+        expect($owner->hasRole(Role::PrincipalAdmin, restaurant: $restaurant))->toBeTrue();
         expect($restaurant->diningAreas()->count())->toBe(1);
         expect($restaurant->diningAreas()->first()?->name)->toBe('Main Dining');
         expect($restaurant->tables()->count())->toBe($restaurant->number_of_tables);
@@ -203,10 +203,10 @@ it('keeps existing admin and merchant restaurant surfaces working with onboardin
     $organization = Organization::query()->findOrFail($organizationResponse->json('organization.id'));
     $restaurant = Restaurant::query()->findOrFail($restaurantResponse->json('restaurant.id'));
 
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $organization, $restaurant);
+    $marketingLead = User::factory()->create();
+    assignScopedRole($marketingLead, Role::MarketingGrowth, $organization, $restaurant);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($marketingLead);
 
     $updateResponse = $this->patch('/api/v1/merchant/restaurants/'.$restaurant->id, [
         'website' => 'https://merchant-update.example.com',

@@ -21,7 +21,7 @@ class MerchantTableController extends Controller
 
     public function index(Restaurant $restaurant): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
         return response()->json(RestaurantTableResource::collection(
             $restaurant->tables()->orderBy('sort_order')->get()
@@ -30,7 +30,7 @@ class MerchantTableController extends Controller
 
     public function store(StoreRestaurantTableRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
         $validated = $request->validated();
         $validated['restaurant_id'] = $restaurant->id;
@@ -45,7 +45,7 @@ class MerchantTableController extends Controller
 
     public function update(UpdateRestaurantTableRequest $request, Restaurant $restaurant, RestaurantTable $table): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($table->restaurant_id === $restaurant->id, 404);
 
         $table->update($request->validated());
@@ -58,7 +58,7 @@ class MerchantTableController extends Controller
 
     public function updateStatus(UpdateTableStatusRequest $request, Restaurant $restaurant, RestaurantTable $table): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($table->restaurant_id === $restaurant->id, 404);
 
         $table->update(['status' => $request->validated('status')]);
@@ -72,7 +72,7 @@ class MerchantTableController extends Controller
 
     public function destroy(Restaurant $restaurant, RestaurantTable $table): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($table->restaurant_id === $restaurant->id, 404);
 
         $table->delete();

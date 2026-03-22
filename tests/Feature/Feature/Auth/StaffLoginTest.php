@@ -12,24 +12,24 @@ it('requires email otp verification for staff login', function () {
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
-    $manager = User::factory()->create([
-        'email' => 'manager@example.com',
+    $operations = User::factory()->create([
+        'email' => 'operations@example.com',
         'password' => 'Secret123!',
     ]);
 
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
     $loginResponse = $this->postJson('/api/v1/auth/staff/login', [
-        'identifier' => 'manager@example.com',
+        'identifier' => 'operations@example.com',
         'password' => 'Secret123!',
     ]);
 
     $loginResponse->assertOk()
         ->assertJsonStructure(['message', 'challenge_token', 'expires_at']);
 
-    Notification::assertSentTo($manager, AuthChallengeCodeNotification::class);
+    Notification::assertSentTo($operations, AuthChallengeCodeNotification::class);
 
-    $challenge = AuthChallenge::query()->where('user_id', $manager->id)->firstOrFail();
+    $challenge = AuthChallenge::query()->where('user_id', $operations->id)->firstOrFail();
 
     $verifyResponse = $this->postJson('/api/v1/auth/staff/verify-2fa', [
         'challenge_token' => $challenge->challenge_token,
@@ -39,5 +39,5 @@ it('requires email otp verification for staff login', function () {
 
     $verifyResponse->assertOk()
         ->assertJsonStructure(['token', 'token_type', 'user'])
-        ->assertJsonPath('user.email', 'manager@example.com');
+        ->assertJsonPath('user.email', 'operations@example.com');
 });

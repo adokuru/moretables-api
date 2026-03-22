@@ -11,13 +11,13 @@ use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
-it('allows restaurant managers to manage floor resources and walk-in reservations', function () {
+it('allows operations staff to manage floor resources and walk-in reservations', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($operations);
 
     $diningAreaResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
         'name' => 'VIP Room',
@@ -54,14 +54,14 @@ it('allows restaurant managers to manage floor resources and walk-in reservation
     expect(Reservation::query()->count())->toBe(1);
 });
 
-it('emails a guest when merchant creates a walk-in reservation with guest email', function () {
+it('emails a guest when operations staff creates a walk-in reservation with guest email', function () {
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($operations);
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
         'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
@@ -80,16 +80,16 @@ it('emails a guest when merchant creates a walk-in reservation with guest email'
     });
 });
 
-it('allows restaurant managers to notify waitlist guests', function () {
+it('allows operations staff to notify waitlist guests', function () {
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
+    $operations = User::factory()->create();
     $customer = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($operations);
 
     $waitlistResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/waitlist-entries', [
         'user_id' => $customer->id,
@@ -111,15 +111,15 @@ it('allows restaurant managers to notify waitlist guests', function () {
     Notification::assertSentTo($customer, WaitlistAvailabilityNotification::class);
 });
 
-it('emails guest when merchant notifies guest-only waitlist with email', function () {
+it('emails guest when operations staff notifies guest-only waitlist with email', function () {
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($operations);
 
     $waitlistResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/waitlist-entries', [
         'preferred_starts_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),

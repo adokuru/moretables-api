@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::get('/', [MerchantRestaurantController::class, 'show']);
     Route::patch('/', [MerchantRestaurantController::class, 'update']);
+    Route::get('staff', [MerchantRestaurantStaffController::class, 'index']);
+    Route::post('staff', [MerchantRestaurantStaffController::class, 'store']);
+    Route::patch('staff/{user}', [MerchantRestaurantStaffController::class, 'update']);
+    Route::delete('staff/{user}', [MerchantRestaurantStaffController::class, 'destroy']);
     Route::post('media', [MerchantRestaurantMediaController::class, 'store']);
     Route::patch('media/{media}', [MerchantRestaurantMediaController::class, 'update']);
     Route::post('media/reorder', [MerchantRestaurantMediaController::class, 'reorder']);

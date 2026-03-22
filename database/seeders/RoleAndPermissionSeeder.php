@@ -49,7 +49,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'staff.manage',
                 'audit_logs.view',
             ],
-            Role::RestaurantManager => [
+            Role::PrincipalAdmin => [
                 'restaurants.view',
                 'restaurants.manage',
                 'reservations.view',
@@ -59,13 +59,41 @@ class RoleAndPermissionSeeder extends Seeder
                 'staff.manage',
                 'audit_logs.view',
             ],
+            Role::Operations => [
+                'restaurants.view',
+                'reservations.view',
+                'reservations.manage',
+                'waitlist.manage',
+                'tables.manage',
+            ],
+            Role::AnalyticsReporting => [
+                'restaurants.view',
+                'reservations.view',
+                'audit_logs.view',
+            ],
+            Role::MarketingGrowth => [
+                'restaurants.view',
+                'restaurants.manage',
+            ],
+            Role::GuestRelations => [
+                'restaurants.view',
+                'reservations.view',
+            ],
+            Role::RestaurantManager => [
+                'restaurants.view',
+                'restaurants.manage',
+                'reservations.view',
+                'reservations.manage',
+                'waitlist.manage',
+                'tables.manage',
+                'audit_logs.view',
+            ],
             Role::RestaurantStaff => [
                 'restaurants.view',
                 'reservations.view',
                 'reservations.manage',
                 'waitlist.manage',
                 'tables.manage',
-                'audit_logs.view',
             ],
             Role::BusinessAdmin => [
                 'restaurants.view',
@@ -95,7 +123,7 @@ class RoleAndPermissionSeeder extends Seeder
                 ->pluck('id')
                 ->all();
 
-            $role->permissions()->syncWithoutDetaching($permissionIds);
+            $role->permissions()->sync($permissionIds);
         }
     }
 }

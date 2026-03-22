@@ -154,27 +154,69 @@ class User extends Authenticatable
             ->exists();
     }
 
-    public function canManageRestaurant(Restaurant $restaurant): bool
+    public function hasPermission(
+        string $permissionName,
+        ?Restaurant $restaurant = null,
+        ?Organization $organization = null,
+    ): bool {
+        $organization ??= $restaurant?->organization;
+
+        return $this->roleAssignments()
+            ->whereHas('role.permissions', fn ($query) => $query->where('name', $permissionName))
+            ->where(function ($query) use ($restaurant, $organization): void {
+                $query->where(function ($scopeQuery): void {
+                    $scopeQuery
+                        ->whereNull('organization_id')
+                        ->whereNull('restaurant_id');
+                });
+
+                if ($restaurant) {
+                    $query->orWhere('restaurant_id', $restaurant->getKey());
+                }
+
+                if ($organization) {
+                    $query->orWhere(function ($scopeQuery) use ($organization): void {
+                        $scopeQuery
+                            ->where('organization_id', $organization->getKey())
+                            ->whereNull('restaurant_id');
+                    });
+                }
+            })
+            ->exists();
+    }
+
+    public function hasRestaurantPermission(string $permissionName, Restaurant $restaurant): bool
     {
-        return $this->hasAnyRole(
-            [
-                Role::OrganizationOwner,
-                Role::RestaurantManager,
-                Role::RestaurantStaff,
-                Role::BusinessAdmin,
-                Role::DevAdmin,
-                Role::SuperAdmin,
-            ],
+        return $this->hasPermission(
+            permissionName: $permissionName,
             restaurant: $restaurant,
-        ) || $this->hasAnyRole(
-            [
-                Role::OrganizationOwner,
-                Role::BusinessAdmin,
-                Role::DevAdmin,
-                Role::SuperAdmin,
-            ],
             organization: $restaurant->organization,
         );
+    }
+
+    public function canAccessRestaurant(Restaurant $restaurant): bool
+    {
+        return $this->roleAssignments()
+            ->whereHas('role', fn ($query) => $query->whereIn('name', Role::restaurantAccessRoles()))
+            ->where(function ($query) use ($restaurant): void {
+                $query->where(function ($scopeQuery): void {
+                    $scopeQuery
+                        ->whereNull('organization_id')
+                        ->whereNull('restaurant_id');
+                })
+                    ->orWhere('restaurant_id', $restaurant->getKey())
+                    ->orWhere(function ($scopeQuery) use ($restaurant): void {
+                        $scopeQuery
+                            ->where('organization_id', $restaurant->organization_id)
+                            ->whereNull('restaurant_id');
+                    });
+            })
+            ->exists();
+    }
+
+    public function canManageRestaurant(Restaurant $restaurant): bool
+    {
+        return $this->canAccessRestaurant($restaurant);
     }
 
     public function requiresTwoFactor(): bool
@@ -184,20 +226,12 @@ class User extends Authenticatable
 
     public function requiresStaffLogin(): bool
     {
-        return $this->hasAnyRole([
-            Role::OrganizationOwner,
-            Role::RestaurantManager,
-            Role::RestaurantStaff,
-        ]);
+        return $this->hasAnyRole(Role::staffLoginRoles());
     }
 
     public function requiresAdminLogin(): bool
     {
-        return $this->hasAnyRole([
-            Role::BusinessAdmin,
-            Role::DevAdmin,
-            Role::SuperAdmin,
-        ]);
+        return $this->hasAnyRole(Role::adminRoles());
     }
 
     public function isActive(): bool

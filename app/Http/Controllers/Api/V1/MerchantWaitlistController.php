@@ -25,7 +25,7 @@ class MerchantWaitlistController extends Controller
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $entries = $restaurant->waitlistEntries()
             ->with(['restaurant', 'reservation', 'user', 'guestContact'])
@@ -37,7 +37,7 @@ class MerchantWaitlistController extends Controller
 
     public function store(StoreMerchantWaitlistEntryRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $guestContact = null;
         if (! empty($request->validated('guest_contact')) && ! $request->filled('user_id')) {
@@ -67,7 +67,7 @@ class MerchantWaitlistController extends Controller
 
     public function notify(NotifyWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
         $entry = $this->reservationService->notifyWaitlistEntry(
@@ -84,7 +84,7 @@ class MerchantWaitlistController extends Controller
 
     public function assignTable(AssignReservationTableRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
         $table = RestaurantTable::query()

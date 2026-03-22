@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\AuditLog;
+use App\Models\Organization;
+use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -97,4 +99,39 @@ it('returns audit logs to authorized admins', function () {
 
     $response->assertOk()
         ->assertJsonFragment(['action' => 'restaurant.updated']);
+});
+
+it('allows admins to assign the new restaurant role set and rejects deprecated restaurant roles', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    $user = User::factory()->create();
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Sanctum::actingAs($admin);
+
+    $assignResponse = $this->putJson('/api/v1/admin/users/'.$user->id.'/roles', [
+        'roles' => [Role::Operations],
+        'organization_id' => $organization->id,
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $assignResponse->assertOk()
+        ->assertJsonFragment(['email' => $user->email]);
+
+    expect($user->fresh()->hasRole(Role::Operations, restaurant: $restaurant))->toBeTrue();
+
+    $deprecatedResponse = $this->putJson('/api/v1/admin/users/'.$user->id.'/roles', [
+        'roles' => [Role::RestaurantManager],
+        'organization_id' => $organization->id,
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $deprecatedResponse->assertUnprocessable()
+        ->assertJsonValidationErrors('roles');
 });

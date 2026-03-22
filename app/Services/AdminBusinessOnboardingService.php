@@ -42,7 +42,7 @@ class AdminBusinessOnboardingService
             foreach ($payload['restaurants'] as $restaurantPayload) {
                 $restaurant = $organization->restaurants()->create($this->restaurantAttributes($restaurantPayload));
 
-                $this->scopedRoleAssignmentService->assignRestaurantManager($owner, $restaurant, $admin->id);
+                $this->scopedRoleAssignmentService->assignRestaurantPrincipalAdmin($owner, $restaurant, $admin->id);
                 $this->createRestaurantPolicy($restaurant, $restaurantPayload);
                 $this->createRestaurantCuisine($restaurant, $restaurantPayload);
                 $this->createRestaurantHours($restaurant, $restaurantPayload);

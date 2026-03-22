@@ -21,7 +21,7 @@ class MerchantRestaurantController extends Controller
 
     public function show(Restaurant $restaurant): RestaurantDetailResource
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         return RestaurantDetailResource::make($restaurant->load([
             'cuisines',
@@ -35,7 +35,7 @@ class MerchantRestaurantController extends Controller
 
     public function update(UpdateRestaurantRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $validated = $request->validated();
         $oldValues = $restaurant->toArray();

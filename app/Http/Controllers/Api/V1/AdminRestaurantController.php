@@ -144,7 +144,7 @@ class AdminRestaurantController extends Controller
         ]);
 
         $this->scopedRoleAssignmentService->assignOrganizationOwner($owner, $restaurant->organization, $request->user()->id);
-        $this->scopedRoleAssignmentService->assignRestaurantManager($owner, $restaurant, $request->user()->id);
+        $this->scopedRoleAssignmentService->assignRestaurantPrincipalAdmin($owner, $restaurant, $request->user()->id);
 
         return response()->json([
             'message' => 'Restaurant owner invited successfully.',

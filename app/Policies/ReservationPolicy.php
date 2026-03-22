@@ -14,7 +14,8 @@ class ReservationPolicy
 
     public function view(User $user, Reservation $reservation): bool
     {
-        return $reservation->user_id === $user->id || $user->canManageRestaurant($reservation->restaurant);
+        return $reservation->user_id === $user->id
+            || $user->hasRestaurantPermission('reservations.view', $reservation->restaurant);
     }
 
     public function create(User $user): bool
@@ -24,11 +25,13 @@ class ReservationPolicy
 
     public function update(User $user, Reservation $reservation): bool
     {
-        return $reservation->user_id === $user->id || $user->canManageRestaurant($reservation->restaurant);
+        return $reservation->user_id === $user->id
+            || $user->hasRestaurantPermission('reservations.manage', $reservation->restaurant);
     }
 
     public function delete(User $user, Reservation $reservation): bool
     {
-        return $reservation->user_id === $user->id || $user->canManageRestaurant($reservation->restaurant);
+        return $reservation->user_id === $user->id
+            || $user->hasRestaurantPermission('reservations.manage', $reservation->restaurant);
     }
 }

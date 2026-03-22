@@ -7,15 +7,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
-it('allows restaurant managers to create menu items with media on create', function () {
+it('allows marketing and growth staff to create menu items with media on create', function () {
     Storage::fake('public');
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    $marketingLead = User::factory()->create();
+    assignScopedRole($marketingLead, Role::MarketingGrowth, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($marketingLead);
 
     $response = $this->post('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/menu-items', [
         'section_name' => 'Mains',
@@ -37,15 +37,15 @@ it('allows restaurant managers to create menu items with media on create', funct
         ->assertJsonCount(2, 'menu_item.gallery_images');
 });
 
-it('allows restaurant managers to upload restaurant media and promote a gallery image to featured', function () {
+it('allows marketing and growth staff to upload restaurant media and promote a gallery image to featured', function () {
     Storage::fake('public');
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
-    $manager = User::factory()->create();
-    assignScopedRole($manager, Role::RestaurantManager, $data['organization'], $data['restaurant']);
+    $marketingLead = User::factory()->create();
+    assignScopedRole($marketingLead, Role::MarketingGrowth, $data['organization'], $data['restaurant']);
 
-    Sanctum::actingAs($manager);
+    Sanctum::actingAs($marketingLead);
 
     $uploadResponse = $this->post('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/media', [
         'gallery_images' => [

@@ -27,12 +27,24 @@ it('generates organizations restaurants staff customers and featured restaurants
         ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::OrganizationOwner))
         ->count();
 
-    $managerCount = User::query()
-        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::RestaurantManager))
+    $principalAdminCount = User::query()
+        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::PrincipalAdmin))
         ->count();
 
-    $staffCount = User::query()
-        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::RestaurantStaff))
+    $operationsCount = User::query()
+        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::Operations))
+        ->count();
+
+    $analyticsCount = User::query()
+        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::AnalyticsReporting))
+        ->count();
+
+    $marketingCount = User::query()
+        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::MarketingGrowth))
+        ->count();
+
+    $guestRelationsCount = User::query()
+        ->whereHas('roleAssignments.role', fn ($query) => $query->where('name', Role::GuestRelations))
         ->count();
 
     $customerCount = User::query()
@@ -40,8 +52,11 @@ it('generates organizations restaurants staff customers and featured restaurants
         ->count();
 
     expect($ownerCount)->toBe(2);
-    expect($managerCount)->toBe(14);
-    expect($staffCount)->toBe(24);
+    expect($principalAdminCount)->toBe(2);
+    expect($operationsCount)->toBe(12);
+    expect($analyticsCount)->toBe(12);
+    expect($marketingCount)->toBe(6);
+    expect($guestRelationsCount)->toBe(6);
     expect($customerCount)->toBe(5);
     expect(Restaurant::query()->withCount('tables')->firstOrFail()->tables_count)->toBe(6);
     expect(Restaurant::query()->withCount('menuItems')->firstOrFail()->menu_items_count)->toBe(5);

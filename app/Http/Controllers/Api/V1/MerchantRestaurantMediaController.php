@@ -20,7 +20,7 @@ class MerchantRestaurantMediaController extends Controller
 
     public function store(UploadModelMediaRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $request->validated());
 
@@ -35,7 +35,7 @@ class MerchantRestaurantMediaController extends Controller
 
     public function update(UpdateMediaAssetRequest $request, Restaurant $restaurant, Media $media): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $updatedMedia = $this->mediaLibraryService->updateMedia($restaurant, $media, $request->validated('alt_text'));
 
@@ -47,7 +47,7 @@ class MerchantRestaurantMediaController extends Controller
 
     public function reorder(ReorderMediaRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->canManageRestaurant($restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $this->mediaLibraryService->reorderGallery($restaurant, $request->validated('media_ids'));
 
@@ -59,7 +59,7 @@ class MerchantRestaurantMediaController extends Controller
 
     public function feature(Restaurant $restaurant, Media $media): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $featuredMedia = $this->mediaLibraryService->featureMedia($restaurant, $media);
 
@@ -71,7 +71,7 @@ class MerchantRestaurantMediaController extends Controller
 
     public function destroy(Restaurant $restaurant, Media $media): JsonResponse
     {
-        abort_unless(request()->user()->canManageRestaurant($restaurant), 403);
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $this->mediaLibraryService->deleteMedia($restaurant, $media);
 
