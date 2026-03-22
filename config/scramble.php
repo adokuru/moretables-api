@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'MoreTables reservation and restaurant operations API.',
+        'description' => 'MoreTables restaurant discovery, onboarding, reservations, reviews, and merchant operations API.',
     ],
 
     /*

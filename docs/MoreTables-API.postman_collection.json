@@ -79,6 +79,19 @@
       "key": "mailgun_endpoint",
       "value": "https://api.mailgun.net",
       "description": "EU: https://api.eu.mailgun.net"
+    },
+    {
+      "key": "restaurant_list_id",
+      "value": "1"
+    },
+    {
+      "key": "review_id",
+      "value": "1"
+    },
+    {
+      "key": "discovery_section",
+      "value": "top-saved",
+      "description": "Discovery section slug, e.g. top-booked, top-viewed, top-saved, highly-rated, new-on-moretables, featured"
     }
   ],
   "item": [
@@ -680,6 +693,133 @@
               ]
             }
           }
+        },
+        {
+          "name": "Restaurant discovery",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/discovery?limit=10&city=Lagos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "discovery"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "city",
+                  "value": "Lagos"
+                }
+              ]
+            },
+            "description": "Homepage discovery rails for mobile and web."
+          }
+        },
+        {
+          "name": "Restaurant discovery section",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/discovery/{{discovery_section}}?per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "discovery",
+                "{{discovery_section}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            },
+            "description": "Paginated view for a single discovery section."
+          }
+        },
+        {
+          "name": "Record restaurant view",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/views",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "views"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"ios\",\n  \"session_id\": \"session-123\"\n}"
+            },
+            "description": "Tracks restaurant detail views used for Top Viewed discovery ranking."
+          }
+        },
+        {
+          "name": "List restaurant reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews"
+              ]
+            },
+            "description": "Public review feed and summary stats for a restaurant."
+          }
         }
       ]
     },
@@ -767,6 +907,468 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"expo_token\": \"ExponentPushToken[xxx]\"\n}"
+            }
+          }
+        },
+        {
+          "name": "My saved restaurants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/saved-restaurants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "saved-restaurants"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save restaurant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "save"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unsave restaurant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "save"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My restaurant lists",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create restaurant list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Weekend plans\",\n  \"description\": \"Saved spots for the weekend.\",\n  \"is_private\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update restaurant list",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists/{{restaurant_list_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists",
+                "{{restaurant_list_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Date night\",\n  \"is_private\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete restaurant list",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists/{{restaurant_list_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists",
+                "{{restaurant_list_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add restaurant to list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists/{{restaurant_list_id}}/restaurants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists",
+                "{{restaurant_list_id}}",
+                "restaurants"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurant_id\": 1,\n  \"sort_order\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove restaurant from list",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/restaurant-lists/{{restaurant_list_id}}/restaurants/{{restaurant_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "restaurant-lists",
+                "{{restaurant_list_id}}",
+                "restaurants",
+                "{{restaurant_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create restaurant review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"title\": \"Excellent dinner\",\n  \"body\": \"Loved the tasting menu and service.\",\n  \"visited_at\": \"2026-03-21\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update restaurant review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/reviews/{{review_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews",
+                "{{review_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"body\": \"Still great, dessert was the highlight.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete restaurant review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/reviews/{{review_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews",
+                "{{review_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         },
@@ -1195,7 +1797,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated name\"\n}"
+              "raw": "{\n  \"name\": \"Updated name\",\n  \"is_featured\": true,\n  \"instagram_handle\": \"@updatedname\",\n  \"website\": \"https://restaurant.example\"\n}"
             }
           }
         },
@@ -2926,6 +3528,50 @@
           }
         },
         {
+          "name": "Organization onboard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/organizations/onboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "organizations",
+                "onboard"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_name\": \"Chicken Republic Limited\",\n  \"business_phone\": \"+2348000000000\",\n  \"owner_name\": \"Ada Okafor\",\n  \"owner_phone\": \"+2348011111111\",\n  \"owner_email\": \"ada@chickenrepublic.example\",\n  \"business_email\": \"contact@chickenrepublic.example\",\n  \"business_website\": \"https://chickenrepublic.example\",\n  \"billing_email\": \"billing@chickenrepublic.example\",\n  \"tax_id\": \"VAT-12345\",\n  \"registration_number\": \"RC-998877\",\n  \"business_city\": \"Lagos\",\n  \"business_state\": \"Lagos\",\n  \"business_country\": \"Nigeria\",\n  \"restaurants_count\": 1,\n  \"restaurants\": [\n    {\n      \"name\": \"Chicken Republic Ikeja\",\n      \"status\": \"active\",\n      \"is_featured\": true,\n      \"phone\": \"+2348022222222\",\n      \"email\": \"ikeja@chickenrepublic.example\",\n      \"description\": \"Flagship branch in Ikeja.\",\n      \"website\": \"https://chickenrepublic.example/ikeja\",\n      \"instagram_handle\": \"@chickenrepublicikeja\",\n      \"cuisine_type\": \"Nigerian\",\n      \"average_price_range\": \"$$\",\n      \"dining_style\": \"Casual Dining\",\n      \"dress_code\": \"Casual\",\n      \"country\": \"Nigeria\",\n      \"city\": \"Lagos\",\n      \"state\": \"Lagos\",\n      \"address_line_1\": \"12 Allen Avenue, Ikeja\",\n      \"latitude\": 6.6018,\n      \"longitude\": 3.3515,\n      \"hours\": [\n        {\n          \"day_of_week\": 1,\n          \"opens_at\": \"10:00\",\n          \"closes_at\": \"22:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 2,\n          \"opens_at\": \"10:00\",\n          \"closes_at\": \"22:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 3,\n          \"opens_at\": \"10:00\",\n          \"closes_at\": \"22:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 4,\n          \"opens_at\": \"10:00\",\n          \"closes_at\": \"22:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 5,\n          \"opens_at\": \"10:00\",\n          \"closes_at\": \"22:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 6,\n          \"opens_at\": \"11:00\",\n          \"closes_at\": \"23:00\",\n          \"is_closed\": false\n        },\n        {\n          \"day_of_week\": 0,\n          \"opens_at\": \"11:00\",\n          \"closes_at\": \"23:00\",\n          \"is_closed\": false\n        }\n      ],\n      \"accessibility_features\": [\n        \"Wheelchair Accessible\",\n        \"Vegetarian Options\"\n      ],\n      \"payment_options\": [\n        \"Paystack\",\n        \"Visa\",\n        \"Mastercard\"\n      ],\n      \"total_seating_capacity\": 120,\n      \"number_of_tables\": 30,\n      \"booking_window_days\": 7,\n      \"reservation_duration_minutes\": 60,\n      \"menu\": {\n        \"mode\": \"link\",\n        \"link\": \"https://chickenrepublic.example/menu\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Admin step-1/2/3 onboarding payload submitted as one final request."
+          }
+        },
+        {
           "name": "Organization show",
           "request": {
             "method": "GET",
@@ -3075,7 +3721,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"organization_id\": 1,\n  \"name\": \"Bistro\",\n  \"slug\": \"bistro-demo\",\n  \"status\": \"draft\",\n  \"city\": \"Lagos\",\n  \"country\": \"NG\",\n  \"timezone\": \"Africa/Lagos\"\n}"
+              "raw": "{\n  \"organization_id\": 1,\n  \"name\": \"Bistro\",\n  \"slug\": \"bistro-demo\",\n  \"status\": \"active\",\n  \"is_featured\": true,\n  \"phone\": \"+2348000000000\",\n  \"email\": \"hello@bistro.example\",\n  \"city\": \"Lagos\",\n  \"state\": \"Lagos\",\n  \"country\": \"Nigeria\",\n  \"timezone\": \"Africa/Lagos\",\n  \"address_line_1\": \"12 Marina Road\",\n  \"description\": \"Waterfront dining destination.\"\n}"
             }
           }
         },
@@ -3153,7 +3799,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{}"
+              "raw": "{\n  \"name\": \"Bistro Marina\",\n  \"is_featured\": true,\n  \"website\": \"https://bistro.example\",\n  \"instagram_handle\": \"@bistromarina\"\n}"
             }
           }
         },

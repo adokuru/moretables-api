@@ -26,6 +26,7 @@ class Restaurant extends Model implements HasMedia
         'name',
         'slug',
         'status',
+        'is_featured',
         'email',
         'phone',
         'city',
@@ -54,6 +55,7 @@ class Restaurant extends Model implements HasMedia
     {
         return [
             'status' => RestaurantStatus::class,
+            'is_featured' => 'boolean',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'total_seating_capacity' => 'integer',
@@ -101,6 +103,26 @@ class Restaurant extends Model implements HasMedia
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function views(): HasMany
+    {
+        return $this->hasMany(RestaurantView::class);
+    }
+
+    public function savedEntries(): HasMany
+    {
+        return $this->hasMany(SavedRestaurant::class);
+    }
+
+    public function listItems(): HasMany
+    {
+        return $this->hasMany(UserRestaurantListItem::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(RestaurantReview::class);
     }
 
     public function waitlistEntries(): HasMany

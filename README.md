@@ -10,11 +10,12 @@ Backend API for **MoreTables** — restaurant discovery, reservations, waitlists
 
 | Area | What it covers |
 |------|----------------|
-| **Public** | Restaurant listing, detail, slot availability; onboarding requests |
+| **Public** | Restaurant listing, detail, slot availability, discovery rails, view tracking, public reviews, onboarding requests |
 | **Auth** | Customer OTP / Google / Apple; staff login + 2FA; password reset; profile |
-| **Customer** (Sanctum) | Book & manage reservations, join waitlist, accept/decline table offers, Expo push tokens |
+| **Customer** (Sanctum) | Book & manage reservations, join waitlist, accept/decline table offers, Expo push tokens, save restaurants, create restaurant lists, write reviews |
 | **Merchant** (Sanctum + roles) | Floor plan (dining areas, tables), reservations (walk-in, assign, seat, complete), waitlist & notify, menu & media |
-| **Admin** | Organizations, restaurants, users & roles, audit |
+| **Admin** | Organizations, business onboarding, restaurants, users & roles, audit |
+| **Local testing** | Faker data generator for organizations, restaurants, owners, staff, customers, and featured restaurants |
 
 Real-time updates use **Laravel Reverb** / broadcasting where configured (e.g. waitlist).
 
@@ -25,6 +26,7 @@ Real-time updates use **Laravel Reverb** / broadcasting where configured (e.g. w
 | Doc | Description |
 |-----|-------------|
 | **OpenAPI UI (Scramble)** | `{APP_URL}/docs/api` — interactive API reference (see `config/scramble.php`). |
+| **[Postman collection](docs/MoreTables-API.postman_collection.json)** | Checked-in v1 request collection covering auth, public, customer, merchant, and admin flows. |
 | **[Notifications](docs/NOTIFICATIONS.md)** | Every **email** and **Expo push** notification, when they fire, and code locations. |
 
 ---
@@ -70,6 +72,27 @@ php artisan test tests/Feature/Feature/Merchant/MerchantOperationsTest.php
 ```
 
 Tests use **Pest**.
+
+Generate realistic local data for discovery, reservations, and admin demos:
+
+```bash
+php artisan app:generate-testing-data
+# Example
+php artisan app:generate-testing-data --organizations=5 --restaurants-per-organization=3 --staff-per-restaurant=4 --featured=6
+```
+
+---
+
+## API highlights
+
+- `POST /api/v1/admin/organizations/onboard` creates an organization, owner account, and one or more restaurants from the admin onboarding flow.
+- `GET /api/v1/restaurants/discovery` returns the mobile/web homepage rails: `top_booked`, `top_viewed`, `top_saved`, `highly_rated`, `new_on_moretables`, and `featured`.
+- `GET /api/v1/restaurants/discovery/{section}` paginates any single discovery section for "See all" screens.
+- `POST /api/v1/restaurants/{restaurant}/views` records restaurant views that feed discovery ranking.
+- `POST /api/v1/restaurants/{restaurant}/save` and `GET /api/v1/me/saved-restaurants` manage direct customer saves.
+- `GET /api/v1/me/restaurant-lists` plus the related create/update/add/remove routes manage customer-curated restaurant lists.
+- `GET /api/v1/restaurants/{restaurant}/reviews` and the authenticated review create/update/delete routes power public ratings and review summaries.
+- Restaurants support the `is_featured` flag across admin creation, onboarding, merchant updates, and public responses.
 
 ---
 

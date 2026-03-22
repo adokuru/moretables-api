@@ -31,6 +31,7 @@ class RestaurantDetailResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'status' => $this->status?->value,
+            'is_featured' => (bool) $this->is_featured,
             'email' => $this->email,
             'phone' => $this->phone,
             'city' => $this->city,

@@ -41,6 +41,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'restaurants.*.name' => ['required', 'string', 'max:255'],
             'restaurants.*.slug' => ['nullable', 'string', 'max:255', Rule::unique('restaurants', 'slug')],
             'restaurants.*.status' => ['nullable', Rule::enum(RestaurantStatus::class)],
+            'restaurants.*.is_featured' => ['nullable', 'boolean'],
             'restaurants.*.email' => ['nullable', 'email', 'max:255'],
             'restaurants.*.phone' => ['required', 'string', 'max:30'],
             'restaurants.*.description' => ['nullable', 'string'],

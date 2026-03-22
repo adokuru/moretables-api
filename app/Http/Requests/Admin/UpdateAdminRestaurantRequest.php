@@ -25,6 +25,7 @@ class UpdateAdminRestaurantRequest extends FormRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('restaurants', 'slug')->ignore($restaurantId)],
             'status' => ['nullable', Rule::enum(RestaurantStatus::class)],
+            'is_featured' => ['nullable', 'boolean'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'city' => ['nullable', 'string', 'max:100'],

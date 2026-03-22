@@ -51,7 +51,9 @@ class ScopedRoleAssignmentService
             'organization_id' => $organization?->id,
             'restaurant_id' => $restaurant?->id,
         ], [
-            'scope_type' => $restaurant ? RoleScopeType::Restaurant->value : RoleScopeType::Organization->value,
+            'scope_type' => $restaurant
+                ? RoleScopeType::Restaurant->value
+                : ($organization ? RoleScopeType::Organization->value : null),
             'assigned_by' => $assignedBy,
         ]);
     }

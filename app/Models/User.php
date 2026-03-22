@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\UserAuthMethod;
 use App\UserStatus;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -67,6 +68,26 @@ class User extends Authenticatable
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function restaurantViews(): HasMany
+    {
+        return $this->hasMany(RestaurantView::class);
+    }
+
+    public function savedRestaurantEntries(): HasMany
+    {
+        return $this->hasMany(SavedRestaurant::class);
+    }
+
+    public function restaurantLists(): HasMany
+    {
+        return $this->hasMany(UserRestaurantList::class);
+    }
+
+    public function restaurantReviews(): HasMany
+    {
+        return $this->hasMany(RestaurantReview::class);
     }
 
     public function waitlistEntries(): HasMany

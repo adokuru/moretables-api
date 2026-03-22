@@ -30,10 +30,12 @@ it('allows business admins to create restaurants and invite owners', function ()
         'name' => 'Admin Restaurant',
         'slug' => 'admin-restaurant',
         'status' => 'active',
+        'is_featured' => true,
     ]);
 
     $restaurantResponse->assertCreated()
-        ->assertJsonPath('restaurant.slug', 'admin-restaurant');
+        ->assertJsonPath('restaurant.slug', 'admin-restaurant')
+        ->assertJsonPath('restaurant.is_featured', true);
 
     $restaurantId = $restaurantResponse->json('restaurant.id');
 

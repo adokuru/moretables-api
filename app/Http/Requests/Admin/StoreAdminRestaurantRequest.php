@@ -23,6 +23,7 @@ class StoreAdminRestaurantRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('restaurants', 'slug')],
             'status' => ['nullable', Rule::enum(RestaurantStatus::class)],
+            'is_featured' => ['nullable', 'boolean'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'city' => ['nullable', 'string', 'max:100'],

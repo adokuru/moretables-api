@@ -16,6 +16,9 @@ class AdminBusinessOnboardingController extends Controller
 {
     public function __construct(protected AdminBusinessOnboardingService $adminBusinessOnboardingService) {}
 
+    /**
+     * Create an organization, owner, and one or more restaurants from the admin onboarding flow.
+     */
     public function store(StoreAdminBusinessOnboardingRequest $request): JsonResponse
     {
         $result = $this->adminBusinessOnboardingService->onboard(

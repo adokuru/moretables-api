@@ -14,8 +14,17 @@ it('serves the generated api specification route', function () {
         '/auth/apple',
         '/auth/staff/login',
         '/admin/auth/login',
+        '/admin/organizations/onboard',
         '/me/expo-push-tokens',
+        '/me/saved-restaurants',
+        '/me/restaurant-lists',
+        '/me/restaurant-lists/{restaurantList}/restaurants',
         '/reservations',
+        '/restaurants/discovery',
+        '/restaurants/discovery/{section}',
+        '/restaurants/{restaurant}/views',
+        '/restaurants/{restaurant}/reviews',
+        '/restaurants/{restaurant}/save',
         '/waitlist-entries/{waitlistEntry}/accept',
         '/admin/restaurants',
         '/merchant/restaurants/{restaurant}/media',
@@ -28,6 +37,11 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/auth/staff/login']['post']['tags'][0])->toBe('Staff Auth');
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
     expect($specification['paths']['/restaurants']['get']['tags'][0])->toBe('Public Restaurants');
+    expect($specification['paths']['/restaurants/discovery']['get']['tags'][0])->toBe('Public Restaurants');
+    expect($specification['paths']['/restaurants/{restaurant}/reviews']['get']['tags'][0])->toBe('Restaurant Reviews');
+    expect($specification['paths']['/me/saved-restaurants']['get']['tags'][0])->toBe('Customer Saved Restaurants');
+    expect($specification['paths']['/me/restaurant-lists']['get']['tags'][0])->toBe('Customer Restaurant Lists');
+    expect($specification['paths']['/admin/organizations/onboard']['post']['tags'][0])->toBe('Admin Organizations');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/menu-items']['post']['tags'][0])->toBe('Merchant Menu');
     expect($specification['paths']['/admin/restaurants']['post']['tags'][0])->toBe('Admin Restaurants');
 });

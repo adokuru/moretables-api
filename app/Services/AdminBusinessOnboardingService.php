@@ -126,6 +126,7 @@ class AdminBusinessOnboardingService
             'name' => $restaurantPayload['name'],
             'slug' => $restaurantPayload['slug'] ?? $this->generateUniqueSlug(Restaurant::class, $restaurantPayload['name']),
             'status' => $this->normalizeRestaurantStatus($restaurantPayload['status'] ?? RestaurantStatus::Active),
+            'is_featured' => (bool) ($restaurantPayload['is_featured'] ?? false),
             'email' => $restaurantPayload['email'] ?? null,
             'phone' => $restaurantPayload['phone'],
             'city' => $restaurantPayload['city'],

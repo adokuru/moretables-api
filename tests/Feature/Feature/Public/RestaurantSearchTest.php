@@ -10,6 +10,7 @@ it('filters restaurants by coordinates using latitude and longitude', function (
         'organization_id' => $organization->id,
         'name' => 'Near Restaurant',
         'slug' => 'near-restaurant',
+        'is_featured' => true,
         'latitude' => 6.4500000,
         'longitude' => 3.4500000,
     ]);
@@ -27,6 +28,7 @@ it('filters restaurants by coordinates using latitude and longitude', function (
     $response->assertOk()
         ->assertJsonCount(1)
         ->assertJsonPath('0.id', $nearRestaurant->id)
+        ->assertJsonPath('0.is_featured', true)
         ->assertJsonPath('0.latitude', 6.45)
         ->assertJsonPath('0.longitude', 3.45);
 });
