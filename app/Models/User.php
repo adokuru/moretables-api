@@ -90,6 +90,11 @@ class User extends Authenticatable
         return $this->hasMany(RestaurantReview::class);
     }
 
+    public function rewardPointTransactions(): HasMany
+    {
+        return $this->hasMany(RewardPointTransaction::class);
+    }
+
     public function waitlistEntries(): HasMany
     {
         return $this->hasMany(WaitlistEntry::class);

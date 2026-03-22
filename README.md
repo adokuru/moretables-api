@@ -12,9 +12,9 @@ Backend API for **MoreTables** — restaurant discovery, reservations, waitlists
 |------|----------------|
 | **Public** | Restaurant listing, detail, slot availability, discovery rails, view tracking, public reviews, onboarding requests |
 | **Auth** | Customer OTP / Google / Apple; staff login + 2FA; password reset; profile |
-| **Customer** (Sanctum) | Book & manage reservations, join waitlist, accept/decline table offers, Expo push tokens, save restaurants, create restaurant lists, write reviews |
+| **Customer** (Sanctum) | Book & manage reservations, join waitlist, accept/decline table offers, Expo push tokens, save restaurants, create restaurant lists, write reviews, track loyalty points and reward tiers |
 | **Merchant** (Sanctum + roles) | Floor plan (dining areas, tables), reservations (walk-in, assign, seat, complete), waitlist & notify, menu & media |
-| **Admin** | Organizations, business onboarding, restaurants, users & roles, audit |
+| **Admin** | Organizations, business onboarding, restaurants, reward program management, users & roles, audit |
 | **Local testing** | Faker data generator for organizations, restaurants, owners, staff, customers, and featured restaurants |
 
 Real-time updates use **Laravel Reverb** / broadcasting where configured (e.g. waitlist).
@@ -92,6 +92,8 @@ php artisan app:generate-testing-data --organizations=5 --restaurants-per-organi
 - `POST /api/v1/restaurants/{restaurant}/save` and `GET /api/v1/me/saved-restaurants` manage direct customer saves.
 - `GET /api/v1/me/restaurant-lists` plus the related create/update/add/remove routes manage customer-curated restaurant lists.
 - `GET /api/v1/restaurants/{restaurant}/reviews` and the authenticated review create/update/delete routes power public ratings and review summaries.
+- `GET /api/v1/me/rewards/status` and `GET /api/v1/me/rewards/transactions` expose lifetime loyalty points, current tier, and reward history for the authenticated customer.
+- `GET /api/v1/admin/reward-program`, `PATCH /api/v1/admin/reward-program`, and `POST /api/v1/admin/users/{user}/reward-points` manage the lifetime loyalty program and point grants.
 - Restaurants support the `is_featured` flag across admin creation, onboarding, merchant updates, and public responses.
 
 ---

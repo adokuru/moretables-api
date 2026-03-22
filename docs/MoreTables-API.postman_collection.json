@@ -911,6 +911,84 @@
           }
         },
         {
+          "name": "My reward status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/rewards/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "rewards",
+                "status"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Current lifetime loyalty points, current tier, next tier, and tier thresholds."
+          }
+        },
+        {
+          "name": "My reward transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/rewards/transactions?per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "rewards",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Paginated loyalty point history for the authenticated customer."
+          }
+        },
+        {
           "name": "My saved restaurants",
           "request": {
             "method": "GET",
@@ -3967,6 +4045,129 @@
                 }
               ]
             }
+          }
+        },
+        {
+          "name": "Reward program show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reward-program",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reward-program"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Current active lifetime loyalty program and tier ranges."
+          }
+        },
+        {
+          "name": "Reward program update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/reward-program",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "reward-program"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MoreTables Loyalty Rewards\",\n  \"description\": \"Lifetime loyalty program for repeat diners.\",\n  \"levels\": [\n    {\n      \"name\": \"Bronze\",\n      \"start_points\": 0,\n      \"end_points\": 999\n    },\n    {\n      \"name\": \"Silver\",\n      \"start_points\": 1000,\n      \"end_points\": 4999\n    },\n    {\n      \"name\": \"Gold\",\n      \"start_points\": 5000,\n      \"end_points\": 9999\n    },\n    {\n      \"name\": \"Platinum\",\n      \"start_points\": 10000,\n      \"end_points\": null\n    }\n  ]\n}"
+            },
+            "description": "Updates the active lifetime reward program and tier thresholds."
+          }
+        },
+        {
+          "name": "Award reward points",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{user_id}}/reward-points",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{user_id}}",
+                "reward-points"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": 1200,\n  \"type\": \"earn\",\n  \"description\": \"Opening bonus\",\n  \"metadata\": {\n    \"source\": \"manual_adjustment\"\n  }\n}"
+            },
+            "description": "Creates a reward point transaction for a user and recalculates their current tier."
           }
         }
       ]

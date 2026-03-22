@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminOrganizationController;
 use App\Http\Controllers\Api\V1\AdminRestaurantController;
+use App\Http\Controllers\Api\V1\AdminRewardProgramController;
 use App\Http\Controllers\Api\V1\AdminUserRoleController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,10 @@ Route::prefix('admin/auth')->group(function (): void {
 });
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
+    Route::get('reward-program', [AdminRewardProgramController::class, 'show']);
+    Route::patch('reward-program', [AdminRewardProgramController::class, 'update']);
+    Route::post('users/{user}/reward-points', [AdminRewardProgramController::class, 'storePoints']);
+
     Route::get('organizations', [AdminOrganizationController::class, 'index']);
     Route::post('organizations', [AdminOrganizationController::class, 'store']);
     Route::post('organizations/onboard', [AdminBusinessOnboardingController::class, 'store']);

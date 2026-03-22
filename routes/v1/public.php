@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\CustomerReservationController;
 use App\Http\Controllers\Api\V1\CustomerRestaurantListController;
+use App\Http\Controllers\Api\V1\CustomerRewardController;
 use App\Http\Controllers\Api\V1\CustomerSavedRestaurantController;
 use App\Http\Controllers\Api\V1\CustomerWaitlistController;
 use App\Http\Controllers\Api\V1\ExpoPushTokenController;
@@ -26,6 +27,9 @@ Route::get('restaurants/{restaurant}/reviews', [RestaurantReviewController::clas
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('me/expo-push-tokens', [ExpoPushTokenController::class, 'store']);
     Route::delete('me/expo-push-tokens', [ExpoPushTokenController::class, 'destroy']);
+
+    Route::get('me/rewards/status', [CustomerRewardController::class, 'status']);
+    Route::get('me/rewards/transactions', [CustomerRewardController::class, 'transactions']);
 
     Route::get('me/saved-restaurants', [CustomerSavedRestaurantController::class, 'index']);
     Route::post('restaurants/{restaurant}/save', [CustomerSavedRestaurantController::class, 'store']);
