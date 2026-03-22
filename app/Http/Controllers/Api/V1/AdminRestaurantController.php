@@ -34,6 +34,31 @@ class AdminRestaurantController extends Controller
 
         $restaurants = Restaurant::query()
             ->with(['organization', 'policy', 'cuisines', 'media'])
+            ->when(
+                filled(request()->string('search')->toString()),
+                fn ($query) => $query->where(function ($restaurantQuery): void {
+                    $search = request()->string('search')->toString();
+
+                    $restaurantQuery
+                        ->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('slug', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->orWhere('city', 'like', '%'.$search.'%');
+                }),
+            )
+            ->when(
+                filled(request()->string('status')->toString()),
+                fn ($query) => $query->where('status', request()->string('status')->toString()),
+            )
+            ->when(
+                request()->has('organization_id'),
+                fn ($query) => $query->where('organization_id', request()->integer('organization_id')),
+            )
+            ->when(
+                request()->has('is_featured'),
+                fn ($query) => $query->where('is_featured', request()->boolean('is_featured')),
+            )
+            ->latest()
             ->paginate(20);
 
         return response()->json(RestaurantDetailResource::collection($restaurants));
@@ -161,6 +186,17 @@ class AdminRestaurantController extends Controller
         return response()->json([
             'message' => 'Restaurant status updated successfully.',
             'restaurant' => RestaurantDetailResource::make($restaurant->refresh()->load(['organization', 'policy'])),
+        ]);
+    }
+
+    public function destroy(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless(request()->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
+
+        $restaurant->delete();
+
+        return response()->json([
+            'message' => 'Restaurant deleted successfully.',
         ]);
     }
 }

@@ -9,15 +9,35 @@ use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 #[Group('Admin Organizations', weight: 50)]
 class AdminOrganizationController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Organization::class);
 
-        $organizations = Organization::query()->withCount('restaurants')->paginate(20);
+        $organizations = Organization::query()
+            ->withCount('restaurants')
+            ->when(
+                filled($request->string('search')->toString()),
+                fn ($query) => $query->where(function ($organizationQuery) use ($request): void {
+                    $search = $request->string('search')->toString();
+
+                    $organizationQuery
+                        ->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('slug', 'like', '%'.$search.'%')
+                        ->orWhere('primary_contact_email', 'like', '%'.$search.'%')
+                        ->orWhere('business_email', 'like', '%'.$search.'%');
+                }),
+            )
+            ->when(
+                filled($request->string('status')->toString()),
+                fn ($query) => $query->where('status', $request->string('status')->toString()),
+            )
+            ->latest()
+            ->paginate(20);
 
         return response()->json(OrganizationResource::collection($organizations));
     }
@@ -59,6 +79,17 @@ class AdminOrganizationController extends Controller
         return response()->json([
             'message' => 'Organization updated successfully.',
             'organization' => OrganizationResource::make($organization->refresh()->loadCount('restaurants')),
+        ]);
+    }
+
+    public function destroy(Organization $organization): JsonResponse
+    {
+        $this->authorize('delete', $organization);
+
+        $organization->delete();
+
+        return response()->json([
+            'message' => 'Organization deleted successfully.',
         ]);
     }
 }
