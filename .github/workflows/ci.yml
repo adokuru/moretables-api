@@ -26,11 +26,10 @@ jobs:
           extensions: bcmath, ctype, curl, dom, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, sqlite3, tokenizer, xml
           coverage: none
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '22'
-          cache: npm
+          bun-version: latest
 
       - name: Cache Composer dependencies
         uses: actions/cache@v4
@@ -50,7 +49,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Generate application key
         run: php artisan key:generate
@@ -64,7 +63,7 @@ jobs:
           git diff --exit-code
 
       - name: Build frontend assets
-        run: npm run build
+        run: bun run build
 
       - name: Run test suite
         run: php artisan test --compact

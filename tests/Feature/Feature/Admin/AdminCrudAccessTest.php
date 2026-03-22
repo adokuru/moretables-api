@@ -23,6 +23,29 @@ it('allows admins to view dashboard metrics and manage users', function () {
     $customer = User::factory()->create([
         'email' => 'customer@example.com',
     ]);
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'status' => RestaurantStatus::Active,
+        'city' => 'Lagos',
+        'country' => 'Nigeria',
+    ]);
+
+    Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => null,
+        'starts_at' => now()->setTime(19, 0),
+        'ends_at' => now()->setTime(21, 0),
+        'party_size' => 4,
+        'metadata' => ['total_amount' => 25000],
+    ]);
+
+    OnboardingRequest::factory()->create([
+        'restaurant_name' => 'Chicken Republic',
+        'owner_name' => 'Ada Owner',
+        'status' => OnboardingRequestStatus::Pending,
+    ]);
 
     Sanctum::actingAs($admin);
 
@@ -30,6 +53,23 @@ it('allows admins to view dashboard metrics and manage users', function () {
 
     $dashboardResponse->assertOk()
         ->assertJsonStructure([
+            'cards' => [
+                'total_restaurants' => ['label', 'value', 'previous_value', 'change', 'change_percentage'],
+                'active' => ['label', 'value', 'previous_value', 'change', 'change_percentage'],
+                'pending' => ['label', 'value', 'previous_value', 'change', 'change_percentage', 'change_today'],
+                'reservations_today' => ['label', 'value', 'previous_value', 'change', 'change_percentage'],
+                'weekly_reservations' => ['label', 'value', 'previous_value', 'change', 'change_percentage'],
+                'total_diners' => ['label', 'value', 'previous_value', 'change', 'change_percentage'],
+                'monthly_revenue' => ['label', 'value', 'previous_value', 'change', 'change_percentage', 'currency'],
+                'new_this_month' => ['label', 'value', 'previous_value', 'change', 'change_percentage', 'change_vs_last_month'],
+            ],
+            'reservation_trends' => [
+                'range',
+                'ranges' => ['7d', '30d', '90d'],
+            ],
+            'reservation_growth' => ['range', 'series'],
+            'recent_activity',
+            'recent_restaurants',
             'overview' => [
                 'organizations_count',
                 'restaurants_count',
@@ -39,7 +79,14 @@ it('allows admins to view dashboard metrics and manage users', function () {
                 'pending_approvals_count',
             ],
             'reservations' => ['upcoming_count', 'today_count', 'by_status'],
-        ]);
+        ])
+        ->assertJsonPath('cards.total_restaurants.value', 1)
+        ->assertJsonPath('cards.active.value', 1)
+        ->assertJsonPath('cards.pending.value', 1)
+        ->assertJsonPath('cards.reservations_today.value', 1)
+        ->assertJsonPath('cards.total_diners.value', 4)
+        ->assertJsonPath('cards.monthly_revenue.value', 25000)
+        ->assertJsonPath('recent_restaurants.0.name', $restaurant->name);
 
     $createResponse = $this->postJson('/api/v1/admin/users', [
         'first_name' => 'Taylor',
