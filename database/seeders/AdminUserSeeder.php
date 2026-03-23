@@ -62,7 +62,7 @@ class AdminUserSeeder extends Seeder
             [
                 'first_name' => 'Super',
                 'last_name' => 'Admin',
-                'email' => 'superadmin@moretables.test',
+                'email' => 'info@moretables.com',
                 'phone' => '+2348010000002',
                 'password' => 'Password123!',
                 'role' => Role::SuperAdmin,
@@ -70,10 +70,18 @@ class AdminUserSeeder extends Seeder
             [
                 'first_name' => 'Business',
                 'last_name' => 'Admin',
-                'email' => 'businessadmin@moretables.test',
+                'email' => 'business@moretables.com',
                 'phone' => '+2348010000003',
                 'password' => 'Password123!',
                 'role' => Role::BusinessAdmin,
+            ],
+            [
+                'first_name' => 'Alfadaji',
+                'last_name' => 'Admin',
+                'email' => 'alfadaji@gmail.com',
+                'phone' => '+2348010000004',
+                'password' => 'Password123!',
+                'role' => Role::SuperAdmin,
             ],
         ];
     }
