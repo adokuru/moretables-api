@@ -77,7 +77,7 @@ class AdminUserSeeder extends Seeder
             ],
             [
                 'first_name' => 'Alfadaji',
-                'last_name' => 'Admin',
+                'last_name' => 'Muhtar',
                 'email' => 'alfadaji@gmail.com',
                 'phone' => '+2348010000004',
                 'password' => 'Password123!',
