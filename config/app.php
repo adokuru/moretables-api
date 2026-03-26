@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Password reset (SPA / API)
+    |--------------------------------------------------------------------------
+    |
+    | Laravel's default reset email expects a web route named "password.reset".
+    | This API uses PASSWORD_RESET_FRONTEND_URL so the email links to your
+    | frontend page (query: token, email). If unset, APP_URL + /reset-password
+    | is used as a fallback.
+    |
+    */
+
+    'password_reset_frontend_url' => env('PASSWORD_RESET_FRONTEND_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
