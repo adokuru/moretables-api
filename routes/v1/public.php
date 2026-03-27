@@ -19,10 +19,10 @@ Route::get('restaurants/discovery', [PublicRestaurantDiscoveryController::class,
 Route::get('restaurants/discovery/{section}', [PublicRestaurantDiscoveryController::class, 'show']);
 
 Route::get('restaurants', [PublicRestaurantController::class, 'index']);
-Route::get('restaurants/{restaurant}', [PublicRestaurantController::class, 'show']);
-Route::get('restaurants/{restaurant}/availability', [PublicRestaurantController::class, 'availability']);
-Route::post('restaurants/{restaurant}/views', [PublicRestaurantViewController::class, 'store']);
-Route::get('restaurants/{restaurant}/reviews', [RestaurantReviewController::class, 'index']);
+Route::get('restaurants/{restaurant:slug}', [PublicRestaurantController::class, 'show']);
+Route::get('restaurants/{restaurant:slug}/availability', [PublicRestaurantController::class, 'availability']);
+Route::post('restaurants/{restaurant:slug}/views', [PublicRestaurantViewController::class, 'store']);
+Route::get('restaurants/{restaurant:slug}/reviews', [RestaurantReviewController::class, 'index']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('me/expo-push-tokens', [ExpoPushTokenController::class, 'store']);
@@ -32,19 +32,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me/rewards/transactions', [CustomerRewardController::class, 'transactions']);
 
     Route::get('me/saved-restaurants', [CustomerSavedRestaurantController::class, 'index']);
-    Route::post('restaurants/{restaurant}/save', [CustomerSavedRestaurantController::class, 'store']);
-    Route::delete('restaurants/{restaurant}/save', [CustomerSavedRestaurantController::class, 'destroy']);
+    Route::post('restaurants/{restaurant:slug}/save', [CustomerSavedRestaurantController::class, 'store']);
+    Route::delete('restaurants/{restaurant:slug}/save', [CustomerSavedRestaurantController::class, 'destroy']);
 
     Route::get('me/restaurant-lists', [CustomerRestaurantListController::class, 'index']);
     Route::post('me/restaurant-lists', [CustomerRestaurantListController::class, 'store']);
     Route::patch('me/restaurant-lists/{restaurantList}', [CustomerRestaurantListController::class, 'update']);
     Route::delete('me/restaurant-lists/{restaurantList}', [CustomerRestaurantListController::class, 'destroy']);
     Route::post('me/restaurant-lists/{restaurantList}/restaurants', [CustomerRestaurantListController::class, 'addRestaurant']);
-    Route::delete('me/restaurant-lists/{restaurantList}/restaurants/{restaurant}', [CustomerRestaurantListController::class, 'removeRestaurant']);
+    Route::delete('me/restaurant-lists/{restaurantList}/restaurants/{restaurant:slug}', [CustomerRestaurantListController::class, 'removeRestaurant']);
 
-    Route::post('restaurants/{restaurant}/reviews', [RestaurantReviewController::class, 'store']);
-    Route::patch('restaurants/{restaurant}/reviews/{review}', [RestaurantReviewController::class, 'update']);
-    Route::delete('restaurants/{restaurant}/reviews/{review}', [RestaurantReviewController::class, 'destroy']);
+    Route::post('restaurants/{restaurant:slug}/reviews', [RestaurantReviewController::class, 'store']);
+    Route::patch('restaurants/{restaurant:slug}/reviews/{review}', [RestaurantReviewController::class, 'update']);
+    Route::delete('restaurants/{restaurant:slug}/reviews/{review}', [RestaurantReviewController::class, 'destroy']);
 
     Route::get('me/reservations', [CustomerReservationController::class, 'index']);
     Route::post('reservations', [CustomerReservationController::class, 'store']);

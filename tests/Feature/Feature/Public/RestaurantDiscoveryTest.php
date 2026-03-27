@@ -169,7 +169,7 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
 it('records restaurant views for discovery metrics', function () {
     $restaurant = Restaurant::factory()->create();
 
-    $response = $this->postJson('/api/v1/restaurants/'.$restaurant->id.'/views', [
+    $response = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/views', [
         'platform' => 'ios',
         'session_id' => 'session-123',
     ]);
@@ -190,13 +190,13 @@ it('lets authenticated users save restaurants and manage custom restaurant lists
 
     Sanctum::actingAs($customer);
 
-    $saveResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->id.'/save');
+    $saveResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/save');
 
     $saveResponse->assertCreated()
         ->assertJsonPath('message', 'Restaurant saved successfully.')
         ->assertJsonPath('saved_restaurant.restaurant_id', $restaurant->id);
 
-    $duplicateSaveResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->id.'/save');
+    $duplicateSaveResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/save');
 
     $duplicateSaveResponse->assertOk()
         ->assertJsonPath('message', 'Restaurant was already saved.');
@@ -233,12 +233,12 @@ it('lets authenticated users save restaurants and manage custom restaurant lists
         ->assertJsonPath('data.0.name', 'Weekend Plans')
         ->assertJsonPath('data.0.restaurants.0.id', $restaurant->id);
 
-    $removeRestaurantResponse = $this->deleteJson('/api/v1/me/restaurant-lists/'.$listId.'/restaurants/'.$restaurant->id);
+    $removeRestaurantResponse = $this->deleteJson('/api/v1/me/restaurant-lists/'.$listId.'/restaurants/'.$restaurant->slug);
 
     $removeRestaurantResponse->assertOk()
         ->assertJsonPath('list.restaurants_count', 0);
 
-    $unsaveResponse = $this->deleteJson('/api/v1/restaurants/'.$restaurant->id.'/save');
+    $unsaveResponse = $this->deleteJson('/api/v1/restaurants/'.$restaurant->slug.'/save');
 
     $unsaveResponse->assertOk()
         ->assertJsonPath('message', 'Restaurant removed from saved items successfully.');
@@ -254,7 +254,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
 
     Sanctum::actingAs($customer);
 
-    $createResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->id.'/reviews', [
+    $createResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews', [
         'rating' => 5,
         'title' => 'Excellent dinner',
         'body' => 'Loved the tasting menu and service.',
@@ -266,7 +266,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
         ->assertJsonPath('review.rating', 5)
         ->assertJsonPath('review.reviewer.name', 'Ada Okafor');
 
-    $duplicateResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->id.'/reviews', [
+    $duplicateResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews', [
         'rating' => 4,
     ]);
 
@@ -275,7 +275,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
 
     $reviewId = $createResponse->json('review.id');
 
-    $updateResponse = $this->patchJson('/api/v1/restaurants/'.$restaurant->id.'/reviews/'.$reviewId, [
+    $updateResponse = $this->patchJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews/'.$reviewId, [
         'rating' => 4,
         'body' => 'Still great, but dessert was the highlight.',
     ]);
@@ -284,7 +284,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
         ->assertJsonPath('review.rating', 4)
         ->assertJsonPath('review.body', 'Still great, but dessert was the highlight.');
 
-    $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->id.'/reviews');
+    $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');
 
     $indexResponse->assertOk()
         ->assertJsonPath('summary.reviews_count', 1)

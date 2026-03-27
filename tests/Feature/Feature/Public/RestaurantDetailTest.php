@@ -68,7 +68,7 @@ it('includes grouped menu items in the public restaurant detail response', funct
         ->withCustomProperties(['alt_text' => 'Menu item cover image'])
         ->toMediaCollection('featured');
 
-    $response = $this->getJson('/api/v1/restaurants/'.$restaurant->id);
+    $response = $this->getJson('/api/v1/restaurants/'.$restaurant->slug);
 
     $response->assertOk()
         ->assertJsonPath('data.featured_image.featured', true)
