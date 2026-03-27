@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Channels\MoreTablesMailChannel;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Support\Facades\Gate;
@@ -48,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
                 Role::DevAdmin,
                 Role::SuperAdmin,
             ]);
+        });
+
+        Scramble::afterOpenApiGenerated(function (OpenApi $openApi): void {
+            $openApi->secure(
+                SecurityScheme::http('bearer', 'JWT')
+                    ->as('bearerAuth')
+                    ->setDescription('Paste Sanctum token as: Bearer {token}')
+            );
         });
     }
 }
