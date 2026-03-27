@@ -482,15 +482,15 @@ class DummyRestaurantsSeeder extends Seeder
 
         $response = Http::timeout(30)->get($sourceUrl);
 
-        if ($response->successful()) {
-            $contentType = (string) $response->header('Content-Type');
-            $extension = str_contains($contentType, 'png') ? 'png' : 'jpg';
-            $path = $directory.'/'.str($seed)->slug()->toString().'.'.$extension;
-            File::put($path, $response->body());
-
-            return $path;
+        if (! $response->successful()) {
+            throw new \RuntimeException("Failed downloading restaurant image for [{$label}] from [{$sourceUrl}].");
         }
 
-        return $this->createPlaceholderImage(label: $label, seed: $seed);
+        $contentType = (string) $response->header('Content-Type');
+        $extension = str_contains($contentType, 'png') ? 'png' : 'jpg';
+        $path = $directory.'/'.str($seed)->slug()->toString().'.'.$extension;
+        File::put($path, $response->body());
+
+        return $path;
     }
 }
