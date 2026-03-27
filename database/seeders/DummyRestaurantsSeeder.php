@@ -19,6 +19,7 @@ use App\UserAuthMethod;
 use App\UserStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 
 class DummyRestaurantsSeeder extends Seeder
 {
@@ -102,6 +103,19 @@ class DummyRestaurantsSeeder extends Seeder
      */
     protected function restaurants(): array
     {
+        $restaurantImages = [
+            'https://plus.unsplash.com/premium_photo-1661883237884-263e8de8869b?q=80&w=2378&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1556745750-68295fefafc5?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?q=80&w=985&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?q=80&w=1335&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1481833761820-0509d3217039?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1560053608-13721e0d69e8?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            'https://images.unsplash.com/photo-1502998070258-dc1338445ac2?q=80&w=979&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        ];
+
         return [
             [
                 'name' => 'Basilico Restaurant',
@@ -117,9 +131,8 @@ class DummyRestaurantsSeeder extends Seeder
                 'description' => 'A polished Italian dining room in Lekki with handmade pasta, wood-fired classics, and elegant date-night energy.',
                 'cuisines' => ['Italian', 'Mediterranean', 'Fine Dining'],
                 'images' => [
-                    ['collection' => 'cover', 'url' => 'https://picsum.photos/seed/basilico-cover/1200/900', 'alt_text' => 'Basilico dining room'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/basilico-pasta/1200/900', 'alt_text' => 'Basilico pasta dish'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/basilico-terrace/1200/900', 'alt_text' => 'Basilico terrace seating'],
+                    ['collection' => 'cover', 'url' => $restaurantImages[0], 'alt_text' => 'Basilico dining room'],
+                    ['collection' => 'gallery', 'url' => $restaurantImages[1], 'alt_text' => 'Basilico interior details'],
                 ],
                 'policy' => ['duration' => 120, 'window' => 21, 'cutoff' => 24, 'min' => 1, 'max' => 8, 'deposit' => false],
                 'menus' => [
@@ -151,9 +164,8 @@ class DummyRestaurantsSeeder extends Seeder
                 'description' => 'Live-fire cooking, tropical cocktails, and a warm coastal room built for celebrations and long dinners.',
                 'cuisines' => ['Contemporary African', 'Grill', 'Cocktail Bar'],
                 'images' => [
-                    ['collection' => 'cover', 'url' => 'https://picsum.photos/seed/ember-cover/1200/900', 'alt_text' => 'Ember and Palm main room'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/ember-grill/1200/900', 'alt_text' => 'Ember grilled seafood platter'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/ember-cocktail/1200/900', 'alt_text' => 'Ember tropical cocktail'],
+                    ['collection' => 'cover', 'url' => $restaurantImages[2], 'alt_text' => 'Ember and Palm main room'],
+                    ['collection' => 'gallery', 'url' => $restaurantImages[3], 'alt_text' => 'Ember plated meal'],
                 ],
                 'policy' => ['duration' => 120, 'window' => 30, 'cutoff' => 12, 'min' => 1, 'max' => 10, 'deposit' => true],
                 'menus' => [
@@ -185,9 +197,8 @@ class DummyRestaurantsSeeder extends Seeder
                 'description' => 'A breezy seafood restaurant with bright flavors, lagoon views, and a menu centered on premium shellfish and fish.',
                 'cuisines' => ['Seafood', 'Mediterranean', 'Coastal'],
                 'images' => [
-                    ['collection' => 'cover', 'url' => 'https://picsum.photos/seed/coral-cover/1200/900', 'alt_text' => 'Coral Reef dining room'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/coral-fish/1200/900', 'alt_text' => 'Coral Reef grilled fish'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/coral-terrace/1200/900', 'alt_text' => 'Coral Reef outdoor terrace'],
+                    ['collection' => 'cover', 'url' => $restaurantImages[4], 'alt_text' => 'Coral Reef dining room'],
+                    ['collection' => 'gallery', 'url' => $restaurantImages[5], 'alt_text' => 'Coral Reef restaurant ambiance'],
                 ],
                 'policy' => ['duration' => 120, 'window' => 21, 'cutoff' => 24, 'min' => 1, 'max' => 12, 'deposit' => true],
                 'menus' => [
@@ -219,9 +230,8 @@ class DummyRestaurantsSeeder extends Seeder
                 'description' => 'Modern Northern Nigerian cooking with refined plating, warm hospitality, and a calm intimate dining room.',
                 'cuisines' => ['Northern Nigerian', 'Contemporary', 'Fine Dining'],
                 'images' => [
-                    ['collection' => 'cover', 'url' => 'https://picsum.photos/seed/northern-cover/1200/900', 'alt_text' => 'Northern Table dining room'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/northern-lamb/1200/900', 'alt_text' => 'Northern Table lamb dish'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/northern-dessert/1200/900', 'alt_text' => 'Northern Table dessert'],
+                    ['collection' => 'cover', 'url' => $restaurantImages[6], 'alt_text' => 'Northern Table dining room'],
+                    ['collection' => 'gallery', 'url' => $restaurantImages[7], 'alt_text' => 'Northern Table interior'],
                 ],
                 'policy' => ['duration' => 105, 'window' => 14, 'cutoff' => 24, 'min' => 1, 'max' => 6, 'deposit' => false],
                 'menus' => [
@@ -253,9 +263,8 @@ class DummyRestaurantsSeeder extends Seeder
                 'description' => 'An energetic lounge restaurant pairing polished comfort food with house cocktails, late dinners, and shareable plates.',
                 'cuisines' => ['Fusion', 'Lounge', 'Small Plates'],
                 'images' => [
-                    ['collection' => 'cover', 'url' => 'https://picsum.photos/seed/zobo-cover/1200/900', 'alt_text' => 'Zobo and Spice lounge room'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/zobo-main/1200/900', 'alt_text' => 'Zobo and Spice plated main'],
-                    ['collection' => 'gallery', 'url' => 'https://picsum.photos/seed/zobo-drinks/1200/900', 'alt_text' => 'Zobo and Spice cocktails'],
+                    ['collection' => 'cover', 'url' => $restaurantImages[8], 'alt_text' => 'Zobo and Spice lounge room'],
+                    ['collection' => 'gallery', 'url' => $restaurantImages[9], 'alt_text' => 'Zobo and Spice dining scene'],
                 ],
                 'policy' => ['duration' => 90, 'window' => 14, 'cutoff' => 6, 'min' => 1, 'max' => 8, 'deposit' => false],
                 'menus' => [
@@ -300,9 +309,10 @@ class DummyRestaurantsSeeder extends Seeder
         $restaurant->clearMediaCollection('gallery');
 
         foreach (array_values($images) as $index => $image) {
-            $path = $this->createPlaceholderImage(
+            $path = $this->createImageForSeeding(
                 label: $restaurant->name.' '.($index + 1),
                 seed: $restaurant->slug.'-'.$image['collection'].'-'.$index,
+                sourceUrl: $image['url'],
             );
 
             $restaurant
@@ -463,5 +473,24 @@ class DummyRestaurantsSeeder extends Seeder
         File::put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9YxpoE4AAAAASUVORK5CYII='));
 
         return $path;
+    }
+
+    protected function createImageForSeeding(string $label, string $seed, string $sourceUrl): string
+    {
+        $directory = storage_path('app/tmp/dummy-media');
+        File::ensureDirectoryExists($directory);
+
+        $response = Http::timeout(30)->get($sourceUrl);
+
+        if ($response->successful()) {
+            $contentType = (string) $response->header('Content-Type');
+            $extension = str_contains($contentType, 'png') ? 'png' : 'jpg';
+            $path = $directory.'/'.str($seed)->slug()->toString().'.'.$extension;
+            File::put($path, $response->body());
+
+            return $path;
+        }
+
+        return $this->createPlaceholderImage(label: $label, seed: $seed);
     }
 }

@@ -22,6 +22,8 @@ class RestaurantDiscoveryService
         'highly_rated' => 'Highly Rated',
         'new_on_moretables' => 'New on Moretables',
         'featured' => 'Featured',
+        'timeofday' => 'Time of Day',
+        'moretable_lineup' => 'The Moretable Lineup',
     ];
 
     /**
@@ -72,7 +74,13 @@ class RestaurantDiscoveryService
 
     public function sectionLabel(string $section): string
     {
-        return self::SECTION_LABELS[$this->normalizeSection($section)];
+        $normalizedSection = $this->normalizeSection($section);
+
+        if ($normalizedSection === 'timeofday') {
+            return $this->timeOfDayLabel();
+        }
+
+        return self::SECTION_LABELS[$normalizedSection];
     }
 
     /**
@@ -104,6 +112,21 @@ class RestaurantDiscoveryService
             'featured' => $query
                 ->where('is_featured', true)
                 ->orderByDesc('updated_at')
+                ->orderByDesc('created_at'),
+            'timeofday' => $query
+                ->withCount([
+                    'reservations as timeofday_bookings_count' => fn (Builder $subQuery) => $subQuery
+                        ->whereIn('status', self::BOOKING_STATUSES)
+                        ->where('starts_at', '>=', now()->subDays(60))
+                        ->whereTime('starts_at', '>=', $this->timeOfDayRange()['start'])
+                        ->whereTime('starts_at', '<=', $this->timeOfDayRange()['end']),
+                ])
+                ->orderByDesc('timeofday_bookings_count')
+                ->orderByDesc('bookings_count')
+                ->orderByDesc('views_count')
+                ->orderByDesc('created_at'),
+            'moretable_lineup' => $query
+                ->inRandomOrder()
                 ->orderByDesc('created_at'),
             default => abort(404),
         };
@@ -187,5 +210,43 @@ class RestaurantDiscoveryService
             'min_longitude' => $longitude - $longitudeDelta,
             'max_longitude' => $longitude + $longitudeDelta,
         ];
+    }
+
+    protected function timeOfDayLabel(): string
+    {
+        return match ($this->currentTimeOfDay()) {
+            'morning' => 'Breakfast Picks',
+            'afternoon' => 'Afternoon Picks',
+            default => 'Evening Picks',
+        };
+    }
+
+    protected function currentTimeOfDay(): string
+    {
+        $hour = (int) now()->format('G');
+
+        return match (true) {
+            $hour < 12 => 'morning',
+            $hour < 17 => 'afternoon',
+            default => 'evening',
+        };
+    }
+
+    protected function timeOfDayRange(): array
+    {
+        return match ($this->currentTimeOfDay()) {
+            'morning' => [
+                'start' => '05:00:00',
+                'end' => '11:59:59',
+            ],
+            'afternoon' => [
+                'start' => '12:00:00',
+                'end' => '16:59:59',
+            ],
+            default => [
+                'start' => '17:00:00',
+                'end' => '23:59:59',
+            ],
+        };
     }
 }

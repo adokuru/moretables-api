@@ -12,7 +12,7 @@ use App\Models\UserRestaurantListItem;
 use App\ReservationStatus;
 use Laravel\Sanctum\Sanctum;
 
-it('returns discovery sections for top booked viewed saved rated new and featured restaurants', function () {
+it('returns discovery sections for top booked viewed saved rated new featured timeofday and lineup restaurants', function () {
     $organization = Organization::factory()->create();
 
     $bookedChampion = Restaurant::factory()->create([
@@ -141,7 +141,14 @@ it('returns discovery sections for top booked viewed saved rated new and feature
         ->assertJsonPath('sections.highly_rated.restaurants.0.discovery_metrics.average_rating', 4.67)
         ->assertJsonPath('sections.new_on_moretables.restaurants.0.id', $newChampion->id)
         ->assertJsonPath('sections.featured.restaurants.0.id', $featuredChampion->id)
-        ->assertJsonPath('sections.featured.label', 'Featured');
+        ->assertJsonPath('sections.featured.label', 'Featured')
+        ->assertJsonPath('sections.timeofday.restaurants.0.id', $bookedChampion->id)
+        ->assertJsonStructure([
+            'sections' => [
+                'timeofday' => ['label', 'restaurants'],
+                'moretable_lineup' => ['label', 'restaurants'],
+            ],
+        ]);
 
     $sectionResponse = $this->getJson('/api/v1/restaurants/discovery/top-saved?per_page=2');
 
@@ -149,6 +156,13 @@ it('returns discovery sections for top booked viewed saved rated new and feature
         ->assertJsonPath('section', 'top_saved')
         ->assertJsonPath('label', 'Top Saved')
         ->assertJsonPath('data.0.id', $savedChampion->id)
+        ->assertJsonPath('meta.per_page', 2);
+
+    $lineupSectionResponse = $this->getJson('/api/v1/restaurants/discovery/moretable-lineup?per_page=2');
+
+    $lineupSectionResponse->assertOk()
+        ->assertJsonPath('section', 'moretable_lineup')
+        ->assertJsonPath('label', 'The Moretable Lineup')
         ->assertJsonPath('meta.per_page', 2);
 });
 

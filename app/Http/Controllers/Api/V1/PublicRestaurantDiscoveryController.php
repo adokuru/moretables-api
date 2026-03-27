@@ -40,7 +40,7 @@ class PublicRestaurantDiscoveryController extends Controller
     /**
      * Return one discovery section with pagination.
      *
-     * Supported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured.
+     * Supported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured, timeofday, moretable_lineup.
      */
     public function show(RestaurantDiscoveryRequest $request, string $section): JsonResponse
     {
