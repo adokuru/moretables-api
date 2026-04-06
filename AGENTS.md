@@ -307,3 +307,5 @@ it('has emails', function (string $email) {
 | decoration-clone | box-decoration-clone |
 </laravel-boost-guidelines>
 
+
+Always run vendor/bin/pint

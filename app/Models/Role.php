@@ -69,6 +69,27 @@ class Role extends Model
     /**
      * @return list<string>
      */
+    public static function systemRoles(): array
+    {
+        return [
+            self::Customer,
+            self::OrganizationOwner,
+            self::PrincipalAdmin,
+            self::Operations,
+            self::AnalyticsReporting,
+            self::MarketingGrowth,
+            self::GuestRelations,
+            self::RestaurantManager,
+            self::RestaurantStaff,
+            self::BusinessAdmin,
+            self::DevAdmin,
+            self::SuperAdmin,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function restaurantStaffRoles(): array
     {
         return [

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\AdminReservationController;
 use App\Http\Controllers\Api\V1\AdminRestaurantController;
 use App\Http\Controllers\Api\V1\AdminRestaurantReviewController;
 use App\Http\Controllers\Api\V1\AdminRewardProgramController;
+use App\Http\Controllers\Api\V1\AdminRoleController;
 use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AdminUserRoleController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,11 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
 
     Route::get('users', [AdminUserController::class, 'index']);
     Route::post('users', [AdminUserController::class, 'store']);
+    Route::get('roles', [AdminRoleController::class, 'index']);
+    Route::post('roles', [AdminRoleController::class, 'store']);
+    Route::get('roles/{role}', [AdminRoleController::class, 'show']);
+    Route::patch('roles/{role}', [AdminRoleController::class, 'update']);
+    Route::delete('roles/{role}', [AdminRoleController::class, 'destroy']);
     Route::get('organizations', [AdminOrganizationController::class, 'index']);
     Route::post('organizations', [AdminOrganizationController::class, 'store']);
     Route::post('organizations/onboard', [AdminBusinessOnboardingController::class, 'store']);

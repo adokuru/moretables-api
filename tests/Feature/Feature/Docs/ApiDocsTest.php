@@ -15,6 +15,8 @@ it('serves the generated api specification route', function () {
         '/auth/staff/login',
         '/admin/auth/login',
         '/admin/organizations/onboard',
+        '/admin/roles',
+        '/admin/roles/{role}',
         '/admin/reward-program',
         '/admin/users/{user}/reward-points',
         '/me/expo-push-tokens',
