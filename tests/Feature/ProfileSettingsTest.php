@@ -4,6 +4,13 @@ use App\Models\User;
 use App\UserAuthMethod;
 use App\UserStatus;
 
+it('returns an unauthorized response when profile settings are requested without a token', function () {
+    $response = $this->getJson('/api/v1/auth/profile');
+
+    $response->assertUnauthorized()
+        ->assertJsonPath('message', 'Unauthenticated.');
+});
+
 it('returns the authenticated user profile settings', function () {
     $user = User::factory()->create([
         'first_name' => 'Samuel',
