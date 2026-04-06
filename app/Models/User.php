@@ -26,6 +26,8 @@ class User extends Authenticatable
         'name',
         'first_name',
         'last_name',
+        'bio',
+        'birthday',
         'email',
         'email_verified_at',
         'phone',
@@ -54,6 +56,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'birthday' => 'date',
             'password' => 'hashed',
             'status' => UserStatus::class,
             'auth_method' => UserAuthMethod::class,

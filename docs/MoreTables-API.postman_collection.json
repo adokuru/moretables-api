@@ -575,6 +575,84 @@
               ]
             }
           }
+        },
+        {
+          "name": "Profile Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Fetch the authenticated user's profile settings for the web settings screen."
+          }
+        },
+        {
+          "name": "Update Profile Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Update the authenticated user's profile settings. Supports first_name, last_name, bio, and birthday.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Samuel\",\n  \"last_name\": \"Adebayo\",\n  \"bio\": \"Tell us a bit about yourself\",\n  \"birthday\": \"1992-08-14\"\n}"
+            }
+          }
         }
       ]
     },

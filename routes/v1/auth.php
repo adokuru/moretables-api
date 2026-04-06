@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\GuestAuthController;
+use App\Http\Controllers\Api\V1\ProfileSettingsController;
 use App\Http\Controllers\Api\V1\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,5 +21,7 @@ Route::prefix('auth')->group(function (): void {
         Route::post('complete-profile', [GuestAuthController::class, 'completeProfile']);
         Route::post('logout', [GuestAuthController::class, 'logout']);
         Route::get('me', [GuestAuthController::class, 'me']);
+        Route::get('profile', [ProfileSettingsController::class, 'show']);
+        Route::patch('profile', [ProfileSettingsController::class, 'update']);
     });
 });
