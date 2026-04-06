@@ -39,7 +39,7 @@ class AdminReservationController extends Controller
                 fn ($query) => $query->where('status', $request->string('status')->toString()),
             )
             ->latest('starts_at')
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json(ReservationResource::collection($reservations));
     }

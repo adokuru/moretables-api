@@ -44,7 +44,7 @@ class AdminUserController extends Controller
                 fn ($query) => $query->whereHas('roles', fn ($roleQuery) => $roleQuery->where('name', $request->string('role')->toString())),
             )
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json(UserResource::collection($users));
     }

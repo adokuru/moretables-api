@@ -19,6 +19,7 @@ use App\UserAuthMethod;
 use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 #[Group('Admin Restaurants', weight: 52)]
 class AdminRestaurantController extends Controller
@@ -28,16 +29,16 @@ class AdminRestaurantController extends Controller
         protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        abort_unless(request()->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
+        abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
         $restaurants = Restaurant::query()
             ->with(['organization', 'policy', 'cuisines', 'media'])
             ->when(
-                filled(request()->string('search')->toString()),
-                fn ($query) => $query->where(function ($restaurantQuery): void {
-                    $search = request()->string('search')->toString();
+                filled($request->string('search')->toString()),
+                fn ($query) => $query->where(function ($restaurantQuery) use ($request): void {
+                    $search = $request->string('search')->toString();
 
                     $restaurantQuery
                         ->where('name', 'like', '%'.$search.'%')
@@ -47,19 +48,19 @@ class AdminRestaurantController extends Controller
                 }),
             )
             ->when(
-                filled(request()->string('status')->toString()),
-                fn ($query) => $query->where('status', request()->string('status')->toString()),
+                filled($request->string('status')->toString()),
+                fn ($query) => $query->where('status', $request->string('status')->toString()),
             )
             ->when(
-                request()->has('organization_id'),
-                fn ($query) => $query->where('organization_id', request()->integer('organization_id')),
+                $request->has('organization_id'),
+                fn ($query) => $query->where('organization_id', $request->integer('organization_id')),
             )
             ->when(
-                request()->has('is_featured'),
-                fn ($query) => $query->where('is_featured', request()->boolean('is_featured')),
+                $request->has('is_featured'),
+                fn ($query) => $query->where('is_featured', $request->boolean('is_featured')),
             )
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json(RestaurantDetailResource::collection($restaurants));
     }

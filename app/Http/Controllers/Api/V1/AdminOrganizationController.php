@@ -37,7 +37,7 @@ class AdminOrganizationController extends Controller
                 fn ($query) => $query->where('status', $request->string('status')->toString()),
             )
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json(OrganizationResource::collection($organizations));
     }

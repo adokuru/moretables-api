@@ -38,7 +38,7 @@ class AdminOnboardingRequestController extends Controller
                 }),
             )
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json(OnboardingRequestResource::collection($onboardingRequests));
     }

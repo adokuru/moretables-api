@@ -32,11 +32,9 @@ class AdminRoleController extends Controller
                 }),
             )
             ->orderBy('name')
-            ->get();
+            ->paginate($this->perPage($request));
 
-        return response()->json([
-            'roles' => RoleResource::collection($roles),
-        ]);
+        return RoleResource::collection($roles)->response();
     }
 
     public function store(StoreAdminRoleRequest $request): JsonResponse

@@ -14,10 +14,11 @@ it('allows admins to manage custom roles', function () {
 
     Sanctum::actingAs($admin);
 
-    $listResponse = $this->getJson('/api/v1/admin/roles');
+    $listResponse = $this->getJson('/api/v1/admin/roles?per_page=5');
 
     $listResponse->assertOk()
-        ->assertJsonStructure(['roles']);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonPath('meta.per_page', 5);
 
     $permissionNames = Permission::query()->orderBy('name')->limit(2)->pluck('name')->values()->all();
 

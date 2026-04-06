@@ -42,7 +42,7 @@ class AdminRestaurantReviewController extends Controller
                 }),
             )
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage($request));
 
         return response()->json([
             'data' => $reviews->getCollection()->map(fn (RestaurantReview $review): array => $this->serializeReview($review))->values(),
