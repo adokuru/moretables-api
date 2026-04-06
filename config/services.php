@@ -37,7 +37,6 @@ return [
 
     'google' => [
         'client_ids' => array_values(array_unique(array_filter([
-            env('GOOGLE_CLIENT_ID'),
             ...array_map('trim', explode(',', (string) env('GOOGLE_CLIENT_IDS', ''))),
         ]))),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
