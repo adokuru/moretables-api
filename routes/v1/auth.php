@@ -23,5 +23,7 @@ Route::prefix('auth')->group(function (): void {
         Route::get('me', [GuestAuthController::class, 'me']);
         Route::get('profile', [ProfileSettingsController::class, 'show']);
         Route::patch('profile', [ProfileSettingsController::class, 'update']);
+        Route::get('staff/profile', [AuthController::class, 'profile']);
+        Route::patch('staff/profile', [AuthController::class, 'updateProfile']);
     });
 });

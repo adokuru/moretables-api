@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\StaffLoginRequest;
+use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
 use App\Http\Requests\Auth\VerifyChallengeRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -90,6 +91,43 @@ class AdminAuthController extends Controller
 
         return response()->json([
             'user' => UserResource::make($user->load('roles')),
+        ]);
+    }
+
+    public function profile(): JsonResponse
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        abort_unless($user->requiresAdminLogin(), 403);
+
+        return response()->json([
+            'user' => UserResource::make($user->load('roles')),
+        ]);
+    }
+
+    public function updateProfile(UpdateProfileSettingsRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->requiresAdminLogin(), 403);
+
+        $validated = $request->validated();
+        $user->fill($validated);
+
+        if (array_key_exists('first_name', $validated) || array_key_exists('last_name', $validated)) {
+            $user->name = trim(implode(' ', array_filter([
+                $validated['first_name'] ?? $user->first_name,
+                $validated['last_name'] ?? $user->last_name,
+            ])));
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profile updated successfully.',
+            'user' => UserResource::make($user->refresh()->load('roles')),
         ]);
     }
 

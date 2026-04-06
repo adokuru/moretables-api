@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Role;
 use App\Models\User;
 use App\UserAuthMethod;
 use App\UserStatus;
+use Database\Seeders\RoleAndPermissionSeeder;
 
 it('returns an unauthorized response when profile settings are requested without a token', function () {
     $response = $this->getJson('/api/v1/auth/profile');
@@ -82,4 +84,56 @@ it('validates birthday when updating profile settings', function () {
 
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['birthday']);
+});
+
+it('returns the authenticated merchant profile settings', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $merchant = User::factory()->create([
+        'first_name' => 'Merchant',
+        'last_name' => 'Manager',
+        'bio' => 'Runs daily restaurant operations.',
+        'birthday' => '1990-02-03',
+    ]);
+
+    assignScopedRole($merchant, Role::Operations, $data['organization'], $data['restaurant']);
+
+    $token = $merchant->createToken('merchant-profile')->plainTextToken;
+
+    $response = $this->withToken($token)->getJson('/api/v1/auth/staff/profile');
+
+    $response->assertOk()
+        ->assertJsonPath('user.first_name', 'Merchant')
+        ->assertJsonPath('user.bio', 'Runs daily restaurant operations.')
+        ->assertJsonPath('user.birthday', '1990-02-03');
+});
+
+it('updates the authenticated admin profile settings', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create([
+        'first_name' => 'Admin',
+        'last_name' => 'User',
+        'bio' => null,
+        'birthday' => null,
+    ]);
+
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $token = $admin->createToken('admin-profile')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/admin/auth/profile', [
+        'first_name' => 'Chief',
+        'last_name' => 'Admin',
+        'bio' => 'Oversees platform administration.',
+        'birthday' => '1988-11-19',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.name', 'Chief Admin')
+        ->assertJsonPath('user.first_name', 'Chief')
+        ->assertJsonPath('user.last_name', 'Admin')
+        ->assertJsonPath('user.bio', 'Oversees platform administration.')
+        ->assertJsonPath('user.birthday', '1988-11-19');
 });
