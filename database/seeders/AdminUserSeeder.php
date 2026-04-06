@@ -20,7 +20,7 @@ class AdminUserSeeder extends Seeder
             $user = User::query()->firstOrCreate(
                 ['email' => $admin['email']],
                 [
-                    'name' => $admin['first_name'].' '.$admin['last_name'],
+                    'name' => $admin['first_name'] . ' ' . $admin['last_name'],
                     'first_name' => $admin['first_name'],
                     'last_name' => $admin['last_name'],
                     'phone' => $admin['phone'],
@@ -34,7 +34,7 @@ class AdminUserSeeder extends Seeder
 
             $roleId = Role::query()->where('name', $admin['role'])->value('id');
 
-            if (! $roleId) {
+            if (!$roleId) {
                 continue;
             }
 
@@ -79,6 +79,22 @@ class AdminUserSeeder extends Seeder
                 'first_name' => 'Alfadaji',
                 'last_name' => 'Muhtar',
                 'email' => 'alfadaji@gmail.com',
+                'phone' => '+2348010000004',
+                'password' => 'Password123!',
+                'role' => Role::SuperAdmin,
+            ],
+            [
+                'first_name' => 'David',
+                'last_name' => 'Adokuru',
+                'email' => 'david.adokuru@danoitech.com',
+                'phone' => '+2348010000004',
+                'password' => 'Password123!',
+                'role' => Role::SuperAdmin,
+            ],
+            [
+                'first_name' => 'Solomon',
+                'last_name' => 'Iso',
+                'email' => 'solomon@danoitech.com',
                 'phone' => '+2348010000004',
                 'password' => 'Password123!',
                 'role' => Role::SuperAdmin,
