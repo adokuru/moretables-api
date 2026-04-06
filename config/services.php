@@ -40,8 +40,8 @@ return [
             env('GOOGLE_CLIENT_ID'),
             ...array_map('trim', explode(',', (string) env('GOOGLE_CLIENT_IDS', ''))),
         ]))),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'issuers' => [
             'accounts.google.com',
             'https://accounts.google.com',
