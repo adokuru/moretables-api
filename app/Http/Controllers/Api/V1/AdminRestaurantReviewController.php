@@ -7,12 +7,15 @@ use App\Http\Requests\Admin\StoreAdminReviewRequest;
 use App\Http\Requests\Admin\UpdateAdminReviewRequest;
 use App\Models\RestaurantReview;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 #[Group('Admin Reviews', weight: 57)]
 class AdminRestaurantReviewController extends Controller
 {
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
@@ -42,7 +45,8 @@ class AdminRestaurantReviewController extends Controller
                 }),
             )
             ->latest()
-            ->paginate($this->perPage($request));
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
 
         return response()->json([
             'data' => $reviews->getCollection()->map(fn (RestaurantReview $review): array => $this->serializeReview($review))->values(),

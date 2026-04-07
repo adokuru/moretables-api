@@ -9,12 +9,17 @@ use App\Http\Resources\OnboardingRequestResource;
 use App\Models\OnboardingRequest;
 use App\OnboardingRequestStatus;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 #[Group('Admin Onboarding Requests', weight: 55)]
 class AdminOnboardingRequestController extends Controller
 {
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
+    #[Response(200, type: 'array{data: list<OnboardingRequestResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
@@ -38,9 +43,27 @@ class AdminOnboardingRequestController extends Controller
                 }),
             )
             ->latest()
-            ->paginate($this->perPage($request));
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
 
-        return OnboardingRequestResource::collection($onboardingRequests)->response();
+        return response()->json([
+            'data' => OnboardingRequestResource::collection($onboardingRequests->getCollection())->resolve($request),
+            'links' => [
+                'first' => $onboardingRequests->url(1),
+                'last' => $onboardingRequests->url($onboardingRequests->lastPage()),
+                'prev' => $onboardingRequests->previousPageUrl(),
+                'next' => $onboardingRequests->nextPageUrl(),
+            ],
+            'meta' => [
+                'current_page' => $onboardingRequests->currentPage(),
+                'from' => $onboardingRequests->firstItem(),
+                'last_page' => $onboardingRequests->lastPage(),
+                'path' => $onboardingRequests->path(),
+                'per_page' => $onboardingRequests->perPage(),
+                'to' => $onboardingRequests->lastItem(),
+                'total' => $onboardingRequests->total(),
+            ],
+        ]);
     }
 
     public function store(StoreOnboardingRequestRequest $request): JsonResponse

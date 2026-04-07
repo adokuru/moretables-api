@@ -10,12 +10,17 @@ use App\Models\User;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 #[Group('Admin Users', weight: 54)]
 class AdminUserController extends Controller
 {
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
+    #[Response(200, type: 'array{data: list<UserResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
@@ -44,9 +49,27 @@ class AdminUserController extends Controller
                 fn ($query) => $query->whereHas('roles', fn ($roleQuery) => $roleQuery->where('name', $request->string('role')->toString())),
             )
             ->latest()
-            ->paginate($this->perPage($request));
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
 
-        return UserResource::collection($users)->response();
+        return response()->json([
+            'data' => UserResource::collection($users->getCollection())->resolve($request),
+            'links' => [
+                'first' => $users->url(1),
+                'last' => $users->url($users->lastPage()),
+                'prev' => $users->previousPageUrl(),
+                'next' => $users->nextPageUrl(),
+            ],
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'from' => $users->firstItem(),
+                'last_page' => $users->lastPage(),
+                'path' => $users->path(),
+                'per_page' => $users->perPage(),
+                'to' => $users->lastItem(),
+                'total' => $users->total(),
+            ],
+        ]);
     }
 
     public function store(StoreAdminUserRequest $request): JsonResponse

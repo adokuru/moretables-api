@@ -9,6 +9,8 @@ use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
 use App\ReservationStatus;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -16,6 +18,9 @@ use Illuminate\Support\Str;
 #[Group('Admin Reservations', weight: 56)]
 class AdminReservationController extends Controller
 {
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
+    #[Response(200, type: 'array{data: list<ReservationResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
@@ -39,9 +44,27 @@ class AdminReservationController extends Controller
                 fn ($query) => $query->where('status', $request->string('status')->toString()),
             )
             ->latest('starts_at')
-            ->paginate($this->perPage($request));
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
 
-        return ReservationResource::collection($reservations)->response();
+        return response()->json([
+            'data' => ReservationResource::collection($reservations->getCollection())->resolve($request),
+            'links' => [
+                'first' => $reservations->url(1),
+                'last' => $reservations->url($reservations->lastPage()),
+                'prev' => $reservations->previousPageUrl(),
+                'next' => $reservations->nextPageUrl(),
+            ],
+            'meta' => [
+                'current_page' => $reservations->currentPage(),
+                'from' => $reservations->firstItem(),
+                'last_page' => $reservations->lastPage(),
+                'path' => $reservations->path(),
+                'per_page' => $reservations->perPage(),
+                'to' => $reservations->lastItem(),
+                'total' => $reservations->total(),
+            ],
+        ]);
     }
 
     public function analytics(Request $request): JsonResponse

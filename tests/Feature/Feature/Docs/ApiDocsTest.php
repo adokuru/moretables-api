@@ -56,4 +56,13 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/merchant/restaurants/{restaurant}/staff']['get']['tags'][0])->toBe('Merchant Staff');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/menu-items']['post']['tags'][0])->toBe('Merchant Menu');
     expect($specification['paths']['/admin/restaurants']['post']['tags'][0])->toBe('Admin Restaurants');
+    expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['properties']['links']['required'])->toContain('first', 'last', 'prev', 'next');
+    expect($specification['paths']['/admin/restaurants']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/users']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/roles']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/reservations']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/reviews']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/onboarding-requests']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/audit-logs']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
 });

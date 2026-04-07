@@ -69,6 +69,8 @@ it('returns paginated organizations to authorized admins', function () {
     $response->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonCount(5, 'data')
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', url('/api/v1/admin/organizations?per_page=5&page=2'))
         ->assertJsonPath('meta.per_page', 5)
         ->assertJsonPath('meta.total', 6)
         ->assertJsonPath('meta.current_page', 1);
@@ -120,6 +122,8 @@ it('returns audit logs to authorized admins', function () {
     $response->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['action' => 'restaurant.updated'])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 });
 

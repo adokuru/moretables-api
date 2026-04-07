@@ -9,12 +9,17 @@ use App\Http\Resources\RoleResource;
 use App\Models\Permission;
 use App\Models\Role;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 #[Group('Admin RBAC', weight: 54)]
 class AdminRoleController extends Controller
 {
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
+    #[Response(200, type: 'array{data: list<RoleResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
@@ -32,9 +37,27 @@ class AdminRoleController extends Controller
                 }),
             )
             ->orderBy('name')
-            ->paginate($this->perPage($request));
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
 
-        return RoleResource::collection($roles)->response();
+        return response()->json([
+            'data' => RoleResource::collection($roles->getCollection())->resolve($request),
+            'links' => [
+                'first' => $roles->url(1),
+                'last' => $roles->url($roles->lastPage()),
+                'prev' => $roles->previousPageUrl(),
+                'next' => $roles->nextPageUrl(),
+            ],
+            'meta' => [
+                'current_page' => $roles->currentPage(),
+                'from' => $roles->firstItem(),
+                'last_page' => $roles->lastPage(),
+                'path' => $roles->path(),
+                'per_page' => $roles->perPage(),
+                'to' => $roles->lastItem(),
+                'total' => $roles->total(),
+            ],
+        ]);
     }
 
     public function store(StoreAdminRoleRequest $request): JsonResponse

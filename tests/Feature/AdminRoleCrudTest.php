@@ -18,6 +18,8 @@ it('allows admins to manage custom roles', function () {
 
     $listResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', url('/api/v1/admin/roles?per_page=5&page=2'))
         ->assertJsonPath('meta.per_page', 5);
 
     $permissionNames = Permission::query()->orderBy('name')->limit(2)->pluck('name')->values()->all();

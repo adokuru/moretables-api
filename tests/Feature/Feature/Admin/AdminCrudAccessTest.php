@@ -108,6 +108,8 @@ it('allows admins to view dashboard metrics and manage users', function () {
     $indexResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['email' => 'taylor.admin@example.com'])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $showResponse = $this->getJson('/api/v1/admin/users/'.$customer->id);
@@ -167,6 +169,8 @@ it('allows admins to manage reservations and reservation analytics', function ()
     $listResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['id' => $reservationId])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $showResponse = $this->getJson('/api/v1/admin/reservations/'.$reservationId);
@@ -228,6 +232,8 @@ it('allows admins to manage reviews and onboarding approvals', function () {
     $reviewIndexResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['id' => $reviewId])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $reviewUpdateResponse = $this->patchJson('/api/v1/admin/reviews/'.$reviewId, [
@@ -258,6 +264,8 @@ it('allows admins to manage reviews and onboarding approvals', function () {
     $onboardingIndexResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['id' => $onboardingId])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $onboardingUpdateResponse = $this->patchJson('/api/v1/admin/onboarding-requests/'.$onboardingId, [
@@ -301,12 +309,16 @@ it('allows admins to delete organizations and restaurants from the admin surface
     $organizationListResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['id' => $organization->id])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $restaurantListResponse = $this->getJson('/api/v1/admin/restaurants?status=suspended&is_featured=1&per_page=5');
     $restaurantListResponse->assertOk()
         ->assertJsonStructure(['data', 'links', 'meta'])
         ->assertJsonFragment(['id' => $restaurant->id])
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('links.next', null)
         ->assertJsonPath('meta.per_page', 5);
 
     $restaurantDeleteResponse = $this->deleteJson('/api/v1/admin/restaurants/'.$restaurant->id);
