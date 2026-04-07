@@ -40,7 +40,7 @@ class AdminOnboardingRequestController extends Controller
             ->latest()
             ->paginate($this->perPage($request));
 
-        return response()->json(OnboardingRequestResource::collection($onboardingRequests));
+        return OnboardingRequestResource::collection($onboardingRequests)->response();
     }
 
     public function store(StoreOnboardingRequestRequest $request): JsonResponse

@@ -54,6 +54,26 @@ it('allows business admins to create restaurants and invite owners', function ()
         ->assertJsonPath('user.email', 'owner@example.com');
 });
 
+it('returns paginated organizations to authorized admins', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Organization::factory()->count(6)->create();
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson('/api/v1/admin/organizations?per_page=5');
+
+    $response->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonCount(5, 'data')
+        ->assertJsonPath('meta.per_page', 5)
+        ->assertJsonPath('meta.total', 6)
+        ->assertJsonPath('meta.current_page', 1);
+});
+
 it('allows business admins to create restaurants with featured and gallery images', function () {
     Storage::fake('public');
     $this->seed(RoleAndPermissionSeeder::class);
@@ -95,10 +115,12 @@ it('returns audit logs to authorized admins', function () {
 
     Sanctum::actingAs($admin);
 
-    $response = $this->getJson('/api/v1/admin/audit-logs');
+    $response = $this->getJson('/api/v1/admin/audit-logs?per_page=5');
 
     $response->assertOk()
-        ->assertJsonFragment(['action' => 'restaurant.updated']);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['action' => 'restaurant.updated'])
+        ->assertJsonPath('meta.per_page', 5);
 });
 
 it('allows admins to assign the new restaurant role set and rejects deprecated restaurant roles', function () {

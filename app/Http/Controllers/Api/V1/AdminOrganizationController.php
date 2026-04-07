@@ -39,7 +39,7 @@ class AdminOrganizationController extends Controller
             ->latest()
             ->paginate($this->perPage($request));
 
-        return response()->json(OrganizationResource::collection($organizations));
+        return OrganizationResource::collection($organizations)->response();
     }
 
     public function store(StoreOrganizationRequest $request): JsonResponse

@@ -46,10 +46,19 @@ class AdminRestaurantReviewController extends Controller
 
         return response()->json([
             'data' => $reviews->getCollection()->map(fn (RestaurantReview $review): array => $this->serializeReview($review))->values(),
+            'links' => [
+                'first' => $reviews->url(1),
+                'last' => $reviews->url($reviews->lastPage()),
+                'prev' => $reviews->previousPageUrl(),
+                'next' => $reviews->nextPageUrl(),
+            ],
             'meta' => [
                 'current_page' => $reviews->currentPage(),
+                'from' => $reviews->firstItem(),
                 'last_page' => $reviews->lastPage(),
+                'path' => $reviews->path(),
                 'per_page' => $reviews->perPage(),
+                'to' => $reviews->lastItem(),
                 'total' => $reviews->total(),
             ],
         ]);

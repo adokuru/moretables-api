@@ -41,7 +41,7 @@ class AdminReservationController extends Controller
             ->latest('starts_at')
             ->paginate($this->perPage($request));
 
-        return response()->json(ReservationResource::collection($reservations));
+        return ReservationResource::collection($reservations)->response();
     }
 
     public function analytics(Request $request): JsonResponse

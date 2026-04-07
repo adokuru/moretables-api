@@ -27,6 +27,6 @@ class AdminAuditLogController extends Controller
             ->latest()
             ->paginate($validated['per_page'] ?? 25);
 
-        return response()->json(AuditLogResource::collection($logs));
+        return AuditLogResource::collection($logs)->response();
     }
 }

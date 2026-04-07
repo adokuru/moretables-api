@@ -46,7 +46,7 @@ class AdminUserController extends Controller
             ->latest()
             ->paginate($this->perPage($request));
 
-        return response()->json(UserResource::collection($users));
+        return UserResource::collection($users)->response();
     }
 
     public function store(StoreAdminUserRequest $request): JsonResponse

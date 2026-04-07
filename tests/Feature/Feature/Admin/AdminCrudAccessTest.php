@@ -103,10 +103,12 @@ it('allows admins to view dashboard metrics and manage users', function () {
 
     $createdUserId = $createResponse->json('user.id');
 
-    $indexResponse = $this->getJson('/api/v1/admin/users?search=taylor.admin@example.com');
+    $indexResponse = $this->getJson('/api/v1/admin/users?search=taylor.admin@example.com&per_page=5');
 
     $indexResponse->assertOk()
-        ->assertJsonFragment(['email' => 'taylor.admin@example.com']);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['email' => 'taylor.admin@example.com'])
+        ->assertJsonPath('meta.per_page', 5);
 
     $showResponse = $this->getJson('/api/v1/admin/users/'.$customer->id);
 
@@ -160,10 +162,12 @@ it('allows admins to manage reservations and reservation analytics', function ()
 
     $reservationId = $createResponse->json('reservation.id');
 
-    $listResponse = $this->getJson('/api/v1/admin/reservations?restaurant_id='.$restaurant->id);
+    $listResponse = $this->getJson('/api/v1/admin/reservations?restaurant_id='.$restaurant->id.'&per_page=5');
 
     $listResponse->assertOk()
-        ->assertJsonFragment(['id' => $reservationId]);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['id' => $reservationId])
+        ->assertJsonPath('meta.per_page', 5);
 
     $showResponse = $this->getJson('/api/v1/admin/reservations/'.$reservationId);
 
@@ -219,10 +223,12 @@ it('allows admins to manage reviews and onboarding approvals', function () {
 
     $reviewId = $reviewResponse->json('review.id');
 
-    $reviewIndexResponse = $this->getJson('/api/v1/admin/reviews?restaurant_id='.$restaurant->id);
+    $reviewIndexResponse = $this->getJson('/api/v1/admin/reviews?restaurant_id='.$restaurant->id.'&per_page=5');
 
     $reviewIndexResponse->assertOk()
-        ->assertJsonFragment(['id' => $reviewId]);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['id' => $reviewId])
+        ->assertJsonPath('meta.per_page', 5);
 
     $reviewUpdateResponse = $this->patchJson('/api/v1/admin/reviews/'.$reviewId, [
         'rating' => 5,
@@ -247,10 +253,12 @@ it('allows admins to manage reviews and onboarding approvals', function () {
 
     $onboardingId = $onboardingCreateResponse->json('onboarding_request.id');
 
-    $onboardingIndexResponse = $this->getJson('/api/v1/admin/onboarding-requests?status=pending');
+    $onboardingIndexResponse = $this->getJson('/api/v1/admin/onboarding-requests?status=pending&per_page=5');
 
     $onboardingIndexResponse->assertOk()
-        ->assertJsonFragment(['id' => $onboardingId]);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['id' => $onboardingId])
+        ->assertJsonPath('meta.per_page', 5);
 
     $onboardingUpdateResponse = $this->patchJson('/api/v1/admin/onboarding-requests/'.$onboardingId, [
         'status' => OnboardingRequestStatus::Approved->value,
@@ -289,13 +297,17 @@ it('allows admins to delete organizations and restaurants from the admin surface
 
     Sanctum::actingAs($admin);
 
-    $organizationListResponse = $this->getJson('/api/v1/admin/organizations?search='.$organization->slug);
+    $organizationListResponse = $this->getJson('/api/v1/admin/organizations?search='.$organization->slug.'&per_page=5');
     $organizationListResponse->assertOk()
-        ->assertJsonFragment(['id' => $organization->id]);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['id' => $organization->id])
+        ->assertJsonPath('meta.per_page', 5);
 
-    $restaurantListResponse = $this->getJson('/api/v1/admin/restaurants?status=suspended&is_featured=1');
+    $restaurantListResponse = $this->getJson('/api/v1/admin/restaurants?status=suspended&is_featured=1&per_page=5');
     $restaurantListResponse->assertOk()
-        ->assertJsonFragment(['id' => $restaurant->id]);
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['id' => $restaurant->id])
+        ->assertJsonPath('meta.per_page', 5);
 
     $restaurantDeleteResponse = $this->deleteJson('/api/v1/admin/restaurants/'.$restaurant->id);
     $restaurantDeleteResponse->assertOk();

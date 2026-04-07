@@ -62,7 +62,7 @@ class AdminRestaurantController extends Controller
             ->latest()
             ->paginate($this->perPage($request));
 
-        return response()->json(RestaurantDetailResource::collection($restaurants));
+        return RestaurantDetailResource::collection($restaurants)->response();
     }
 
     public function store(StoreAdminRestaurantRequest $request): JsonResponse

@@ -3774,9 +3774,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/organizations",
+              "raw": "{{baseUrl}}/api/v1/admin/organizations?per_page=20&page=1",
               "host": [
                 "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ],
               "path": [
                 "api",
@@ -3808,9 +3818,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/roles",
+              "raw": "{{baseUrl}}/api/v1/admin/roles?per_page=20&page=1",
               "host": [
                 "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ],
               "path": [
                 "api",
@@ -4161,9 +4181,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/restaurants",
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants?per_page=20&page=1",
               "host": [
                 "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ],
               "path": [
                 "api",
@@ -4447,9 +4477,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/audit-logs",
+              "raw": "{{baseUrl}}/api/v1/admin/audit-logs?per_page=20&page=1",
               "host": [
                 "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
               ],
               "path": [
                 "api",
