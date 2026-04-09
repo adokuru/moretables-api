@@ -5,18 +5,41 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\RestaurantAvailabilityRequest;
 use App\Http\Requests\Public\RestaurantIndexRequest;
+use App\Http\Requests\Public\RestaurantSearchRequest;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
+use App\Services\RestaurantSearchService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
 #[Group('Public Restaurants', weight: 0)]
 class PublicRestaurantController extends Controller
 {
-    public function __construct(protected AvailabilityService $availabilityService) {}
+    public function __construct(
+        protected AvailabilityService $availabilityService,
+        protected RestaurantSearchService $restaurantSearchService,
+    ) {}
+
+    public function search(RestaurantSearchRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $results = $this->restaurantSearchService->search(
+            query: (string) ($validated['q'] ?? ''),
+            limit: (int) ($validated['limit'] ?? 5),
+        );
+
+        return response()->json([
+            'query' => (string) ($validated['q'] ?? ''),
+            'results' => [
+                'locations' => $results['locations']->values()->all(),
+                'restaurants' => RestaurantListResource::collection($results['restaurants'])->resolve(),
+                'cuisines' => $results['cuisines']->values()->all(),
+            ],
+        ]);
+    }
 
     public function index(RestaurantIndexRequest $request): JsonResponse
     {

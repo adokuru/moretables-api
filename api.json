@@ -102,6 +102,83 @@
         }
     ],
     "paths": {
+        "/search": {
+            "get": {
+                "operationId": "publicRestaurant.search",
+                "tags": [
+                    "Public Restaurants"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "query": {
+                                            "type": "string"
+                                        },
+                                        "results": {
+                                            "type": "object",
+                                            "properties": {
+                                                "locations": {
+                                                    "type": "string"
+                                                },
+                                                "restaurants": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "cuisines": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "locations",
+                                                "restaurants",
+                                                "cuisines"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "query",
+                                        "results"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/restaurants": {
             "get": {
                 "operationId": "publicRestaurant.index",
@@ -7656,7 +7733,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `OrganizationResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -8079,7 +8156,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `RestaurantDetailResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -8673,7 +8750,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `RoleResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9104,7 +9181,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `UserResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9452,7 +9529,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `OnboardingRequestResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -9814,7 +9891,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `AuditLogResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -10052,7 +10129,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `ReservationResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {

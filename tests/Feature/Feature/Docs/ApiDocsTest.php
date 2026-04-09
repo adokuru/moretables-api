@@ -21,6 +21,7 @@ it('serves the generated api specification route', function () {
         '/admin/roles/{role}',
         '/admin/reward-program',
         '/admin/users/{user}/reward-points',
+        '/search',
         '/me/expo-push-tokens',
         '/me/rewards/status',
         '/me/rewards/transactions',
@@ -45,6 +46,7 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/auth/start']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/staff/login']['post']['tags'][0])->toBe('Merchant Staff Auth');
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
+    expect($specification['paths']['/search']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants/discovery']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/me/rewards/status']['get']['tags'][0])->toBe('Customer Rewards');

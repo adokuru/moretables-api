@@ -792,6 +792,40 @@
           }
         },
         {
+          "name": "Search locations restaurants and cuisines",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search?q=londo&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "londo"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Typeahead search suggestions grouped by locations, restaurants, and cuisines."
+          }
+        },
+        {
           "name": "Show restaurant",
           "request": {
             "method": "GET",
