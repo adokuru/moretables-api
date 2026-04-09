@@ -24,6 +24,7 @@ class AdminOrganizationController extends Controller
         $this->authorize('viewAny', Organization::class);
 
         $organizations = Organization::query()
+            ->with(['restaurants.cuisines', 'restaurants.media'])
             ->withCount('restaurants')
             ->when(
                 filled($request->string('search')->toString()),
@@ -77,7 +78,7 @@ class AdminOrganizationController extends Controller
 
         return response()->json([
             'message' => 'Organization created successfully.',
-            'organization' => OrganizationResource::make($organization),
+            'organization' => OrganizationResource::make($organization->load(['restaurants.cuisines', 'restaurants.media'])),
         ], 201);
     }
 
@@ -85,7 +86,7 @@ class AdminOrganizationController extends Controller
     {
         $this->authorize('view', $organization);
 
-        return OrganizationResource::make($organization->loadCount('restaurants'));
+        return OrganizationResource::make($organization->load(['restaurants.cuisines', 'restaurants.media'])->loadCount('restaurants'));
     }
 
     public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse
@@ -101,7 +102,9 @@ class AdminOrganizationController extends Controller
 
         return response()->json([
             'message' => 'Organization updated successfully.',
-            'organization' => OrganizationResource::make($organization->refresh()->loadCount('restaurants')),
+            'organization' => OrganizationResource::make(
+                $organization->refresh()->load(['restaurants.cuisines', 'restaurants.media'])->loadCount('restaurants')
+            ),
         ]);
     }
 

@@ -76,6 +76,40 @@ it('returns paginated organizations to authorized admins', function () {
         ->assertJsonPath('meta.current_page', 1);
 });
 
+it('includes restaurants on admin organization responses and organization on admin restaurant responses', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    $organization = Organization::factory()->create([
+        'name' => 'Linked Org',
+        'slug' => 'linked-org',
+    ]);
+
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Linked Restaurant',
+        'slug' => 'linked-restaurant',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $organizationResponse = $this->getJson('/api/v1/admin/organizations?search=linked-org');
+
+    $organizationResponse->assertOk()
+        ->assertJsonPath('data.0.id', $organization->id)
+        ->assertJsonPath('data.0.restaurants.0.id', $restaurant->id)
+        ->assertJsonPath('data.0.restaurants.0.name', 'Linked Restaurant');
+
+    $restaurantResponse = $this->getJson('/api/v1/admin/restaurants?search=linked-restaurant');
+
+    $restaurantResponse->assertOk()
+        ->assertJsonPath('data.0.id', $restaurant->id)
+        ->assertJsonPath('data.0.organization.id', $organization->id)
+        ->assertJsonPath('data.0.organization.name', 'Linked Org');
+});
+
 it('allows business admins to create restaurants with featured and gallery images', function () {
     Storage::fake('public');
     $this->seed(RoleAndPermissionSeeder::class);

@@ -12083,6 +12083,12 @@
                     "restaurants_count": {
                         "type": "integer"
                     },
+                    "restaurants": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantListResource"
+                        }
+                    },
                     "created_at": {
                         "type": "string"
                     }
@@ -12295,6 +12301,9 @@
                     },
                     "organization_id": {
                         "type": "string"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationResource"
                     },
                     "name": {
                         "type": "string"

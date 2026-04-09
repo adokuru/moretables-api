@@ -27,6 +27,7 @@ class OrganizationResource extends JsonResource
             'state' => $this->state,
             'country' => $this->country,
             'restaurants_count' => $this->whenCounted('restaurants'),
+            'restaurants' => RestaurantListResource::collection($this->whenLoaded('restaurants')),
             'created_at' => optional($this->created_at)?->toIso8601String(),
         ];
     }
