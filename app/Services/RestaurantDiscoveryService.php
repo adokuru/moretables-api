@@ -41,12 +41,12 @@ class RestaurantDiscoveryService
      * @param  array<string, mixed>  $filters
      * @return array<string, Collection<int, Restaurant>>
      */
-    public function listSections(array $filters, int $limit): array
+    public function listSections(array $filters, int $limit, ?int $userId = null): array
     {
         $sections = [];
 
         foreach (array_keys(self::SECTION_LABELS) as $section) {
-            $sections[$section] = $this->sectionQuery($section, $filters)
+            $sections[$section] = $this->sectionQuery($section, $filters, $userId)
                 ->limit($limit)
                 ->get();
         }
@@ -57,9 +57,9 @@ class RestaurantDiscoveryService
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function paginateSection(string $section, array $filters, int $perPage): LengthAwarePaginator
+    public function paginateSection(string $section, array $filters, int $perPage, ?int $userId = null): LengthAwarePaginator
     {
-        return $this->sectionQuery($section, $filters)->paginate($perPage);
+        return $this->sectionQuery($section, $filters, $userId)->paginate($perPage);
     }
 
     public function normalizeSection(string $section): string
@@ -86,10 +86,10 @@ class RestaurantDiscoveryService
     /**
      * @param  array<string, mixed>  $filters
      */
-    protected function sectionQuery(string $section, array $filters): Builder
+    protected function sectionQuery(string $section, array $filters, ?int $userId = null): Builder
     {
         $normalizedSection = $this->normalizeSection($section);
-        $query = $this->queryWithDiscoveryMetrics($filters);
+        $query = $this->queryWithDiscoveryMetrics($filters, $userId);
 
         return match ($normalizedSection) {
             'top_booked' => $query
@@ -135,9 +135,9 @@ class RestaurantDiscoveryService
     /**
      * @param  array<string, mixed>  $filters
      */
-    protected function queryWithDiscoveryMetrics(array $filters): Builder
+    protected function queryWithDiscoveryMetrics(array $filters, ?int $userId = null): Builder
     {
-        return $this->baseQuery($filters)
+        return $this->baseQuery($filters, $userId)
             ->withCount([
                 'reservations as bookings_count' => fn (Builder $query) => $query
                     ->whereIn('status', self::BOOKING_STATUSES)
@@ -154,13 +154,18 @@ class RestaurantDiscoveryService
     /**
      * @param  array<string, mixed>  $filters
      */
-    protected function baseQuery(array $filters): Builder
+    protected function baseQuery(array $filters, ?int $userId = null): Builder
     {
         $hasCoordinates = isset($filters['latitude'], $filters['longitude']);
 
         return Restaurant::query()
             ->with(['cuisines', 'media'])
             ->where('status', RestaurantStatus::Active->value)
+            ->when($userId !== null, function (Builder $query) use ($userId): void {
+                $query->withExists([
+                    'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $userId),
+                ]);
+            })
             ->when(filled($filters['q'] ?? null), function (Builder $query) use ($filters): void {
                 $searchTerm = (string) $filters['q'];
 

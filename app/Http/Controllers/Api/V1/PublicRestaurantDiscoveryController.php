@@ -23,8 +23,9 @@ class PublicRestaurantDiscoveryController extends Controller
         $validated = $request->validated();
         $limit = (int) ($validated['limit'] ?? 10);
         $sections = [];
+        $user = $this->authenticatedUserFromToken($request);
 
-        foreach ($this->restaurantDiscoveryService->listSections($validated, $limit) as $section => $restaurants) {
+        foreach ($this->restaurantDiscoveryService->listSections($validated, $limit, $user?->id) as $section => $restaurants) {
             $sections[$section] = [
                 'label' => $this->restaurantDiscoveryService->sectionLabel($section),
                 'restaurants' => RestaurantListResource::collection($restaurants)->resolve($request),
@@ -45,9 +46,10 @@ class PublicRestaurantDiscoveryController extends Controller
     public function show(RestaurantDiscoveryRequest $request, string $section): JsonResponse
     {
         abort_unless($this->restaurantDiscoveryService->supportsSection($section), 404);
+        $user = $this->authenticatedUserFromToken($request);
 
         $paginator = $this->restaurantDiscoveryService
-            ->paginateSection($section, $request->validated(), (int) ($request->validated()['per_page'] ?? 15));
+            ->paginateSection($section, $request->validated(), (int) ($request->validated()['per_page'] ?? 15), $user?->id);
 
         return response()->json([
             'section' => $this->restaurantDiscoveryService->normalizeSection($section),

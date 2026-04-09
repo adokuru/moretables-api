@@ -12,6 +12,7 @@ it('serves the generated api specification route', function () {
         '/auth/start',
         '/auth/google',
         '/auth/apple',
+        '/auth/profile-picture',
         '/auth/staff/login',
         '/auth/staff/profile',
         '/admin/auth/login',
@@ -44,6 +45,7 @@ it('serves the generated api specification route', function () {
     expect($paths)->not->toContain('/auth/login', '/auth/register', '/guest/start');
 
     expect($specification['paths']['/auth/start']['post']['tags'][0])->toBe('Customer Auth');
+    expect($specification['paths']['/auth/profile-picture']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/staff/login']['post']['tags'][0])->toBe('Merchant Staff Auth');
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
     expect($specification['paths']['/search']['get']['tags'][0])->toBe('Public Restaurants');

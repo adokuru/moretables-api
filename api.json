@@ -1702,6 +1702,59 @@
                 }
             }
         },
+        "/auth/profile-picture": {
+            "post": {
+                "operationId": "profileSettings.updateProfilePicture",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadProfilePictureRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Profile picture uploaded successfully."
+                                        },
+                                        "profile_picture": {
+                                            "$ref": "#/components/schemas/MediaAssetResource"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "profile_picture",
+                                        "user"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/me/expo-push-tokens": {
             "post": {
                 "operationId": "expoPushToken.store",
@@ -12300,6 +12353,9 @@
                     "instagram_handle": {
                         "type": "string"
                     },
+                    "has_saved": {
+                        "type": "boolean"
+                    },
                     "average_price_range": {
                         "type": "string"
                     },
@@ -12519,6 +12575,9 @@
                     },
                     "cuisines": {
                         "type": "string"
+                    },
+                    "has_saved": {
+                        "type": "boolean"
                     },
                     "cover_image": {
                         "type": "string"
@@ -15804,6 +15863,28 @@
                 },
                 "title": "UploadModelMediaRequest"
             },
+            "UploadProfilePictureRequest": {
+                "type": "object",
+                "properties": {
+                    "profile_picture": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "maxLength": 10240
+                    },
+                    "alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "profile_picture"
+                ],
+                "title": "UploadProfilePictureRequest"
+            },
             "UserAuthMethod": {
                 "type": "string",
                 "enum": [
@@ -15861,6 +15942,16 @@
                     "last_active_at": {
                         "type": "string"
                     },
+                    "profile_picture": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MediaAssetResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
                     "roles": {
                         "type": "array",
                         "items": {}
@@ -15882,6 +15973,7 @@
                     "auth_method",
                     "email_verified_at",
                     "last_active_at",
+                    "profile_picture",
                     "created_at"
                 ],
                 "title": "UserResource"

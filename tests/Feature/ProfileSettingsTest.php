@@ -5,6 +5,8 @@ use App\Models\User;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 it('returns an unauthorized response when profile settings are requested without a token', function () {
     $response = $this->getJson('/api/v1/auth/profile');
@@ -68,6 +70,28 @@ it('updates the authenticated user profile settings', function () {
         ->and($user->last_name)->toBe('Okafor')
         ->and($user->bio)->toBe('Tell us a bit about yourself')
         ->and(optional($user->birthday)?->toDateString())->toBe('1994-05-21');
+});
+
+it('uploads the authenticated user profile picture', function () {
+    Storage::fake('public');
+
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->postJson('/api/v1/auth/profile-picture', [
+        'profile_picture' => UploadedFile::fake()->image('avatar.png'),
+        'alt_text' => 'Profile avatar',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('message', 'Profile picture uploaded successfully.')
+        ->assertJsonPath('profile_picture.collection', 'profile_picture')
+        ->assertJsonPath('profile_picture.alt_text', 'Profile avatar')
+        ->assertJsonPath('user.profile_picture.collection', 'profile_picture');
 });
 
 it('validates birthday when updating profile settings', function () {

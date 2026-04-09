@@ -30,6 +30,7 @@ class CustomerSavedRestaurantController extends Controller
                 $savedRestaurants->getCollection()
                     ->pluck('restaurant')
                     ->filter()
+                    ->each(fn (Restaurant $restaurant) => $restaurant->setAttribute('has_saved', true))
                     ->values(),
             )->resolve($request),
             'meta' => [

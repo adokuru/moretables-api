@@ -17,7 +17,7 @@ class RestaurantSearchService
      *     cuisines: Collection<int, array{name: string, restaurant_count: int}>
      * }
      */
-    public function search(string $query, int $limit = 5): array
+    public function search(string $query, int $limit = 5, ?int $userId = null): array
     {
         $searchTerm = trim($query);
 
@@ -31,7 +31,7 @@ class RestaurantSearchService
 
         return [
             'locations' => $this->searchLocations($searchTerm, $limit),
-            'restaurants' => $this->searchRestaurants($searchTerm, $limit),
+            'restaurants' => $this->searchRestaurants($searchTerm, $limit, $userId),
             'cuisines' => $this->searchCuisines($searchTerm, $limit),
         ];
     }
@@ -83,7 +83,7 @@ class RestaurantSearchService
     /**
      * @return Collection<int, Restaurant>
      */
-    protected function searchRestaurants(string $searchTerm, int $limit): Collection
+    protected function searchRestaurants(string $searchTerm, int $limit, ?int $userId = null): Collection
     {
         $likePattern = $this->likePattern($searchTerm);
         $startsWithPattern = $this->startsWithPattern($searchTerm);
@@ -91,6 +91,11 @@ class RestaurantSearchService
         return Restaurant::query()
             ->with(['cuisines', 'media'])
             ->where('status', RestaurantStatus::Active->value)
+            ->when($userId !== null, function (Builder $query) use ($userId): void {
+                $query->withExists([
+                    'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $userId),
+                ]);
+            })
             ->where(function (Builder $query) use ($likePattern): void {
                 $query->where('name', 'like', $likePattern)
                     ->orWhere('description', 'like', $likePattern)

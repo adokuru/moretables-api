@@ -45,6 +45,10 @@ class RestaurantListResource extends JsonResource
             'email' => $this->email,
             'description' => $this->description,
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
+            'has_saved' => $this->when(
+                $this->resource->getAttribute('has_saved') !== null,
+                fn () => (bool) $this->resource->getAttribute('has_saved'),
+            ),
             'cover_image' => $featuredImage?->getAvailableUrl(['card']),
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'discovery_metrics' => $this->when($discoveryMetrics !== [], $discoveryMetrics),

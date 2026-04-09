@@ -731,6 +731,56 @@
               "raw": "{\n  \"first_name\": \"Samuel\",\n  \"last_name\": \"Adebayo\",\n  \"bio\": \"Tell us a bit about yourself\",\n  \"birthday\": \"1992-08-14\"\n}"
             }
           }
+        },
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile-picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile-picture"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Upload or replace the authenticated user's profile picture.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profile_picture",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "alt_text",
+                  "value": "Profile avatar",
+                  "type": "text"
+                }
+              ]
+            }
+          }
         }
       ]
     },

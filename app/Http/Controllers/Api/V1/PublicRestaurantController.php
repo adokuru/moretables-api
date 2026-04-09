@@ -14,6 +14,7 @@ use App\Services\AvailabilityService;
 use App\Services\RestaurantSearchService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 #[Group('Public Restaurants', weight: 0)]
 class PublicRestaurantController extends Controller
@@ -26,9 +27,12 @@ class PublicRestaurantController extends Controller
     public function search(RestaurantSearchRequest $request): JsonResponse
     {
         $validated = $request->validated();
+        $user = $this->authenticatedUserFromToken($request);
+
         $results = $this->restaurantSearchService->search(
             query: (string) ($validated['q'] ?? ''),
             limit: (int) ($validated['limit'] ?? 5),
+            userId: $user?->id,
         );
 
         return response()->json([
@@ -45,10 +49,16 @@ class PublicRestaurantController extends Controller
     {
         $validated = $request->validated();
         $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
+        $user = $this->authenticatedUserFromToken($request);
 
         $restaurants = Restaurant::query()
             ->with(['cuisines', 'media'])
             ->where('status', RestaurantStatus::Active->value)
+            ->when($user, function ($query, $user): void {
+                $query->withExists([
+                    'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $user->id),
+                ]);
+            })
             ->when($request->filled('q'), function ($query) use ($validated) {
                 $query->where(function ($subQuery) use ($validated): void {
                     $subQuery->where('name', 'like', '%'.$validated['q'].'%')
@@ -85,9 +95,19 @@ class PublicRestaurantController extends Controller
         return response()->json(RestaurantListResource::collection($restaurants));
     }
 
-    public function show(Restaurant $restaurant): RestaurantDetailResource
+    public function show(Request $request, Restaurant $restaurant): RestaurantDetailResource
     {
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        $user = $this->authenticatedUserFromToken($request);
+
+        $restaurant = Restaurant::query()
+            ->when($user, function ($query, $user): void {
+                $query->withExists([
+                    'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $user->id),
+                ]);
+            })
+            ->whereKey($restaurant->getKey())
+            ->firstOrFail();
 
         return RestaurantDetailResource::make($restaurant->load([
             'cuisines',

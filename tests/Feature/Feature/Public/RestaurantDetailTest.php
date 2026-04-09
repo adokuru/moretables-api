@@ -5,6 +5,8 @@ use App\Models\Restaurant;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
+use App\Models\SavedRestaurant;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -78,4 +80,21 @@ it('includes grouped menu items in the public restaurant detail response', funct
         ->assertJsonPath('data.menus.0.items.0.featured_image.featured', true)
         ->assertJsonPath('data.menus.1.section', 'Mains')
         ->assertJsonPath('data.menus.1.items.0.price', 28500);
+});
+
+it('includes has_saved in the public restaurant detail response for authenticated users', function () {
+    $restaurant = Restaurant::factory()->create();
+    $user = User::factory()->create();
+
+    SavedRestaurant::factory()->create([
+        'user_id' => $user->id,
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $response = $this->withToken($user->createToken('restaurant-detail')->plainTextToken)
+        ->getJson('/api/v1/restaurants/'.$restaurant->slug);
+
+    $response->assertOk()
+        ->assertJsonPath('data.id', $restaurant->id)
+        ->assertJsonPath('data.has_saved', true);
 });

@@ -3,6 +3,8 @@
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantCuisine;
+use App\Models\SavedRestaurant;
+use App\Models\User;
 use App\RestaurantStatus;
 
 it('returns grouped location restaurant and cuisine suggestions', function () {
@@ -32,7 +34,15 @@ it('returns grouped location restaurant and cuisine suggestions', function () {
         'country' => 'United Kingdom',
     ]);
 
-    $response = $this->getJson('/api/v1/search?q=londo');
+    $user = User::factory()->create();
+
+    SavedRestaurant::factory()->create([
+        'user_id' => $user->id,
+        'restaurant_id' => $matchingRestaurant->id,
+    ]);
+
+    $response = $this->withToken($user->createToken('search')->plainTextToken)
+        ->getJson('/api/v1/search?q=londo');
 
     $response->assertOk()
         ->assertJsonPath('query', 'londo')
@@ -42,6 +52,7 @@ it('returns grouped location restaurant and cuisine suggestions', function () {
         ->assertJsonPath('results.locations.0.country', 'United Kingdom')
         ->assertJsonPath('results.restaurants.0.id', $matchingRestaurant->id)
         ->assertJsonPath('results.restaurants.0.name', 'London Bistro')
+        ->assertJsonPath('results.restaurants.0.has_saved', true)
         ->assertJsonPath('results.cuisines.0.name', 'London Grill')
         ->assertJsonPath('results.cuisines.0.restaurant_count', 1);
 });

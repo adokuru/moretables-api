@@ -45,6 +45,10 @@ class RestaurantDetailResource extends JsonResource
             'description' => $this->description,
             'website' => $this->website,
             'instagram_handle' => $this->instagram_handle,
+            'has_saved' => $this->when(
+                $this->resource->getAttribute('has_saved') !== null,
+                fn () => (bool) $this->resource->getAttribute('has_saved'),
+            ),
             'average_price_range' => $this->average_price_range,
             'dining_style' => $this->dining_style,
             'dress_code' => $this->dress_code,
