@@ -16,7 +16,7 @@ class MoreTablesMailChannel extends MailChannel
     protected function buildMarkdownText($message)
     {
         return fn (array $data) => $this->markdownRenderer($message)->renderText(
-            'notifications::email-text',
+            $message->markdown,
             array_merge($data, $message->data()),
         );
     }
