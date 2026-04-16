@@ -23,6 +23,7 @@ it('serves the generated api specification route', function () {
         '/admin/reward-program',
         '/admin/users/{user}/reward-points',
         '/search',
+        '/reviews/random',
         '/me/expo-push-tokens',
         '/me/rewards/status',
         '/me/rewards/transactions',
@@ -49,6 +50,7 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/auth/staff/login']['post']['tags'][0])->toBe('Merchant Staff Auth');
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
     expect($specification['paths']['/search']['get']['tags'][0])->toBe('Public Restaurants');
+    expect($specification['paths']['/reviews/random']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants/discovery']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/me/rewards/status']['get']['tags'][0])->toBe('Customer Rewards');
@@ -70,4 +72,5 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/admin/onboarding-requests']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/audit-logs']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/restaurants/{restaurant}/reviews']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'summary', 'links', 'meta');
+    expect($specification['paths']['/reviews/random']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data');
 });

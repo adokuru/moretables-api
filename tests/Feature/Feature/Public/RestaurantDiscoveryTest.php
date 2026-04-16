@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserRestaurantList;
 use App\Models\UserRestaurantListItem;
 use App\ReservationStatus;
+use App\RestaurantStatus;
 use Laravel\Sanctum\Sanctum;
 
 it('returns discovery sections for top booked viewed saved rated new featured timeofday and lineup restaurants', function () {
@@ -184,6 +185,60 @@ it('records restaurant views for discovery metrics', function () {
     ]);
 });
 
+it('returns random public reviews with rating customer name restaurant name and notes ordered by highest rating first', function () {
+    $organization = Organization::factory()->create();
+    $activeRestaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Ocean Basket',
+        'status' => RestaurantStatus::Active,
+    ]);
+    $anotherActiveRestaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'The Grill House',
+        'status' => RestaurantStatus::Active,
+    ]);
+    $inactiveRestaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Hidden Spot',
+        'status' => RestaurantStatus::Suspended,
+    ]);
+
+    $customer = User::factory()->create([
+        'first_name' => 'Ada',
+        'last_name' => 'Okafor',
+        'name' => 'Ada Okafor',
+    ]);
+
+    RestaurantReview::factory()->create([
+        'restaurant_id' => $activeRestaurant->id,
+        'user_id' => $customer->id,
+        'rating' => 5,
+        'body' => null,
+    ]);
+
+    RestaurantReview::factory()->create([
+        'restaurant_id' => $anotherActiveRestaurant->id,
+        'user_id' => User::factory()->create()->id,
+        'rating' => 3,
+    ]);
+
+    RestaurantReview::factory()->create([
+        'restaurant_id' => $inactiveRestaurant->id,
+        'user_id' => User::factory()->create()->id,
+        'rating' => 2,
+    ]);
+
+    $response = $this->getJson('/api/v1/reviews/random?limit=2');
+
+    $response->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.rating', 5)
+        ->assertJsonPath('data.0.notes', null)
+        ->assertJsonPath('data.0.customer_name', 'Ada Okafor')
+        ->assertJsonPath('data.0.restaurant_name', 'Ocean Basket')
+        ->assertJsonPath('data.1.rating', 3);
+});
+
 it('lets authenticated users save restaurants and manage custom restaurant lists', function () {
     $customer = User::factory()->create();
     $restaurant = Restaurant::factory()->create();
@@ -282,7 +337,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
 
     $updateResponse->assertOk()
         ->assertJsonPath('review.rating', 4)
-        ->assertJsonPath('review.body', 'Still great, but dessert was the highlight.');
+        ->assertJsonPath('review.notes', 'Still great, but dessert was the highlight.');
 
     $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');
 

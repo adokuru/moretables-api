@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\RestaurantAvailabilityRequest;
 use App\Http\Requests\Public\RestaurantIndexRequest;
 use App\Http\Requests\Public\RestaurantSearchRequest;
+use App\Http\Resources\PublicRandomReviewResource;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
+use App\Models\RestaurantReview;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
 use App\Services\RestaurantSearchService;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,6 +45,27 @@ class PublicRestaurantController extends Controller
                 'restaurants' => RestaurantListResource::collection($results['restaurants'])->resolve(),
                 'cuisines' => $results['cuisines']->values()->all(),
             ],
+        ]);
+    }
+
+    #[QueryParameter('limit', type: 'integer', default: 10, example: 6)]
+    public function randomReviews(Request $request): JsonResponse
+    {
+        $limit = max(1, min($request->integer('limit', 10), 50));
+
+        $reviews = RestaurantReview::query()
+            ->with([
+                'user:id,name,first_name,last_name',
+                'restaurant:id,name,status',
+            ])
+            ->whereHas('restaurant', fn ($query) => $query->where('status', RestaurantStatus::Active->value))
+            ->orderByDesc('rating')
+            ->inRandomOrder()
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'data' => PublicRandomReviewResource::collection($reviews)->resolve($request),
         ]);
     }
 

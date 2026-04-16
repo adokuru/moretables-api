@@ -19,8 +19,7 @@ class PublicRestaurantReviewResource extends JsonResource
         return [
             'id' => $this->id,
             'rating' => $this->rating,
-            'title' => $this->title,
-            'body' => $this->body,
+            'notes' => $this->body,
             'visited_at' => optional($this->visited_at)?->toDateString(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'reviewer' => [

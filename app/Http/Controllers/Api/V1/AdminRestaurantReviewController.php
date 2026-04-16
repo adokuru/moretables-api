@@ -122,8 +122,7 @@ class AdminRestaurantReviewController extends Controller
         return [
             'id' => $review->id,
             'rating' => $review->rating,
-            'title' => $review->title,
-            'body' => $review->body,
+            'notes' => $review->body,
             'visited_at' => $review->visited_at?->toDateString(),
             'created_at' => $review->created_at?->toIso8601String(),
             'restaurant' => [

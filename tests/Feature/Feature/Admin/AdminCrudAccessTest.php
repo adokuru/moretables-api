@@ -351,7 +351,7 @@ it('allows admins to manage reviews and onboarding approvals', function () {
 
     $reviewUpdateResponse->assertOk()
         ->assertJsonPath('review.rating', 5)
-        ->assertJsonPath('review.title', 'Excellent dinner');
+        ->assertJsonPath('review.notes', 'Friendly service and nice ambience.');
 
     $onboardingCreateResponse = $this->postJson('/api/v1/admin/onboarding-requests', [
         'restaurant_name' => 'Pending Place',

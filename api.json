@@ -179,6 +179,48 @@
                 }
             }
         },
+        "/reviews/random": {
+            "get": {
+                "operationId": "publicRestaurant.randomReviews",
+                "summary": "Get public reviews ordered by highest rating first",
+                "description": "Returns public reviews from active restaurants, ordered by highest rating first. Within the same rating, order is random.",
+                "tags": [
+                    "Public Restaurants"
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        },
+                        "example": 6
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/restaurants": {
             "get": {
                 "operationId": "publicRestaurant.index",
@@ -10509,13 +10551,7 @@
                                                     "rating": {
                                                         "type": "integer"
                                                     },
-                                                    "title": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ]
-                                                    },
-                                                    "body": {
+                                                    "notes": {
                                                         "type": [
                                                             "string",
                                                             "null"
@@ -10569,8 +10605,7 @@
                                                 "required": [
                                                     "id",
                                                     "rating",
-                                                    "title",
-                                                    "body",
+                                                    "notes",
                                                     "visited_at",
                                                     "created_at",
                                                     "restaurant",
@@ -10702,13 +10737,7 @@
                                                 "rating": {
                                                     "type": "integer"
                                                 },
-                                                "title": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "body": {
+                                                "notes": {
                                                     "type": [
                                                         "string",
                                                         "null"
@@ -10762,8 +10791,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
-                                                "title",
-                                                "body",
+                                                "notes",
                                                 "visited_at",
                                                 "created_at",
                                                 "restaurant",
@@ -10822,13 +10850,7 @@
                                                 "rating": {
                                                     "type": "integer"
                                                 },
-                                                "title": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "body": {
+                                                "notes": {
                                                     "type": [
                                                         "string",
                                                         "null"
@@ -10882,8 +10904,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
-                                                "title",
-                                                "body",
+                                                "notes",
                                                 "visited_at",
                                                 "created_at",
                                                 "restaurant",
@@ -10952,13 +10973,7 @@
                                                 "rating": {
                                                     "type": "integer"
                                                 },
-                                                "title": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "body": {
+                                                "notes": {
                                                     "type": [
                                                         "string",
                                                         "null"
@@ -11012,8 +11027,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
-                                                "title",
-                                                "body",
+                                                "notes",
                                                 "visited_at",
                                                 "created_at",
                                                 "restaurant",

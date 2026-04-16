@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store']);
 
 Route::get('search', [PublicRestaurantController::class, 'search']);
+Route::get('reviews/random', [PublicRestaurantController::class, 'randomReviews']);
 Route::get('restaurants/discovery', [PublicRestaurantDiscoveryController::class, 'index']);
 Route::get('restaurants/discovery/{section}', [PublicRestaurantDiscoveryController::class, 'show']);
 

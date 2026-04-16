@@ -1002,6 +1002,37 @@
           }
         },
         {
+          "name": "Random reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/random?limit=6",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reviews",
+                "random"
+              ]
+            },
+            "description": "Public reviews ordered by highest rating first, with rating, nullable notes, customer name, and restaurant name. Within the same rating, order is random."
+          }
+        },
+        {
           "name": "Record restaurant view",
           "request": {
             "method": "POST",
