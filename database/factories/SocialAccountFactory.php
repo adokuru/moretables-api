@@ -21,9 +21,9 @@ class SocialAccountFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'provider' => fake()->randomElement([SocialAuthProvider::Google, SocialAuthProvider::Apple]),
-            'provider_user_id' => fake()->uuid(),
-            'provider_email' => fake()->safeEmail(),
+            'provider' => $this->faker->randomElement([SocialAuthProvider::Google, SocialAuthProvider::Apple]),
+            'provider_user_id' => $this->faker->uuid(),
+            'provider_email' => $this->faker->safeEmail(),
             'last_used_at' => now(),
         ];
     }

@@ -20,12 +20,12 @@ class RestaurantMenuItemFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'section_name' => fake()->randomElement(['Starters', 'Mains', 'Desserts', 'Drinks']),
-            'item_name' => fake()->words(2, true),
-            'description' => fake()->sentence(),
-            'price' => fake()->randomFloat(2, 2500, 42000),
+            'section_name' => $this->faker->randomElement(['Starters', 'Mains', 'Desserts', 'Drinks']),
+            'item_name' => $this->faker->words(2, true),
+            'description' => $this->faker->sentence(),
+            'price' => $this->faker->randomFloat(2, 2500, 42000),
             'currency' => 'NGN',
-            'sort_order' => fake()->numberBetween(0, 20),
+            'sort_order' => $this->faker->numberBetween(0, 20),
         ];
     }
 }

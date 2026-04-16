@@ -21,9 +21,9 @@ class RestaurantMediaFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'collection' => 'gallery',
-            'url' => fake()->imageUrl(),
-            'alt_text' => fake()->sentence(4),
-            'sort_order' => fake()->numberBetween(0, 5),
+            'url' => $this->faker->imageUrl(),
+            'alt_text' => $this->faker->sentence(4),
+            'sort_order' => $this->faker->numberBetween(0, 5),
         ];
     }
 }

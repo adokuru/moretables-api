@@ -22,10 +22,10 @@ class RestaurantViewFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'user_id' => User::factory(),
-            'platform' => fake()->randomElement(['ios', 'android', 'web']),
-            'session_id' => fake()->uuid(),
-            'ip_address' => fake()->ipv4(),
-            'user_agent' => fake()->userAgent(),
+            'platform' => $this->faker->randomElement(['ios', 'android', 'web']),
+            'session_id' => $this->faker->uuid(),
+            'ip_address' => $this->faker->ipv4(),
+            'user_agent' => $this->faker->userAgent(),
         ];
     }
 }

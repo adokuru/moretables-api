@@ -19,12 +19,12 @@ class OnboardingRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'restaurant_name' => fake()->company().' Bistro',
-            'owner_name' => fake()->name(),
-            'email' => fake()->safeEmail(),
-            'phone' => fake()->e164PhoneNumber(),
-            'address' => fake()->address(),
-            'notes' => fake()->sentence(),
+            'restaurant_name' => $this->faker->company().' Bistro',
+            'owner_name' => $this->faker->name(),
+            'email' => $this->faker->safeEmail(),
+            'phone' => $this->faker->e164PhoneNumber(),
+            'address' => $this->faker->address(),
+            'notes' => $this->faker->sentence(),
             'status' => OnboardingRequestStatus::Pending,
             'reviewed_by' => null,
             'reviewed_at' => null,

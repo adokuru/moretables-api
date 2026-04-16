@@ -23,12 +23,12 @@ class RestaurantTableFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'dining_area_id' => DiningArea::factory(),
-            'name' => 'T'.fake()->unique()->numberBetween(1, 99),
+            'name' => 'T'.$this->faker->unique()->numberBetween(1, 99),
             'min_capacity' => 1,
-            'max_capacity' => fake()->randomElement([2, 4, 6, 8]),
+            'max_capacity' => $this->faker->randomElement([2, 4, 6, 8]),
             'status' => TableStatus::Available,
             'is_active' => true,
-            'sort_order' => fake()->numberBetween(0, 20),
+            'sort_order' => $this->faker->numberBetween(0, 20),
         ];
     }
 }

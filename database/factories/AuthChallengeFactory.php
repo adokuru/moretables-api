@@ -33,7 +33,7 @@ class AuthChallengeFactory extends Factory
             'max_attempts' => 5,
             'last_sent_at' => now(),
             'consumed_at' => null,
-            'meta' => ['email' => fake()->safeEmail()],
+            'meta' => ['email' => $this->faker->safeEmail()],
         ];
     }
 }

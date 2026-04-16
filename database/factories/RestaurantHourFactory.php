@@ -20,7 +20,7 @@ class RestaurantHourFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'day_of_week' => fake()->numberBetween(0, 6),
+            'day_of_week' => $this->faker->numberBetween(0, 6),
             'opens_at' => '09:00:00',
             'closes_at' => '22:00:00',
             'is_closed' => false,

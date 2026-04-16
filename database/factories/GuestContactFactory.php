@@ -20,11 +20,11 @@ class GuestContactFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'email' => fake()->safeEmail(),
-            'phone' => fake()->e164PhoneNumber(),
-            'notes' => fake()->sentence(),
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
+            'email' => $this->faker->safeEmail(),
+            'phone' => $this->faker->e164PhoneNumber(),
+            'notes' => $this->faker->sentence(),
             'is_temporary' => true,
         ];
     }

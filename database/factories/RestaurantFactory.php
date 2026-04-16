@@ -20,34 +20,34 @@ class RestaurantFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->company().' Grill';
+        $name = $this->faker->company().' Grill';
 
         return [
             'organization_id' => Organization::factory(),
             'name' => $name,
-            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 999),
+            'slug' => Str::slug($name).'-'.$this->faker->unique()->numberBetween(100, 999),
             'status' => RestaurantStatus::Active,
             'is_featured' => false,
-            'email' => fake()->companyEmail(),
-            'phone' => fake()->e164PhoneNumber(),
-            'city' => fake()->city(),
-            'state' => fake()->state(),
+            'email' => $this->faker->companyEmail(),
+            'phone' => $this->faker->e164PhoneNumber(),
+            'city' => $this->faker->city(),
+            'state' => $this->faker->state(),
             'country' => 'Nigeria',
             'timezone' => 'Africa/Lagos',
-            'address_line_1' => fake()->streetAddress(),
-            'address_line_2' => fake()->secondaryAddress(),
-            'latitude' => fake()->latitude(6.3, 6.7),
-            'longitude' => fake()->longitude(3.2, 3.6),
-            'description' => fake()->paragraph(),
-            'website' => fake()->url(),
-            'instagram_handle' => '@'.fake()->userName(),
+            'address_line_1' => $this->faker->streetAddress(),
+            'address_line_2' => $this->faker->secondaryAddress(),
+            'latitude' => $this->faker->latitude(6.3, 6.7),
+            'longitude' => $this->faker->longitude(3.2, 3.6),
+            'description' => $this->faker->paragraph(),
+            'website' => $this->faker->url(),
+            'instagram_handle' => '@'.$this->faker->userName(),
             'average_price_range' => '$$',
             'dining_style' => 'Casual Dining',
             'dress_code' => 'Casual',
             'total_seating_capacity' => 80,
             'number_of_tables' => 20,
             'menu_source' => 'link',
-            'menu_link' => fake()->url(),
+            'menu_link' => $this->faker->url(),
             'payment_options' => ['Paystack', 'Visa'],
             'accessibility_features' => ['Wheelchair Accessible', 'Vegetarian Options'],
         ];

@@ -27,7 +27,7 @@ class RewardPointTransactionFactory extends Factory
             'type' => RewardPointTransactionType::Adjustment,
             'points' => 100,
             'balance_after' => 100,
-            'description' => fake()->sentence(),
+            'description' => $this->faker->sentence(),
             'reference_type' => null,
             'reference_id' => null,
             'metadata' => null,

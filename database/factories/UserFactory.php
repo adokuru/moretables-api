@@ -26,17 +26,17 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        $firstName = fake()->firstName();
-        $lastName = fake()->lastName();
+        $firstName = $this->faker->firstName();
+        $lastName = $this->faker->lastName();
 
         return [
             'name' => $firstName.' '.$lastName,
             'first_name' => $firstName,
             'last_name' => $lastName,
-            'bio' => fake()->sentence(),
-            'birthday' => fake()->dateTimeBetween('-70 years', '-18 years')->format('Y-m-d'),
-            'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->unique()->e164PhoneNumber(),
+            'bio' => $this->faker->sentence(),
+            'birthday' => $this->faker->dateTimeBetween('-70 years', '-18 years')->format('Y-m-d'),
+            'email' => $this->faker->unique()->safeEmail(),
+            'phone' => $this->faker->unique()->e164PhoneNumber(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'status' => UserStatus::Active,

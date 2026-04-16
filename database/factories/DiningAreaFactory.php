@@ -20,11 +20,11 @@ class DiningAreaFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'name' => fake()->randomElement(['Main Hall', 'Terrace', 'Private Room']),
-            'description' => fake()->sentence(),
+            'name' => $this->faker->randomElement(['Main Hall', 'Terrace', 'Private Room']),
+            'description' => $this->faker->sentence(),
             'tags' => ['indoor'],
             'is_active' => true,
-            'sort_order' => fake()->numberBetween(0, 5),
+            'sort_order' => $this->faker->numberBetween(0, 5),
         ];
     }
 }

@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "dedoc/scramble": "^0.13.15",
+        "fakerphp/faker": "^1.23",
         "laravel/framework": "^13.0",
         "laravel/horizon": "^5.45",
         "laravel/reverb": "^1.8",
@@ -22,7 +23,6 @@
         "symfony/mailgun-mailer": "^7.4"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
         "laravel/boost": "^2.0",
         "laravel/pail": "^1.2.6",
         "laravel/pint": "^1.24",

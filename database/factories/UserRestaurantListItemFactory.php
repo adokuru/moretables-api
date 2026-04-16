@@ -22,7 +22,7 @@ class UserRestaurantListItemFactory extends Factory
         return [
             'user_restaurant_list_id' => UserRestaurantList::factory(),
             'restaurant_id' => Restaurant::factory(),
-            'sort_order' => fake()->numberBetween(0, 12),
+            'sort_order' => $this->faker->numberBetween(0, 12),
         ];
     }
 }

@@ -31,7 +31,7 @@ class WaitlistEntryFactory extends Factory
             'party_size' => 2,
             'preferred_starts_at' => $startsAt,
             'preferred_ends_at' => (clone $startsAt)->addMinutes(30),
-            'notes' => fake()->sentence(),
+            'notes' => $this->faker->sentence(),
             'notified_at' => null,
             'expires_at' => null,
             'seated_at' => null,

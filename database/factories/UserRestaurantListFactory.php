@@ -20,9 +20,9 @@ class UserRestaurantListFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => fake()->randomElement(['Date Night', 'Weekend Picks', 'Saved for Later', 'Birthday Ideas']),
-            'description' => fake()->sentence(),
-            'is_private' => fake()->boolean(25),
+            'name' => $this->faker->randomElement(['Date Night', 'Weekend Picks', 'Saved for Later', 'Birthday Ideas']),
+            'description' => $this->faker->sentence(),
+            'is_private' => $this->faker->boolean(25),
         ];
     }
 }

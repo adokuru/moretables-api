@@ -20,7 +20,7 @@ class RestaurantCuisineFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'name' => fake()->randomElement(['Nigerian', 'African', 'Seafood', 'Steakhouse', 'Italian']),
+            'name' => $this->faker->randomElement(['Nigerian', 'African', 'Seafood', 'Steakhouse', 'Italian']),
         ];
     }
 }

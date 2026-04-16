@@ -18,8 +18,8 @@ class PermissionFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->slug(3),
-            'description' => fake()->sentence(),
+            'name' => $this->faker->unique()->slug(3),
+            'description' => $this->faker->sentence(),
         ];
     }
 }

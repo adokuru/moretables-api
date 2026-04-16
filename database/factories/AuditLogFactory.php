@@ -29,8 +29,8 @@ class AuditLogFactory extends Factory
             'auditable_type' => 'restaurants',
             'auditable_id' => 1,
             'action' => 'restaurant.updated',
-            'description' => fake()->sentence(),
-            'ip_address' => fake()->ipv4(),
+            'description' => $this->faker->sentence(),
+            'ip_address' => $this->faker->ipv4(),
             'old_values' => ['status' => 'draft'],
             'new_values' => ['status' => 'active'],
         ];

@@ -20,11 +20,11 @@ class ExpoPushTokenFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'expo_token' => 'ExponentPushToken['.fake()->unique()->regexify('[A-Za-z0-9]{32}').']',
-            'device_id' => fake()->uuid(),
-            'device_name' => fake()->randomElement(['iPhone 15 Pro', 'iPhone 14', 'Pixel 8', 'Samsung Galaxy S24']),
-            'platform' => fake()->randomElement(['ios', 'android']),
-            'app_version' => fake()->numerify('#.#.#'),
+            'expo_token' => 'ExponentPushToken['.$this->faker->unique()->regexify('[A-Za-z0-9]{32}').']',
+            'device_id' => $this->faker->uuid(),
+            'device_name' => $this->faker->randomElement(['iPhone 15 Pro', 'iPhone 14', 'Pixel 8', 'Samsung Galaxy S24']),
+            'platform' => $this->faker->randomElement(['ios', 'android']),
+            'app_version' => $this->faker->numerify('#.#.#'),
             'last_seen_at' => now(),
         ];
     }

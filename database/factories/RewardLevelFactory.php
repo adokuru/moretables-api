@@ -21,7 +21,7 @@ class RewardLevelFactory extends Factory
         return [
             'reward_program_id' => RewardProgram::factory(),
             'name' => 'Bronze',
-            'slug' => fake()->unique()->slug(),
+            'slug' => $this->faker->unique()->slug(),
             'start_points' => 0,
             'end_points' => 999,
             'sort_order' => 0,

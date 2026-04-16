@@ -20,8 +20,8 @@ class RewardProgramFactory extends Factory
     {
         return [
             'name' => 'MoreTables Loyalty Rewards',
-            'slug' => fake()->unique()->slug(),
-            'description' => fake()->sentence(),
+            'slug' => $this->faker->unique()->slug(),
+            'description' => $this->faker->sentence(),
             'period_type' => RewardProgramPeriodType::Lifetime,
             'period_value' => null,
             'resets_points' => false,

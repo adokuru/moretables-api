@@ -22,10 +22,10 @@ class RestaurantReviewFactory extends Factory
         return [
             'restaurant_id' => Restaurant::factory(),
             'user_id' => User::factory(),
-            'rating' => fake()->numberBetween(1, 5),
-            'title' => fake()->sentence(3),
-            'body' => fake()->paragraph(),
-            'visited_at' => fake()->dateTimeBetween('-90 days', '-1 day'),
+            'rating' => $this->faker->numberBetween(1, 5),
+            'title' => $this->faker->sentence(3),
+            'body' => $this->faker->paragraph(),
+            'visited_at' => $this->faker->dateTimeBetween('-90 days', '-1 day'),
         ];
     }
 }
