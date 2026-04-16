@@ -48,6 +48,12 @@ class PublicRestaurantController extends Controller
         ]);
     }
 
+    /**
+     * Get public reviews ordered by highest rating first.
+     *
+     * Returns reviews from active restaurants ordered by highest rating first.
+     * Within the same rating, order is random.
+     */
     #[QueryParameter('limit', type: 'integer', default: 10, example: 6)]
     public function randomReviews(Request $request): JsonResponse
     {
