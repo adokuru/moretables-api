@@ -287,7 +287,11 @@ it('lets authenticated users create update and list restaurant reviews', functio
     $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');
 
     $indexResponse->assertOk()
+        ->assertJsonStructure(['data', 'summary', 'links', 'meta'])
         ->assertJsonPath('summary.reviews_count', 1)
         ->assertJsonPath('summary.average_rating', 4)
-        ->assertJsonPath('data.0.reviewer.name', 'Ada Okafor');
+        ->assertJsonPath('summary.ratings_breakdown.4', 1)
+        ->assertJsonPath('links.prev', null)
+        ->assertJsonPath('data.0.reviewer.name', 'Ada Okafor')
+        ->assertJsonPath('data.0.reviewer.initials', 'AO');
 });

@@ -844,6 +844,24 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        },
+                        "example": 15
                     }
                 ],
                 "responses": {
@@ -856,59 +874,7 @@
                                     "properties": {
                                         "data": {
                                             "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer"
-                                                    },
-                                                    "rating": {
-                                                        "type": "integer"
-                                                    },
-                                                    "title": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ]
-                                                    },
-                                                    "body": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ]
-                                                    },
-                                                    "visited_at": {
-                                                        "type": "string"
-                                                    },
-                                                    "created_at": {
-                                                        "type": "string"
-                                                    },
-                                                    "reviewer": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "id": {
-                                                                "type": "string"
-                                                            },
-                                                            "name": {
-                                                                "type": "string"
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "id",
-                                                            "name"
-                                                        ]
-                                                    }
-                                                },
-                                                "required": [
-                                                    "id",
-                                                    "rating",
-                                                    "title",
-                                                    "body",
-                                                    "visited_at",
-                                                    "created_at",
-                                                    "reviewer"
-                                                ]
-                                            }
+                                            "items": {}
                                         },
                                         "summary": {
                                             "type": "object",
@@ -921,11 +887,47 @@
                                                         "number",
                                                         "null"
                                                     ]
+                                                },
+                                                "ratings_breakdown": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "string"
+                                                    }
                                                 }
                                             },
                                             "required": [
                                                 "reviews_count",
-                                                "average_rating"
+                                                "average_rating",
+                                                "ratings_breakdown"
+                                            ]
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string"
+                                                },
+                                                "last": {
+                                                    "type": "string"
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
                                             ]
                                         },
                                         "meta": {
@@ -934,11 +936,29 @@
                                                 "current_page": {
                                                     "type": "integer"
                                                 },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "last_page": {
                                                     "type": "integer"
                                                 },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "per_page": {
                                                     "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "total": {
                                                     "type": "integer"
@@ -946,8 +966,11 @@
                                             },
                                             "required": [
                                                 "current_page",
+                                                "from",
                                                 "last_page",
+                                                "path",
                                                 "per_page",
+                                                "to",
                                                 "total"
                                             ]
                                         }
@@ -955,6 +978,7 @@
                                     "required": [
                                         "data",
                                         "summary",
+                                        "links",
                                         "meta"
                                     ]
                                 }
@@ -1006,57 +1030,8 @@
                                             "const": "Review submitted successfully."
                                         },
                                         "review": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer"
-                                                },
-                                                "rating": {
-                                                    "type": "integer"
-                                                },
-                                                "title": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "body": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "visited_at": {
-                                                    "type": "string"
-                                                },
-                                                "created_at": {
-                                                    "type": "string"
-                                                },
-                                                "reviewer": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "string"
-                                                        },
-                                                        "name": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "id",
-                                                        "name"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "id",
-                                                "rating",
-                                                "title",
-                                                "body",
-                                                "visited_at",
-                                                "created_at",
-                                                "reviewer"
-                                            ]
+                                            "type": "array",
+                                            "items": {}
                                         }
                                     },
                                     "required": [
@@ -1128,57 +1103,8 @@
                                             "const": "Review updated successfully."
                                         },
                                         "review": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer"
-                                                },
-                                                "rating": {
-                                                    "type": "integer"
-                                                },
-                                                "title": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "body": {
-                                                    "type": [
-                                                        "string",
-                                                        "null"
-                                                    ]
-                                                },
-                                                "visited_at": {
-                                                    "type": "string"
-                                                },
-                                                "created_at": {
-                                                    "type": "string"
-                                                },
-                                                "reviewer": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "string"
-                                                        },
-                                                        "name": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "id",
-                                                        "name"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "id",
-                                                "rating",
-                                                "title",
-                                                "body",
-                                                "visited_at",
-                                                "created_at",
-                                                "reviewer"
-                                            ]
+                                            "type": "array",
+                                            "items": {}
                                         }
                                     },
                                     "required": [

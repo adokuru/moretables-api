@@ -1050,6 +1050,16 @@
               "host": [
                 "{{baseUrl}}"
               ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1058,7 +1068,7 @@
                 "reviews"
               ]
             },
-            "description": "Public review feed and summary stats for a restaurant."
+            "description": "Public review feed with pagination links, rating breakdown, and presentation-ready reviewer details."
           }
         }
       ]

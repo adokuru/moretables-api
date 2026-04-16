@@ -69,4 +69,5 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/admin/reviews']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/onboarding-requests']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/audit-logs']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/restaurants/{restaurant}/reviews']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'summary', 'links', 'meta');
 });

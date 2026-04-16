@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\StoreRestaurantReviewRequest;
 use App\Http\Requests\Customer\UpdateRestaurantReviewRequest;
+use App\Http\Resources\PublicRestaurantReviewResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantReview;
 use App\RestaurantStatus;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -19,29 +21,48 @@ class RestaurantReviewController extends Controller
     /**
      * List public reviews and summary stats for a restaurant.
      */
-    public function index(Restaurant $restaurant): JsonResponse
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 15, example: 15)]
+    public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
 
         $reviews = $restaurant->reviews()
             ->with('user:id,name,first_name,last_name')
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request, 15, 50))
+            ->appends($request->query());
 
         $summary = $restaurant->reviews()
             ->selectRaw('count(*) as reviews_count, avg(rating) as average_rating')
             ->first();
+        $ratingsBreakdown = $restaurant->reviews()
+            ->selectRaw('rating, count(*) as aggregate')
+            ->groupBy('rating')
+            ->pluck('aggregate', 'rating');
 
         return response()->json([
-            'data' => $reviews->getCollection()->map(fn (RestaurantReview $review): array => $this->serializeReview($review))->values(),
+            'data' => PublicRestaurantReviewResource::collection($reviews->getCollection())->resolve($request),
             'summary' => [
                 'reviews_count' => (int) ($summary?->reviews_count ?? 0),
                 'average_rating' => $summary?->average_rating !== null ? round((float) $summary->average_rating, 2) : null,
+                'ratings_breakdown' => collect(range(5, 1))
+                    ->mapWithKeys(fn (int $rating): array => [(string) $rating => (int) ($ratingsBreakdown[$rating] ?? 0)])
+                    ->all(),
+            ],
+            'links' => [
+                'first' => $reviews->url(1),
+                'last' => $reviews->url($reviews->lastPage()),
+                'prev' => $reviews->previousPageUrl(),
+                'next' => $reviews->nextPageUrl(),
             ],
             'meta' => [
                 'current_page' => $reviews->currentPage(),
+                'from' => $reviews->firstItem(),
                 'last_page' => $reviews->lastPage(),
+                'path' => $reviews->path(),
                 'per_page' => $reviews->perPage(),
+                'to' => $reviews->lastItem(),
                 'total' => $reviews->total(),
             ],
         ]);
@@ -69,7 +90,7 @@ class RestaurantReviewController extends Controller
 
         return response()->json([
             'message' => 'Review submitted successfully.',
-            'review' => $this->serializeReview($review),
+            'review' => PublicRestaurantReviewResource::make($review)->resolve(),
         ], 201);
     }
 
@@ -86,7 +107,7 @@ class RestaurantReviewController extends Controller
 
         return response()->json([
             'message' => 'Review updated successfully.',
-            'review' => $this->serializeReview($review),
+            'review' => PublicRestaurantReviewResource::make($review)->resolve(),
         ]);
     }
 
@@ -103,24 +124,5 @@ class RestaurantReviewController extends Controller
         return response()->json([
             'message' => 'Review deleted successfully.',
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function serializeReview(RestaurantReview $review): array
-    {
-        return [
-            'id' => $review->id,
-            'rating' => $review->rating,
-            'title' => $review->title,
-            'body' => $review->body,
-            'visited_at' => $review->visited_at?->toDateString(),
-            'created_at' => $review->created_at?->toIso8601String(),
-            'reviewer' => [
-                'id' => $review->user?->id,
-                'name' => $review->user?->fullName(),
-            ],
-        ];
     }
 }
