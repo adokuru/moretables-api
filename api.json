@@ -9230,6 +9230,38 @@
                             "default": 20
                         },
                         "example": 20
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "ada@example.com"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "active"
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "operations"
+                    },
+                    {
+                        "name": "account_type",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "merchant"
                     }
                 ],
                 "responses": {
@@ -13697,7 +13729,10 @@
                         "maxLength": 30
                     },
                     "password": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "status": {
                         "$ref": "#/components/schemas/UserStatus"
@@ -13705,16 +13740,50 @@
                     "auth_method": {
                         "$ref": "#/components/schemas/UserAuthMethod"
                     },
+                    "account_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "customer",
+                            "merchant",
+                            "admin"
+                        ]
+                    },
+                    "organization_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "restaurant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
                     "password_confirmation": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "roles": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1
                     }
                 },
                 "required": [
                     "first_name",
                     "last_name",
-                    "email",
-                    "password",
-                    "password_confirmation"
+                    "email"
                 ],
                 "title": "StoreAdminUserRequest"
             },
@@ -14889,11 +14958,38 @@
                     "auth_method": {
                         "$ref": "#/components/schemas/UserAuthMethod"
                     },
+                    "account_type": {
+                        "type": "string",
+                        "enum": [
+                            "customer",
+                            "merchant",
+                            "admin"
+                        ]
+                    },
+                    "organization_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "restaurant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
                     "password_confirmation": {
                         "type": [
                             "string",
                             "null"
                         ]
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 1
                     }
                 },
                 "title": "UpdateAdminUserRequest"
@@ -15945,6 +16041,15 @@
                     "auth_method": {
                         "type": "string"
                     },
+                    "account_type": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "customer",
+                            "merchant",
+                            "admin"
+                        ]
+                    },
                     "email_verified_at": {
                         "type": "string"
                     },
@@ -15965,6 +16070,9 @@
                         "type": "array",
                         "items": {}
                     },
+                    "role_assignments": {
+                        "type": "string"
+                    },
                     "created_at": {
                         "type": "string"
                     }
@@ -15980,6 +16088,7 @@
                     "phone",
                     "status",
                     "auth_method",
+                    "account_type",
                     "email_verified_at",
                     "last_active_at",
                     "profile_picture",

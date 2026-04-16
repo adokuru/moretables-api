@@ -69,6 +69,16 @@ class Role extends Model
     /**
      * @return list<string>
      */
+    public static function customerRoles(): array
+    {
+        return [
+            self::Customer,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
     public static function systemRoles(): array
     {
         return [
@@ -132,6 +142,14 @@ class Role extends Model
             self::OrganizationOwner,
             ...self::allRestaurantStaffRoles(),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function merchantRoles(): array
+    {
+        return self::staffLoginRoles();
     }
 
     /**

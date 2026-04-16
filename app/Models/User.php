@@ -242,6 +242,27 @@ class User extends Authenticatable implements HasMedia
         return $this->hasAnyRole(Role::adminRoles());
     }
 
+    public function accountType(): string
+    {
+        $roleNames = $this->relationLoaded('roles')
+            ? $this->roles->pluck('name')->all()
+            : $this->roles()->pluck('name')->all();
+
+        if (array_intersect($roleNames, Role::adminRoles()) !== []) {
+            return 'admin';
+        }
+
+        if (array_intersect($roleNames, Role::merchantRoles()) !== []) {
+            return 'merchant';
+        }
+
+        if (array_intersect($roleNames, Role::customerRoles()) !== []) {
+            return 'customer';
+        }
+
+        return 'user';
+    }
+
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;

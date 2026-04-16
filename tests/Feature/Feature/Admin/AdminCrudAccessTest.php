@@ -134,6 +134,114 @@ it('allows admins to view dashboard metrics and manage users', function () {
     expect(User::query()->whereKey($createdUserId)->exists())->toBeFalse();
 });
 
+it('allows admins to manage customer, merchant, and admin user accounts', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $customerResponse = $this->postJson('/api/v1/admin/users', [
+        'first_name' => 'Chioma',
+        'last_name' => 'Customer',
+        'email' => 'chioma.customer@example.com',
+        'phone' => '+2348000000201',
+        'account_type' => 'customer',
+    ]);
+
+    $customerResponse->assertCreated()
+        ->assertJsonPath('user.account_type', 'customer')
+        ->assertJsonPath('user.auth_method', 'passwordless')
+        ->assertJsonPath('user.roles.0', Role::Customer);
+
+    $merchantResponse = $this->postJson('/api/v1/admin/users', [
+        'first_name' => 'Musa',
+        'last_name' => 'Merchant',
+        'email' => 'musa.merchant@example.com',
+        'phone' => '+2348000000202',
+        'password' => 'MerchantPass123!',
+        'password_confirmation' => 'MerchantPass123!',
+        'account_type' => 'merchant',
+        'roles' => [Role::Operations],
+        'organization_id' => $organization->id,
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $merchantResponse->assertCreated()
+        ->assertJsonPath('user.account_type', 'merchant')
+        ->assertJsonPath('user.roles.0', Role::Operations)
+        ->assertJsonPath('user.role_assignments.0.scope_type', 'restaurant')
+        ->assertJsonPath('user.role_assignments.0.restaurant.id', $restaurant->id);
+
+    $merchantId = $merchantResponse->json('user.id');
+
+    $adminUserResponse = $this->postJson('/api/v1/admin/users', [
+        'first_name' => 'Tola',
+        'last_name' => 'Admin',
+        'email' => 'tola.admin@example.com',
+        'phone' => '+2348000000203',
+        'password' => 'AdminPass123!',
+        'password_confirmation' => 'AdminPass123!',
+        'account_type' => 'admin',
+        'roles' => [Role::BusinessAdmin],
+    ]);
+
+    $adminUserResponse->assertCreated()
+        ->assertJsonPath('user.account_type', 'admin')
+        ->assertJsonPath('user.roles.0', Role::BusinessAdmin);
+
+    $merchantListResponse = $this->getJson('/api/v1/admin/users?account_type=merchant&search=musa.merchant@example.com');
+
+    $merchantListResponse->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.email', 'musa.merchant@example.com')
+        ->assertJsonPath('data.0.account_type', 'merchant');
+
+    $merchantShowResponse = $this->getJson('/api/v1/admin/users/'.$merchantId);
+
+    $merchantShowResponse->assertOk()
+        ->assertJsonPath('data.role_assignments.0.organization.id', $organization->id)
+        ->assertJsonPath('data.role_assignments.0.restaurant.id', $restaurant->id);
+
+    $merchantUpdateResponse = $this->patchJson('/api/v1/admin/users/'.$merchantId, [
+        'status' => 'suspended',
+        'account_type' => 'admin',
+        'roles' => [Role::DevAdmin],
+    ]);
+
+    $merchantUpdateResponse->assertOk()
+        ->assertJsonPath('user.status', 'suspended')
+        ->assertJsonPath('user.account_type', 'admin')
+        ->assertJsonPath('user.roles.0', Role::DevAdmin)
+        ->assertJsonPath('user.role_assignments.0.scope_type', null);
+
+    expect(User::query()->findOrFail($merchantId)->accountType())->toBe('admin');
+    expect(User::query()->findOrFail($merchantId)->hasRole(Role::Operations, restaurant: $restaurant))->toBeFalse();
+    expect(User::query()->findOrFail($merchantId)->hasRole(Role::DevAdmin))->toBeTrue();
+
+    $invalidCustomerResponse = $this->postJson('/api/v1/admin/users', [
+        'first_name' => 'Wrong',
+        'last_name' => 'Scope',
+        'email' => 'wrong.scope@example.com',
+        'account_type' => 'customer',
+        'organization_id' => $organization->id,
+    ]);
+
+    $invalidCustomerResponse->assertUnprocessable()
+        ->assertJsonValidationErrors(['account_type']);
+
+    $deleteResponse = $this->deleteJson('/api/v1/admin/users/'.$merchantId);
+
+    $deleteResponse->assertOk()
+        ->assertJsonPath('message', 'User deleted successfully.');
+});
+
 it('allows admins to manage reservations and reservation analytics', function () {
     $this->seed(RoleAndPermissionSeeder::class);
 
