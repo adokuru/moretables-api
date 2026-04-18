@@ -4062,7 +4062,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Tola\",\n  \"last_name\": \"Admin\",\n  \"email\": \"tola.admin@example.com\",\n  \"phone\": \"+2348000000203\",\n  \"password\": \"AdminPass123!\",\n  \"password_confirmation\": \"AdminPass123!\",\n  \"account_type\": \"admin\",\n  \"roles\": [\n    \"business_admin\"\n  ]\n}"
+              "raw": "{\n  \"name\": \"Tola Admin\",\n  \"email\": \"tola.admin@example.com\",\n  \"role\": \"business_admin\"\n}"
             }
           }
         },

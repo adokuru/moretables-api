@@ -23,15 +23,28 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
-            $base = config('app.password_reset_frontend_url');
+            $base = $notifiable instanceof User && $notifiable->requiresAdminLogin()
+                ? config('app.admin_password_reset_frontend_url')
+                : config('app.password_reset_frontend_url');
 
             if (! is_string($base) || $base === '') {
                 $base = rtrim((string) config('app.url'), '/').'/reset-password';
             }
 
-            return $base.'?'.http_build_query([
-                'token' => $token,
+            $query = [
                 'email' => $notifiable->getEmailForPasswordReset(),
+            ];
+
+            if (str_contains($base, '{token}')) {
+                $base = str_replace('{token}', $token, $base);
+            } elseif ($notifiable instanceof User && $notifiable->requiresAdminLogin()) {
+                $base = rtrim($base, '/').'/'.$token;
+            } else {
+                $query['token'] = $token;
+            }
+
+            return $base.(str_contains($base, '?') ? '&' : '?').http_build_query([
+                ...$query,
             ]);
         });
 

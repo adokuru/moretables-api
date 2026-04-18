@@ -18,6 +18,9 @@ use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 #[Group('Admin Users', weight: 54)]
 class AdminUserController extends Controller
@@ -94,15 +97,28 @@ class AdminUserController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
-        $user = User::query()->create([
-            ...$this->extractUserAttributes($validated, creating: true),
-            'email_verified_at' => now(),
-            'last_active_at' => now(),
-        ]);
-        $this->syncUserAssignments($user, $validated, $request->user());
+        $user = DB::transaction(function () use ($request, $validated): User {
+            $user = User::query()->create([
+                ...$this->extractUserAttributes($validated, creating: true),
+                'email_verified_at' => now(),
+                'last_active_at' => now(),
+            ]);
+
+            $this->syncUserAssignments($user, $validated, $request->user());
+
+            if ($this->shouldSendAdminInvite($validated, $user)) {
+                DB::afterCommit(function () use ($user): void {
+                    Password::sendResetLink(['email' => $user->email]);
+                });
+            }
+
+            return $user;
+        });
 
         return response()->json([
-            'message' => 'User created successfully.',
+            'message' => $this->shouldSendAdminInvite($validated, $user)
+                ? 'Admin user invited successfully.'
+                : 'User created successfully.',
             'user' => UserResource::make($this->loadUserRelations($user)),
         ], 201);
     }
@@ -177,6 +193,8 @@ class AdminUserController extends Controller
         if ($creating || array_key_exists('password', $validated)) {
             if (($validated['password'] ?? null) !== null && $validated['password'] !== '') {
                 $attributes['password'] = $validated['password'];
+            } elseif ($this->isAdminInvitePayload($validated)) {
+                $attributes['password'] = Str::password(40);
             } elseif ($creating) {
                 $attributes['password'] = null;
             }
@@ -274,5 +292,34 @@ class AdminUserController extends Controller
             'roleAssignments.organization',
             'roleAssignments.restaurant',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    protected function shouldSendAdminInvite(array $validated, User $user): bool
+    {
+        if (($validated['account_type'] ?? null) === 'admin') {
+            return true;
+        }
+
+        if ($this->isAdminInvitePayload($validated)) {
+            return true;
+        }
+
+        return $user->requiresAdminLogin();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    protected function isAdminInvitePayload(array $validated): bool
+    {
+        $roles = collect($validated['roles'] ?? [])
+            ->filter(fn ($role): bool => is_string($role))
+            ->values()
+            ->all();
+
+        return $roles !== [] && array_diff($roles, Role::adminRoles()) === [];
     }
 }

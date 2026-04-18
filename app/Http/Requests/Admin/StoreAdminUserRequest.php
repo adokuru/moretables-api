@@ -21,19 +21,49 @@ class StoreAdminUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'max:120'],
-            'last_name' => ['required', 'string', 'max:120'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'first_name' => ['required_without:name', 'string', 'max:120'],
+            'last_name' => ['required_without:name', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'phone' => ['nullable', 'string', 'max:30', Rule::unique('users', 'phone')],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'status' => ['nullable', Rule::enum(UserStatus::class)],
             'auth_method' => ['nullable', Rule::enum(UserAuthMethod::class)],
             'account_type' => ['nullable', Rule::in(['customer', 'merchant', 'admin'])],
+            'role' => ['nullable', 'string', Rule::exists('roles', 'name')],
             'roles' => ['nullable', 'array', 'min:1'],
             'roles.*' => ['string', Rule::exists('roles', 'name')],
             'organization_id' => ['nullable', 'integer', 'exists:organizations,id'],
             'restaurant_id' => ['nullable', 'integer', 'exists:restaurants,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $payload = [];
+        $name = trim((string) $this->input('name', ''));
+
+        if ($name !== '') {
+            $nameParts = preg_split('/\s+/', $name) ?: [];
+            $firstName = array_shift($nameParts) ?? '';
+            $lastName = trim(implode(' ', $nameParts));
+
+            if (! $this->filled('first_name') && $firstName !== '') {
+                $payload['first_name'] = $firstName;
+            }
+
+            if (! $this->filled('last_name')) {
+                $payload['last_name'] = $lastName !== '' ? $lastName : $firstName;
+            }
+        }
+
+        if ($this->filled('role') && ! $this->filled('roles')) {
+            $payload['roles'] = [$this->string('role')->toString()];
+        }
+
+        if ($payload !== []) {
+            $this->merge($payload);
+        }
     }
 
     public function after(): array
@@ -44,7 +74,7 @@ class StoreAdminUserRequest extends FormRequest
                     ->filter(fn ($role) => is_string($role))
                     ->values()
                     ->all();
-                $accountType = $this->input('account_type');
+                $accountType = $this->inferredAccountType();
                 $authMethod = $this->resolvedAuthMethod($accountType);
                 $restaurant = $this->filled('restaurant_id')
                     ? Restaurant::query()->find($this->integer('restaurant_id'))
@@ -54,7 +84,7 @@ class StoreAdminUserRequest extends FormRequest
                     $validator->errors()->add('organization_id', 'The selected organization does not match the restaurant scope.');
                 }
 
-                if ($authMethod === UserAuthMethod::Password->value && blank($this->input('password'))) {
+                if ($authMethod === UserAuthMethod::Password->value && blank($this->input('password')) && $accountType !== 'admin') {
                     $validator->errors()->add('password', 'A password is required for password-based accounts.');
                 }
 
@@ -117,6 +147,7 @@ class StoreAdminUserRequest extends FormRequest
     {
         return [
             'email.unique' => 'This email is already assigned to another user.',
+            'first_name.required_without' => 'A name is required.',
             'phone.unique' => 'This phone number is already assigned to another user.',
         ];
     }
@@ -180,5 +211,37 @@ class StoreAdminUserRequest extends FormRequest
         return $accountType === 'customer'
             ? UserAuthMethod::Passwordless->value
             : UserAuthMethod::Password->value;
+    }
+
+    protected function inferredAccountType(): ?string
+    {
+        $accountType = $this->input('account_type');
+
+        if (is_string($accountType) && $accountType !== '') {
+            return $accountType;
+        }
+
+        $roles = collect($this->input('roles', []))
+            ->filter(fn ($role): bool => is_string($role))
+            ->values()
+            ->all();
+
+        if ($roles === [] && $this->filled('role')) {
+            $roles = [$this->string('role')->toString()];
+        }
+
+        if ($roles !== [] && array_diff($roles, Role::adminRoles()) === []) {
+            return 'admin';
+        }
+
+        if ($roles !== [] && array_diff($roles, Role::merchantRoles()) === []) {
+            return 'merchant';
+        }
+
+        if ($roles === [Role::Customer]) {
+            return 'customer';
+        }
+
+        return null;
     }
 }

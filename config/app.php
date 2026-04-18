@@ -70,6 +70,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin password reset (SPA / API)
+    |--------------------------------------------------------------------------
+    |
+    | Admin reset emails can target a dedicated frontend. The URL may include
+    | a "{token}" placeholder, or the token will be appended as a path segment.
+    | The email address is always appended as a query parameter.
+    |
+    */
+
+    'admin_password_reset_frontend_url' => env('ADMIN_PASSWORD_RESET_FRONTEND_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

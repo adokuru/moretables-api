@@ -12,6 +12,8 @@ use App\ReservationSource;
 use App\ReservationStatus;
 use App\RestaurantStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
 it('allows admins to view dashboard metrics and manage users', function () {
@@ -135,6 +137,7 @@ it('allows admins to view dashboard metrics and manage users', function () {
 });
 
 it('allows admins to manage customer, merchant, and admin user accounts', function () {
+    Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
 
     $admin = User::factory()->create();
@@ -182,19 +185,23 @@ it('allows admins to manage customer, merchant, and admin user accounts', functi
     $merchantId = $merchantResponse->json('user.id');
 
     $adminUserResponse = $this->postJson('/api/v1/admin/users', [
-        'first_name' => 'Tola',
-        'last_name' => 'Admin',
+        'name' => 'Tola Admin',
         'email' => 'tola.admin@example.com',
-        'phone' => '+2348000000203',
-        'password' => 'AdminPass123!',
-        'password_confirmation' => 'AdminPass123!',
-        'account_type' => 'admin',
-        'roles' => [Role::BusinessAdmin],
+        'role' => Role::BusinessAdmin,
     ]);
 
     $adminUserResponse->assertCreated()
+        ->assertJsonPath('message', 'Admin user invited successfully.')
+        ->assertJsonPath('user.name', 'Tola Admin')
         ->assertJsonPath('user.account_type', 'admin')
         ->assertJsonPath('user.roles.0', Role::BusinessAdmin);
+
+    $adminUser = User::query()->where('email', 'tola.admin@example.com')->firstOrFail();
+
+    Notification::assertSentTo($adminUser, ResetPassword::class);
+    $this->assertDatabaseHas('password_reset_tokens', [
+        'email' => $adminUser->email,
+    ]);
 
     $merchantListResponse = $this->getJson('/api/v1/admin/users?account_type=merchant&search=musa.merchant@example.com');
 
