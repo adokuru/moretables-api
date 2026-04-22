@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Reservations\StoreReservationRequest;
+use App\Http\Requests\Reservations\UpdateReservationGuestsRequest;
 use App\Http\Requests\Reservations\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
@@ -72,6 +73,19 @@ class CustomerReservationController extends Controller
         return response()->json([
             'message' => 'Reservation cancelled successfully.',
             'reservation' => ReservationResource::make($cancelledReservation),
+        ]);
+    }
+
+    public function updateGuests(UpdateReservationGuestsRequest $request, Reservation $reservation): JsonResponse
+    {
+        abort_unless($reservation->user_id === $request->user()->id, 404);
+        $this->ensureModificationAllowed($reservation);
+
+        $updatedReservation = $this->reservationService->updateReservationGuests($reservation, $request->user(), $request->validated('guests'));
+
+        return response()->json([
+            'message' => 'Reservation guests updated successfully.',
+            'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }
 

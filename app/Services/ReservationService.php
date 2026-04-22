@@ -155,6 +155,44 @@ class ReservationService
         });
     }
 
+    /**
+     * @param  array<int, array{attendee_name: string, email_address: string, phone_number?: string|null}>  $guests
+     */
+    public function updateReservationGuests(Reservation $reservation, User $actor, array $guests): Reservation
+    {
+        if (count($guests) > $reservation->party_size) {
+            throw ValidationException::withMessages([
+                'guests' => ['Guest count cannot exceed the reservation party size.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($reservation, $actor, $guests): Reservation {
+            $oldMetadata = $reservation->metadata ?? [];
+            $newMetadata = array_merge($oldMetadata, ['guests' => $guests]);
+
+            $reservation->forceFill([
+                'metadata' => $newMetadata,
+            ])->save();
+
+            $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+
+            $this->auditLogService->log(
+                action: 'reservation.guests_updated',
+                actor: $actor,
+                auditable: $reservation,
+                oldValues: ['metadata' => $oldMetadata],
+                newValues: ['metadata' => $newMetadata],
+                restaurant: $reservation->restaurant,
+                organization: $reservation->restaurant->organization,
+                description: 'Reservation guests updated',
+            );
+
+            event(new ReservationUpdated($reservation, 'guests_updated'));
+
+            return $reservation;
+        });
+    }
+
     public function cancelReservation(Reservation $reservation, User $actor, string $action = 'cancelled'): Reservation
     {
         $reservation->forceFill([
