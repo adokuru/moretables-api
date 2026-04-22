@@ -22,7 +22,7 @@ class CustomerWaitlistController extends Controller
     {
         $entries = request()->user()
             ->waitlistEntries()
-            ->with(['restaurant.cuisines', 'restaurant.media', 'reservation'])
+            ->with(['restaurant.cuisines', 'restaurant.media', 'reservation.reservationGuests'])
             ->latest('preferred_starts_at')
             ->paginate(15);
 

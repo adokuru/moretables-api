@@ -23,7 +23,7 @@ class CustomerReservationController extends Controller
     {
         $user = request()->user();
         $reservations = $user->reservations()
-            ->with(['restaurant.cuisines', 'restaurant.media', 'table'])
+            ->with(['restaurant.cuisines', 'restaurant.media', 'table', 'reservationGuests'])
             ->latest('starts_at')
             ->paginate(15);
 
@@ -47,7 +47,7 @@ class CustomerReservationController extends Controller
     {
         abort_unless($reservation->user_id === request()->user()->id, 404);
 
-        return ReservationResource::make($reservation->load(['restaurant.cuisines', 'restaurant.media', 'table']));
+        return ReservationResource::make($reservation->load(['restaurant.cuisines', 'restaurant.media', 'table', 'reservationGuests']));
     }
 
     public function update(UpdateReservationRequest $request, Reservation $reservation): JsonResponse
@@ -85,6 +85,23 @@ class CustomerReservationController extends Controller
 
         return response()->json([
             'message' => 'Reservation guests updated successfully.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    /**
+     * Merge additional guests into the reservation. Existing guests (by email) are updated if the same email appears again.
+     * For a full replace, use {@see updateGuests} (PUT).
+     */
+    public function addGuests(UpdateReservationGuestsRequest $request, Reservation $reservation): JsonResponse
+    {
+        abort_unless($reservation->user_id === $request->user()->id, 404);
+        $this->ensureModificationAllowed($reservation);
+
+        $updatedReservation = $this->reservationService->addReservationGuests($reservation, $request->user(), $request->validated('guests'));
+
+        return response()->json([
+            'message' => 'Reservation guests added successfully.',
             'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }

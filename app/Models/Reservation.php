@@ -8,6 +8,7 @@ use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Reservation extends Model
 {
@@ -71,5 +72,57 @@ class Reservation extends Model
     public function canceledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'canceled_by_user_id');
+    }
+
+    public function reservationGuests(): HasMany
+    {
+        return $this->hasMany(ReservationGuest::class);
+    }
+
+    /**
+     * Additional attendees for the reservation: DB rows if present, otherwise legacy `metadata.guests`.
+     *
+     * @return list<array{attendee_name: string, email_address: string, phone_number?: string|null}>
+     */
+    public function guestsForApi(): array
+    {
+        $this->loadMissing('reservationGuests');
+
+        if ($this->reservationGuests->isNotEmpty()) {
+            return $this->reservationGuests->sortBy('id')->values()->map(fn (ReservationGuest $g): array => array_filter([
+                'attendee_name' => $g->attendee_name,
+                'email_address' => $g->email_address,
+                'phone_number' => $g->phone_number,
+            ], fn ($v) => $v !== null))->values()->all();
+        }
+
+        return self::normalizeMetadataGuests(data_get($this->metadata, 'guests'));
+    }
+
+    /**
+     * Ensure `metadata.guests` is always a list of guest objects.
+     * A single guest may be stored as one associative array (not wrapped in a list).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function normalizeMetadataGuests(mixed $guests): array
+    {
+        if ($guests === null || $guests === []) {
+            return [];
+        }
+
+        if (! is_array($guests)) {
+            return [];
+        }
+
+        if (array_is_list($guests)) {
+            return array_values($guests);
+        }
+
+        if (isset($guests['attendee_name'], $guests['email_address'])) {
+            return [$guests];
+        }
+
+        return array_values($guests);
     }
 }

@@ -7,6 +7,7 @@ use App\Events\TableStatusUpdated;
 use App\Events\WaitlistEntryUpdated;
 use App\Models\GuestContact;
 use App\Models\Reservation;
+use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
@@ -26,6 +27,7 @@ use App\UserStatus;
 use App\WaitlistExpiryReason;
 use App\WaitlistStatus;
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -129,7 +131,7 @@ class ReservationService
 
             $reservation->fill($attributes);
             $reservation->save();
-            $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+            $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
             $this->auditLogService->log(
                 action: 'reservation.updated',
@@ -156,38 +158,144 @@ class ReservationService
     }
 
     /**
+     * How many additional attendees may be listed in `reservation_guests` (legacy: `metadata.guests`).
+     * The person who made the booking occupies one seat, so the cap is `party_size - 1`.
+     */
+    public function maxAdditionalGuestListEntries(Reservation $reservation): int
+    {
+        return max(0, (int) $reservation->party_size - 1);
+    }
+
+    /**
      * @param  array<int, array{attendee_name: string, email_address: string, phone_number?: string|null}>  $guests
      */
     public function updateReservationGuests(Reservation $reservation, User $actor, array $guests): Reservation
     {
-        if (count($guests) > $reservation->party_size) {
+        $max = $this->maxAdditionalGuestListEntries($reservation);
+        if (count($guests) > $max) {
             throw ValidationException::withMessages([
-                'guests' => ['Guest count cannot exceed the reservation party size.'],
+                'guests' => [
+                    $max === 0
+                        ? 'Party size only covers the person who booked; no additional guest entries can be added.'
+                        : "You can list at most {$max} additional guest(s). Party size includes the person who made the booking.",
+                ],
             ]);
         }
 
-        return DB::transaction(function () use ($reservation, $actor, $guests): Reservation {
-            $oldMetadata = $reservation->metadata ?? [];
-            $newMetadata = array_merge($oldMetadata, ['guests' => $guests]);
+        return $this->persistReservationGuests(
+            $reservation,
+            $actor,
+            $guests,
+            'reservation.guests_updated',
+            'Reservation guests updated',
+            'guests_updated',
+        );
+    }
 
-            $reservation->forceFill([
-                'metadata' => $newMetadata,
-            ])->save();
+    /**
+     * Appends (merges) guests into `reservation_guests` by email. Same email: later entry wins.
+     * Use this for incremental adds; use {@see updateReservationGuests} to replace the full list.
+     *
+     * @param  array<int, array{attendee_name: string, email_address: string, phone_number?: string|null}>  $newGuests
+     */
+    public function addReservationGuests(Reservation $reservation, User $actor, array $newGuests): Reservation
+    {
+        $existing = $reservation->guestsForApi();
+        $merged = $this->mergeGuestListsByEmail($existing, $newGuests);
 
-            $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+        $max = $this->maxAdditionalGuestListEntries($reservation);
+        if (count($merged) > $max) {
+            throw ValidationException::withMessages([
+                'guests' => [
+                    $max === 0
+                        ? 'Party size only covers the person who booked; no additional guest entries can be added.'
+                        : "You can list at most {$max} additional guest(s). Party size includes the person who made the booking.",
+                ],
+            ]);
+        }
+
+        return $this->persistReservationGuests(
+            $reservation,
+            $actor,
+            $merged,
+            'reservation.guests_appended',
+            'Reservation guests merged',
+            'guests_updated',
+        );
+    }
+
+    /**
+     * @param  list<array{attendee_name: string, email_address: string, phone_number?: string|null}>  $existing
+     * @param  array<int, array{attendee_name: string, email_address: string, phone_number?: string|null}>  $newGuests
+     * @return list<array{attendee_name: string, email_address: string, phone_number?: string|null}>
+     */
+    protected function mergeGuestListsByEmail(array $existing, array $newGuests): array
+    {
+        $byEmail = [];
+        $missingEmailKey = 0;
+
+        foreach (array_merge($existing, $newGuests) as $guest) {
+            $email = strtolower(trim($guest['email_address'] ?? ''));
+            $key = $email !== '' ? $email : 'missing-email:'.($missingEmailKey++);
+            $byEmail[$key] = $guest;
+        }
+
+        return array_values($byEmail);
+    }
+
+    /**
+     * @param  list<array{attendee_name: string, email_address: string, phone_number?: string|null}>  $guests
+     */
+    protected function persistReservationGuests(
+        Reservation $reservation,
+        User $actor,
+        array $guests,
+        string $auditAction,
+        string $auditDescription,
+        string $eventAction,
+    ): Reservation {
+        return DB::transaction(function () use ($reservation, $actor, $guests, $auditAction, $auditDescription, $eventAction): Reservation {
+            $reservation->loadMissing('reservationGuests');
+            $oldGuests = $reservation->guestsForApi();
+
+            $reservation->reservationGuests()->delete();
+
+            $metadata = $reservation->metadata;
+            if (is_array($metadata) && array_key_exists('guests', $metadata)) {
+                $metadata = Arr::except($metadata, ['guests']);
+                if ($metadata === []) {
+                    $metadata = null;
+                }
+            }
+            $reservation->forceFill(['metadata' => $metadata]);
+            $reservation->save();
+
+            foreach ($guests as $guest) {
+                $email = trim($guest['email_address']);
+                ReservationGuest::query()->create([
+                    'reservation_id' => $reservation->id,
+                    'restaurant_id' => $reservation->restaurant_id,
+                    'attendee_name' => $guest['attendee_name'],
+                    'email_address' => $email,
+                    'email_normalized' => Str::lower($email),
+                    'phone_number' => $guest['phone_number'] ?? null,
+                ]);
+            }
+
+            $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
             $this->auditLogService->log(
-                action: 'reservation.guests_updated',
+                action: $auditAction,
                 actor: $actor,
                 auditable: $reservation,
-                oldValues: ['metadata' => $oldMetadata],
-                newValues: ['metadata' => $newMetadata],
+                oldValues: ['guests' => $oldGuests],
+                newValues: ['guests' => $guests],
                 restaurant: $reservation->restaurant,
                 organization: $reservation->restaurant->organization,
-                description: 'Reservation guests updated',
+                description: $auditDescription,
             );
 
-            event(new ReservationUpdated($reservation, 'guests_updated'));
+            event(new ReservationUpdated($reservation, $eventAction));
 
             return $reservation;
         });
@@ -201,7 +309,7 @@ class ReservationService
             'canceled_by_user_id' => $actor->id,
         ])->save();
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
         $this->auditLogService->log(
             action: 'reservation.cancelled',
@@ -246,7 +354,7 @@ class ReservationService
         }
 
         $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
         $this->auditLogService->log(
             action: 'reservation.table_assigned',
@@ -274,7 +382,7 @@ class ReservationService
             event(new TableStatusUpdated($reservation->table, 'occupied'));
         }
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, 'seated'));
 
         return $reservation;
@@ -292,7 +400,7 @@ class ReservationService
             event(new TableStatusUpdated($reservation->table, 'available'));
         }
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact']);
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, 'completed'));
 
         return $reservation;
@@ -319,7 +427,7 @@ class ReservationService
             'notes' => $attributes['notes'] ?? null,
         ]);
 
-        $entry->load(['restaurant', 'reservation', 'user', 'guestContact']);
+        $entry->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
 
         $this->auditLogService->log(
             action: 'waitlist.created',
@@ -352,7 +460,7 @@ class ReservationService
                 'expires_at' => now()->addMinutes($expiresInMinutes),
             ])->save();
 
-            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
 
             if ($entry->user) {
                 $entry->user->notify(new WaitlistAvailabilityNotification($entry));
@@ -413,7 +521,7 @@ class ReservationService
                 ]),
             ])->save();
 
-            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
             event(new WaitlistEntryUpdated($entry, 'accepted'));
 
             return $reservation;
@@ -436,7 +544,7 @@ class ReservationService
                 ]),
             ])->save();
 
-            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
             event(new WaitlistEntryUpdated($entry, 'declined'));
 
             return $entry;
@@ -474,7 +582,7 @@ class ReservationService
                 'seated_at' => now(),
             ])->save();
 
-            $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
             event(new WaitlistEntryUpdated($entry, 'seated'));
 
             return $reservation;
@@ -525,7 +633,7 @@ class ReservationService
                 'internal_notes' => $attributes['internal_notes'] ?? null,
             ]);
 
-            $reservation->load(['restaurant', 'table', 'user', 'guestContact']);
+            $reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
             $this->auditLogService->log(
                 action: 'reservation.created',
@@ -591,7 +699,7 @@ class ReservationService
             ]),
         ])->save();
 
-        $entry->refresh()->load(['restaurant', 'reservation', 'user', 'guestContact']);
+        $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
         event(new WaitlistEntryUpdated($entry, 'expired'));
 
         $this->notifyWaitlistOfferClosed($entry, $reason);

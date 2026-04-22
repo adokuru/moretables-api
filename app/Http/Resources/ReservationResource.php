@@ -19,7 +19,7 @@ class ReservationResource extends JsonResource
             'starts_at' => optional($this->starts_at)?->toIso8601String(),
             'ends_at' => optional($this->ends_at)?->toIso8601String(),
             'notes' => $this->notes,
-            'guests' => self::normalizeMetadataGuests(data_get($this->metadata, 'guests')),
+            'guests' => $this->resource->guestsForApi(),
             'internal_notes' => $this->when(
                 $request->user()?->hasRestaurantPermission('reservations.view', $this->restaurant),
                 $this->internal_notes,
@@ -38,33 +38,5 @@ class ReservationResource extends JsonResource
                 'phone' => $this->guestContact?->phone,
             ]),
         ];
-    }
-
-    /**
-     * Ensure `guests` is always a list of guest objects for API consumers.
-     * A single guest was occasionally stored as one associative array under `metadata.guests`
-     * (not wrapped in a list), which serializes as one object and breaks list UIs.
-     *
-     * @return list<array<string, mixed>>
-     */
-    protected static function normalizeMetadataGuests(mixed $guests): array
-    {
-        if ($guests === null || $guests === []) {
-            return [];
-        }
-
-        if (! is_array($guests)) {
-            return [];
-        }
-
-        if (array_is_list($guests)) {
-            return array_values($guests);
-        }
-
-        if (isset($guests['attendee_name'], $guests['email_address'])) {
-            return [$guests];
-        }
-
-        return array_values($guests);
     }
 }

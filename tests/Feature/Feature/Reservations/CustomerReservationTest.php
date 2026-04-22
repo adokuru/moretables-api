@@ -2,6 +2,7 @@
 
 use App\Events\ReservationUpdated;
 use App\Models\Reservation;
+use App\Models\ReservationGuest;
 use App\Models\User;
 use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Support\Facades\Event;
@@ -63,6 +64,7 @@ it('updates guests on a customer reservation through a dedicated endpoint', func
         'restaurant_id' => $data['restaurant']->id,
         'user_id' => $customer->id,
         'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
         'starts_at' => now()->addDays(2)->setTime(19, 0),
         'ends_at' => now()->addDays(2)->setTime(21, 0),
         'metadata' => [
@@ -97,19 +99,20 @@ it('updates guests on a customer reservation through a dedicated endpoint', func
 
     $reservation->refresh();
 
-    expect($reservation->metadata)->toMatchArray([
-        'guests' => [
-            [
-                'attendee_name' => 'Updated Guest',
-                'email_address' => 'updated.guest@example.com',
-                'phone_number' => '+2348000000001',
-            ],
-            [
-                'attendee_name' => 'New Guest',
-                'email_address' => 'new.guest@example.com',
-            ],
-        ],
-    ]);
+    $guestRows = ReservationGuest::query()
+        ->where('reservation_id', $reservation->id)
+        ->orderBy('id')
+        ->get();
+
+    expect($guestRows)->toHaveCount(2);
+    expect($guestRows[0]->attendee_name)->toBe('Updated Guest');
+    expect($guestRows[0]->email_address)->toBe('updated.guest@example.com');
+    expect($guestRows[0]->phone_number)->toBe('+2348000000001');
+    expect($guestRows[1]->attendee_name)->toBe('New Guest');
+    expect($guestRows[1]->email_address)->toBe('new.guest@example.com');
+
+    $metadata = $reservation->metadata;
+    expect($metadata === null || ! is_array($metadata) || ! array_key_exists('guests', $metadata))->toBeTrue();
 });
 
 it('returns all saved guests when fetching a reservation by id', function () {
@@ -175,7 +178,112 @@ it('normalizes metadata guests stored as a single object into a one-element arra
         ->assertJsonPath('data.guests.0.email_address', 'solo.object@example.com');
 });
 
-it('rejects guest updates when guest count exceeds party size', function () {
+it('allows up to party size minus one additional guest entries', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 5,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $guests = collect(range(1, 4))->map(fn (int $i) => [
+        'attendee_name' => "Guest {$i}",
+        'email_address' => "guest{$i}@example.com",
+    ])->all();
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => $guests,
+    ])->assertOk()
+        ->assertJsonCount(4, 'reservation.guests');
+});
+
+it('rejects guest updates when guest count exceeds additional guest cap', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    // party_size 3 => at most 2 additional guest entries; 3 is over the cap
+    $response = $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'First Guest',
+                'email_address' => 'first.guest@example.com',
+            ],
+            [
+                'attendee_name' => 'Second Guest',
+                'email_address' => 'second.guest@example.com',
+            ],
+            [
+                'attendee_name' => 'Third Guest',
+                'email_address' => 'third.guest@example.com',
+            ],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['guests']);
+});
+
+it('merges guests when adding in separate requests without losing prior guests', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'First Add',
+                'email_address' => 'first@example.com',
+            ],
+        ],
+    ])->assertOk()
+        ->assertJsonCount(1, 'reservation.guests');
+
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Second Add',
+                'email_address' => 'second@example.com',
+            ],
+        ],
+    ])->assertOk()
+        ->assertJsonCount(2, 'reservation.guests');
+
+    $this->getJson('/api/v1/reservations/'.$reservation->id)
+        ->assertOk()
+        ->assertJsonCount(2, 'data.guests')
+        ->assertJsonPath('data.guests.0.attendee_name', 'First Add')
+        ->assertJsonPath('data.guests.1.attendee_name', 'Second Add');
+});
+
+it('updates an existing guest when adding with the same email', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
 
@@ -190,19 +298,62 @@ it('rejects guest updates when guest count exceeds party size', function () {
 
     Sanctum::actingAs($customer);
 
-    $response = $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
         'guests' => [
             [
-                'attendee_name' => 'First Guest',
-                'email_address' => 'first.guest@example.com',
+                'attendee_name' => 'Original Name',
+                'email_address' => 'same@example.com',
+            ],
+        ],
+    ])->assertOk();
+
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Updated Name',
+                'email_address' => 'same@example.com',
+                'phone_number' => '+10000000000',
+            ],
+        ],
+    ])->assertOk()
+        ->assertJsonCount(1, 'reservation.guests')
+        ->assertJsonPath('reservation.guests.0.attendee_name', 'Updated Name')
+        ->assertJsonPath('reservation.guests.0.phone_number', '+10000000000');
+});
+
+it('rejects add-guest when merged count would exceed party size', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Guest A',
+                'email_address' => 'a@example.com',
+            ],
+        ],
+    ])->assertOk();
+
+    $response = $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Guest B',
+                'email_address' => 'b@example.com',
             ],
             [
-                'attendee_name' => 'Second Guest',
-                'email_address' => 'second.guest@example.com',
-            ],
-            [
-                'attendee_name' => 'Third Guest',
-                'email_address' => 'third.guest@example.com',
+                'attendee_name' => 'Guest C',
+                'email_address' => 'c@example.com',
             ],
         ],
     ]);

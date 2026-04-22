@@ -26,7 +26,7 @@ class AdminReservationController extends Controller
         $this->ensureAdminAccess($request);
 
         $reservations = Reservation::query()
-            ->with(['restaurant.organization', 'table', 'user.roles', 'guestContact'])
+            ->with(['restaurant.organization', 'table', 'user.roles', 'guestContact', 'reservationGuests'])
             ->when(
                 filled($request->string('search')->toString()),
                 fn ($query) => $query->where('reservation_reference', 'like', '%'.$request->string('search')->toString().'%'),
@@ -99,7 +99,7 @@ class AdminReservationController extends Controller
 
         return response()->json([
             'message' => 'Reservation created successfully.',
-            'reservation' => ReservationResource::make($reservation->load(['restaurant.organization', 'table', 'user.roles', 'guestContact'])),
+            'reservation' => ReservationResource::make($reservation->load(['restaurant.organization', 'table', 'user.roles', 'guestContact', 'reservationGuests'])),
         ], 201);
     }
 
@@ -107,7 +107,7 @@ class AdminReservationController extends Controller
     {
         $this->ensureAdminAccess($request);
 
-        return ReservationResource::make($reservation->load(['restaurant.organization', 'table', 'user.roles', 'guestContact']));
+        return ReservationResource::make($reservation->load(['restaurant.organization', 'table', 'user.roles', 'guestContact', 'reservationGuests']));
     }
 
     public function update(UpdateAdminReservationRequest $request, Reservation $reservation): JsonResponse
@@ -118,7 +118,7 @@ class AdminReservationController extends Controller
 
         return response()->json([
             'message' => 'Reservation updated successfully.',
-            'reservation' => ReservationResource::make($reservation->refresh()->load(['restaurant.organization', 'table', 'user.roles', 'guestContact'])),
+            'reservation' => ReservationResource::make($reservation->refresh()->load(['restaurant.organization', 'table', 'user.roles', 'guestContact', 'reservationGuests'])),
         ]);
     }
 

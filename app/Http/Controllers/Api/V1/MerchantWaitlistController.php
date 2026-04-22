@@ -28,7 +28,7 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $entries = $restaurant->waitlistEntries()
-            ->with(['restaurant', 'reservation', 'user', 'guestContact'])
+            ->with(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact'])
             ->latest('preferred_starts_at')
             ->paginate(20);
 

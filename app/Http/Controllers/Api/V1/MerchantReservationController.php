@@ -25,7 +25,7 @@ class MerchantReservationController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $reservations = $restaurant->reservations()
-            ->with(['restaurant', 'table', 'user', 'guestContact'])
+            ->with(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests'])
             ->when($request->filled('date'), fn ($query) => $query->whereDate('starts_at', $request->string('date')->toString()))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->orderBy('starts_at')
@@ -52,7 +52,7 @@ class MerchantReservationController extends Controller
         abort_unless(request()->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
-        return ReservationResource::make($reservation->load(['restaurant', 'table', 'user', 'guestContact']));
+        return ReservationResource::make($reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']));
     }
 
     public function update(UpdateMerchantReservationRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
