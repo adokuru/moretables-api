@@ -112,6 +112,69 @@ it('updates guests on a customer reservation through a dedicated endpoint', func
     ]);
 });
 
+it('returns all saved guests when fetching a reservation by id', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Guest One',
+                'email_address' => 'one@example.com',
+            ],
+            [
+                'attendee_name' => 'Guest Two',
+                'email_address' => 'two@example.com',
+            ],
+        ],
+    ])->assertOk();
+
+    $this->getJson('/api/v1/reservations/'.$reservation->id)
+        ->assertOk()
+        ->assertJsonCount(2, 'data.guests')
+        ->assertJsonPath('data.guests.0.attendee_name', 'Guest One')
+        ->assertJsonPath('data.guests.1.attendee_name', 'Guest Two');
+});
+
+it('normalizes metadata guests stored as a single object into a one-element array', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+        'metadata' => [
+            'guests' => [
+                'attendee_name' => 'Solo Object',
+                'email_address' => 'solo.object@example.com',
+            ],
+        ],
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->getJson('/api/v1/reservations/'.$reservation->id)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.guests')
+        ->assertJsonPath('data.guests.0.attendee_name', 'Solo Object')
+        ->assertJsonPath('data.guests.0.email_address', 'solo.object@example.com');
+});
+
 it('rejects guest updates when guest count exceeds party size', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
