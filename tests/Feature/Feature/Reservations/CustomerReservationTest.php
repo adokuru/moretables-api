@@ -54,3 +54,123 @@ it('lets a customer cancel their reservation before the cutoff window', function
     $response->assertOk()
         ->assertJsonPath('reservation.status', 'cancelled');
 });
+
+it('updates guests on a customer reservation through a dedicated endpoint', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+        'metadata' => [
+            'guests' => [
+                [
+                    'first_name' => 'Initial',
+                    'last_name' => 'Guest',
+                ],
+            ],
+        ],
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Updated Guest',
+                'email_address' => 'updated.guest@example.com',
+                'phone_number' => '+2348000000001',
+            ],
+            [
+                'attendee_name' => 'New Guest',
+                'email_address' => 'new.guest@example.com',
+            ],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('reservation.guests.0.attendee_name', 'Updated Guest')
+        ->assertJsonPath('reservation.guests.1.attendee_name', 'New Guest');
+
+    $reservation->refresh();
+
+    expect($reservation->metadata)->toMatchArray([
+        'guests' => [
+            [
+                'attendee_name' => 'Updated Guest',
+                'email_address' => 'updated.guest@example.com',
+                'phone_number' => '+2348000000001',
+            ],
+            [
+                'attendee_name' => 'New Guest',
+                'email_address' => 'new.guest@example.com',
+            ],
+        ],
+    ]);
+});
+
+it('rejects guest updates when guest count exceeds party size', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'First Guest',
+                'email_address' => 'first.guest@example.com',
+            ],
+            [
+                'attendee_name' => 'Second Guest',
+                'email_address' => 'second.guest@example.com',
+            ],
+            [
+                'attendee_name' => 'Third Guest',
+                'email_address' => 'third.guest@example.com',
+            ],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['guests']);
+});
+
+it('validates guest payload using attendee fields', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Missing Email',
+            ],
+        ],
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['guests.0.email_address']);
+});

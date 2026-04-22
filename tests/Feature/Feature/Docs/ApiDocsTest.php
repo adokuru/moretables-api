@@ -31,6 +31,7 @@ it('serves the generated api specification route', function () {
         '/me/restaurant-lists',
         '/me/restaurant-lists/{restaurantList}/restaurants',
         '/reservations',
+        '/reservations/{reservation}/guests',
         '/restaurants/discovery',
         '/restaurants/discovery/{section}',
         '/restaurants/{restaurant}/views',

@@ -19,6 +19,7 @@ class ReservationResource extends JsonResource
             'starts_at' => optional($this->starts_at)?->toIso8601String(),
             'ends_at' => optional($this->ends_at)?->toIso8601String(),
             'notes' => $this->notes,
+            'guests' => data_get($this->metadata, 'guests', []),
             'internal_notes' => $this->when(
                 $request->user()?->hasRestaurantPermission('reservations.view', $this->restaurant),
                 $this->internal_notes,

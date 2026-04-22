@@ -1883,6 +1883,49 @@
           }
         },
         {
+          "name": "Update reservation guests",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reservations/{{reservation_id}}/guests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{reservation_id}}",
+                "guests"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guests\": [\n    {\n      \"attendee_name\": \"David Salamanca\",\n      \"email_address\": \"salamanca@gmail.com\",\n      \"phone_number\": \"+2348000000000\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
           "name": "Cancel reservation",
           "request": {
             "method": "DELETE",
