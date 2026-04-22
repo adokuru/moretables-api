@@ -1647,7 +1647,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rating\": 5,\n  \"title\": \"Excellent dinner\",\n  \"body\": \"Loved the tasting menu and service.\",\n  \"visited_at\": \"2026-03-21\"\n}"
+              "raw": "{\n  \"rating\": 5,\n  \"title\": \"Excellent dinner\",\n  \"body\": \"Loved the tasting menu and service.\",\n  \"review_images\": [],\n  \"visited_at\": \"2026-03-21\"\n}"
             }
           }
         },
@@ -1691,7 +1691,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rating\": 4,\n  \"body\": \"Still great, dessert was the highlight.\"\n}"
+              "raw": "{\n  \"rating\": 4,\n  \"body\": \"Still great, dessert was the highlight.\",\n  \"review_images\": []\n}"
             }
           }
         },

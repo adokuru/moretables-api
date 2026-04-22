@@ -13,6 +13,8 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 #[Group('Restaurant Reviews', weight: 6)]
@@ -81,8 +83,11 @@ class RestaurantReviewController extends Controller
             ]);
         }
 
+        $payload = $request->safe()->except('review_images');
+        $payload['review_images'] = $this->storeReviewImages($request->file('review_images', []));
+
         $review = $restaurant->reviews()->create([
-            ...$request->validated(),
+            ...$payload,
             'user_id' => $request->user()->id,
         ]);
 
@@ -102,7 +107,14 @@ class RestaurantReviewController extends Controller
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
         abort_unless($review->restaurant_id === $restaurant->id && $review->user_id === $request->user()->id, 404);
 
-        $review->update($request->validated());
+        $payload = $request->safe()->except('review_images');
+
+        if ($request->hasFile('review_images') || $request->has('review_images')) {
+            $this->deleteReviewImages($review->review_images ?? []);
+            $payload['review_images'] = $this->storeReviewImages($request->file('review_images', []));
+        }
+
+        $review->update($payload);
         $review->load('user:id,name,first_name,last_name');
 
         return response()->json([
@@ -119,10 +131,36 @@ class RestaurantReviewController extends Controller
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
         abort_unless($review->restaurant_id === $restaurant->id && $review->user_id === $request->user()->id, 404);
 
+        $this->deleteReviewImages($review->review_images ?? []);
         $review->delete();
 
         return response()->json([
             'message' => 'Review deleted successfully.',
         ]);
+    }
+
+    /**
+     * @param  array<int, UploadedFile>  $reviewImages
+     * @return array<int, string>
+     */
+    private function storeReviewImages(array $reviewImages): array
+    {
+        $storedImages = [];
+
+        foreach ($reviewImages as $reviewImage) {
+            $storedImages[] = $reviewImage->store('reviews', 'public');
+        }
+
+        return $storedImages;
+    }
+
+    /**
+     * @param  array<int, string>  $reviewImages
+     */
+    private function deleteReviewImages(array $reviewImages): void
+    {
+        foreach ($reviewImages as $reviewImage) {
+            Storage::disk('public')->delete($reviewImage);
+        }
     }
 }

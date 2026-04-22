@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class PublicRestaurantReviewResource extends JsonResource
 {
@@ -20,6 +21,10 @@ class PublicRestaurantReviewResource extends JsonResource
             'id' => $this->id,
             'rating' => $this->rating,
             'notes' => $this->body,
+            'review_images' => collect($this->review_images ?? [])
+                ->map(fn (string $reviewImage): string => Storage::disk('public')->url($reviewImage))
+                ->values()
+                ->all(),
             'visited_at' => optional($this->visited_at)?->toDateString(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'reviewer' => [

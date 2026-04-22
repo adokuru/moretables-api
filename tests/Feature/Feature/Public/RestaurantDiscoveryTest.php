@@ -11,6 +11,8 @@ use App\Models\UserRestaurantList;
 use App\Models\UserRestaurantListItem;
 use App\ReservationStatus;
 use App\RestaurantStatus;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 it('returns discovery sections for top booked viewed saved rated new featured timeofday and lineup restaurants', function () {
@@ -300,6 +302,8 @@ it('lets authenticated users save restaurants and manage custom restaurant lists
 });
 
 it('lets authenticated users create update and list restaurant reviews', function () {
+    Storage::fake('public');
+
     $customer = User::factory()->create([
         'name' => 'Ada Okafor',
         'first_name' => 'Ada',
@@ -313,12 +317,17 @@ it('lets authenticated users create update and list restaurant reviews', functio
         'rating' => 5,
         'title' => 'Excellent dinner',
         'body' => 'Loved the tasting menu and service.',
+        'review_images' => [
+            UploadedFile::fake()->image('review-one.png'),
+            UploadedFile::fake()->image('review-two.png'),
+        ],
         'visited_at' => now()->subDay()->toDateString(),
     ]);
 
     $createResponse->assertCreated()
         ->assertJsonPath('message', 'Review submitted successfully.')
         ->assertJsonPath('review.rating', 5)
+        ->assertJsonCount(2, 'review.review_images')
         ->assertJsonPath('review.reviewer.name', 'Ada Okafor');
 
     $duplicateResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews', [
@@ -333,10 +342,12 @@ it('lets authenticated users create update and list restaurant reviews', functio
     $updateResponse = $this->patchJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews/'.$reviewId, [
         'rating' => 4,
         'body' => 'Still great, but dessert was the highlight.',
+        'review_images' => [],
     ]);
 
     $updateResponse->assertOk()
         ->assertJsonPath('review.rating', 4)
+        ->assertJsonCount(0, 'review.review_images')
         ->assertJsonPath('review.notes', 'Still great, but dessert was the highlight.');
 
     $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');

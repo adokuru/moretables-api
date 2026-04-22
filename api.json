@@ -1052,7 +1052,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/StoreRestaurantReviewRequest"
                             }
@@ -1125,7 +1125,7 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/UpdateRestaurantReviewRequest"
                             }
@@ -14371,6 +14371,19 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "review_images": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        },
+                        "maxItems": 5
                     }
                 },
                 "required": [
@@ -15789,6 +15802,19 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "review_images": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        },
+                        "maxItems": 5
                     }
                 },
                 "title": "UpdateRestaurantReviewRequest"

@@ -18,6 +18,7 @@ class RestaurantReview extends Model
         'rating',
         'title',
         'body',
+        'review_images',
         'visited_at',
     ];
 
@@ -25,6 +26,7 @@ class RestaurantReview extends Model
     {
         return [
             'rating' => 'integer',
+            'review_images' => 'array',
             'visited_at' => 'date',
         ];
     }
