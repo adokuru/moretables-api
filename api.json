@@ -12486,6 +12486,47 @@
                             "$ref": "#/components/schemas/MediaAssetResource"
                         }
                     },
+                    "discovery_metrics": {
+                        "type": "object",
+                        "properties": {
+                            "bookings_count": {
+                                "type": "integer"
+                            },
+                            "views_count": {
+                                "type": "integer"
+                            },
+                            "saves_count": {
+                                "type": "integer"
+                            },
+                            "list_adds_count": {
+                                "type": "integer"
+                            },
+                            "reviews_count": {
+                                "type": "integer"
+                            },
+                            "average_rating": {
+                                "anyOf": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            0
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "bookings_count",
+                            "views_count",
+                            "saves_count",
+                            "list_adds_count",
+                            "reviews_count",
+                            "average_rating"
+                        ]
+                    },
                     "media": {
                         "type": "array",
                         "items": {
@@ -12567,7 +12608,8 @@
                     "accessibility_features",
                     "featured_image",
                     "gallery_images",
-                    "menu_documents"
+                    "menu_documents",
+                    "discovery_metrics"
                 ],
                 "title": "RestaurantDetailResource"
             },
@@ -14383,7 +14425,7 @@
                             "contentMediaType": "application/octet-stream",
                             "maxLength": 10240
                         },
-                        "maxItems": 5
+                        "maxItems": 10
                     }
                 },
                 "required": [

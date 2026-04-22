@@ -17,7 +17,7 @@ class StoreRestaurantReviewRequest extends FormRequest
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'title' => ['nullable', 'string', 'max:160'],
             'body' => ['nullable', 'string', 'max:5000'],
-            'review_images' => ['nullable', 'array', 'max:5'],
+            'review_images' => ['nullable', 'array', 'max:10'],
             'review_images.*' => ['image', 'max:10240'],
             'visited_at' => ['nullable', 'date'],
         ];

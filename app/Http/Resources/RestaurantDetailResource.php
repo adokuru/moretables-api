@@ -25,6 +25,17 @@ class RestaurantDetailResource extends JsonResource
                 ->values();
         }
 
+        $discoveryMetrics = [
+            'bookings_count' => (int) ($this->resource->getAttribute('bookings_count') ?? 0),
+            'views_count' => (int) ($this->resource->getAttribute('views_count') ?? 0),
+            'saves_count' => (int) ($this->resource->getAttribute('saves_count') ?? 0),
+            'list_adds_count' => (int) ($this->resource->getAttribute('list_adds_count') ?? 0),
+            'reviews_count' => (int) ($this->resource->getAttribute('reviews_count') ?? 0),
+            'average_rating' => $this->resource->getAttribute('average_rating') !== null
+                ? round((float) $this->resource->getAttribute('average_rating'), 2)
+                : 0,
+        ];
+
         return [
             'id' => $this->id,
             'organization_id' => $this->organization_id,
@@ -64,6 +75,7 @@ class RestaurantDetailResource extends JsonResource
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'gallery_images' => MediaAssetResource::collection($galleryImages),
             'menu_documents' => MediaAssetResource::collection($menuDocuments),
+            'discovery_metrics' => $discoveryMetrics,
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
                 'day_of_week' => $hour->day_of_week,

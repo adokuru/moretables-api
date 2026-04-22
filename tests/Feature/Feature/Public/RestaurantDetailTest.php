@@ -5,6 +5,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
+use App\Models\RestaurantReview;
 use App\Models\SavedRestaurant;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -70,6 +71,11 @@ it('includes grouped menu items in the public restaurant detail response', funct
         ->withCustomProperties(['alt_text' => 'Menu item cover image'])
         ->toMediaCollection('featured');
 
+    RestaurantReview::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'rating' => 4,
+    ]);
+
     $response = $this->getJson('/api/v1/restaurants/'.$restaurant->slug);
 
     $response->assertOk()
@@ -79,7 +85,13 @@ it('includes grouped menu items in the public restaurant detail response', funct
         ->assertJsonPath('data.menus.0.items.0.name', 'Pepper Prawns')
         ->assertJsonPath('data.menus.0.items.0.featured_image.featured', true)
         ->assertJsonPath('data.menus.1.section', 'Mains')
-        ->assertJsonPath('data.menus.1.items.0.price', 28500);
+        ->assertJsonPath('data.menus.1.items.0.price', 28500)
+        ->assertJsonPath('data.discovery_metrics.bookings_count', 0)
+        ->assertJsonPath('data.discovery_metrics.views_count', 0)
+        ->assertJsonPath('data.discovery_metrics.saves_count', 0)
+        ->assertJsonPath('data.discovery_metrics.list_adds_count', 0)
+        ->assertJsonPath('data.discovery_metrics.reviews_count', 1)
+        ->assertJsonPath('data.discovery_metrics.average_rating', 4);
 });
 
 it('includes has_saved in the public restaurant detail response for authenticated users', function () {

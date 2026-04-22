@@ -136,6 +136,14 @@ class PublicRestaurantController extends Controller
                     'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $user->id),
                 ]);
             })
+            ->withCount([
+                'reservations as bookings_count',
+                'views as views_count',
+                'savedEntries as saves_count',
+                'listItems as list_adds_count',
+                'reviews as reviews_count',
+            ])
+            ->withAvg('reviews as average_rating', 'rating')
             ->whereKey($restaurant->getKey())
             ->firstOrFail();
 
