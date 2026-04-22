@@ -8,6 +8,7 @@ use App\Http\Requests\Reservations\UpdateReservationGuestsRequest;
 use App\Http\Requests\Reservations\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
+use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Services\ReservationService;
 use Carbon\Carbon;
@@ -102,6 +103,27 @@ class CustomerReservationController extends Controller
 
         return response()->json([
             'message' => 'Reservation guests added successfully.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    /**
+     * Remove one additional guest by `reservation_guests.id`. To clear every additional guest, use {@see updateGuests} with an empty `guests` array.
+     */
+    public function removeGuest(Reservation $reservation, ReservationGuest $reservationGuest): JsonResponse
+    {
+        abort_unless($reservation->user_id === request()->user()->id, 404);
+        abort_unless($reservationGuest->reservation_id === $reservation->id, 404);
+        $this->ensureModificationAllowed($reservation);
+
+        $updatedReservation = $this->reservationService->removeReservationGuest(
+            $reservation,
+            request()->user(),
+            $reservationGuest,
+        );
+
+        return response()->json([
+            'message' => 'Reservation guest removed successfully.',
             'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }

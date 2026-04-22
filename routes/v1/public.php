@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::patch('reservations/{reservation}', [CustomerReservationController::class, 'update']);
     Route::post('reservations/{reservation}/guests', [CustomerReservationController::class, 'addGuests']);
     Route::put('reservations/{reservation}/guests', [CustomerReservationController::class, 'updateGuests']);
+    Route::delete('reservations/{reservation}/guests/{reservationGuest}', [CustomerReservationController::class, 'removeGuest']);
     Route::delete('reservations/{reservation}', [CustomerReservationController::class, 'destroy']);
 
     Route::get('me/waitlist-entries', [CustomerWaitlistController::class, 'index']);

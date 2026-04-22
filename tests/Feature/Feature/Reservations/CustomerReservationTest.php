@@ -115,6 +115,117 @@ it('updates guests on a customer reservation through a dedicated endpoint', func
     expect($metadata === null || ! is_array($metadata) || ! array_key_exists('guests', $metadata))->toBeTrue();
 });
 
+it('removes a single guest via delete endpoint', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 4,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Keep',
+                'email_address' => 'keep@example.com',
+            ],
+            [
+                'attendee_name' => 'Remove',
+                'email_address' => 'remove@example.com',
+            ],
+        ],
+    ])->assertOk()
+        ->assertJsonCount(2, 'reservation.guests');
+
+    $toRemove = ReservationGuest::query()
+        ->where('reservation_id', $reservation->id)
+        ->where('email_address', 'remove@example.com')
+        ->firstOrFail();
+
+    $this->deleteJson('/api/v1/reservations/'.$reservation->id.'/guests/'.$toRemove->id)
+        ->assertOk()
+        ->assertJsonCount(1, 'reservation.guests')
+        ->assertJsonPath('reservation.guests.0.email_address', 'keep@example.com');
+
+    expect(ReservationGuest::query()->where('reservation_id', $reservation->id)->count())->toBe(1);
+});
+
+it('returns 404 when removing a guest that belongs to another reservation', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $other = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    $otherReservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $other->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(2)->setTime(20, 0),
+        'ends_at' => now()->addDays(2)->setTime(22, 0),
+    ]);
+
+    $othersGuest = ReservationGuest::query()->create([
+        'reservation_id' => $otherReservation->id,
+        'restaurant_id' => $data['restaurant']->id,
+        'attendee_name' => 'Not Yours',
+        'email_address' => 'nope@example.com',
+        'email_normalized' => 'nope@example.com',
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->deleteJson('/api/v1/reservations/'.$reservation->id.'/guests/'.$othersGuest->id)
+        ->assertNotFound();
+});
+
+it('clears all additional guests when put guests is an empty array', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Solo',
+                'email_address' => 'solo@example.com',
+            ],
+        ],
+    ])->assertOk();
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [],
+    ])->assertOk()
+        ->assertJsonCount(0, 'reservation.guests');
+
+    expect(ReservationGuest::query()->where('reservation_id', $reservation->id)->count())->toBe(0);
+});
+
 it('returns all saved guests when fetching a reservation by id', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();

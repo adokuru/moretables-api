@@ -27,6 +27,7 @@ use App\UserStatus;
 use App\WaitlistExpiryReason;
 use App\WaitlistStatus;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -188,6 +189,30 @@ class ReservationService
             $guests,
             'reservation.guests_updated',
             'Reservation guests updated',
+            'guests_updated',
+        );
+    }
+
+    public function removeReservationGuest(Reservation $reservation, User $actor, ReservationGuest $guest): Reservation
+    {
+        if ($guest->reservation_id !== $reservation->id) {
+            throw (new ModelNotFoundException)->setModel(ReservationGuest::class, [$guest->id]);
+        }
+
+        $reservation->loadMissing('reservationGuests');
+        $current = $reservation->guestsForApi();
+        $targetEmail = Str::lower(trim($guest->email_address));
+        $filtered = array_values(array_filter(
+            $current,
+            fn (array $row): bool => Str::lower(trim($row['email_address'] ?? '')) !== $targetEmail
+        ));
+
+        return $this->persistReservationGuests(
+            $reservation,
+            $actor,
+            $filtered,
+            'reservation.guest_removed',
+            'Reservation guest removed',
             'guests_updated',
         );
     }
