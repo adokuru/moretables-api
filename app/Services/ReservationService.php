@@ -282,6 +282,11 @@ class ReservationService
         return DB::transaction(function () use ($reservation, $actor, $guests, $auditAction, $auditDescription, $eventAction): Reservation {
             $reservation->loadMissing('reservationGuests');
             $oldGuests = $reservation->guestsForApi();
+            $existingGuestEmails = collect($oldGuests)
+                ->map(fn (array $guest): string => Str::lower(trim($guest['email_address'] ?? '')))
+                ->filter()
+                ->values()
+                ->all();
 
             $reservation->reservationGuests()->delete();
 
@@ -321,6 +326,20 @@ class ReservationService
             );
 
             event(new ReservationUpdated($reservation, $eventAction));
+
+            $newlyAddedGuests = $reservation->reservationGuests
+                ->filter(fn (ReservationGuest $guest): bool => ! in_array($guest->email_normalized, $existingGuestEmails, true))
+                ->unique('email_normalized')
+                ->values();
+
+            foreach ($newlyAddedGuests as $guest) {
+                if (filter_var($guest->email_address, FILTER_VALIDATE_EMAIL) === false) {
+                    continue;
+                }
+
+                Notification::route('mail', $guest->email_address)
+                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $guest, 'guest_added'));
+            }
 
             return $reservation;
         });

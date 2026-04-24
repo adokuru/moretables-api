@@ -4,6 +4,7 @@ use App\Events\ReservationUpdated;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\User;
+use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -113,6 +114,40 @@ it('updates guests on a customer reservation through a dedicated endpoint', func
 
     $metadata = $reservation->metadata;
     expect($metadata === null || ! is_array($metadata) || ! array_key_exists('guests', $metadata))->toBeTrue();
+});
+
+it('emails a newly added diner when a customer adds a guest to a reservation', function () {
+    Notification::fake();
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Added Diner',
+                'email_address' => 'added.diner@example.com',
+                'phone_number' => '+2348000000003',
+            ],
+        ],
+    ])->assertOk()
+        ->assertJsonCount(1, 'reservation.guests');
+
+    Notification::assertSentOnDemand(GuestReservationLifecycleMailNotification::class, function ($notification, $channels, $notifiable): bool {
+        return ($notifiable->routes['mail'] ?? null) === 'added.diner@example.com'
+            && $notification->toArray((object) [])['action'] === 'guest_added';
+    });
 });
 
 it('removes a single guest via delete endpoint', function () {

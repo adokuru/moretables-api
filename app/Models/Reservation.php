@@ -125,4 +125,22 @@ class Reservation extends Model
 
         return array_values($guests);
     }
+
+    public function hasUpcomingReminderSent(int $daysBefore): bool
+    {
+        return filled(data_get($this->metadata, "upcoming_reminders_sent.{$daysBefore}"));
+    }
+
+    public function markUpcomingReminderSent(int $daysBefore, \DateTimeInterface $sentAt): void
+    {
+        $metadata = is_array($this->metadata) ? $this->metadata : [];
+
+        data_set(
+            $metadata,
+            "upcoming_reminders_sent.{$daysBefore}",
+            $sentAt->format(DATE_ATOM),
+        );
+
+        $this->forceFill(['metadata' => $metadata])->save();
+    }
 }
