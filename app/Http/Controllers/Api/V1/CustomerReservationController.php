@@ -82,7 +82,10 @@ class CustomerReservationController extends Controller
         abort_unless($reservation->user_id === $request->user()->id, 404);
         $this->ensureModificationAllowed($reservation);
 
-        $updatedReservation = $this->reservationService->updateReservationGuests($reservation, $request->user(), $request->validated('guests'));
+        $guests = $request->validated('guests');
+        $updatedReservation = count($guests) === 1
+            ? $this->reservationService->addReservationGuests($reservation, $request->user(), $guests)
+            : $this->reservationService->updateReservationGuests($reservation, $request->user(), $guests);
 
         return response()->json([
             'message' => 'Reservation guests updated successfully.',
