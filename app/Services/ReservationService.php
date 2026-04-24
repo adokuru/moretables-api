@@ -177,8 +177,8 @@ class ReservationService
             throw ValidationException::withMessages([
                 'guests' => [
                     $max === 0
-                        ? 'Party size only covers the person who booked; no additional guest entries can be added.'
-                        : "You can list at most {$max} additional guest(s). Party size includes the person who made the booking.",
+                        ? 'This reservation is for 1 person, so you cannot add additional guests.'
+                        : "Guest list is full. You can add up to {$max} additional guest(s) for this reservation.",
                 ],
             ]);
         }
@@ -233,8 +233,8 @@ class ReservationService
             throw ValidationException::withMessages([
                 'guests' => [
                     $max === 0
-                        ? 'Party size only covers the person who booked; no additional guest entries can be added.'
-                        : "You can list at most {$max} additional guest(s). Party size includes the person who made the booking.",
+                        ? 'This reservation is for 1 person, so you cannot add additional guests.'
+                        : "Guest list is full. You can add up to {$max} additional guest(s) for this reservation.",
                 ],
             ]);
         }
