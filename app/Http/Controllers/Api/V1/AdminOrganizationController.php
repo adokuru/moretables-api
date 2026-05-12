@@ -7,11 +7,15 @@ use App\Http\Requests\Admin\StoreOrganizationRequest;
 use App\Http\Requests\Admin\UpdateOrganizationRequest;
 use App\Http\Resources\OrganizationResource;
 use App\Models\Organization;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\UserRole;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 
 #[Group('Admin Organizations', weight: 50)]
 class AdminOrganizationController extends Controller
@@ -116,6 +120,62 @@ class AdminOrganizationController extends Controller
 
         return response()->json([
             'message' => 'Organization deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Resend the password reset link to the organization owner(s).
+     *
+     * Triggers Laravel's password broker, sending a fresh reset link to every
+     * user that holds the OrganizationOwner role for the given organization.
+     * Throttled and missing-user statuses are surfaced per recipient.
+     */
+    #[Response(200, type: 'array{message: string, recipients: list<array{email: string, status: string, message: string}>}')]
+    #[Response(403, type: 'array{message: string}')]
+    #[Response(404, type: 'array{message: string}')]
+    public function resendOwnerPasswordReset(Request $request, Organization $organization): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+        $this->authorize('view', $organization);
+
+        $ownerIds = UserRole::query()
+            ->where('organization_id', $organization->id)
+            ->whereHas('role', fn ($query) => $query->where('name', Role::OrganizationOwner))
+            ->pluck('user_id')
+            ->unique();
+
+        if ($ownerIds->isEmpty()) {
+            return response()->json([
+                'message' => 'No organization owner found for this organization.',
+            ], 404);
+        }
+
+        $owners = User::query()->whereIn('id', $ownerIds)->get();
+
+        $recipients = $owners->map(function (User $owner): array {
+            $status = Password::sendResetLink(['email' => $owner->email]);
+
+            return [
+                'email' => $owner->email,
+                'status' => $status,
+                'message' => match ($status) {
+                    Password::RESET_LINK_SENT => 'Password reset link sent successfully.',
+                    Password::RESET_THROTTLED => 'Password reset link was recently sent; please wait before requesting again.',
+                    Password::INVALID_USER => 'Could not locate a user with the owner email address.',
+                    default => 'Unable to send password reset link.',
+                },
+            ];
+        })->values()->all();
+
+        $anySent = collect($recipients)->contains(
+            fn (array $recipient) => $recipient['status'] === Password::RESET_LINK_SENT,
+        );
+
+        return response()->json([
+            'message' => $anySent
+                ? 'Password reset link resent to organization owner.'
+                : 'No password reset link was sent. See recipients for details.',
+            'recipients' => $recipients,
         ]);
     }
 }

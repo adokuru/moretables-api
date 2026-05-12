@@ -56,30 +56,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Password reset (SPA / API)
+    | Frontend Base URLs
     |--------------------------------------------------------------------------
     |
-    | Laravel's default reset email expects a web route named "password.reset".
-    | This API uses PASSWORD_RESET_FRONTEND_URL so the email links to your
-    | frontend page (query: token, email). If unset, APP_URL + /reset-password
-    | is used as a fallback.
+    | MoreTables ships three distinct frontends. Each one has its own canonical
+    | origin and is consumed by different audiences. These base URLs are the
+    | single source of truth and should be used by anything that needs to link
+    | from the API back into a frontend (password reset, email verification,
+    | magic link, deep link emails, marketing CTAs, etc.).
+    |
+    | - main: customer-facing app (e.g. https://www.moretables.com)
+    | - admin: internal admin/back-office app (e.g. https://admin.moretables.com)
+    | - restaurant: merchant/staff app for owners + restaurant staff
+    | (e.g. https://restaurant.moretables.com)
     |
     */
 
-    'password_reset_frontend_url' => env('PASSWORD_RESET_FRONTEND_URL'),
+    'frontend_urls' => [
+        'main' => env('FRONTEND_URL'),
+        'admin' => env('ADMIN_FRONTEND_URL'),
+        'restaurant' => env('RESTAURANT_FRONTEND_URL'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
-    | Admin password reset (SPA / API)
+    | Frontend Path Overrides
     |--------------------------------------------------------------------------
     |
-    | Admin reset emails can target a dedicated frontend. The URL may include
-    | a "{token}" placeholder, or the token will be appended as a path segment.
-    | The email address is always appended as a query parameter.
+    | Default paths appended to each frontend base URL for specific flows.
+    | Override via env only if a frontend renames a route. Each path may
+    | contain a "{token}" placeholder; otherwise the consumer decides how
+    | the token is appended (path segment vs. query parameter).
     |
     */
 
-    'admin_password_reset_frontend_url' => env('ADMIN_PASSWORD_RESET_FRONTEND_URL'),
+    'frontend_paths' => [
+        'password_reset' => [
+            'main' => env('FRONTEND_PASSWORD_RESET_PATH', '/reset-password'),
+            'admin' => env('ADMIN_FRONTEND_PASSWORD_RESET_PATH', '/change-password'),
+            'restaurant' => env('RESTAURANT_FRONTEND_PASSWORD_RESET_PATH', '/auth/change-password'),
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

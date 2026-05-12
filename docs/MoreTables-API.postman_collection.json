@@ -4630,6 +4630,43 @@
           }
         },
         {
+          "name": "Organization resend owner password reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/organizations/{{organization_id}}/resend-owner-password-reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "organizations",
+                "{{organization_id}}",
+                "resend-owner-password-reset"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Resend the password reset link to every user holding the OrganizationOwner role for the specified organization. Per-recipient statuses (sent / throttled / invalid_user) are returned in the response."
+          }
+        },
+        {
           "name": "Restaurants list",
           "request": {
             "method": "GET",

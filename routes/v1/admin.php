@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::get('organizations/{organization}', [AdminOrganizationController::class, 'show']);
     Route::patch('organizations/{organization}', [AdminOrganizationController::class, 'update']);
     Route::delete('organizations/{organization}', [AdminOrganizationController::class, 'destroy']);
+    Route::post('organizations/{organization}/resend-owner-password-reset', [AdminOrganizationController::class, 'resendOwnerPasswordReset']);
 
     Route::get('restaurants', [AdminRestaurantController::class, 'index']);
     Route::post('restaurants', [AdminRestaurantController::class, 'store']);

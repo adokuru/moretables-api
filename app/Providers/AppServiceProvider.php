@@ -23,11 +23,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
-            $base = $notifiable instanceof User && $notifiable->requiresAdminLogin()
-                ? config('app.admin_password_reset_frontend_url')
-                : config('app.password_reset_frontend_url');
+            $audience = match (true) {
+                $notifiable instanceof User && $notifiable->requiresAdminLogin() => 'admin',
+                $notifiable instanceof User && $notifiable->requiresStaffLogin() => 'restaurant',
+                default => 'main',
+            };
 
-            if (! is_string($base) || $base === '') {
+            $frontendUrl = config('app.frontend_urls.'.$audience);
+            $path = config('app.frontend_paths.password_reset.'.$audience);
+
+            if (is_string($frontendUrl) && $frontendUrl !== '') {
+                $base = rtrim($frontendUrl, '/').'/'.ltrim((string) $path, '/');
+            } else {
                 $base = rtrim((string) config('app.url'), '/').'/reset-password';
             }
 
@@ -37,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
 
             if (str_contains($base, '{token}')) {
                 $base = str_replace('{token}', $token, $base);
-            } elseif ($notifiable instanceof User && $notifiable->requiresAdminLogin()) {
+            } elseif (in_array($audience, ['admin', 'restaurant'], true)) {
                 $base = rtrim($base, '/').'/'.$token;
             } else {
                 $query['token'] = $token;

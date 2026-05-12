@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Organization;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -24,8 +25,11 @@ it('sends password reset without the password.reset web route', function (): voi
     });
 });
 
-it('uses password_reset_frontend_url when configured', function (): void {
-    config(['app.password_reset_frontend_url' => 'https://app.example.com/password/reset']);
+it('uses the main frontend url for customer password resets', function (): void {
+    config([
+        'app.frontend_urls.main' => 'https://app.example.com',
+        'app.frontend_paths.password_reset.main' => '/password/reset',
+    ]);
 
     Notification::fake();
 
@@ -40,8 +44,8 @@ it('uses password_reset_frontend_url when configured', function (): void {
     });
 });
 
-it('uses the admin password reset frontend url for admin accounts', function (): void {
-    config(['app.admin_password_reset_frontend_url' => 'https://admin.moretables.com/change-password']);
+it('uses the admin frontend url for admin accounts', function (): void {
+    config(['app.frontend_urls.admin' => 'https://admin.moretables.com']);
 
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
@@ -57,5 +61,74 @@ it('uses the admin password reset frontend url for admin accounts', function ():
         return str_starts_with((string) $built->actionUrl, 'https://admin.moretables.com/change-password/')
             && str_contains((string) $built->actionUrl, 'email=admin-reset%40example.com')
             && ! str_contains((string) $built->actionUrl, 'token=');
+    });
+});
+
+it('uses the restaurant frontend url for organization owners', function (): void {
+    config(['app.frontend_urls.restaurant' => 'https://restaurant.moretables.com']);
+
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create(['email' => 'owner-reset@example.com']);
+    assignScopedRole($owner, Role::OrganizationOwner, $organization);
+
+    Password::sendResetLink(['email' => $owner->email]);
+
+    Notification::assertSentTo($owner, ResetPassword::class, function (ResetPassword $notification) use ($owner): bool {
+        $built = $notification->toMail($owner);
+
+        return str_starts_with((string) $built->actionUrl, 'https://restaurant.moretables.com/auth/change-password/')
+            && str_contains((string) $built->actionUrl, 'email=owner-reset%40example.com')
+            && ! str_contains((string) $built->actionUrl, 'token=');
+    });
+});
+
+it('does not route customers to the restaurant or admin frontends', function (): void {
+    config([
+        'app.frontend_urls.main' => 'https://www.moretables.com',
+        'app.frontend_urls.restaurant' => 'https://restaurant.moretables.com',
+        'app.frontend_urls.admin' => 'https://admin.moretables.com',
+    ]);
+
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $customer = User::factory()->create(['email' => 'customer-reset@example.com']);
+
+    Password::sendResetLink(['email' => $customer->email]);
+
+    Notification::assertSentTo($customer, ResetPassword::class, function (ResetPassword $notification) use ($customer): bool {
+        $built = $notification->toMail($customer);
+        $url = (string) $built->actionUrl;
+
+        return str_starts_with($url, 'https://www.moretables.com/reset-password?')
+            && str_contains($url, 'token=')
+            && str_contains($url, 'email=customer-reset%40example.com');
+    });
+});
+
+it('honors a custom password reset path override per frontend', function (): void {
+    config([
+        'app.frontend_urls.admin' => 'https://admin.moretables.com',
+        'app.frontend_paths.password_reset.admin' => '/auth/reset/{token}',
+    ]);
+
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create(['email' => 'admin-custom-path@example.com']);
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Password::sendResetLink(['email' => $admin->email]);
+
+    Notification::assertSentTo($admin, ResetPassword::class, function (ResetPassword $notification) use ($admin): bool {
+        $built = $notification->toMail($admin);
+        $url = (string) $built->actionUrl;
+
+        return str_starts_with($url, 'https://admin.moretables.com/auth/reset/')
+            && ! str_contains($url, '{token}')
+            && str_contains($url, 'email=admin-custom-path%40example.com');
     });
 });
