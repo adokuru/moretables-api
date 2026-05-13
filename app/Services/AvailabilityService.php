@@ -64,40 +64,88 @@ class AvailabilityService
     /**
      * @return list<array<string, mixed>>
      */
-    public function listAvailableSlots(Restaurant $restaurant, string $date, int $partySize): array
+    public function listAvailableSlots(
+        Restaurant $restaurant,
+        string $date,
+        int $partySize,
+        ?string $requesterTimezone = null,
+    ): array {
+        $restaurantTz = $restaurant->timezone ?: config('app.timezone');
+        $displayTz = $requesterTimezone ?: $restaurantTz;
+
+        $localDate = Carbon::createFromFormat('Y-m-d', $date, $restaurantTz);
+        $dayOfWeek = (int) $localDate->dayOfWeek;
+        $dateStr = $localDate->format('Y-m-d');
+        $duration = $restaurant->policy?->reservation_duration_minutes ?? 120;
+        $now = Carbon::now();
+
+        $windows = $this->buildTimeWindows($restaurant, $dayOfWeek, $dateStr, $restaurantTz);
+
+        if (empty($windows)) {
+            return [];
+        }
+
+        $slots = [];
+
+        foreach ($windows as [$opensAt, $closesAt]) {
+            $cursor = $opensAt->copy();
+
+            while ($cursor->copy()->addMinutes($duration)->lessThanOrEqualTo($closesAt)) {
+                if ($cursor->lte($now)) {
+                    $cursor->addMinutes(15);
+                    continue;
+                }
+
+                $utcCursor = $cursor->copy()->utc();
+                $table = $this->findAvailableTable($restaurant, $utcCursor, $partySize);
+
+                if ($table) {
+                    $localCursor = $utcCursor->copy()->setTimezone($displayTz);
+                    $slots[] = [
+                        'starts_at' => $utcCursor->toIso8601String(),
+                        'ends_at' => $utcCursor->copy()->addMinutes($duration)->toIso8601String(),
+                        'local_starts_at' => $localCursor->toIso8601String(),
+                        'local_ends_at' => $localCursor->copy()->addMinutes($duration)->toIso8601String(),
+                        'table_id' => $table->id,
+                    ];
+                }
+
+                $cursor->addMinutes(15);
+            }
+        }
+
+        return $slots;
+    }
+
+    /**
+     * Build [(opensAt, closesAt), ...] windows for the day.
+     * Uses meal schedules when configured, otherwise falls back to legacy restaurant_hours.
+     *
+     * @return list<array{Carbon, Carbon}>
+     */
+    private function buildTimeWindows(Restaurant $restaurant, int $dayOfWeek, string $dateStr, string $timezone): array
     {
-        $timezone = $restaurant->timezone ?: config('app.timezone');
-        $localDate = Carbon::createFromFormat('Y-m-d', $date, $timezone);
-        $hours = $restaurant->hours->firstWhere('day_of_week', (int) $localDate->dayOfWeek);
+        $mealSchedules = $restaurant->relationLoaded('mealSchedules')
+            ? $restaurant->mealSchedules->where('day_of_week', $dayOfWeek)->sortBy('opens_at')->values()
+            : collect();
+
+        if ($mealSchedules->isNotEmpty()) {
+            return $mealSchedules->map(fn ($s) => [
+                Carbon::parse($dateStr.' '.$s->opens_at, $timezone),
+                Carbon::parse($dateStr.' '.$s->closes_at, $timezone),
+            ])->all();
+        }
+
+        // Fall back to legacy single-window restaurant_hours
+        $hours = $restaurant->hours->firstWhere('day_of_week', $dayOfWeek);
 
         if (! $hours || $hours->is_closed || ! $hours->opens_at || ! $hours->closes_at) {
             return [];
         }
 
-        $opensAt = Carbon::parse($localDate->format('Y-m-d').' '.$hours->opens_at, $timezone);
-        $closesAt = Carbon::parse($localDate->format('Y-m-d').' '.$hours->closes_at, $timezone);
-        $duration = $restaurant->policy?->reservation_duration_minutes ?? 120;
-
-        $slots = [];
-        $cursor = $opensAt->copy();
-
-        while ($cursor->copy()->addMinutes($duration)->lessThanOrEqualTo($closesAt)) {
-            $utcCursor = $cursor->copy()->utc();
-            $table = $this->findAvailableTable($restaurant, $utcCursor, $partySize);
-
-            if ($table) {
-                $slots[] = [
-                    'starts_at' => $utcCursor->toIso8601String(),
-                    'ends_at' => $utcCursor->copy()->addMinutes($duration)->toIso8601String(),
-                    'local_starts_at' => $cursor->toIso8601String(),
-                    'local_ends_at' => $cursor->copy()->addMinutes($duration)->toIso8601String(),
-                    'table_id' => $table->id,
-                ];
-            }
-
-            $cursor->addMinutes(30);
-        }
-
-        return $slots;
+        return [[
+            Carbon::parse($dateStr.' '.$hours->opens_at, $timezone),
+            Carbon::parse($dateStr.' '.$hours->closes_at, $timezone),
+        ]];
     }
 }

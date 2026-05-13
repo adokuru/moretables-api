@@ -161,12 +161,15 @@ class PublicRestaurantController extends Controller
     {
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
 
-        $restaurant->loadMissing(['hours', 'policy']);
+        $restaurant->loadMissing(['hours', 'policy', 'mealSchedules']);
+
+        $requesterTimezone = $request->string('timezone')->toString() ?: null;
 
         $slots = $this->availabilityService->listAvailableSlots(
             restaurant: $restaurant,
             date: $request->string('date')->toString(),
             partySize: (int) $request->integer('party_size'),
+            requesterTimezone: $requesterTimezone,
         );
 
         if ($request->filled('time')) {
@@ -178,7 +181,7 @@ class PublicRestaurantController extends Controller
 
         return response()->json([
             'restaurant_id' => $restaurant->id,
-            'timezone' => $restaurant->timezone,
+            'timezone' => $requesterTimezone ?? $restaurant->timezone,
             'slots' => $slots,
         ]);
     }

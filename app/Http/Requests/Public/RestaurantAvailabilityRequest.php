@@ -17,6 +17,7 @@ class RestaurantAvailabilityRequest extends FormRequest
             'date' => ['required', 'date_format:Y-m-d'],
             'time' => ['nullable', 'date_format:H:i'],
             'party_size' => ['required', 'integer', 'min:1'],
+            'timezone' => ['nullable', 'timezone'],
         ];
     }
 }
