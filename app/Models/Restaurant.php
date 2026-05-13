@@ -50,6 +50,9 @@ class Restaurant extends Model implements HasMedia
         'menu_link',
         'payment_options',
         'accessibility_features',
+        'onboarding_progress',
+        'onboarding_current_step',
+        'is_profile_published',
     ];
 
     protected function casts(): array
@@ -63,6 +66,10 @@ class Restaurant extends Model implements HasMedia
             'number_of_tables' => 'integer',
             'payment_options' => 'array',
             'accessibility_features' => 'array',
+            'onboarding_progress' => 'array',
+            'is_profile_published' => 'boolean',
+            'contact_email_verified_at' => 'datetime',
+            'contact_phone_verified_at' => 'datetime',
         ];
     }
 
@@ -133,6 +140,21 @@ class Restaurant extends Model implements HasMedia
     public function waitlistEntries(): HasMany
     {
         return $this->hasMany(WaitlistEntry::class);
+    }
+
+    public function socialHandles(): HasMany
+    {
+        return $this->hasMany(RestaurantSocialHandle::class)->orderBy('platform');
+    }
+
+    public function mealTypes(): HasMany
+    {
+        return $this->hasMany(RestaurantMealType::class)->orderBy('sort_order');
+    }
+
+    public function mealSchedules(): HasMany
+    {
+        return $this->hasMany(RestaurantMealSchedule::class);
     }
 
     public function userRoles(): HasMany

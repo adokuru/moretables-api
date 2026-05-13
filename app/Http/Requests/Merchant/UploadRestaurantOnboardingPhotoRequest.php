@@ -2,28 +2,27 @@
 
 namespace App\Http\Requests\Merchant;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UploadRestaurantOnboardingPhotoRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png', 'max:15360'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'photo.max' => 'Profile photo may not be larger than 15MB.',
+            'photo.mimes' => 'Profile photo must be a JPEG or PNG image.',
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
@@ -14,6 +15,19 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::get('/', [MerchantRestaurantController::class, 'show']);
     Route::patch('/', [MerchantRestaurantController::class, 'update']);
+
+    Route::prefix('onboarding')->group(function (): void {
+        Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);
+        Route::post('profile-photo', [MerchantRestaurantOnboardingController::class, 'uploadProfilePhoto']);
+        Route::patch('description', [MerchantRestaurantOnboardingController::class, 'updateDescription']);
+        Route::put('business-hours', [MerchantRestaurantOnboardingController::class, 'updateBusinessHours']);
+        Route::get('meal-types', [MerchantRestaurantOnboardingController::class, 'indexMealTypes']);
+        Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);
+        Route::patch('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'updateMealType']);
+        Route::delete('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'destroyMealType']);
+        Route::get('status', [MerchantRestaurantOnboardingController::class, 'showStatus']);
+        Route::patch('status', [MerchantRestaurantOnboardingController::class, 'updateStatus']);
+    });
     Route::get('staff', [MerchantRestaurantStaffController::class, 'index']);
     Route::post('staff', [MerchantRestaurantStaffController::class, 'store']);
     Route::patch('staff/{user}', [MerchantRestaurantStaffController::class, 'update']);

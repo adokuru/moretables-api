@@ -18,7 +18,9 @@ class RestaurantMealTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'restaurant_id' => \App\Models\Restaurant::factory(),
+            'name' => fake()->randomElement(['Breakfast', 'Brunch', 'Lunch', 'Dinner', 'Late Night']),
+            'sort_order' => 0,
         ];
     }
 }

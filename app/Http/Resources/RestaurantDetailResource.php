@@ -105,6 +105,14 @@ class RestaurantDetailResource extends JsonResource
                 ])
                 ->values()),
             'dining_areas' => DiningAreaResource::collection($this->whenLoaded('diningAreas')),
+            'onboarding' => $this->when(
+                $this->onboarding_current_step !== null || $this->onboarding_progress !== null || $this->is_profile_published,
+                fn () => [
+                    'current_step' => $this->onboarding_current_step,
+                    'is_profile_published' => (bool) $this->is_profile_published,
+                    'progress' => $this->onboarding_progress ?? (object) [],
+                ],
+            ),
         ];
     }
 }

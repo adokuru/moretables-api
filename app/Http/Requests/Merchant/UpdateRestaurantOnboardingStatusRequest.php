@@ -2,28 +2,24 @@
 
 namespace App\Http\Requests\Merchant;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Enums\RestaurantOnboardingStep;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateRestaurantOnboardingStatusRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'step' => ['nullable', Rule::enum(RestaurantOnboardingStep::class)],
+            'step_status' => ['required_with:step', 'string', Rule::in(['completed', 'skipped', 'in_progress'])],
+            'current_step' => ['nullable', Rule::enum(RestaurantOnboardingStep::class)],
+            'is_profile_published' => ['nullable', 'boolean'],
         ];
     }
 }
