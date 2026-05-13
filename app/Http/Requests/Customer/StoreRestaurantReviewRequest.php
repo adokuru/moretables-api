@@ -14,7 +14,11 @@ class StoreRestaurantReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'rating' => ['prohibited'],
+            'food_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'service_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'ambience_rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'value_rating' => ['required', 'integer', 'min:1', 'max:5'],
             'title' => ['nullable', 'string', 'max:160'],
             'body' => ['nullable', 'string', 'max:5000'],
             'review_images' => ['nullable', 'array', 'max:10'],

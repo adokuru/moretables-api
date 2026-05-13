@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
-use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
@@ -82,6 +83,9 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
     Route::post('reservations/{reservation}/seat', [MerchantReservationController::class, 'seat']);
     Route::post('reservations/{reservation}/complete', [MerchantReservationController::class, 'complete']);
     Route::post('reservations/{reservation}/cancel', [MerchantReservationController::class, 'cancel']);
+
+    Route::get('reviews/aggregate', [MerchantRestaurantReviewController::class, 'aggregate']);
+    Route::get('reviews', [MerchantRestaurantReviewController::class, 'index']);
 
     Route::get('waitlist-entries', [MerchantWaitlistController::class, 'index']);
     Route::post('waitlist-entries', [MerchantWaitlistController::class, 'store']);

@@ -7464,6 +7464,204 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/reviews/aggregate": {
+            "get": {
+                "operationId": "merchantRestaurantReview.aggregate",
+                "tags": [
+                    "Merchant Reviews"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-08-20"
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-09-25"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "summary": {
+                                            "type": "object"
+                                        },
+                                        "category_breakdown": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "period": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "summary",
+                                        "category_breakdown",
+                                        "period"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/reviews": {
+            "get": {
+                "operationId": "merchantRestaurantReview.index",
+                "tags": [
+                    "Merchant Reviews"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        },
+                        "example": 20
+                    },
+                    {
+                        "name": "rating",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 4
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "good food"
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-08-20"
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-09-25"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "latest"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MerchantRestaurantReviewResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object"
+                                        },
+                                        "meta": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/waitlist-entries": {
             "get": {
                 "operationId": "merchantWaitlist.index",
@@ -13282,6 +13480,126 @@
                 ],
                 "title": "MediaAssetResource"
             },
+            "MerchantRestaurantReviewResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "diner": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "email"
+                        ]
+                    },
+                    "review_date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "visited_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "rating": {
+                        "type": "integer"
+                    },
+                    "ratings": {
+                        "type": "object",
+                        "properties": {
+                            "food": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "service": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "ambience": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "value": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "food",
+                            "service",
+                            "ambience",
+                            "value"
+                        ]
+                    },
+                    "title": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "commentary": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "review_images": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "diner",
+                    "review_date",
+                    "visited_at",
+                    "rating",
+                    "ratings",
+                    "title",
+                    "commentary",
+                    "review_images",
+                    "created_at"
+                ],
+                "title": "MerchantRestaurantReviewResource"
+            },
             "NotifyWaitlistEntryRequest": {
                 "type": "object",
                 "properties": {
@@ -15097,7 +15415,22 @@
                     "user_id": {
                         "type": "integer"
                     },
-                    "rating": {
+                    "food_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "service_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "ambience_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "value_rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5
@@ -15818,6 +16151,38 @@
                         "minimum": 1,
                         "maximum": 5
                     },
+                    "food_rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "service_rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "ambience_rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "value_rating": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 5
+                    },
                     "title": {
                         "type": [
                             "string",
@@ -15854,7 +16219,10 @@
                     }
                 },
                 "required": [
-                    "rating"
+                    "food_rating",
+                    "service_rating",
+                    "ambience_rating",
+                    "value_rating"
                 ],
                 "title": "StoreRestaurantReviewRequest"
             },
@@ -16370,7 +16738,22 @@
             "UpdateAdminReviewRequest": {
                 "type": "object",
                 "properties": {
-                    "rating": {
+                    "food_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "service_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "ambience_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "value_rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5

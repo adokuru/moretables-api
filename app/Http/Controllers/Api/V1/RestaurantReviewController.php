@@ -39,9 +39,12 @@ class RestaurantReviewController extends Controller
             ->selectRaw('count(*) as reviews_count, avg(rating) as average_rating')
             ->first();
         $ratingsBreakdown = $restaurant->reviews()
-            ->selectRaw('rating, count(*) as aggregate')
-            ->groupBy('rating')
-            ->pluck('aggregate', 'rating');
+            ->selectRaw('round(rating) as rating_bucket, count(*) as aggregate')
+            ->groupBy('rating_bucket')
+            ->get()
+            ->mapWithKeys(fn (RestaurantReview $review): array => [
+                (string) (int) round((float) $review->rating_bucket) => (int) $review->aggregate,
+            ]);
 
         return response()->json([
             'data' => PublicRestaurantReviewResource::collection($reviews->getCollection())->resolve($request),
@@ -84,6 +87,7 @@ class RestaurantReviewController extends Controller
         }
 
         $payload = $request->safe()->except('review_images');
+        $payload['rating'] = $this->calculateRating($payload);
         $payload['review_images'] = $this->storeReviewImages($request->file('review_images', []));
 
         $review = $restaurant->reviews()->create([
@@ -112,6 +116,15 @@ class RestaurantReviewController extends Controller
         if ($request->hasFile('review_images') || $request->has('review_images')) {
             $this->deleteReviewImages($review->review_images ?? []);
             $payload['review_images'] = $this->storeReviewImages($request->file('review_images', []));
+        }
+
+        if ($this->hasCategoryRatingChange($payload)) {
+            $payload['rating'] = $this->calculateRating([
+                'food_rating' => $payload['food_rating'] ?? $review->food_rating,
+                'service_rating' => $payload['service_rating'] ?? $review->service_rating,
+                'ambience_rating' => $payload['ambience_rating'] ?? $review->ambience_rating,
+                'value_rating' => $payload['value_rating'] ?? $review->value_rating,
+            ]);
         }
 
         $review->update($payload);
@@ -162,5 +175,29 @@ class RestaurantReviewController extends Controller
         foreach ($reviewImages as $reviewImage) {
             Storage::disk('public')->delete($reviewImage);
         }
+    }
+
+    /**
+     * @param  array{food_rating?: int, service_rating?: int, ambience_rating?: int, value_rating?: int}  $ratings
+     */
+    private function calculateRating(array $ratings): float
+    {
+        return round((
+            (int) $ratings['food_rating']
+            + (int) $ratings['service_rating']
+            + (int) $ratings['ambience_rating']
+            + (int) $ratings['value_rating']
+        ) / 4, 2);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function hasCategoryRatingChange(array $payload): bool
+    {
+        return array_key_exists('food_rating', $payload)
+            || array_key_exists('service_rating', $payload)
+            || array_key_exists('ambience_rating', $payload)
+            || array_key_exists('value_rating', $payload);
     }
 }

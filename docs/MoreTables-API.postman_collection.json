@@ -1671,7 +1671,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rating\": 5,\n  \"title\": \"Excellent dinner\",\n  \"body\": \"Loved the tasting menu and service.\",\n  \"review_images\": [],\n  \"visited_at\": \"2026-03-21\"\n}"
+              "raw": "{\n  \"food_rating\": 5,\n  \"service_rating\": 4,\n  \"ambience_rating\": 5,\n  \"value_rating\": 4,\n  \"title\": \"Excellent dinner\",\n  \"body\": \"Loved the tasting menu and service.\",\n  \"review_images\": [],\n  \"visited_at\": \"2026-03-21\"\n}"
             }
           }
         },
@@ -1715,7 +1715,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rating\": 4,\n  \"body\": \"Still great, dessert was the highlight.\",\n  \"review_images\": []\n}"
+              "raw": "{\n  \"food_rating\": 5,\n  \"service_rating\": 4,\n  \"ambience_rating\": 5,\n  \"value_rating\": 4,\n  \"body\": \"Still great, dessert was the highlight.\",\n  \"review_images\": []\n}"
             }
           }
         },
@@ -3549,6 +3549,101 @@
               "mode": "raw",
               "raw": "{}"
             }
+          }
+        },
+        {
+          "name": "Reviews aggregate",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reviews/aggregate?date_from=2025-08-20&date_to=2025-09-25",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "merchant",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews",
+                "aggregate"
+              ],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2025-08-20"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-09-25"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Merchant aggregate reviews summary with overall rating, total reviews, rating distribution, and category averages for food, service, ambience, and value."
+          }
+        },
+        {
+          "name": "Reviews list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reviews?per_page=20&sort=latest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "merchant",
+                "restaurants",
+                "{{restaurant_id}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "latest"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Merchant detailed reviews table with diner, review date, rating, category ratings, and commentary. Supports rating, search, date range, sorting, and pagination query parameters."
           }
         },
         {
