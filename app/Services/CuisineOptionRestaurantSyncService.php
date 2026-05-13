@@ -6,6 +6,7 @@ use App\Models\CuisineOption;
 use App\Models\Restaurant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+
 class CuisineOptionRestaurantSyncService
 {
     /**
