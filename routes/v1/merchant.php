@@ -12,6 +12,10 @@ use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::get('merchant/restaurants', [MerchantRestaurantController::class, 'index']);
+});
+
 Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::get('/', [MerchantRestaurantController::class, 'show']);
     Route::patch('/', [MerchantRestaurantController::class, 'update']);

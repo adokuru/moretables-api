@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Models\Restaurant;
+use App\Models\Role;
 use App\Services\AuditLogService;
 use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 #[Group('Merchant Restaurant Profile', weight: 30)]
 class MerchantRestaurantController extends Controller
@@ -20,6 +22,56 @@ class MerchantRestaurantController extends Controller
         protected MediaLibraryService $mediaLibraryService,
         protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
     ) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $accessRoles = Role::restaurantAccessRoles();
+
+        $assignments = $user->roleAssignments()
+            ->whereHas('role', fn ($q) => $q->whereIn('name', $accessRoles))
+            ->get(['restaurant_id', 'organization_id']);
+
+        $hasGlobalAccess = $assignments->contains(
+            fn ($a) => $a->restaurant_id === null && $a->organization_id === null
+        );
+
+        $restaurants = Restaurant::query()
+            ->with(['media', 'cuisines'])
+            ->when(! $hasGlobalAccess, function ($query) use ($assignments): void {
+                $restaurantIds = $assignments->whereNotNull('restaurant_id')->pluck('restaurant_id');
+                $orgIds = $assignments->whereNull('restaurant_id')->whereNotNull('organization_id')->pluck('organization_id');
+
+                $query->where(function ($q) use ($restaurantIds, $orgIds): void {
+                    $q->whereIn('id', $restaurantIds)
+                        ->orWhereIn('organization_id', $orgIds);
+                });
+            })
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'restaurants' => $restaurants->map(function (Restaurant $restaurant) {
+                /** @var ?\Spatie\MediaLibrary\MediaCollections\Models\Media $cover */
+                $cover = $restaurant->media->firstWhere('collection_name', 'featured')
+                    ?? $restaurant->media->where('collection_name', 'gallery')->sortBy('order_column')->first();
+
+                return [
+                    'id' => $restaurant->id,
+                    'name' => $restaurant->name,
+                    'slug' => $restaurant->slug,
+                    'status' => $restaurant->status?->value,
+                    'city' => $restaurant->city,
+                    'state' => $restaurant->state,
+                    'country' => $restaurant->country,
+                    'is_profile_published' => (bool) $restaurant->is_profile_published,
+                    'onboarding_current_step' => $restaurant->onboarding_current_step,
+                    'cuisines' => $restaurant->cuisines->pluck('name')->values(),
+                    'cover_image' => $cover?->getAvailableUrl(['card']),
+                ];
+            })->values(),
+        ]);
+    }
 
     public function show(Restaurant $restaurant): RestaurantDetailResource
     {
