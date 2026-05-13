@@ -43,6 +43,8 @@ it('serves the generated api specification route', function () {
         '/merchant/restaurants/{restaurant}/media',
         '/merchant/restaurants/{restaurant}/menu-items',
         '/merchant/restaurants/{restaurant}/onboarding/contact-cuisine-price',
+        '/merchant/restaurants/{restaurant}/onboarding/contact-email/send-code',
+        '/merchant/restaurants/{restaurant}/onboarding/contact-email/verify',
         '/merchant/restaurants/{restaurant}/onboarding/profile-photo',
         '/merchant/restaurants/{restaurant}/onboarding/description',
         '/merchant/restaurants/{restaurant}/onboarding/business-hours',
@@ -73,6 +75,8 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/admin/restaurants']['post']['tags'][0])->toBe('Admin Restaurants');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/status']['get']['tags'][0])->toBe('Merchant Onboarding');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/contact-cuisine-price']['patch']['tags'][0])->toBe('Merchant Onboarding');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/contact-email/send-code']['post']['tags'][0])->toBe('Merchant Onboarding');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/contact-email/verify']['post']['tags'][0])->toBe('Merchant Onboarding');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/meal-types']['get']['tags'][0])->toBe('Merchant Onboarding');
     expect($specification['paths']['/cuisine-options']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');

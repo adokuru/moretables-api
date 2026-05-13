@@ -413,6 +413,16 @@
                             "type": "integer",
                             "minimum": 1
                         }
+                    },
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -427,7 +437,10 @@
                                             "type": "integer"
                                         },
                                         "timezone": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "slots": {
                                             "type": "array",
@@ -3464,6 +3477,37 @@
                 }
             }
         },
+        "/merchant/restaurants": {
+            "get": {
+                "operationId": "merchantRestaurant.index",
+                "tags": [
+                    "Merchant Restaurant Profile"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "restaurants": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "restaurants"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}": {
             "get": {
                 "operationId": "merchantRestaurant.show",
@@ -5880,26 +5924,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -5908,6 +5932,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -5967,26 +5994,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -5995,6 +6002,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -6053,26 +6063,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -6081,6 +6071,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -6136,26 +6129,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -6164,6 +6137,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -6308,26 +6284,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -6336,6 +6292,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -6415,26 +6374,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -6443,6 +6382,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             },
@@ -6535,6 +6477,144 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/onboarding/contact-email/send-code": {
+            "post": {
+                "operationId": "merchantRestaurantOnboarding.sendEmailVerificationCode",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendRestaurantEmailVerificationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "challenge_token": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "challenge_token"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/onboarding/contact-email/verify": {
+            "post": {
+                "operationId": "merchantRestaurantOnboarding.verifyEmail",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyRestaurantEmailRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Email address verified successfully."
+                                        },
+                                        "email": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "contact_email_verified_at": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "email",
+                                        "contact_email_verified_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -6668,26 +6748,6 @@
                             }
                         }
                     },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -6696,6 +6756,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -14166,6 +14229,20 @@
                 ],
                 "title": "RoleResource"
             },
+            "SendRestaurantEmailVerificationRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "email"
+                ],
+                "title": "SendRestaurantEmailVerificationRequest"
+            },
             "SocialLoginRequest": {
                 "type": "object",
                 "properties": {
@@ -17704,6 +17781,25 @@
                     "code"
                 ],
                 "title": "VerifyChallengeRequest"
+            },
+            "VerifyRestaurantEmailRequest": {
+                "type": "object",
+                "properties": {
+                    "challenge_token": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "code": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 4
+                    }
+                },
+                "required": [
+                    "challenge_token",
+                    "code"
+                ],
+                "title": "VerifyRestaurantEmailRequest"
             },
             "WaitlistEntryResource": {
                 "type": "object",

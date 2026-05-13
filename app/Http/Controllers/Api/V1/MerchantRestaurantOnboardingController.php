@@ -33,8 +33,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function updateContactCuisinePrice(UpdateRestaurantOnboardingContactRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $validated = $request->validated();
 
         $restaurant->fill(collect($validated)->only(['email', 'phone', 'website', 'average_price_range'])->toArray());
@@ -77,8 +75,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function uploadProfilePhoto(UploadRestaurantOnboardingPhotoRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $galleryMedia = $this->mediaLibraryService->addUploadedFileToCollection(
             $restaurant,
             $request->file('photo'),
@@ -96,8 +92,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function updateDescription(UpdateRestaurantOnboardingDescriptionRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $restaurant->update($request->validated());
 
         return response()->json([
@@ -108,8 +102,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function updateBusinessHours(UpdateRestaurantOnboardingHoursRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $this->onboardingService->replaceMealSchedules($restaurant, $request->validated('schedules'));
 
         $restaurant->load(['mealTypes.schedules']);
@@ -153,8 +145,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function storeMealType(StoreRestaurantOnboardingMealTypeRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $validated = $request->validated();
 
         if (! isset($validated['sort_order'])) {
@@ -176,7 +166,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function updateMealType(UpdateRestaurantOnboardingMealTypeRequest $request, Restaurant $restaurant, RestaurantMealType $mealType): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($this->onboardingService->mealTypeBelongsToRestaurant($mealType, $restaurant), 404);
 
         $mealType->update($request->validated());
@@ -209,8 +198,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function sendEmailVerificationCode(SendRestaurantEmailVerificationRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $challenge = $this->authChallengeService->createForEmail(
             $request->user(),
             AuthChallengeType::RestaurantEmailVerification,
@@ -225,8 +212,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function verifyEmail(VerifyRestaurantEmailRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $challenge = $this->authChallengeService->verify(
             $request->validated('challenge_token'),
             $request->validated('code'),
@@ -260,8 +245,6 @@ class MerchantRestaurantOnboardingController extends Controller
 
     public function updateStatus(UpdateRestaurantOnboardingStatusRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-
         $status = $this->onboardingService->updateStatus($restaurant, $request->validated());
 
         return response()->json([

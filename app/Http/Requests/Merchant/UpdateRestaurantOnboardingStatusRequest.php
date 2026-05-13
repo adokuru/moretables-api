@@ -3,14 +3,17 @@
 namespace App\Http\Requests\Merchant;
 
 use App\Enums\RestaurantOnboardingStep;
+use App\Http\Requests\Merchant\Concerns\AuthorizesRestaurantManageOnboarding;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateRestaurantOnboardingStatusRequest extends FormRequest
 {
+    use AuthorizesRestaurantManageOnboarding;
+
     public function authorize(): bool
     {
-        return true;
+        return $this->authorizeRestaurantManageOnboarding();
     }
 
     public function rules(): array

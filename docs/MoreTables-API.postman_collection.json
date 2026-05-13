@@ -1002,6 +1002,30 @@
           }
         },
         {
+          "name": "Cuisine options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cuisine-options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "cuisine-options"
+              ]
+            },
+            "description": "Public list of cuisine options for restaurant onboarding and filters."
+          }
+        },
+        {
           "name": "Random reviews",
           "request": {
             "method": "GET",
@@ -3831,6 +3855,108 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"restaurant@example.com\",\n  \"phone\": \"+2348000000000\",\n  \"website\": \"https://example.com\",\n  \"average_price_range\": \"$$\",\n  \"primary_cuisine_option_id\": 1,\n  \"additional_cuisine_option_ids\": [\n    2\n  ],\n  \"social_handles\": [\n    {\n      \"platform\": \"instagram\",\n      \"handle\": \"@restaurant\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Onboarding contact email send code",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/onboarding/contact-email/send-code",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "merchant",
+                    "restaurants",
+                    "{{restaurant_id}}",
+                    "onboarding",
+                    "contact-email",
+                    "send-code"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"restaurant@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Onboarding contact email verify",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/onboarding/contact-email/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "merchant",
+                    "restaurants",
+                    "{{restaurant_id}}",
+                    "onboarding",
+                    "contact-email",
+                    "verify"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challenge_token\": \"00000000-0000-0000-0000-000000000000\",\n  \"code\": \"1234\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
