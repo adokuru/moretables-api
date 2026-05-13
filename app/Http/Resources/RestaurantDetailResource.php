@@ -55,6 +55,10 @@ class RestaurantDetailResource extends JsonResource
             'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'description' => $this->description,
+            $this->mergeWhen(
+                (bool) $request->user()?->canAccessRestaurant($this->resource),
+                fn () => ['internal_notes' => $this->internal_notes],
+            ),
             'website' => $this->website,
             'instagram_handle' => $this->instagram_handle,
             'has_saved' => $this->when(

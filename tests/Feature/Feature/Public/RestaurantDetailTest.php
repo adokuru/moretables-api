@@ -6,8 +6,10 @@ use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
+use App\Models\Role;
 use App\Models\SavedRestaurant;
 use App\Models\User;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -109,4 +111,30 @@ it('includes has_saved in the public restaurant detail response for authenticate
     $response->assertOk()
         ->assertJsonPath('data.id', $restaurant->id)
         ->assertJsonPath('data.has_saved', true);
+});
+
+it('only includes internal notes for users who can access the restaurant', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'internal_notes' => trim(str_repeat('Only restaurant staff should see this operational note. ', 3)),
+    ]);
+    $customer = User::factory()->create();
+    $staff = User::factory()->create();
+    assignScopedRole($staff, Role::MarketingGrowth, $organization, $restaurant);
+
+    $this->getJson('/api/v1/restaurants/'.$restaurant->slug)
+        ->assertOk()
+        ->assertJsonMissingPath('data.internal_notes');
+
+    $this->withToken($customer->createToken('restaurant-detail')->plainTextToken)
+        ->getJson('/api/v1/restaurants/'.$restaurant->slug)
+        ->assertOk()
+        ->assertJsonMissingPath('data.internal_notes');
+
+    $this->withToken($staff->createToken('restaurant-detail')->plainTextToken)
+        ->getJson('/api/v1/restaurants/'.$restaurant->slug)
+        ->assertOk()
+        ->assertJsonPath('data.internal_notes', $restaurant->internal_notes);
 });

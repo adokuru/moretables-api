@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);
         Route::post('profile-photo', [MerchantRestaurantOnboardingController::class, 'uploadProfilePhoto']);
         Route::patch('description', [MerchantRestaurantOnboardingController::class, 'updateDescription']);
+        Route::patch('internal-notes', [MerchantRestaurantOnboardingController::class, 'updateInternalNotes']);
         Route::put('business-hours', [MerchantRestaurantOnboardingController::class, 'updateBusinessHours']);
         Route::get('meal-types', [MerchantRestaurantOnboardingController::class, 'indexMealTypes']);
         Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);

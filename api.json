@@ -6078,6 +6078,74 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/onboarding/internal-notes": {
+            "patch": {
+                "operationId": "merchantRestaurantOnboarding.updateInternalNotes",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantOnboardingInternalNotesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "internal_notes": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "internal_notes"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/onboarding/business-hours": {
             "put": {
                 "operationId": "merchantRestaurantOnboarding.updateBusinessHours",
@@ -13679,6 +13747,12 @@
                     "description": {
                         "type": "string"
                     },
+                    "internal_notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "website": {
                         "type": "string"
                     },
@@ -16925,6 +16999,20 @@
                     "description"
                 ],
                 "title": "UpdateRestaurantOnboardingDescriptionRequest"
+            },
+            "UpdateRestaurantOnboardingInternalNotesRequest": {
+                "type": "object",
+                "properties": {
+                    "skip": {
+                        "type": "boolean"
+                    },
+                    "internal_notes": {
+                        "type": "string",
+                        "minLength": 100,
+                        "maxLength": 10000
+                    }
+                },
+                "title": "UpdateRestaurantOnboardingInternalNotesRequest"
             },
             "UpdateRestaurantOnboardingHoursRequest": {
                 "type": "object",

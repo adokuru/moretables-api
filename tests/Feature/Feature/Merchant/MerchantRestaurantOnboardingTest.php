@@ -221,6 +221,93 @@ it('rejects descriptions longer than 1000 characters', function () {
         ->assertJsonValidationErrors('description');
 });
 
+// ── Internal Notes ────────────────────────────────────────────────────────────
+
+it('updates the restaurant internal notes', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $internalNotes = trim(str_repeat('Only restaurant staff should see this operational note. ', 3));
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'internal_notes' => $internalNotes,
+    ])->assertOk()
+        ->assertJsonPath('internal_notes', $internalNotes);
+
+    $this->assertDatabaseHas('restaurants', [
+        'id' => $data['restaurant']->id,
+        'internal_notes' => $internalNotes,
+    ]);
+});
+
+it('skips restaurant internal notes and clears existing notes', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $data['restaurant']->update([
+        'internal_notes' => trim(str_repeat('Existing internal note. ', 6)),
+    ]);
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'skip' => true,
+    ])->assertOk()
+        ->assertJsonPath('internal_notes', null);
+
+    expect($data['restaurant']->refresh()->internal_notes)->toBeNull();
+});
+
+it('rejects internal notes shorter than 100 characters unless skipped', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'internal_notes' => 'Too short.',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('internal_notes');
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'skip' => true,
+    ])->assertOk();
+});
+
+it('rejects internal notes longer than 10000 characters', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'internal_notes' => str_repeat('A', 10001),
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('internal_notes');
+});
+
+it('rejects combining skip with internal notes', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'skip' => true,
+        'internal_notes' => trim(str_repeat('Only restaurant staff should see this operational note. ', 3)),
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('internal_notes');
+});
+
+it('forbids operations staff from updating internal notes', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $ops = User::factory()->create();
+    assignScopedRole($ops, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($ops);
+
+    $this->patchJson(obUrl($data['restaurant']->id, '/internal-notes'), [
+        'internal_notes' => trim(str_repeat('Only restaurant staff should see this operational note. ', 3)),
+    ])->assertForbidden();
+});
+
 // ── Meal Types ────────────────────────────────────────────────────────────────
 
 it('creates a meal type and auto-assigns sort order', function () {
@@ -509,6 +596,7 @@ it('forbids unauthenticated requests to all onboarding endpoints', function () {
     $this->patchJson(obUrl($id, '/status'), [])->assertUnauthorized();
     $this->patchJson(obUrl($id, '/contact-cuisine-price'), [])->assertUnauthorized();
     $this->patchJson(obUrl($id, '/description'), [])->assertUnauthorized();
+    $this->patchJson(obUrl($id, '/internal-notes'), [])->assertUnauthorized();
     $this->putJson(obUrl($id, '/business-hours'), [])->assertUnauthorized();
     $this->getJson(obUrl($id, '/meal-types'))->assertUnauthorized();
     $this->postJson(obUrl($id, '/meal-types'), [])->assertUnauthorized();

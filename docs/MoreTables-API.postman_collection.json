@@ -4053,6 +4053,56 @@
               }
             },
             {
+              "name": "Onboarding internal notes update",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/onboarding/internal-notes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "merchant",
+                    "restaurants",
+                    "{{restaurant_id}}",
+                    "onboarding",
+                    "internal-notes"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"internal_notes\": \"Only internal restaurant staff should see this operational note about guest handling, shift context, and service preferences.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
               "name": "Onboarding meal types list",
               "request": {
                 "method": "GET",

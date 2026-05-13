@@ -39,6 +39,7 @@ class Restaurant extends Model implements HasMedia
         'latitude',
         'longitude',
         'description',
+        'internal_notes',
         'website',
         'instagram_handle',
         'average_price_range',
