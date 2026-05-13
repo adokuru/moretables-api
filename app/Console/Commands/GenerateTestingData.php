@@ -11,6 +11,7 @@ use App\Models\RestaurantPolicy;
 use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\ScopedRoleAssignmentService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -29,8 +30,10 @@ class GenerateTestingData extends Command
 
     protected $description = 'Generate faker organizations, restaurants, principal admins, specialist staff, and customers for local testing.';
 
-    public function __construct(protected ScopedRoleAssignmentService $scopedRoleAssignmentService)
-    {
+    public function __construct(
+        protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
+        protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
+    ) {
         parent::__construct();
     }
 
@@ -161,14 +164,13 @@ class GenerateTestingData extends Command
 
         $availableCuisines = collect(['Nigerian', 'African', 'Seafood', 'Steakhouse', 'Italian', 'Contemporary', 'Fusion']);
 
-        $restaurant->cuisines()->createMany(
-            $availableCuisines
-                ->shuffle()
-                ->take(fake()->numberBetween(1, 3))
-                ->values()
-                ->map(fn (string $cuisine): array => ['name' => $cuisine])
-                ->all(),
-        );
+        $cuisineNames = $availableCuisines
+            ->shuffle()
+            ->take(fake()->numberBetween(1, 3))
+            ->values()
+            ->all();
+
+        $this->cuisineOptionRestaurantSyncService->syncFromNames($restaurant, $cuisineNames);
 
         foreach (range(0, 6) as $dayOfWeek) {
             RestaurantHour::factory()->create([

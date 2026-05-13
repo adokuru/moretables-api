@@ -70,7 +70,13 @@ class RestaurantDetailResource extends JsonResource
             'menu_link' => $this->menu_link,
             'payment_options' => $this->payment_options ?? [],
             'accessibility_features' => $this->accessibility_features ?? [],
-            'cuisine_type' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->first()),
+            'cuisine_type' => $this->whenLoaded('cuisines', function (): ?string {
+                $primaryCuisine = $this->cuisines->first(
+                    fn ($cuisine): bool => (bool) ($cuisine->pivot?->is_primary),
+                );
+
+                return $primaryCuisine?->name ?? $this->cuisines->first()?->name;
+            }),
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'gallery_images' => MediaAssetResource::collection($galleryImages),

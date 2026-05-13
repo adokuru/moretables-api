@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\CuisineOption;
 use App\Models\Restaurant;
-use App\Models\RestaurantCuisine;
 use App\RestaurantStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -122,21 +122,22 @@ class RestaurantSearchService
         $likePattern = $this->likePattern($searchTerm);
         $startsWithPattern = $this->startsWithPattern($searchTerm);
 
-        return RestaurantCuisine::query()
-            ->select('restaurant_cuisines.name')
-            ->selectRaw('COUNT(DISTINCT restaurant_cuisines.restaurant_id) as restaurant_count')
-            ->join('restaurants', 'restaurants.id', '=', 'restaurant_cuisines.restaurant_id')
+        return CuisineOption::query()
+            ->select('cuisine_options.name')
+            ->selectRaw('COUNT(DISTINCT cuisine_option_restaurant.restaurant_id) as restaurant_count')
+            ->join('cuisine_option_restaurant', 'cuisine_option_restaurant.cuisine_option_id', '=', 'cuisine_options.id')
+            ->join('restaurants', 'restaurants.id', '=', 'cuisine_option_restaurant.restaurant_id')
             ->where('restaurants.status', RestaurantStatus::Active->value)
-            ->where('restaurant_cuisines.name', 'like', $likePattern)
-            ->groupBy('restaurant_cuisines.name')
-            ->orderByRaw('case when restaurant_cuisines.name like ? then 0 else 1 end', [$startsWithPattern])
-            ->orderBy('restaurant_cuisines.name')
+            ->where('cuisine_options.name', 'like', $likePattern)
+            ->groupBy('cuisine_options.id', 'cuisine_options.name')
+            ->orderByRaw('case when cuisine_options.name like ? then 0 else 1 end', [$startsWithPattern])
+            ->orderBy('cuisine_options.name')
             ->limit($limit)
             ->get()
-            ->map(function (RestaurantCuisine $restaurantCuisine): array {
+            ->map(function (CuisineOption $cuisineOption): array {
                 return [
-                    'name' => $restaurantCuisine->name,
-                    'restaurant_count' => (int) $restaurantCuisine->getAttribute('restaurant_count'),
+                    'name' => $cuisineOption->name,
+                    'restaurant_count' => (int) $cuisineOption->getAttribute('restaurant_count'),
                 ];
             });
     }

@@ -7,6 +7,7 @@ use Database\Factories\RestaurantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Image\Enums\Fit;
@@ -70,9 +71,13 @@ class Restaurant extends Model implements HasMedia
         return $this->belongsTo(Organization::class);
     }
 
-    public function cuisines(): HasMany
+    public function cuisines(): BelongsToMany
     {
-        return $this->hasMany(RestaurantCuisine::class);
+        return $this->belongsToMany(CuisineOption::class, 'cuisine_option_restaurant')
+            ->withPivot('is_primary')
+            ->withTimestamps()
+            ->orderByDesc('cuisine_option_restaurant.is_primary')
+            ->orderBy('cuisine_options.name');
     }
 
     public function hours(): HasMany

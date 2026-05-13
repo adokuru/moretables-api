@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CustomerSavedRestaurantController;
 use App\Http\Controllers\Api\V1\CustomerWaitlistController;
 use App\Http\Controllers\Api\V1\ExpoPushTokenController;
 use App\Http\Controllers\Api\V1\OnboardingRequestController;
+use App\Http\Controllers\Api\V1\PublicCuisineOptionController;
 use App\Http\Controllers\Api\V1\PublicRestaurantController;
 use App\Http\Controllers\Api\V1\PublicRestaurantDiscoveryController;
 use App\Http\Controllers\Api\V1\PublicRestaurantViewController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\Api\V1\RestaurantReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store']);
+
+Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index']);
 
 Route::get('search', [PublicRestaurantController::class, 'search']);
 Route::get('reviews/random', [PublicRestaurantController::class, 'randomReviews']);

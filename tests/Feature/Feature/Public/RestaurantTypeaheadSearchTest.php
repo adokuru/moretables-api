@@ -2,10 +2,10 @@
 
 use App\Models\Organization;
 use App\Models\Restaurant;
-use App\Models\RestaurantCuisine;
 use App\Models\SavedRestaurant;
 use App\Models\User;
 use App\RestaurantStatus;
+use App\Services\CuisineOptionRestaurantSyncService;
 
 it('returns grouped location restaurant and cuisine suggestions', function () {
     $organization = Organization::factory()->create();
@@ -20,10 +20,7 @@ it('returns grouped location restaurant and cuisine suggestions', function () {
         'description' => 'A modern London dining room.',
     ]);
 
-    RestaurantCuisine::factory()->create([
-        'restaurant_id' => $matchingRestaurant->id,
-        'name' => 'London Grill',
-    ]);
+    app(CuisineOptionRestaurantSyncService::class)->syncFromNames($matchingRestaurant, ['London Grill']);
 
     Restaurant::factory()->create([
         'organization_id' => $organization->id,
@@ -69,10 +66,7 @@ it('returns unique locations and cuisines while excluding inactive restaurants',
         'country' => 'Nigeria',
     ]);
 
-    RestaurantCuisine::factory()->create([
-        'restaurant_id' => $activeRestaurant->id,
-        'name' => 'Sushi',
-    ]);
+    app(CuisineOptionRestaurantSyncService::class)->syncFromNames($activeRestaurant, ['Sushi']);
 
     $secondActiveRestaurant = Restaurant::factory()->create([
         'organization_id' => $organization->id,
@@ -83,10 +77,7 @@ it('returns unique locations and cuisines while excluding inactive restaurants',
         'country' => 'Nigeria',
     ]);
 
-    RestaurantCuisine::factory()->create([
-        'restaurant_id' => $secondActiveRestaurant->id,
-        'name' => 'Sushi',
-    ]);
+    app(CuisineOptionRestaurantSyncService::class)->syncFromNames($secondActiveRestaurant, ['Sushi']);
 
     $inactiveRestaurant = Restaurant::factory()->create([
         'organization_id' => $organization->id,
@@ -98,10 +89,7 @@ it('returns unique locations and cuisines while excluding inactive restaurants',
         'status' => RestaurantStatus::Suspended,
     ]);
 
-    RestaurantCuisine::factory()->create([
-        'restaurant_id' => $inactiveRestaurant->id,
-        'name' => 'Sushi',
-    ]);
+    app(CuisineOptionRestaurantSyncService::class)->syncFromNames($inactiveRestaurant, ['Sushi']);
 
     $locationResponse = $this->getJson('/api/v1/search?q=lagos');
 
@@ -128,10 +116,7 @@ it('returns restaurant list resource fields in search results', function () {
         'country' => 'Nigeria',
     ]);
 
-    RestaurantCuisine::factory()->create([
-        'restaurant_id' => $restaurant->id,
-        'name' => 'Garden Fresh',
-    ]);
+    app(CuisineOptionRestaurantSyncService::class)->syncFromNames($restaurant, ['Garden Fresh']);
 
     $response = $this->getJson('/api/v1/search?q=garden');
 

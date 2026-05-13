@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\DiningArea;
 use App\Models\Organization;
 use App\Models\Restaurant;
-use App\Models\RestaurantCuisine;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
@@ -14,6 +13,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
 use App\RestaurantStatus;
+use App\Services\CuisineOptionRestaurantSyncService;
 use App\TableStatus;
 use App\UserAuthMethod;
 use App\UserStatus;
@@ -290,14 +290,7 @@ class DummyRestaurantsSeeder extends Seeder
      */
     protected function seedCuisines(Restaurant $restaurant, array $cuisines): void
     {
-        RestaurantCuisine::query()->where('restaurant_id', $restaurant->id)->delete();
-
-        foreach (array_values($cuisines) as $index => $cuisine) {
-            RestaurantCuisine::query()->create([
-                'restaurant_id' => $restaurant->id,
-                'name' => $cuisine,
-            ]);
-        }
+        app(CuisineOptionRestaurantSyncService::class)->syncFromNames($restaurant, $cuisines);
     }
 
     /**

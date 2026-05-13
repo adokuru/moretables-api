@@ -7,6 +7,7 @@ use App\Http\Requests\Merchant\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Models\Restaurant;
 use App\Services\AuditLogService;
+use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,7 @@ class MerchantRestaurantController extends Controller
     public function __construct(
         protected AuditLogService $auditLogService,
         protected MediaLibraryService $mediaLibraryService,
+        protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
     ) {}
 
     public function show(Restaurant $restaurant): RestaurantDetailResource
@@ -53,10 +55,10 @@ class MerchantRestaurantController extends Controller
         $restaurant->save();
 
         if (array_key_exists('cuisines', $validated)) {
-            $restaurant->cuisines()->delete();
-            foreach ($validated['cuisines'] as $cuisine) {
-                $restaurant->cuisines()->create(['name' => $cuisine]);
-            }
+            $this->cuisineOptionRestaurantSyncService->syncFromNames(
+                $restaurant,
+                $validated['cuisines'],
+            );
         }
 
         if (array_key_exists('hours', $validated)) {

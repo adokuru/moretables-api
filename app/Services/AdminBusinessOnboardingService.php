@@ -18,6 +18,7 @@ class AdminBusinessOnboardingService
     public function __construct(
         protected MediaLibraryService $mediaLibraryService,
         protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
+        protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
     ) {}
 
     /**
@@ -167,9 +168,19 @@ class AdminBusinessOnboardingService
      */
     protected function createRestaurantCuisine(Restaurant $restaurant, array $restaurantPayload): void
     {
-        $restaurant->cuisines()->create([
-            'name' => $restaurantPayload['cuisine_type'],
-        ]);
+        $cuisineType = data_get($restaurantPayload, 'cuisine_type');
+
+        if (! is_string($cuisineType)) {
+            $this->cuisineOptionRestaurantSyncService->syncFromNames($restaurant, []);
+
+            return;
+        }
+
+        $trimmed = trim($cuisineType);
+
+        $names = $trimmed === '' ? [] : [$trimmed];
+
+        $this->cuisineOptionRestaurantSyncService->syncFromNames($restaurant, $names);
     }
 
     /**
