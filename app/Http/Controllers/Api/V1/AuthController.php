@@ -160,13 +160,24 @@ class AuthController extends Controller
 
         if ($status !== Password::PASSWORD_RESET) {
             throw ValidationException::withMessages([
-                'email' => [__($status)],
+                'email' => [$this->passwordResetApiMessage($status)],
             ]);
         }
 
         return response()->json([
-            'message' => __($status),
+            'message' => $this->passwordResetApiMessage($status),
         ]);
+    }
+
+    private function passwordResetApiMessage(string $status): string
+    {
+        return match ($status) {
+            Password::PASSWORD_RESET => 'Your password has been reset successfully.',
+            Password::INVALID_TOKEN => 'This password reset link is invalid or has expired. Please request a new link.',
+            Password::INVALID_USER => 'We could not find an account with that email address.',
+            Password::RESET_THROTTLED => 'Too many password reset attempts. Please wait before trying again.',
+            default => 'Unable to reset your password. Please try again.',
+        };
     }
 
     protected function findUserByIdentifier(string $identifier): ?User
