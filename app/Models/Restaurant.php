@@ -53,6 +53,8 @@ class Restaurant extends Model implements HasMedia
         'onboarding_progress',
         'onboarding_current_step',
         'is_profile_published',
+        'contact_email_verified_at',
+        'contact_phone_verified_at',
     ];
 
     protected function casts(): array

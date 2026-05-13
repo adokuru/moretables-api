@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -41,6 +42,40 @@ class AuthChallengeService
             $user->notify(new AuthChallengeCodeNotification(
                 code: $code,
                 purpose: $type === AuthChallengeType::GuestSignup ? 'verify your email' : 'finish signing in',
+                expiresInMinutes: $ttlMinutes,
+            ));
+
+            return $challenge;
+        });
+    }
+
+    public function createForEmail(User $user, AuthChallengeType $type, string $email, int $ttlMinutes = 10): AuthChallenge
+    {
+        return DB::transaction(function () use ($user, $type, $email, $ttlMinutes): AuthChallenge {
+            AuthChallenge::query()
+                ->where('user_id', $user->id)
+                ->where('type', $type->value)
+                ->where('status', AuthChallengeStatus::Pending->value)
+                ->update(['status' => AuthChallengeStatus::Cancelled->value]);
+
+            $code = $this->generateCode();
+
+            $challenge = AuthChallenge::query()->create([
+                'user_id' => $user->id,
+                'type' => $type->value,
+                'status' => AuthChallengeStatus::Pending->value,
+                'challenge_token' => (string) Str::uuid(),
+                'code_hash' => Hash::make($code),
+                'code_expires_at' => now()->addMinutes($ttlMinutes),
+                'attempts' => 0,
+                'max_attempts' => 5,
+                'last_sent_at' => now(),
+                'meta' => ['email' => $email],
+            ]);
+
+            Notification::route('mail', $email)->notify(new AuthChallengeCodeNotification(
+                code: $code,
+                purpose: 'verify your restaurant email address',
                 expiresInMinutes: $ttlMinutes,
             ));
 

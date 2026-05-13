@@ -1,6 +1,8 @@
 <?php
 
+use App\AuthChallengeType;
 use App\Enums\RestaurantOnboardingStep;
+use App\Models\AuthChallenge;
 use App\Models\CuisineOption;
 use App\Models\RestaurantMealSchedule;
 use App\Models\RestaurantMealType;
@@ -9,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
@@ -509,4 +512,128 @@ it('forbids unauthenticated requests to all onboarding endpoints', function () {
     $this->putJson(obUrl($id, '/business-hours'), [])->assertUnauthorized();
     $this->getJson(obUrl($id, '/meal-types'))->assertUnauthorized();
     $this->postJson(obUrl($id, '/meal-types'), [])->assertUnauthorized();
+});
+
+// ── Email verification ────────────────────────────────────────────────────────
+
+it('sends a verification code to the restaurant contact email', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $response = $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'contact@restaurant.com',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonStructure(['message', 'challenge_token']);
+
+    $this->assertDatabaseHas('auth_challenges', [
+        'user_id' => User::query()->latest()->first()->id ?? null,
+        'type' => AuthChallengeType::RestaurantEmailVerification->value,
+        'status' => 'pending',
+    ]);
+
+    Notification::assertSentOnDemand(
+        \App\Notifications\AuthChallengeCodeNotification::class,
+        fn ($n, $channels, $notifiable) => ($notifiable->routes['mail'] ?? null) === 'contact@restaurant.com',
+    );
+});
+
+it('verifies the code and stamps restaurant email and verified_at', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $actor = marketingActor($data);
+    Sanctum::actingAs($actor);
+
+    $sendResponse = $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'verified@restaurant.com',
+    ]);
+
+    $sendResponse->assertCreated();
+    $challengeToken = $sendResponse->json('challenge_token');
+
+    $verifyResponse = $this->postJson(obUrl($data['restaurant']->id, '/contact-email/verify'), [
+        'challenge_token' => $challengeToken,
+        'code' => '1234', // test environment always generates 1234
+    ]);
+
+    $verifyResponse->assertOk()
+        ->assertJsonPath('email', 'verified@restaurant.com')
+        ->assertJsonStructure(['message', 'email', 'contact_email_verified_at']);
+
+    $this->assertDatabaseHas('restaurants', [
+        'id' => $data['restaurant']->id,
+        'email' => 'verified@restaurant.com',
+    ]);
+
+    expect($data['restaurant']->refresh()->contact_email_verified_at)->not->toBeNull();
+});
+
+it('rejects an incorrect verification code', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $sendResponse = $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'contact@restaurant.com',
+    ]);
+
+    $challengeToken = $sendResponse->json('challenge_token');
+
+    $this->postJson(obUrl($data['restaurant']->id, '/contact-email/verify'), [
+        'challenge_token' => $challengeToken,
+        'code' => '0000',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('code');
+});
+
+it('cancels the previous pending challenge when a new send-code is requested', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $actor = marketingActor($data);
+    Sanctum::actingAs($actor);
+
+    $first = $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'first@restaurant.com',
+    ]);
+
+    $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'second@restaurant.com',
+    ])->assertCreated();
+
+    $firstToken = $first->json('challenge_token');
+
+    // Old token should now be cancelled — verification must fail
+    $this->postJson(obUrl($data['restaurant']->id, '/contact-email/verify'), [
+        'challenge_token' => $firstToken,
+        'code' => '1234',
+    ])->assertUnprocessable();
+});
+
+it('forbids operations staff from sending a verification code', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $ops = User::factory()->create();
+    assignScopedRole($ops, Role::Operations, $data['organization'], $data['restaurant']);
+    Sanctum::actingAs($ops);
+
+    $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'contact@restaurant.com',
+    ])->assertForbidden();
+});
+
+it('rejects send-code with an invalid email address', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->postJson(obUrl($data['restaurant']->id, '/contact-email/send-code'), [
+        'email' => 'not-an-email',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });

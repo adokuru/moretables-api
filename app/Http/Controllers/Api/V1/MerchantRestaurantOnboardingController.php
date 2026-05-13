@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\SendRestaurantEmailVerificationRequest;
 use App\Http\Requests\Merchant\StoreRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingContactRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingDescriptionRequest;
@@ -10,9 +12,11 @@ use App\Http\Requests\Merchant\UpdateRestaurantOnboardingHoursRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingStatusRequest;
 use App\Http\Requests\Merchant\UploadRestaurantOnboardingPhotoRequest;
+use App\Http\Requests\Merchant\VerifyRestaurantEmailRequest;
 use App\Http\Resources\MediaAssetResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantMealType;
+use App\Services\AuthChallengeService;
 use App\Services\MediaLibraryService;
 use App\Services\RestaurantOnboardingService;
 use Dedoc\Scramble\Attributes\Group;
@@ -24,6 +28,7 @@ class MerchantRestaurantOnboardingController extends Controller
     public function __construct(
         protected RestaurantOnboardingService $onboardingService,
         protected MediaLibraryService $mediaLibraryService,
+        protected AuthChallengeService $authChallengeService,
     ) {}
 
     public function updateContactCuisinePrice(UpdateRestaurantOnboardingContactRequest $request, Restaurant $restaurant): JsonResponse
@@ -200,6 +205,50 @@ class MerchantRestaurantOnboardingController extends Controller
         $mealType->delete();
 
         return response()->json(['message' => 'Meal type deleted successfully.']);
+    }
+
+    public function sendEmailVerificationCode(SendRestaurantEmailVerificationRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+
+        $challenge = $this->authChallengeService->createForEmail(
+            $request->user(),
+            AuthChallengeType::RestaurantEmailVerification,
+            $request->validated('email'),
+        );
+
+        return response()->json([
+            'message' => 'A verification code has been sent to '.$request->validated('email').'. It expires in 10 minutes.',
+            'challenge_token' => $challenge->challenge_token,
+        ], 201);
+    }
+
+    public function verifyEmail(VerifyRestaurantEmailRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+
+        $challenge = $this->authChallengeService->verify(
+            $request->validated('challenge_token'),
+            $request->validated('code'),
+            AuthChallengeType::RestaurantEmailVerification,
+        );
+
+        abort_unless((int) $challenge->user_id === (int) $request->user()->id, 403);
+
+        $email = $challenge->meta['email'];
+
+        $restaurant->update([
+            'email' => $email,
+            'contact_email_verified_at' => now(),
+        ]);
+
+        $restaurant->refresh();
+
+        return response()->json([
+            'message' => 'Email address verified successfully.',
+            'email' => $restaurant->email,
+            'contact_email_verified_at' => $restaurant->contact_email_verified_at->toIso8601String(),
+        ]);
     }
 
     public function showStatus(Restaurant $restaurant): JsonResponse

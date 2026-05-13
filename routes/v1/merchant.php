@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);
         Route::patch('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'updateMealType']);
         Route::delete('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'destroyMealType']);
+        Route::post('contact-email/send-code', [MerchantRestaurantOnboardingController::class, 'sendEmailVerificationCode']);
+        Route::post('contact-email/verify', [MerchantRestaurantOnboardingController::class, 'verifyEmail']);
         Route::get('status', [MerchantRestaurantOnboardingController::class, 'showStatus']);
         Route::patch('status', [MerchantRestaurantOnboardingController::class, 'updateStatus']);
     });

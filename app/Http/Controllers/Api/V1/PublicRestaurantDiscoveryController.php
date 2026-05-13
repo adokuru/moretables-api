@@ -48,8 +48,11 @@ class PublicRestaurantDiscoveryController extends Controller
         abort_unless($this->restaurantDiscoveryService->supportsSection($section), 404);
         $user = $this->authenticatedUserFromToken($request);
 
+        $validated = $request->validated();
+        $perPage = (int) ($validated['per_page'] ?? $validated['limit'] ?? 15);
+
         $paginator = $this->restaurantDiscoveryService
-            ->paginateSection($section, $request->validated(), (int) ($request->validated()['per_page'] ?? 15), $user?->id);
+            ->paginateSection($section, $validated, $perPage, $user?->id);
 
         return response()->json([
             'section' => $this->restaurantDiscoveryService->normalizeSection($section),
