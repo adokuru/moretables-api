@@ -4,7 +4,7 @@ namespace App\Http\Requests\Merchant;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateMediaAssetRequest extends FormRequest
+class UpdateGalleryCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,8 +14,8 @@ class UpdateMediaAssetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'alt_text' => ['nullable', 'string', 'max:255'],
-            'gallery_category_id' => ['sometimes', 'nullable', 'integer', 'exists:restaurant_gallery_categories,id'],
+            'name' => ['sometimes', 'string', 'max:100'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
         ];
     }
 }

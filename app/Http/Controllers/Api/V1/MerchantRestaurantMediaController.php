@@ -18,6 +18,37 @@ class MerchantRestaurantMediaController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}
 
+    public function gallery(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+
+        $restaurant->loadMissing(['galleryCategories', 'media']);
+
+        $galleryMedia = $restaurant->media
+            ->where('collection_name', 'gallery')
+            ->sortBy('order_column');
+
+        $categorised = $restaurant->galleryCategories->map(fn ($category) => [
+            'id' => $category->id,
+            'name' => $category->name,
+            'sort_order' => $category->sort_order,
+            'photos' => MediaAssetResource::collection(
+                $galleryMedia->filter(
+                    fn ($m) => $m->getCustomProperty('gallery_category_id') === $category->id
+                )->values()
+            ),
+        ]);
+
+        $uncategorised = $galleryMedia->filter(
+            fn ($m) => $m->getCustomProperty('gallery_category_id') === null
+        )->values();
+
+        return response()->json([
+            'categories' => $categorised->values(),
+            'uncategorised' => MediaAssetResource::collection($uncategorised),
+        ]);
+    }
+
     public function store(UploadModelMediaRequest $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
@@ -37,7 +68,12 @@ class MerchantRestaurantMediaController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
-        $updatedMedia = $this->mediaLibraryService->updateMedia($restaurant, $media, $request->validated('alt_text'));
+        $validated = $request->validated();
+        $categoryId = array_key_exists('gallery_category_id', $validated)
+            ? $validated['gallery_category_id']
+            : '__unchanged__';
+
+        $updatedMedia = $this->mediaLibraryService->updateMedia($restaurant, $media, $validated['alt_text'] ?? null, $categoryId);
 
         return response()->json([
             'message' => 'Restaurant media updated successfully.',

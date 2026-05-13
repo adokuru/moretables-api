@@ -13,6 +13,8 @@ trait HasMediaUploadFields
             'gallery_images.*' => ['image', 'max:10240'],
             'gallery_image_alt_texts' => ['nullable', 'array'],
             'gallery_image_alt_texts.*' => ['nullable', 'string', 'max:255'],
+            'gallery_category_ids' => ['nullable', 'array'],
+            'gallery_category_ids.*' => ['nullable', 'integer'],
         ];
     }
 }

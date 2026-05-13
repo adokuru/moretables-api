@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
@@ -38,6 +39,12 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
     Route::post('staff', [MerchantRestaurantStaffController::class, 'store']);
     Route::patch('staff/{user}', [MerchantRestaurantStaffController::class, 'update']);
     Route::delete('staff/{user}', [MerchantRestaurantStaffController::class, 'destroy']);
+    Route::get('gallery', [MerchantRestaurantMediaController::class, 'gallery']);
+    Route::get('gallery/categories', [MerchantRestaurantGalleryCategoryController::class, 'index']);
+    Route::post('gallery/categories', [MerchantRestaurantGalleryCategoryController::class, 'store']);
+    Route::patch('gallery/categories/{galleryCategory}', [MerchantRestaurantGalleryCategoryController::class, 'update']);
+    Route::delete('gallery/categories/{galleryCategory}', [MerchantRestaurantGalleryCategoryController::class, 'destroy']);
+
     Route::post('media', [MerchantRestaurantMediaController::class, 'store']);
     Route::patch('media/{media}', [MerchantRestaurantMediaController::class, 'update']);
     Route::post('media/reorder', [MerchantRestaurantMediaController::class, 'reorder']);

@@ -80,6 +80,11 @@ class RestaurantDetailResource extends JsonResource
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'gallery_images' => MediaAssetResource::collection($galleryImages),
+            'gallery_categories' => $this->whenLoaded('galleryCategories', fn () => $this->galleryCategories->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'sort_order' => $c->sort_order,
+            ])->values()),
             'menu_documents' => MediaAssetResource::collection($menuDocuments),
             'discovery_metrics' => $discoveryMetrics,
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),

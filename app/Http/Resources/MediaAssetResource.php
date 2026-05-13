@@ -21,6 +21,7 @@ class MediaAssetResource extends JsonResource
             'order' => $this->order_column,
             'featured' => $this->collection_name === 'featured',
             'alt_text' => $this->getCustomProperty('alt_text'),
+            'gallery_category_id' => $this->getCustomProperty('gallery_category_id'),
             'original_url' => $this->getUrl(),
             'thumb_url' => $this->getAvailableUrl(['thumb']),
             'card_url' => $this->getAvailableUrl(['card']),
