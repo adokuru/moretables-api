@@ -13,7 +13,7 @@ it('renders tabular layout with Nantes greeting, Avenir body, and logo asset url
     expect($html)
         ->toContain("'Nantes'")
         ->toContain("'Avenir Next'")
-        ->toContain('Dear Max,')
+        ->toContain('Hi Max,')
         ->toContain('Primary copy.')
         ->toContain(parse_url(asset('logo.png'), PHP_URL_PATH) ?? '/logo.png');
 });

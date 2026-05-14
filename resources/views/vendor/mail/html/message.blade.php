@@ -21,7 +21,12 @@
 {{-- Footer --}}
 <x-slot:footer>
 <x-mail::footer>
-© {{ date('Y') }} {{ config('app.name') }}. {{ __('All rights reserved.') }}
+Sent from MoreTables
+MoreTables Ltd., Lagos Nigeria
+
+[Earn rewards]({{ config('app.url') }})
+
+[Unsubscribe]({{ config('app.url') }}/unsubscribe)
 </x-mail::footer>
 </x-slot:footer>
 </x-mail::layout>

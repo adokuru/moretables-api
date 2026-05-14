@@ -1,129 +1,173 @@
+{{--
+    Reservation lifecycle email (confirmed / changed / cancelled / reminder / guest added).
+    Fonts: Nantes (greeting); Avenir (body/details/footer).
+--}}
+@php
+    $logoUrl = asset('logo.png');
+    $footerLink1Url = $footerLink1Url ?? config('app.url');
+    $footerLink1Label = $footerLink1Label ?? 'Earn rewards';
+    $footerLink2Url = $footerLink2Url ?? config('app.url');
+    $footerLink2Label = $footerLink2Label ?? 'Unsubscribe';
+@endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
 <title>{{ $subject }}</title>
 <meta charset="UTF-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <meta name="x-apple-disable-message-reformatting" content="" />
+<meta content="width=device-width" name="viewport" />
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
 <style type="text/css">
-body {
-    margin: 0;
-    padding: 0;
-    background-color: #f2f3f5;
+table { border-collapse: separate; table-layout: fixed; mso-table-lspace: 0pt; mso-table-rspace: 0pt }
+table td { border-collapse: collapse }
+.ExternalClass { width: 100% }
+.ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100% }
+body, a, li, p, h1, h2, h3 { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: none !important }
+body { min-width: 100%; Margin: 0px; padding: 0px; background-color: #FFFFFF; }
+body, #innerTable { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale }
+img { Margin: 0; padding: 0; -ms-interpolation-mode: bicubic }
+h1, h2, h3, p, a { overflow-wrap: normal; white-space: normal; word-break: break-word }
+a { text-decoration: none }
+h1, h2, h3, p { min-width: 100%!important; width: 100%!important; max-width: 100%!important; display: inline-block!important; border: 0; padding: 0; margin: 0 }
+a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important }
+@font-face {
+    font-family: 'Nantes';
+    src: url('https://your-cdn.example.com/nantes.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
 }
-
-table {
-    border-collapse: collapse;
-}
-
-img {
-    border: 0;
-    display: block;
-    line-height: 100%;
-    outline: none;
-    text-decoration: none;
-}
-
-@media only screen and (max-width: 640px) {
-    .email-shell {
-        width: 100% !important;
-    }
-
-    .card-body {
-        padding: 40px 24px !important;
-    }
-
-    .restaurant-image {
-        width: 120px !important;
-        height: 120px !important;
-    }
-
-    .heading {
-        font-size: 36px !important;
-        line-height: 42px !important;
-    }
+@media (max-width: 480px) {
+.t-outer { padding-left: 24px !important; padding-right: 24px !important; }
+.t-greeting { font-size: 26px !important; }
 }
 </style>
 </head>
-<body>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f2f3f5;">
-<tr>
-<td align="center" style="padding:32px 16px;">
-<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" class="email-shell" style="width:100%;max-width:640px;">
-<tr>
-<td align="center" style="padding-bottom:24px;">
-<img src="{{ $logoUrl }}" width="168" alt="MoreTables" style="width:168px;max-width:168px;height:auto;" />
-</td>
-</tr>
-<tr>
-<td>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#ffffff;border-radius:28px;">
-<tr>
-<td align="center" class="card-body" style="padding:48px 40px;">
-<h1 class="heading" style="margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:42px;line-height:48px;font-weight:500;color:#26313d;">{{ $title }}</h1>
-<p style="margin:16px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;line-height:30px;color:#4f5965;">{{ $subtitle }}</p>
+<body id="body" style="min-width:100%;Margin:0px;padding:0px;background-color:#FFFFFF;">
+<div style="background-color:#FFFFFF;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
+<tr><td style="background-color:#FFFFFF;" valign="top" align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" id="innerTable">
+<tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr><td width="600" style="width:600px;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+<tr><td class="t-outer" style="background-color:#FFFFFF;padding:40px 50px 35px 50px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;">
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:32px auto 0 auto;">
-<tr>
-<td align="center">
-@if($restaurantImageUrl)
-<img src="{{ $restaurantImageUrl }}" width="136" height="136" alt="{{ $restaurantName }}" class="restaurant-image" style="width:136px;height:136px;border-radius:68px;object-fit:cover;" />
-@else
-<table role="presentation" width="136" height="136" cellpadding="0" cellspacing="0" border="0" class="restaurant-image" style="width:136px;height:136px;background-color:#f4dad5;border-radius:68px;">
-<tr>
-<td align="center" valign="middle" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:48px;line-height:48px;font-weight:600;color:#c64d3c;">{{ $restaurantInitial }}</td>
-</tr>
-</table>
-@endif
-</td>
-</tr>
-</table>
+{{-- Logo --}}
+<tr><td align="left">
+<table role="presentation" cellpadding="0" cellspacing="0" style="Margin-right:auto;"><tr><td width="142" style="width:142px;">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td>
+<div style="font-size:0px;"><img style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="142" alt="MoreTables" src="{{ $logoUrl }}" /></div>
+</td></tr></table>
+</td></tr></table>
+</td></tr>
 
-<p style="margin:24px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:34px;line-height:40px;font-weight:500;color:#d14e43;">{{ $restaurantName }}</p>
-<p style="margin:20px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:24px;line-height:34px;font-weight:600;color:#26313d;">{{ $tableInfo }}</p>
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:32px;font-size:1px;display:block;">&nbsp;</div></td></tr>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px auto 0 auto;">
-<tr>
-<td align="center">
-<p style="margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;line-height:32px;color:#3d4650;"><span style="font-weight:600;">Name:</span> {{ $guestName }}</p>
-<p style="margin:8px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;line-height:32px;color:#3d4650;"><span style="font-weight:600;">Confirmation #:</span> {{ $confirmationNumber }}</p>
-@if($showRestaurantContactDetails)
-@if($addressLineOne)
-<p style="margin:28px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:18px;line-height:28px;color:#4f5965;">{{ $addressLineOne }}</p>
-@endif
-@if($addressLineTwo)
-<p style="margin:6px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:18px;line-height:28px;color:#4f5965;">{{ $addressLineTwo }}</p>
-@endif
-@if($restaurantPhone)
-<p style="margin:6px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:18px;line-height:28px;color:#4f5965;">{{ $restaurantPhone }}</p>
-@endif
-@endif
-@if($menuUrl || $directionsUrl)
-<p style="margin:28px 0 0 0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;line-height:30px;font-weight:600;color:#d14e43;">
-@if($menuUrl)
-<a href="{{ $menuUrl }}" style="color:#d14e43;text-decoration:none;">See Menu</a>
-@endif
-@if($menuUrl && $directionsUrl)
-<span style="color:#d14e43;">&nbsp;|&nbsp;</span>
-@endif
-@if($directionsUrl)
-<a href="{{ $directionsUrl }}" style="color:#d14e43;text-decoration:none;">Get Directions</a>
-@endif
-</p>
-@endif
-</td>
-</tr>
+{{-- Greeting --}}
+<tr><td align="left">
+<p class="t-greeting" style="margin:0;Margin:0;font-family:'Nantes','Iowan Old Style','Palatino Linotype','Book Antiqua',Georgia,serif;line-height:38px;font-weight:700;font-size:32px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">Hi {{ $guestName }},</p>
+</td></tr>
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:20px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- Subtitle --}}
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">{{ $subtitle }}</p>
+</td></tr>
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- Reservation details --}}
+<tr><td align="left">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
+<tr><td style="padding-bottom:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Restaurant: <strong>{{ $restaurantName }}</strong></p>
+</td></tr>
+<tr><td style="padding-bottom:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Date: <strong>{{ $formattedDate }}</strong></p>
+</td></tr>
+<tr><td style="padding-bottom:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Time: <strong>{{ $formattedTime }}</strong></p>
+</td></tr>
+<tr><td>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Guests: <strong>{{ $partySize }} {{ $partySize === 1 ? 'Guest' : 'Guests' }}</strong></p>
+</td></tr>
 </table>
-</td>
-</tr>
+</td></tr>
+
+{{-- Extra body lines (optional) --}}
+@if(filled($extraBody ?? ''))
+<tr><td><div style="mso-line-height-rule:exactly;line-height:20px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{!! nl2br(e($extraBody)) !!}</p>
+</td></tr>
+@endif
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- CTA link --}}
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">Need to make changes?</p>
+</td></tr>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="left">
+<a href="{{ $ctaUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">{{ $ctaLabel }}</a>
+</td></tr>
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- Closing message --}}
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">If you ever need help, we're always here for you.</p>
+</td></tr>
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:28px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- Sign-off --}}
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $signOff }}</p>
+</td></tr>
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">The MoreTables Team</p>
+</td></tr>
+
+{{-- Spacer --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+
+{{-- Footer --}}
+<tr><td align="left">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-top:1px solid #E0E0E0;padding-top:20px;">
+<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;color:#888A8C;text-align:left;mso-line-height-rule:exactly;">Sent from MoreTables</p></td></tr>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;color:#888A8C;text-align:left;mso-line-height-rule:exactly;">MoreTables Ltd., Lagos Nigeria</p></td></tr>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;text-align:left;mso-line-height-rule:exactly;"><a href="{{ $footerLink1Url }}" style="font-size:14px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink1Label }}</a></p></td></tr>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;text-align:left;mso-line-height-rule:exactly;"><a href="{{ $footerLink2Url }}" style="font-size:14px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink2Label }}</a></p></td></tr>
 </table>
-</td>
-</tr>
+</td></tr>
+
 </table>
-</td>
-</tr>
+</td></tr>
 </table>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</div>
+<div class="gmail-fix" style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">&nbsp;</div>
 </body>
 </html>

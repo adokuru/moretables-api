@@ -10,7 +10,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class GuestReservationLifecycleMailNotification extends Notification implements ShouldQueue
 {
@@ -30,7 +29,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
 
     public function toMail(object $notifiable): MailMessage
     {
-        $this->reservation->loadMissing('restaurant.media');
+        $this->reservation->loadMissing('restaurant');
 
         $restaurant = $this->reservation->restaurant;
         $subject = $this->subject($restaurant->name);
@@ -42,21 +41,20 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             ],
             [
                 'subject' => $subject,
-                'title' => $this->title(),
                 'subtitle' => $this->subtitle(),
-                'logoUrl' => asset('logo.png'),
-                'restaurantName' => $restaurant->name,
-                'restaurantImageUrl' => $this->restaurantImageUrl(),
-                'restaurantInitial' => strtoupper(substr($restaurant->name, 0, 1)),
-                'tableInfo' => $this->tableInfo(),
                 'guestName' => $this->guestName(),
-                'confirmationNumber' => $this->reservation->reservation_reference,
-                'menuUrl' => $restaurant->menu_link ?: null,
-                'directionsUrl' => $this->directionsUrl(),
-                'showRestaurantContactDetails' => $this->showRestaurantContactDetails(),
-                'addressLineOne' => $this->addressLineOne(),
-                'addressLineTwo' => $this->addressLineTwo(),
-                'restaurantPhone' => $restaurant->phone ?: null,
+                'restaurantName' => $restaurant->name,
+                'formattedDate' => $this->formattedDate(),
+                'formattedTime' => $this->formattedTime(),
+                'partySize' => $this->reservation->party_size,
+                'extraBody' => $this->extraBody(),
+                'ctaUrl' => config('app.url').'/reservations/'.$this->reservation->reservation_reference,
+                'ctaLabel' => 'Manage reservation',
+                'signOff' => $this->signOff(),
+                'footerLink1Url' => config('app.url'),
+                'footerLink1Label' => 'Earn rewards',
+                'footerLink2Url' => config('app.url').'/unsubscribe',
+                'footerLink2Label' => 'Unsubscribe',
             ],
         );
     }
@@ -73,29 +71,32 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
         };
     }
 
-    protected function title(): string
-    {
-        $restaurantName = $this->reservation->restaurant->name;
-
-        return match ($this->action) {
-            'created' => 'Reservation confirmed',
-            'updated' => 'Reservation changed',
-            'cancelled' => 'Reservation canceled',
-            'guest_added' => 'You have been added to the below reservation',
-            'upcoming_reminder' => "Your reservation is coming up at {$restaurantName} in {$this->daysUntilReservationLabel()}",
-            default => 'Reservation update',
-        };
-    }
-
     protected function subtitle(): string
     {
         return match ($this->action) {
-            'created' => 'Thanks for using MoreTables',
-            'updated' => 'Here are the new details:',
-            'cancelled' => "You've successfully canceled your reservation at",
-            'guest_added' => 'Here are the details',
-            'upcoming_reminder' => 'Here are the details',
+            'created' => 'Your reservation has been successfully confirmed! 🎉',
+            'updated' => 'Your reservation has been updated.',
+            'cancelled' => 'Your reservation has been cancelled.',
+            'guest_added' => "You've been added to an upcoming reservation.",
+            'upcoming_reminder' => 'Just a quick reminder about your upcoming reservation:',
             default => 'There is an update to your reservation.',
+        };
+    }
+
+    protected function signOff(): string
+    {
+        return match ($this->action) {
+            'created' => 'Enjoy your meal,',
+            'upcoming_reminder' => 'See you soon!',
+            default => 'Thanks,',
+        };
+    }
+
+    protected function extraBody(): ?string
+    {
+        return match ($this->action) {
+            'created' => "You're all set for a great experience.\n\nYou can manage or update your reservation anytime",
+            default => null,
         };
     }
 
@@ -120,21 +121,10 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             : "{$daysUntilReservation} days";
     }
 
-    protected function tableInfo(): string
-    {
-        $formattedStartsAt = $this->formattedStartsAt();
-
-        if ($formattedStartsAt === null) {
-            return 'Table for '.$this->reservation->party_size;
-        }
-
-        return 'Table for '.$this->reservation->party_size.' on '.$formattedStartsAt;
-    }
-
-    protected function formattedStartsAt(): ?string
+    protected function formattedDate(): string
     {
         if ($this->reservation->starts_at === null) {
-            return null;
+            return '—';
         }
 
         $restaurantTimezone = $this->reservation->restaurant->timezone ?: config('app.timezone');
@@ -142,72 +132,21 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
         return $this->reservation->starts_at
             ->copy()
             ->timezone($restaurantTimezone)
-            ->format('l, F j, Y \a\t g:i a');
+            ->format('jS F, Y');
     }
 
-    protected function restaurantImageUrl(): ?string
+    protected function formattedTime(): string
     {
-        $featuredMedia = $this->reservation->restaurant->getFirstMedia('featured');
-
-        if ($featuredMedia instanceof Media) {
-            return $featuredMedia->getFullUrl();
+        if ($this->reservation->starts_at === null) {
+            return '—';
         }
 
-        $galleryMedia = $this->reservation->restaurant->getFirstMedia('gallery');
+        $restaurantTimezone = $this->reservation->restaurant->timezone ?: config('app.timezone');
 
-        return $galleryMedia instanceof Media ? $galleryMedia->getFullUrl() : null;
-    }
-
-    protected function directionsUrl(): ?string
-    {
-        $restaurant = $this->reservation->restaurant;
-
-        if ($restaurant->latitude !== null && $restaurant->longitude !== null) {
-            return 'https://www.google.com/maps/search/?api=1&query='
-                .rawurlencode($restaurant->latitude.','.$restaurant->longitude);
-        }
-
-        $address = trim(implode(', ', array_filter([
-            $restaurant->address_line_1,
-            $restaurant->address_line_2,
-            $restaurant->city,
-            $restaurant->state,
-            $restaurant->country,
-        ])));
-
-        if ($address === '') {
-            return null;
-        }
-
-        return 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($address);
-    }
-
-    protected function addressLineOne(): ?string
-    {
-        $restaurant = $this->reservation->restaurant;
-        $line = trim(implode(', ', array_filter([
-            $restaurant->address_line_1,
-            $restaurant->address_line_2,
-        ])));
-
-        return $line !== '' ? $line : null;
-    }
-
-    protected function addressLineTwo(): ?string
-    {
-        $restaurant = $this->reservation->restaurant;
-        $line = trim(implode(', ', array_filter([
-            $restaurant->city,
-            $restaurant->state,
-            $restaurant->country,
-        ])));
-
-        return $line !== '' ? $line : null;
-    }
-
-    protected function showRestaurantContactDetails(): bool
-    {
-        return ! in_array($this->action, ['cancelled', 'guest_added', 'upcoming_reminder'], true);
+        return $this->reservation->starts_at
+            ->copy()
+            ->timezone($restaurantTimezone)
+            ->format('g:iA');
     }
 
     /**

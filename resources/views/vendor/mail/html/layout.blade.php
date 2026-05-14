@@ -6,21 +6,13 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
+<meta name="x-apple-disable-message-reformatting" content="" />
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
 <style>
 @media only screen and (max-width: 600px) {
-.inner-body {
-width: 100% !important;
-}
-
-.footer {
-width: 100% !important;
-}
-}
-
-@media only screen and (max-width: 500px) {
-.button {
-width: 100% !important;
-}
+    .inner-body { width: 100% !important; }
+    .footer { width: 100% !important; }
+    .button { width: 100% !important; }
 }
 </style>
 {!! $head ?? '' !!}
@@ -31,13 +23,14 @@ width: 100% !important;
 <tr>
 <td align="center">
 <table class="content" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+
+{{-- Header: logo --}}
 {!! $header ?? '' !!}
 
-<!-- Email Body -->
+{{-- Body --}}
 <tr>
-<td class="body" width="100%" cellpadding="0" cellspacing="0" style="border: hidden !important;">
-<table class="inner-body" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
-<!-- Body content -->
+<td class="body" width="100%" cellpadding="0" cellspacing="0">
+<table class="inner-body" align="center" width="600" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td class="content-cell">
 {!! Illuminate\Mail\Markdown::parse($slot) !!}
@@ -49,7 +42,9 @@ width: 100% !important;
 </td>
 </tr>
 
+{{-- Footer --}}
 {!! $footer ?? '' !!}
+
 </table>
 </td>
 </tr>
