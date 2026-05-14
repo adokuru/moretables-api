@@ -130,6 +130,10 @@ class PublicRestaurantController extends Controller
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
         $user = $this->authenticatedUserFromToken($request);
 
+        if ($user) {
+            $request->setUserResolver(fn () => $user);
+        }
+
         $restaurant = Restaurant::query()
             ->when($user, function ($query, $user): void {
                 $query->withExists([
