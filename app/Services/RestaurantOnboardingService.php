@@ -2,11 +2,19 @@
 
 namespace App\Services;
 
+use App\Enums\RestaurantOnboardingStep;
 use App\Models\Restaurant;
 use App\Models\RestaurantMealType;
+use Illuminate\Support\Collection;
 
 class RestaurantOnboardingService
 {
+    private const STATUS_COMPLETED = 'completed';
+
+    private const STATUS_IN_PROGRESS = 'in_progress';
+
+    private const STATUS_PENDING = 'pending';
+
     public function syncCuisines(Restaurant $restaurant, ?int $primaryId, array $additionalIds = []): void
     {
         if ($primaryId === null) {
@@ -64,32 +72,266 @@ class RestaurantOnboardingService
 
     public function getStatus(Restaurant $restaurant): array
     {
-        return [
-            'current_step' => $restaurant->onboarding_current_step,
-            'is_profile_published' => (bool) $restaurant->is_profile_published,
-            'progress' => $restaurant->onboarding_progress ?? (object) [],
-        ];
+        return $this->buildStatus($restaurant);
+    }
+
+    public function syncStatus(Restaurant $restaurant): array
+    {
+        $status = $this->buildStatus($restaurant->refresh());
+
+        $restaurant->update([
+            'onboarding_progress' => $status['progress'],
+            'onboarding_current_step' => $status['current_step'],
+            'is_profile_published' => $status['is_profile_published'],
+        ]);
+
+        return $status;
     }
 
     public function updateStatus(Restaurant $restaurant, array $data): array
     {
-        $progress = $restaurant->onboarding_progress ?? [];
+        if (array_key_exists('is_profile_published', $data)) {
+            if ($data['is_profile_published']) {
+                $status = $this->buildStatus($restaurant->refresh());
 
-        if (isset($data['step'], $data['step_status'])) {
-            $progress[$data['step']] = $data['step_status'];
+                abort_unless(
+                    $this->isPublishable($status['progress']),
+                    422,
+                    'Complete all onboarding steps before publishing.',
+                );
+            }
+
+            $restaurant->update([
+                'is_profile_published' => $data['is_profile_published'],
+            ]);
         }
 
-        $restaurant->update([
-            'onboarding_progress' => $progress,
-            'onboarding_current_step' => $data['current_step'] ?? $restaurant->onboarding_current_step,
-            'is_profile_published' => $data['is_profile_published'] ?? $restaurant->is_profile_published,
-        ]);
-
-        return $this->getStatus($restaurant->refresh());
+        return $this->syncStatus($restaurant);
     }
 
     public function mealTypeBelongsToRestaurant(RestaurantMealType $mealType, Restaurant $restaurant): bool
     {
         return (int) $mealType->restaurant_id === (int) $restaurant->id;
+    }
+
+    private function buildStatus(Restaurant $restaurant): array
+    {
+        $restaurant->loadMissing([
+            'cuisines',
+            'mealTypes.schedules',
+            'policy',
+        ]);
+
+        $progress = [
+            RestaurantOnboardingStep::Basics->value => $this->stepStatus(
+                $this->basicsComplete($restaurant),
+                $this->basicsStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Location->value => $this->stepStatus(
+                $this->locationComplete($restaurant),
+                $this->locationStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Cuisine->value => $this->stepStatus(
+                $this->cuisineComplete($restaurant),
+                $this->cuisineStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Meals->value => $this->stepStatus(
+                $this->mealsComplete($restaurant),
+                $this->mealsStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Hours->value => $this->stepStatus(
+                $this->hoursComplete($restaurant),
+                $this->hoursStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Media->value => $this->stepStatus(
+                $this->mediaComplete($restaurant),
+                $this->mediaStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::Policies->value => $this->stepStatus(
+                $this->policiesComplete($restaurant),
+                $this->policiesStarted($restaurant),
+            ),
+        ];
+
+        $reviewIsComplete = collect([
+            RestaurantOnboardingStep::Basics,
+            RestaurantOnboardingStep::Location,
+            RestaurantOnboardingStep::Cuisine,
+            RestaurantOnboardingStep::Meals,
+            RestaurantOnboardingStep::Hours,
+            RestaurantOnboardingStep::Media,
+            RestaurantOnboardingStep::Policies,
+        ])->every(fn (RestaurantOnboardingStep $step): bool => $progress[$step->value] === self::STATUS_COMPLETED);
+
+        $reviewIsStarted = collect($progress)->contains(
+            fn (string $status): bool => $status !== self::STATUS_PENDING,
+        );
+
+        $progress[RestaurantOnboardingStep::Review->value] = $this->stepStatus($reviewIsComplete, $reviewIsStarted);
+        $progress[RestaurantOnboardingStep::Published->value] = $this->stepStatus(
+            (bool) $restaurant->is_profile_published,
+            $reviewIsComplete,
+        );
+
+        return [
+            'current_step' => $this->currentStep($progress),
+            'is_profile_published' => (bool) $restaurant->is_profile_published,
+            'progress' => $progress,
+        ];
+    }
+
+    private function stepStatus(bool $isComplete, bool $isStarted): string
+    {
+        if ($isComplete) {
+            return self::STATUS_COMPLETED;
+        }
+
+        return $isStarted ? self::STATUS_IN_PROGRESS : self::STATUS_PENDING;
+    }
+
+    /**
+     * @param  array<string, string>  $progress
+     */
+    private function currentStep(array $progress): ?string
+    {
+        foreach (RestaurantOnboardingStep::cases() as $step) {
+            if (($progress[$step->value] ?? self::STATUS_PENDING) !== self::STATUS_COMPLETED) {
+                return $step->value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, string>  $progress
+     */
+    private function isPublishable(array $progress): bool
+    {
+        return collect(RestaurantOnboardingStep::cases())
+            ->reject(fn (RestaurantOnboardingStep $step): bool => $step === RestaurantOnboardingStep::Published)
+            ->every(fn (RestaurantOnboardingStep $step): bool => ($progress[$step->value] ?? null) === self::STATUS_COMPLETED);
+    }
+
+    private function basicsComplete(Restaurant $restaurant): bool
+    {
+        return $this->allFieldsFilled($restaurant, ['name', 'email', 'phone', 'description'])
+            && mb_strlen((string) $restaurant->description) >= 100;
+    }
+
+    private function basicsStarted(Restaurant $restaurant): bool
+    {
+        return $this->anyFieldFilled($restaurant, ['name', 'email', 'phone', 'description']);
+    }
+
+    private function locationComplete(Restaurant $restaurant): bool
+    {
+        return $this->allFieldsFilled($restaurant, [
+            'address_line_1',
+            'city',
+            'state',
+            'country',
+            'timezone',
+            'latitude',
+            'longitude',
+        ]);
+    }
+
+    private function locationStarted(Restaurant $restaurant): bool
+    {
+        return $this->anyFieldFilled($restaurant, [
+            'address_line_1',
+            'city',
+            'state',
+            'country',
+            'timezone',
+            'latitude',
+            'longitude',
+        ]);
+    }
+
+    private function cuisineComplete(Restaurant $restaurant): bool
+    {
+        return filled($restaurant->average_price_range)
+            && $restaurant->cuisines->contains(
+                fn ($cuisine): bool => (bool) ($cuisine->pivot->is_primary ?? false),
+            );
+    }
+
+    private function cuisineStarted(Restaurant $restaurant): bool
+    {
+        return filled($restaurant->average_price_range) || $restaurant->cuisines->isNotEmpty();
+    }
+
+    private function mealsComplete(Restaurant $restaurant): bool
+    {
+        return $restaurant->mealTypes->isNotEmpty();
+    }
+
+    private function mealsStarted(Restaurant $restaurant): bool
+    {
+        return $restaurant->mealTypes->isNotEmpty();
+    }
+
+    private function hoursComplete(Restaurant $restaurant): bool
+    {
+        return $restaurant->mealTypes->contains(
+            fn (RestaurantMealType $mealType): bool => $mealType->schedules->isNotEmpty(),
+        );
+    }
+
+    private function hoursStarted(Restaurant $restaurant): bool
+    {
+        return $restaurant->mealTypes->flatMap(
+            fn (RestaurantMealType $mealType): Collection => $mealType->schedules,
+        )->isNotEmpty();
+    }
+
+    private function mediaComplete(Restaurant $restaurant): bool
+    {
+        return $restaurant->getFirstMedia('featured') !== null;
+    }
+
+    private function mediaStarted(Restaurant $restaurant): bool
+    {
+        return $restaurant->getMedia('gallery')->isNotEmpty() || $this->mediaComplete($restaurant);
+    }
+
+    private function policiesComplete(Restaurant $restaurant): bool
+    {
+        return $restaurant->policy !== null;
+    }
+
+    private function policiesStarted(Restaurant $restaurant): bool
+    {
+        return $restaurant->policy !== null;
+    }
+
+    /**
+     * @param  list<string>  $fields
+     */
+    private function allFieldsFilled(Restaurant $restaurant, array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (! filled($restaurant->{$field})) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  list<string>  $fields
+     */
+    private function anyFieldFilled(Restaurant $restaurant, array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (filled($restaurant->{$field})) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

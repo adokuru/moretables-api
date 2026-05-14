@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\TableShape;
 use App\TableStatus;
+use App\TableType;
 use Database\Factories\RestaurantTableFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,16 +22,31 @@ class RestaurantTable extends Model
         'name',
         'min_capacity',
         'max_capacity',
+        'table_type',
+        'shape',
         'status',
         'is_active',
         'sort_order',
+        'x_position',
+        'y_position',
+        'width',
+        'height',
+        'rotation',
+        'color',
     ];
 
     protected function casts(): array
     {
         return [
+            'table_type' => TableType::class,
+            'shape' => TableShape::class,
             'status' => TableStatus::class,
             'is_active' => 'boolean',
+            'x_position' => 'integer',
+            'y_position' => 'integer',
+            'width' => 'integer',
+            'height' => 'integer',
+            'rotation' => 'integer',
         ];
     }
 

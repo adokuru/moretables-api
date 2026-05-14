@@ -32,10 +32,43 @@ it('allows operations staff to manage floor resources and walk-in reservations',
         'name' => 'VIP-1',
         'min_capacity' => 1,
         'max_capacity' => 4,
+        'table_type' => 'booth',
+        'shape' => 'rectangle',
+        'x_position' => 128,
+        'y_position' => 96,
+        'width' => 160,
+        'height' => 96,
+        'rotation' => 90,
+        'color' => '#AABBCC',
     ]);
 
     $tableResponse->assertCreated()
-        ->assertJsonPath('table.name', 'VIP-1');
+        ->assertJsonPath('table.name', 'VIP-1')
+        ->assertJsonPath('table.table_type', 'booth')
+        ->assertJsonPath('table.shape', 'rectangle')
+        ->assertJsonPath('table.x_position', 128)
+        ->assertJsonPath('table.y_position', 96)
+        ->assertJsonPath('table.width', 160)
+        ->assertJsonPath('table.height', 96)
+        ->assertJsonPath('table.rotation', 90)
+        ->assertJsonPath('table.color', '#AABBCC');
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables/'.$tableResponse->json('table.id'), [
+        'shape' => 'round',
+        'x_position' => 240,
+        'y_position' => 160,
+        'width' => 112,
+        'height' => 112,
+        'rotation' => 0,
+        'color' => '#D9D9D9',
+    ])->assertOk()
+        ->assertJsonPath('table.shape', 'round')
+        ->assertJsonPath('table.x_position', 240)
+        ->assertJsonPath('table.y_position', 160)
+        ->assertJsonPath('table.width', 112)
+        ->assertJsonPath('table.height', 112)
+        ->assertJsonPath('table.rotation', 0)
+        ->assertJsonPath('table.color', '#D9D9D9');
 
     $reservationResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
         'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
@@ -52,6 +85,34 @@ it('allows operations staff to manage floor resources and walk-in reservations',
         ->assertJsonPath('reservation.source', 'walk_in');
 
     expect(Reservation::query()->count())->toBe(1);
+});
+
+it('validates floor table layout and type values', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables', [
+        'name' => 'Invalid Layout',
+        'max_capacity' => 4,
+        'table_type' => 'sofa',
+        'shape' => 'triangle',
+        'x_position' => -1,
+        'width' => 0,
+        'rotation' => 360,
+        'color' => 'green',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'table_type',
+            'shape',
+            'x_position',
+            'width',
+            'rotation',
+            'color',
+        ]);
 });
 
 it('emails a guest when operations staff creates a walk-in reservation with guest email', function () {

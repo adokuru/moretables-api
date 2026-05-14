@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests\Merchant;
 
-use App\Enums\RestaurantOnboardingStep;
 use App\Http\Requests\Merchant\Concerns\AuthorizesRestaurantManageOnboarding;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateRestaurantOnboardingStatusRequest extends FormRequest
 {
@@ -19,10 +18,20 @@ class UpdateRestaurantOnboardingStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'step' => ['nullable', Rule::enum(RestaurantOnboardingStep::class)],
-            'step_status' => ['required_with:step', 'string', Rule::in(['completed', 'skipped', 'in_progress'])],
-            'current_step' => ['nullable', Rule::enum(RestaurantOnboardingStep::class)],
             'is_profile_published' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                foreach (['step', 'step_status', 'current_step'] as $field) {
+                    if ($this->has($field)) {
+                        $validator->errors()->add($field, 'This onboarding status field is managed by the server.');
+                    }
+                }
+            },
         ];
     }
 }

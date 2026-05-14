@@ -2683,7 +2683,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"T1\",\n  \"max_capacity\": 4,\n  \"min_capacity\": 2,\n  \"dining_area_id\": 1\n}"
+              "raw": "{\n  \"name\": \"T1\",\n  \"max_capacity\": 4,\n  \"min_capacity\": 2,\n  \"dining_area_id\": 1,\n  \"table_type\": \"regular\",\n  \"shape\": \"rectangle\",\n  \"x_position\": 128,\n  \"y_position\": 96,\n  \"width\": 160,\n  \"height\": 96,\n  \"rotation\": 0,\n  \"color\": \"#D9D9D9\"\n}"
             }
           }
         },
@@ -2728,7 +2728,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"max_capacity\": 6,\n  \"name\": \"T1A\"\n}"
+              "raw": "{\n  \"max_capacity\": 6,\n  \"name\": \"T1A\",\n  \"table_type\": \"booth\",\n  \"shape\": \"round\",\n  \"x_position\": 240,\n  \"y_position\": 160,\n  \"width\": 112,\n  \"height\": 112,\n  \"rotation\": 45,\n  \"color\": \"#AABBCC\"\n}"
             }
           }
         },
@@ -3899,7 +3899,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"step\": \"cuisine\",\n  \"step_status\": \"completed\",\n  \"current_step\": \"hours\",\n  \"is_profile_published\": false\n}",
+                  "raw": "{\n  \"is_profile_published\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"

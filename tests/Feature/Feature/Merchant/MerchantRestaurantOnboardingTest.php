@@ -2,13 +2,13 @@
 
 use App\AuthChallengeType;
 use App\Enums\RestaurantOnboardingStep;
-use App\Models\AuthChallenge;
 use App\Models\CuisineOption;
 use App\Models\RestaurantMealSchedule;
 use App\Models\RestaurantMealType;
 use App\Models\RestaurantSocialHandle;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\AuthChallengeCodeNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -503,7 +503,7 @@ it('validates closes_at must be after opens_at in business hours', function () {
 
 // ── Onboarding Status ─────────────────────────────────────────────────────────
 
-it('returns onboarding status with empty progress for a fresh restaurant', function () {
+it('returns onboarding status calculated from saved restaurant data', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     Sanctum::actingAs(marketingActor($data));
@@ -513,10 +513,22 @@ it('returns onboarding status with empty progress for a fresh restaurant', funct
     $response->assertOk()
         ->assertJsonStructure(['current_step', 'is_profile_published', 'progress'])
         ->assertJsonPath('is_profile_published', false)
-        ->assertJsonPath('current_step', null);
+        ->assertJsonStructure([
+            'progress' => [
+                RestaurantOnboardingStep::Basics->value,
+                RestaurantOnboardingStep::Location->value,
+                RestaurantOnboardingStep::Cuisine->value,
+                RestaurantOnboardingStep::Meals->value,
+                RestaurantOnboardingStep::Hours->value,
+                RestaurantOnboardingStep::Media->value,
+                RestaurantOnboardingStep::Policies->value,
+                RestaurantOnboardingStep::Review->value,
+                RestaurantOnboardingStep::Published->value,
+            ],
+        ]);
 });
 
-it('marks a step completed and advances current_step', function () {
+it('rejects client supplied step completion fields', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     Sanctum::actingAs(marketingActor($data));
@@ -527,52 +539,39 @@ it('marks a step completed and advances current_step', function () {
         'current_step' => RestaurantOnboardingStep::Hours->value,
     ]);
 
-    $response->assertOk()
-        ->assertJsonPath('current_step', RestaurantOnboardingStep::Hours->value)
-        ->assertJsonPath('progress.'.RestaurantOnboardingStep::Cuisine->value, 'completed');
-
-    $this->assertDatabaseHas('restaurants', [
-        'id' => $data['restaurant']->id,
-        'onboarding_current_step' => RestaurantOnboardingStep::Hours->value,
-    ]);
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['step', 'step_status', 'current_step']);
 });
 
-it('persists multiple step updates across calls', function () {
+it('marks an onboarding step complete after the related update succeeds', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
+    $primary = CuisineOption::factory()->create();
     Sanctum::actingAs(marketingActor($data));
 
-    $url = obUrl($data['restaurant']->id, '/status');
+    $response = $this->patchJson(obUrl($data['restaurant']->id, '/contact-cuisine-price'), [
+        'primary_cuisine_option_id' => $primary->id,
+        'average_price_range' => '$$',
+    ]);
 
-    $this->patchJson($url, [
-        'step' => RestaurantOnboardingStep::Basics->value,
-        'step_status' => 'completed',
-    ])->assertOk();
+    $response->assertOk()
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Cuisine->value, 'completed');
 
-    $this->patchJson($url, [
-        'step' => RestaurantOnboardingStep::Cuisine->value,
-        'step_status' => 'skipped',
-    ])->assertOk();
-
-    $status = $this->getJson($url)->json('progress');
-
-    expect($status[RestaurantOnboardingStep::Basics->value])->toBe('completed');
-    expect($status[RestaurantOnboardingStep::Cuisine->value])->toBe('skipped');
+    expect($data['restaurant']->refresh()->onboarding_progress[RestaurantOnboardingStep::Cuisine->value])->toBe('completed');
 });
 
-it('publishes the profile via status update', function () {
+it('does not publish the profile until required onboarding steps are complete', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     Sanctum::actingAs(marketingActor($data));
 
     $this->patchJson(obUrl($data['restaurant']->id, '/status'), [
         'is_profile_published' => true,
-    ])->assertOk()
-        ->assertJsonPath('is_profile_published', true);
+    ])->assertUnprocessable();
 
     $this->assertDatabaseHas('restaurants', [
         'id' => $data['restaurant']->id,
-        'is_profile_published' => true,
+        'is_profile_published' => false,
     ]);
 });
 
@@ -624,7 +623,7 @@ it('sends a verification code to the restaurant contact email', function () {
     ]);
 
     Notification::assertSentOnDemand(
-        \App\Notifications\AuthChallengeCodeNotification::class,
+        AuthChallengeCodeNotification::class,
         fn ($n, $channels, $notifiable) => ($notifiable->routes['mail'] ?? null) === 'contact@restaurant.com',
     );
 });

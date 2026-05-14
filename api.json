@@ -48,6 +48,9 @@
             "name": "Merchant Staff"
         },
         {
+            "name": "Merchant Gallery"
+        },
+        {
             "name": "Merchant Floor Plan"
         },
         {
@@ -64,6 +67,9 @@
         },
         {
             "name": "Merchant Staff Auth"
+        },
+        {
+            "name": "Merchant Reviews"
         },
         {
             "name": "Admin Dashboard"
@@ -3043,7 +3049,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "id": {
-                                                            "type": "string"
+                                                            "type": "integer"
                                                         },
                                                         "name": {
                                                             "type": "string"
@@ -3052,13 +3058,19 @@
                                                             "type": "string"
                                                         },
                                                         "description": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "period_type": {
                                                             "type": "string"
                                                         },
                                                         "period_value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "resets_points": {
                                                             "type": "boolean"
@@ -3206,7 +3218,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "id": {
-                                                            "type": "string"
+                                                            "type": "integer"
                                                         },
                                                         "name": {
                                                             "type": "string"
@@ -3215,13 +3227,19 @@
                                                             "type": "string"
                                                         },
                                                         "description": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "period_type": {
                                                             "type": "string"
                                                         },
                                                         "period_value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "resets_points": {
                                                             "type": "boolean"
@@ -3339,30 +3357,43 @@
                                                 "type": "object",
                                                 "properties": {
                                                     "id": {
-                                                        "type": "string"
+                                                        "type": "integer"
                                                     },
                                                     "type": {
                                                         "type": "string"
                                                     },
                                                     "points": {
-                                                        "type": "string"
+                                                        "type": "integer"
                                                     },
                                                     "balance_after": {
-                                                        "type": "string"
+                                                        "type": "integer"
                                                     },
                                                     "description": {
-                                                        "type": "string"
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
                                                     },
                                                     "reference_type": {
-                                                        "type": "string"
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
                                                     },
                                                     "reference_id": {
-                                                        "type": "string"
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
                                                     },
                                                     "metadata": {
                                                         "anyOf": [
                                                             {
-                                                                "type": "string"
+                                                                "type": "array",
+                                                                "items": {}
+                                                            },
+                                                            {
+                                                                "type": "null"
                                                             },
                                                             {
                                                                 "type": "array",
@@ -3649,6 +3680,78 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/gallery": {
+            "get": {
+                "operationId": "merchantRestaurantMedia.gallery",
+                "tags": [
+                    "Merchant Restaurant Profile"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "categories": {
+                                            "type": "string"
+                                        },
+                                        "uncategorised": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MediaAssetResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "categories",
+                                        "uncategorised"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -5059,6 +5162,348 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/gallery/categories": {
+            "get": {
+                "operationId": "merchantRestaurantGalleryCategory.index",
+                "tags": [
+                    "Merchant Gallery"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "categories": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "categories"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantGalleryCategory.store",
+                "tags": [
+                    "Merchant Gallery"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreGalleryCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category created successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/gallery/categories/{galleryCategory}": {
+            "patch": {
+                "operationId": "merchantRestaurantGalleryCategory.update",
+                "tags": [
+                    "Merchant Gallery"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "galleryCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The gallery category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGalleryCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category updated successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantGalleryCategory.destroy",
+                "tags": [
+                    "Merchant Gallery"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "galleryCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The gallery category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category deleted. Photos have been moved to uncategorised."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/menu-items": {
             "get": {
                 "operationId": "merchantMenuItem.index",
@@ -5872,6 +6317,28 @@
                                             "type": "string",
                                             "const": "Contact, cuisine and price updated successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "restaurant": {
                                             "type": "object",
                                             "properties": {
@@ -5918,6 +6385,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "restaurant"
                                     ]
                                 }
@@ -5978,6 +6446,28 @@
                                             "type": "string",
                                             "const": "Profile photo uploaded successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "featured_image": {
                                             "$ref": "#/components/schemas/MediaAssetResource"
                                         },
@@ -5987,6 +6477,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "featured_image",
                                         "gallery_image"
                                     ]
@@ -6048,6 +6539,28 @@
                                             "type": "string",
                                             "const": "Description updated successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "description": {
                                             "type": [
                                                 "string",
@@ -6057,6 +6570,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "description"
                                     ]
                                 }
@@ -6096,7 +6610,6 @@
                     }
                 ],
                 "requestBody": {
-                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
@@ -6114,17 +6627,41 @@
                                     "type": "object",
                                     "properties": {
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "enum": [
+                                                "Internal notes skipped successfully.",
+                                                "Internal notes updated successfully."
+                                            ]
+                                        },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
                                         },
                                         "internal_notes": {
-                                            "type": [
-                                                "string",
-                                                "null"
-                                            ]
+                                            "type": "string"
                                         }
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "internal_notes"
                                     ]
                                 }
@@ -6185,12 +6722,35 @@
                                             "type": "string",
                                             "const": "Business hours updated successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "meal_types": {
                                             "type": "string"
                                         }
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "meal_types"
                                     ]
                                 }
@@ -6314,17 +6874,39 @@
                                             "type": "string",
                                             "const": "Meal type created successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "meal_type": {
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
                                                 "sort_order": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "schedules": {
                                                     "type": "array",
@@ -6346,6 +6928,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "meal_type"
                                     ]
                                 }
@@ -6414,17 +6997,39 @@
                                             "type": "string",
                                             "const": "Meal type updated successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "meal_type": {
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
                                                 "sort_order": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
@@ -6436,6 +7041,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "meal_type"
                                     ]
                                 }
@@ -6492,10 +7098,33 @@
                                         "message": {
                                             "type": "string",
                                             "const": "Meal type deleted successfully."
+                                        },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
                                         }
                                     },
                                     "required": [
-                                        "message"
+                                        "message",
+                                        "onboarding_status"
                                     ]
                                 }
                             }
@@ -6653,6 +7282,28 @@
                                             "type": "string",
                                             "const": "Email address verified successfully."
                                         },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
                                         "email": {
                                             "type": [
                                                 "string",
@@ -6665,6 +7316,7 @@
                                     },
                                     "required": [
                                         "message",
+                                        "onboarding_status",
                                         "email",
                                         "contact_email_verified_at"
                                     ]
@@ -6713,7 +7365,10 @@
                                     "type": "object",
                                     "properties": {
                                         "current_step": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "is_profile_published": {
                                             "type": "boolean"
@@ -6797,7 +7452,10 @@
                                             "const": "Onboarding status updated."
                                         },
                                         "current_step": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "is_profile_published": {
                                             "type": "boolean"
@@ -7464,204 +8122,6 @@
                 }
             }
         },
-        "/merchant/restaurants/{restaurant}/reviews/aggregate": {
-            "get": {
-                "operationId": "merchantRestaurantReview.aggregate",
-                "tags": [
-                    "Merchant Reviews"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "date_from",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "2025-08-20"
-                    },
-                    {
-                        "name": "date_to",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "2025-09-25"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "summary": {
-                                            "type": "object"
-                                        },
-                                        "category_breakdown": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        },
-                                        "period": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "required": [
-                                        "summary",
-                                        "category_breakdown",
-                                        "period"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/reviews": {
-            "get": {
-                "operationId": "merchantRestaurantReview.index",
-                "tags": [
-                    "Merchant Reviews"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        },
-                        "example": 1
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 20
-                        },
-                        "example": 20
-                    },
-                    {
-                        "name": "rating",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer"
-                        },
-                        "example": 4
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "good food"
-                    },
-                    {
-                        "name": "date_from",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "2025-08-20"
-                    },
-                    {
-                        "name": "date_to",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "2025-09-25"
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        },
-                        "example": "latest"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MerchantRestaurantReviewResource"
-                                            }
-                                        },
-                                        "links": {
-                                            "type": "object"
-                                        },
-                                        "meta": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "required": [
-                                        "data",
-                                        "links",
-                                        "meta"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
-                    }
-                }
-            }
-        },
         "/merchant/restaurants/{restaurant}/waitlist-entries": {
             "get": {
                 "operationId": "merchantWaitlist.index",
@@ -8294,6 +8754,399 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/reviews/aggregate": {
+            "get": {
+                "operationId": "merchantRestaurantReview.aggregate",
+                "summary": "Review summary for the merchant aggregate reviews screen",
+                "tags": [
+                    "Merchant Reviews"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-08-20"
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-09-25"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "summary": {
+                                            "type": "object",
+                                            "properties": {
+                                                "overall_rating": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "total_customer_reviews": {
+                                                    "type": "integer"
+                                                },
+                                                "ratings_breakdown": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "overall_rating",
+                                                "total_customer_reviews",
+                                                "ratings_breakdown"
+                                            ]
+                                        },
+                                        "category_breakdown": {
+                                            "type": "array",
+                                            "prefixItems": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "key": {
+                                                            "type": "string",
+                                                            "const": "food"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "const": "Food"
+                                                        },
+                                                        "average_rating": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "key",
+                                                        "label",
+                                                        "average_rating"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "key": {
+                                                            "type": "string",
+                                                            "const": "service"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "const": "Service"
+                                                        },
+                                                        "average_rating": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "key",
+                                                        "label",
+                                                        "average_rating"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "key": {
+                                                            "type": "string",
+                                                            "const": "ambience"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "const": "Ambience"
+                                                        },
+                                                        "average_rating": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "key",
+                                                        "label",
+                                                        "average_rating"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "key": {
+                                                            "type": "string",
+                                                            "const": "value"
+                                                        },
+                                                        "label": {
+                                                            "type": "string",
+                                                            "const": "Value"
+                                                        },
+                                                        "average_rating": {
+                                                            "type": [
+                                                                "number",
+                                                                "null"
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "key",
+                                                        "label",
+                                                        "average_rating"
+                                                    ]
+                                                }
+                                            ],
+                                            "minItems": 4,
+                                            "maxItems": 4,
+                                            "additionalItems": false
+                                        },
+                                        "period": {
+                                            "type": "object",
+                                            "properties": {
+                                                "date_from": {},
+                                                "date_to": {}
+                                            },
+                                            "required": [
+                                                "date_from",
+                                                "date_to"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "summary",
+                                        "category_breakdown",
+                                        "period"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/reviews": {
+            "get": {
+                "operationId": "merchantRestaurantReview.index",
+                "summary": "Detailed merchant reviews table",
+                "tags": [
+                    "Merchant Reviews"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        },
+                        "example": 20
+                    },
+                    {
+                        "name": "rating",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 4
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "good food"
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-08-20"
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2025-09-25"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "latest"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string"
+                                                },
+                                                "last": {
+                                                    "type": "string"
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "path": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -12121,7 +12974,30 @@
                                                         "type": "integer"
                                                     },
                                                     "rating": {
-                                                        "type": "integer"
+                                                        "type": "number"
+                                                    },
+                                                    "ratings": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "food": {
+                                                                "type": "string"
+                                                            },
+                                                            "service": {
+                                                                "type": "string"
+                                                            },
+                                                            "ambience": {
+                                                                "type": "string"
+                                                            },
+                                                            "value": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "food",
+                                                            "service",
+                                                            "ambience",
+                                                            "value"
+                                                        ]
                                                     },
                                                     "notes": {
                                                         "type": [
@@ -12177,6 +13053,7 @@
                                                 "required": [
                                                     "id",
                                                     "rating",
+                                                    "ratings",
                                                     "notes",
                                                     "visited_at",
                                                     "created_at",
@@ -12307,7 +13184,30 @@
                                                     "type": "integer"
                                                 },
                                                 "rating": {
-                                                    "type": "integer"
+                                                    "type": "number"
+                                                },
+                                                "ratings": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "food": {
+                                                            "type": "string"
+                                                        },
+                                                        "service": {
+                                                            "type": "string"
+                                                        },
+                                                        "ambience": {
+                                                            "type": "string"
+                                                        },
+                                                        "value": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "food",
+                                                        "service",
+                                                        "ambience",
+                                                        "value"
+                                                    ]
                                                 },
                                                 "notes": {
                                                     "type": [
@@ -12363,6 +13263,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
+                                                "ratings",
                                                 "notes",
                                                 "visited_at",
                                                 "created_at",
@@ -12420,7 +13321,30 @@
                                                     "type": "integer"
                                                 },
                                                 "rating": {
-                                                    "type": "integer"
+                                                    "type": "number"
+                                                },
+                                                "ratings": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "food": {
+                                                            "type": "string"
+                                                        },
+                                                        "service": {
+                                                            "type": "string"
+                                                        },
+                                                        "ambience": {
+                                                            "type": "string"
+                                                        },
+                                                        "value": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "food",
+                                                        "service",
+                                                        "ambience",
+                                                        "value"
+                                                    ]
                                                 },
                                                 "notes": {
                                                     "type": [
@@ -12476,6 +13400,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
+                                                "ratings",
                                                 "notes",
                                                 "visited_at",
                                                 "created_at",
@@ -12543,7 +13468,30 @@
                                                     "type": "integer"
                                                 },
                                                 "rating": {
-                                                    "type": "integer"
+                                                    "type": "number"
+                                                },
+                                                "ratings": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "food": {
+                                                            "type": "string"
+                                                        },
+                                                        "service": {
+                                                            "type": "string"
+                                                        },
+                                                        "ambience": {
+                                                            "type": "string"
+                                                        },
+                                                        "value": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "food",
+                                                        "service",
+                                                        "ambience",
+                                                        "value"
+                                                    ]
                                                 },
                                                 "notes": {
                                                     "type": [
@@ -12599,6 +13547,7 @@
                                             "required": [
                                                 "id",
                                                 "rating",
+                                                "ratings",
                                                 "notes",
                                                 "visited_at",
                                                 "created_at",
@@ -12690,7 +13639,7 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
@@ -12699,13 +13648,19 @@
                                                     "type": "string"
                                                 },
                                                 "description": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "period_type": {
                                                     "type": "string"
                                                 },
                                                 "period_value": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "resets_points": {
                                                     "type": "boolean"
@@ -12777,7 +13732,7 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
@@ -12786,13 +13741,19 @@
                                                     "type": "string"
                                                 },
                                                 "description": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "period_type": {
                                                     "type": "string"
                                                 },
                                                 "period_value": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "resets_points": {
                                                     "type": "boolean"
@@ -12885,30 +13846,43 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "type": {
                                                     "type": "string"
                                                 },
                                                 "points": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "balance_after": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "description": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "reference_type": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "reference_id": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "metadata": {
                                                     "anyOf": [
                                                         {
-                                                            "type": "string"
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        {
+                                                            "type": "null"
                                                         },
                                                         {
                                                             "type": "array",
@@ -12990,7 +13964,7 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "id": {
-                                                            "type": "string"
+                                                            "type": "integer"
                                                         },
                                                         "name": {
                                                             "type": "string"
@@ -12999,13 +13973,19 @@
                                                             "type": "string"
                                                         },
                                                         "description": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "period_type": {
                                                             "type": "string"
                                                         },
                                                         "period_value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "resets_points": {
                                                             "type": "boolean"
@@ -13254,7 +14234,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
@@ -13454,6 +14434,12 @@
                             "null"
                         ]
                     },
+                    "gallery_category_id": {
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    },
                     "original_url": {
                         "type": "string"
                     },
@@ -13474,131 +14460,12 @@
                     "order",
                     "featured",
                     "alt_text",
+                    "gallery_category_id",
                     "original_url",
                     "thumb_url",
                     "card_url"
                 ],
                 "title": "MediaAssetResource"
-            },
-            "MerchantRestaurantReviewResource": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer"
-                    },
-                    "diner": {
-                        "type": "object",
-                        "properties": {
-                            "id": {
-                                "type": [
-                                    "integer",
-                                    "null"
-                                ]
-                            },
-                            "name": {
-                                "type": "string"
-                            },
-                            "email": {
-                                "type": [
-                                    "string",
-                                    "null"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "id",
-                            "name",
-                            "email"
-                        ]
-                    },
-                    "review_date": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "visited_at": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "rating": {
-                        "type": "integer"
-                    },
-                    "ratings": {
-                        "type": "object",
-                        "properties": {
-                            "food": {
-                                "type": [
-                                    "integer",
-                                    "null"
-                                ]
-                            },
-                            "service": {
-                                "type": [
-                                    "integer",
-                                    "null"
-                                ]
-                            },
-                            "ambience": {
-                                "type": [
-                                    "integer",
-                                    "null"
-                                ]
-                            },
-                            "value": {
-                                "type": [
-                                    "integer",
-                                    "null"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "food",
-                            "service",
-                            "ambience",
-                            "value"
-                        ]
-                    },
-                    "title": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "commentary": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "review_images": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "created_at": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    }
-                },
-                "required": [
-                    "id",
-                    "diner",
-                    "review_date",
-                    "visited_at",
-                    "rating",
-                    "ratings",
-                    "title",
-                    "commentary",
-                    "review_images",
-                    "created_at"
-                ],
-                "title": "MerchantRestaurantReviewResource"
             },
             "NotifyWaitlistEntryRequest": {
                 "type": "object",
@@ -14066,10 +14933,7 @@
                         "type": "string"
                     },
                     "internal_notes": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "website": {
                         "type": "string"
@@ -14154,6 +15018,9 @@
                         "items": {
                             "$ref": "#/components/schemas/MediaAssetResource"
                         }
+                    },
+                    "gallery_categories": {
+                        "type": "string"
                     },
                     "menu_documents": {
                         "type": "array",
@@ -14463,21 +15330,6 @@
                 ],
                 "title": "RestaurantMenuItemResource"
             },
-            "RestaurantOnboardingStep": {
-                "type": "string",
-                "enum": [
-                    "basics",
-                    "location",
-                    "cuisine",
-                    "hours",
-                    "meals",
-                    "media",
-                    "policies",
-                    "review",
-                    "published"
-                ],
-                "title": "RestaurantOnboardingStep"
-            },
             "RestaurantStaffAssignmentResource": {
                 "type": "object",
                 "properties": {
@@ -14561,6 +15413,12 @@
                     "max_capacity": {
                         "type": "integer"
                     },
+                    "table_type": {
+                        "type": "string"
+                    },
+                    "shape": {
+                        "type": "string"
+                    },
                     "status": {
                         "type": "string"
                     },
@@ -14569,6 +15427,24 @@
                     },
                     "sort_order": {
                         "type": "integer"
+                    },
+                    "x_position": {
+                        "type": "string"
+                    },
+                    "y_position": {
+                        "type": "string"
+                    },
+                    "width": {
+                        "type": "string"
+                    },
+                    "height": {
+                        "type": "string"
+                    },
+                    "rotation": {
+                        "type": "string"
+                    },
+                    "color": {
+                        "type": "string"
                     }
                 },
                 "required": [
@@ -14578,9 +15454,17 @@
                     "name",
                     "min_capacity",
                     "max_capacity",
+                    "table_type",
+                    "shape",
                     "status",
                     "is_active",
-                    "sort_order"
+                    "sort_order",
+                    "x_position",
+                    "y_position",
+                    "width",
+                    "height",
+                    "rotation",
+                    "color"
                 ],
                 "title": "RestaurantTableResource"
             },
@@ -15398,6 +16282,18 @@
                             ],
                             "maxLength": 255
                         }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "required": [
@@ -15415,22 +16311,7 @@
                     "user_id": {
                         "type": "integer"
                     },
-                    "food_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "service_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "ambience_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "value_rating": {
+                    "rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5
@@ -15669,6 +16550,26 @@
                     "platform"
                 ],
                 "title": "StoreExpoPushTokenRequest"
+            },
+            "StoreGalleryCategoryRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "sort_order": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "StoreGalleryCategoryRequest"
             },
             "StoreMerchantReservationRequest": {
                 "type": "object",
@@ -16114,6 +17015,18 @@
                             ],
                             "maxLength": 255
                         }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "required": [
@@ -16147,39 +17060,25 @@
                 "type": "object",
                 "properties": {
                     "rating": {
+                        "type": "string"
+                    },
+                    "food_rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5
                     },
-                    "food_rating": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ],
-                        "minimum": 1,
-                        "maximum": 5
-                    },
                     "service_rating": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ],
+                        "type": "integer",
                         "minimum": 1,
                         "maximum": 5
                     },
                     "ambience_rating": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ],
+                        "type": "integer",
                         "minimum": 1,
                         "maximum": 5
                     },
                     "value_rating": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ],
+                        "type": "integer",
                         "minimum": 1,
                         "maximum": 5
                     },
@@ -16292,6 +17191,12 @@
                         "type": "integer",
                         "minimum": 1
                     },
+                    "table_type": {
+                        "$ref": "#/components/schemas/TableType"
+                    },
+                    "shape": {
+                        "$ref": "#/components/schemas/TableShape"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/TableStatus"
                     },
@@ -16307,6 +17212,50 @@
                             "null"
                         ],
                         "minimum": 0
+                    },
+                    "x_position": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "y_position": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "width": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "height": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "rotation": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 359
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+                        "maxLength": 20
                     }
                 },
                 "required": [
@@ -16416,6 +17365,19 @@
                 ],
                 "title": "StoreWaitlistEntryRequest"
             },
+            "TableShape": {
+                "type": "string",
+                "enum": [
+                    "round",
+                    "square",
+                    "rectangle",
+                    "oval",
+                    "pentagon",
+                    "hexagon",
+                    "octagon"
+                ],
+                "title": "TableShape"
+            },
             "TableStatus": {
                 "type": "string",
                 "enum": [
@@ -16425,6 +17387,18 @@
                     "unavailable"
                 ],
                 "title": "TableStatus"
+            },
+            "TableType": {
+                "type": "string",
+                "enum": [
+                    "regular",
+                    "booth",
+                    "high_top",
+                    "bar",
+                    "communal",
+                    "outdoor"
+                ],
+                "title": "TableType"
             },
             "UpdateAdminReservationRequest": {
                 "type": "object",
@@ -16731,6 +17705,18 @@
                             ],
                             "maxLength": 255
                         }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "title": "UpdateAdminRestaurantRequest"
@@ -16738,22 +17724,7 @@
             "UpdateAdminReviewRequest": {
                 "type": "object",
                 "properties": {
-                    "food_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "service_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "ambience_rating": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5
-                    },
-                    "value_rating": {
+                    "rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5
@@ -16915,6 +17886,20 @@
                 },
                 "title": "UpdateDiningAreaRequest"
             },
+            "UpdateGalleryCategoryRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "title": "UpdateGalleryCategoryRequest"
+            },
             "UpdateMediaAssetRequest": {
                 "type": "object",
                 "properties": {
@@ -16924,6 +17909,12 @@
                             "null"
                         ],
                         "maxLength": 255
+                    },
+                    "gallery_category_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     }
                 },
                 "title": "UpdateMediaAssetRequest"
@@ -17295,6 +18286,18 @@
                             ],
                             "maxLength": 255
                         }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "title": "UpdateRestaurantMenuItemRequest"
@@ -17383,20 +18386,6 @@
                 ],
                 "title": "UpdateRestaurantOnboardingDescriptionRequest"
             },
-            "UpdateRestaurantOnboardingInternalNotesRequest": {
-                "type": "object",
-                "properties": {
-                    "skip": {
-                        "type": "boolean"
-                    },
-                    "internal_notes": {
-                        "type": "string",
-                        "minLength": 100,
-                        "maxLength": 10000
-                    }
-                },
-                "title": "UpdateRestaurantOnboardingInternalNotesRequest"
-            },
             "UpdateRestaurantOnboardingHoursRequest": {
                 "type": "object",
                 "properties": {
@@ -17434,6 +18423,20 @@
                 ],
                 "title": "UpdateRestaurantOnboardingHoursRequest"
             },
+            "UpdateRestaurantOnboardingInternalNotesRequest": {
+                "type": "object",
+                "properties": {
+                    "skip": {
+                        "type": "boolean"
+                    },
+                    "internal_notes": {
+                        "type": "string",
+                        "minLength": 100,
+                        "maxLength": 10000
+                    }
+                },
+                "title": "UpdateRestaurantOnboardingInternalNotesRequest"
+            },
             "UpdateRestaurantOnboardingMealTypeRequest": {
                 "type": "object",
                 "properties": {
@@ -17451,20 +18454,6 @@
             "UpdateRestaurantOnboardingStatusRequest": {
                 "type": "object",
                 "properties": {
-                    "step": {
-                        "$ref": "#/components/schemas/RestaurantOnboardingStep"
-                    },
-                    "step_status": {
-                        "type": "string",
-                        "enum": [
-                            "completed",
-                            "skipped",
-                            "in_progress"
-                        ]
-                    },
-                    "current_step": {
-                        "$ref": "#/components/schemas/RestaurantOnboardingStep"
-                    },
                     "is_profile_published": {
                         "type": [
                             "boolean",
@@ -17762,6 +18751,18 @@
                             "maxLength": 255
                         }
                     },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
+                    },
                     "hours": {
                         "type": [
                             "array",
@@ -17803,6 +18804,24 @@
                 "type": "object",
                 "properties": {
                     "rating": {
+                        "type": "string"
+                    },
+                    "food_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "service_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "ambience_rating": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "value_rating": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 5
@@ -17903,6 +18922,12 @@
                         "type": "integer",
                         "minimum": 1
                     },
+                    "table_type": {
+                        "$ref": "#/components/schemas/TableType"
+                    },
+                    "shape": {
+                        "$ref": "#/components/schemas/TableShape"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/TableStatus"
                     },
@@ -17918,6 +18943,50 @@
                             "null"
                         ],
                         "minimum": 0
+                    },
+                    "x_position": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "y_position": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "width": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "height": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "rotation": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0,
+                        "maximum": 359
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+                        "maxLength": 20
                     }
                 },
                 "title": "UpdateRestaurantTableRequest"
@@ -18072,6 +19141,18 @@
                             ],
                             "maxLength": 255
                         }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "title": "UploadModelMediaRequest"
@@ -18144,7 +19225,10 @@
                         ]
                     },
                     "bio": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "birthday": {
                         "type": "string"

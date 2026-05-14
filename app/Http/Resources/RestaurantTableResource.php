@@ -16,9 +16,17 @@ class RestaurantTableResource extends JsonResource
             'name' => $this->name,
             'min_capacity' => $this->min_capacity,
             'max_capacity' => $this->max_capacity,
+            'table_type' => $this->table_type?->value,
+            'shape' => $this->shape?->value,
             'status' => $this->status?->value,
             'is_active' => $this->is_active,
             'sort_order' => $this->sort_order,
+            'x_position' => $this->x_position,
+            'y_position' => $this->y_position,
+            'width' => $this->width,
+            'height' => $this->height,
+            'rotation' => $this->rotation,
+            'color' => $this->color,
         ];
     }
 }

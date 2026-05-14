@@ -51,10 +51,13 @@ class MerchantRestaurantOnboardingController extends Controller
             $this->onboardingService->syncSocialHandles($restaurant, $validated['social_handles']);
         }
 
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
+
         $restaurant->load(['cuisines', 'socialHandles']);
 
         return response()->json([
             'message' => 'Contact, cuisine and price updated successfully.',
+            'onboarding_status' => $onboardingStatus,
             'restaurant' => [
                 'email' => $restaurant->email,
                 'phone' => $restaurant->phone,
@@ -83,9 +86,11 @@ class MerchantRestaurantOnboardingController extends Controller
         );
 
         $featuredMedia = $this->mediaLibraryService->featureMedia($restaurant, $galleryMedia);
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Profile photo uploaded successfully.',
+            'onboarding_status' => $onboardingStatus,
             'featured_image' => MediaAssetResource::make($featuredMedia),
             'gallery_image' => MediaAssetResource::make($galleryMedia),
         ], 201);
@@ -94,9 +99,11 @@ class MerchantRestaurantOnboardingController extends Controller
     public function updateDescription(UpdateRestaurantOnboardingDescriptionRequest $request, Restaurant $restaurant): JsonResponse
     {
         $restaurant->update($request->validated());
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Description updated successfully.',
+            'onboarding_status' => $onboardingStatus,
             'description' => $restaurant->description,
         ]);
     }
@@ -106,11 +113,13 @@ class MerchantRestaurantOnboardingController extends Controller
         $restaurant->update([
             'internal_notes' => $request->boolean('skip') ? null : $request->validated('internal_notes'),
         ]);
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => $request->boolean('skip')
                 ? 'Internal notes skipped successfully.'
                 : 'Internal notes updated successfully.',
+            'onboarding_status' => $onboardingStatus,
             'internal_notes' => $restaurant->internal_notes,
         ]);
     }
@@ -118,11 +127,13 @@ class MerchantRestaurantOnboardingController extends Controller
     public function updateBusinessHours(UpdateRestaurantOnboardingHoursRequest $request, Restaurant $restaurant): JsonResponse
     {
         $this->onboardingService->replaceMealSchedules($restaurant, $request->validated('schedules'));
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         $restaurant->load(['mealTypes.schedules']);
 
         return response()->json([
             'message' => 'Business hours updated successfully.',
+            'onboarding_status' => $onboardingStatus,
             'meal_types' => $restaurant->mealTypes->map(fn ($type) => [
                 'id' => $type->id,
                 'name' => $type->name,
@@ -167,9 +178,11 @@ class MerchantRestaurantOnboardingController extends Controller
         }
 
         $mealType = $restaurant->mealTypes()->create($validated);
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Meal type created successfully.',
+            'onboarding_status' => $onboardingStatus,
             'meal_type' => [
                 'id' => $mealType->id,
                 'name' => $mealType->name,
@@ -184,9 +197,11 @@ class MerchantRestaurantOnboardingController extends Controller
         abort_unless($this->onboardingService->mealTypeBelongsToRestaurant($mealType, $restaurant), 404);
 
         $mealType->update($request->validated());
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Meal type updated successfully.',
+            'onboarding_status' => $onboardingStatus,
             'meal_type' => [
                 'id' => $mealType->id,
                 'name' => $mealType->name,
@@ -207,8 +222,12 @@ class MerchantRestaurantOnboardingController extends Controller
         }
 
         $mealType->delete();
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
-        return response()->json(['message' => 'Meal type deleted successfully.']);
+        return response()->json([
+            'message' => 'Meal type deleted successfully.',
+            'onboarding_status' => $onboardingStatus,
+        ]);
     }
 
     public function sendEmailVerificationCode(SendRestaurantEmailVerificationRequest $request, Restaurant $restaurant): JsonResponse
@@ -243,9 +262,11 @@ class MerchantRestaurantOnboardingController extends Controller
         ]);
 
         $restaurant->refresh();
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Email address verified successfully.',
+            'onboarding_status' => $onboardingStatus,
             'email' => $restaurant->email,
             'contact_email_verified_at' => $restaurant->contact_email_verified_at->toIso8601String(),
         ]);
