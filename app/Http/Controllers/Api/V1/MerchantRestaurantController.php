@@ -13,6 +13,7 @@ use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[Group('Merchant Restaurant Profile', weight: 30)]
 class MerchantRestaurantController extends Controller
@@ -52,7 +53,7 @@ class MerchantRestaurantController extends Controller
 
         return response()->json([
             'restaurants' => $restaurants->map(function (Restaurant $restaurant) {
-                /** @var ?\Spatie\MediaLibrary\MediaCollections\Models\Media $cover */
+                /** @var ?Media $cover */
                 $cover = $restaurant->media->firstWhere('collection_name', 'featured')
                     ?? $restaurant->media->where('collection_name', 'gallery')->sortBy('order_column')->first();
 

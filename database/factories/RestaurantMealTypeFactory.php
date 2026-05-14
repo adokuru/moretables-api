@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Restaurant;
 use App\Models\RestaurantMealType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ class RestaurantMealTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'restaurant_id' => \App\Models\Restaurant::factory(),
+            'restaurant_id' => Restaurant::factory(),
             'name' => fake()->randomElement(['Breakfast', 'Brunch', 'Lunch', 'Dinner', 'Late Night']),
             'sort_order' => 0,
         ];

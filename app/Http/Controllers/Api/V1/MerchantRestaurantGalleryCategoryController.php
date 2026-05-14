@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreGalleryCategoryRequest;
 use App\Http\Requests\Merchant\UpdateGalleryCategoryRequest;
-use App\Http\Resources\MediaAssetResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantGalleryCategory;
 use App\Services\MediaLibraryService;

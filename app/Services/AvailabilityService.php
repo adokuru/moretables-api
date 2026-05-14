@@ -93,6 +93,7 @@ class AvailabilityService
             while ($cursor->copy()->addMinutes($duration)->lessThanOrEqualTo($closesAt)) {
                 if ($cursor->lte($now)) {
                     $cursor->addMinutes(15);
+
                     continue;
                 }
 
