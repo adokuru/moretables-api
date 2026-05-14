@@ -1,19 +1,29 @@
 <?php
 
+use App\MerchantSubscriptionStatus;
+use App\Models\BillingPlan;
+use App\Models\MerchantSubscription;
 use App\Models\Reservation;
+use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
+use Database\Seeders\BillingPlanSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
-it('allows operations staff to manage floor resources and walk-in reservations', function () {
+beforeEach(function (): void {
     $this->seed(RoleAndPermissionSeeder::class);
+    $this->seed(BillingPlanSeeder::class);
+});
+
+it('allows operations staff to manage floor resources and walk-in reservations', function () {
     $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
     $operations = User::factory()->create();
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
@@ -88,8 +98,8 @@ it('allows operations staff to manage floor resources and walk-in reservations',
 });
 
 it('validates floor table layout and type values', function () {
-    $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
     $operations = User::factory()->create();
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
@@ -115,10 +125,41 @@ it('validates floor table layout and type values', function () {
         ]);
 });
 
+it('allows restaurant managers to configure guest communication messaging', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $manager = User::factory()->create();
+    assignScopedRole($manager, Role::PrincipalAdmin, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($manager);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication')
+        ->assertOk()
+        ->assertJsonPath('guest_communication.automated_messaging.enabled', false)
+        ->assertJsonPath('guest_communication.reservation_messaging.enabled', false);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => true,
+    ])->assertOk()
+        ->assertJsonPath('guest_communication.automated_messaging.enabled', true)
+        ->assertJsonPath('guest_communication.reservation_messaging.enabled', false);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/reservation-messaging', [
+        'enabled' => true,
+    ])->assertOk()
+        ->assertJsonPath('guest_communication.automated_messaging.enabled', true)
+        ->assertJsonPath('guest_communication.reservation_messaging.enabled', true);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/reservation-messaging', [
+        'enabled' => 'yes',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('enabled');
+});
+
 it('emails a guest when operations staff creates a walk-in reservation with guest email', function () {
     Notification::fake();
-    $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
     $operations = User::factory()->create();
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
@@ -143,9 +184,9 @@ it('emails a guest when operations staff creates a walk-in reservation with gues
 
 it('allows operations staff to notify waitlist guests', function () {
     Notification::fake();
-    $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
     $operations = User::factory()->create();
     $customer = User::factory()->create();
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
@@ -174,9 +215,9 @@ it('allows operations staff to notify waitlist guests', function () {
 
 it('emails guest when operations staff notifies guest-only waitlist with email', function () {
     Notification::fake();
-    $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
     $operations = User::factory()->create();
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
@@ -205,3 +246,13 @@ it('emails guest when operations staff notifies guest-only waitlist with email',
         return ($notifiable->routes['mail'] ?? null) === 'waitlist.guest@example.com';
     });
 });
+
+function activateMerchantBilling(Restaurant $restaurant): void
+{
+    MerchantSubscription::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'billing_plan_id' => BillingPlan::query()->where('slug', 'foundation')->value('id'),
+        'status' => MerchantSubscriptionStatus::Active,
+        'current_period_end' => now()->addMonth(),
+    ]);
+}

@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentProvider;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Channels\MoreTablesMailChannel;
+use App\Services\Payments\PaystackPaymentProvider;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
@@ -18,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MailChannel::class, MoreTablesMailChannel::class);
+        $this->app->bind(PaymentProvider::class, PaystackPaymentProvider::class);
     }
 
     public function boot(): void

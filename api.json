@@ -63,7 +63,13 @@
             "name": "Merchant Reservations"
         },
         {
+            "name": "Merchant Guest Communication"
+        },
+        {
             "name": "Merchant Waitlist"
+        },
+        {
+            "name": "Merchant Billing"
         },
         {
             "name": "Merchant Staff Auth"
@@ -8122,6 +8128,237 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/guest-communication": {
+            "get": {
+                "operationId": "merchantGuestCommunication.show",
+                "tags": [
+                    "Merchant Guest Communication"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "guest_communication": {
+                                            "$ref": "#/components/schemas/GuestCommunicationSettingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "guest_communication"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/guest-communication/automated-messaging": {
+            "patch": {
+                "operationId": "merchantGuestCommunication.updateAutomatedMessaging",
+                "tags": [
+                    "Merchant Guest Communication"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGuestCommunicationSettingRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Automated messaging settings updated successfully."
+                                        },
+                                        "guest_communication": {
+                                            "$ref": "#/components/schemas/GuestCommunicationSettingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "guest_communication"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/guest-communication/reservation-messaging": {
+            "patch": {
+                "operationId": "merchantGuestCommunication.updateReservationMessaging",
+                "tags": [
+                    "Merchant Guest Communication"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGuestCommunicationSettingRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Reservation messaging settings updated successfully."
+                                        },
+                                        "guest_communication": {
+                                            "$ref": "#/components/schemas/GuestCommunicationSettingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "guest_communication"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/waitlist-entries": {
             "get": {
                 "operationId": "merchantWaitlist.index",
@@ -8442,6 +8679,428 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/billing/plans": {
+            "get": {
+                "operationId": "merchantBilling.plans",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "plans": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/BillingPlanResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "plans"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing": {
+            "get": {
+                "operationId": "merchantBilling.show",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "billing": {
+                                            "$ref": "#/components/schemas/MerchantBillingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "billing"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing/checkout": {
+            "post": {
+                "operationId": "merchantBilling.checkout",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartBillingCheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Billing checkout initialized successfully."
+                                        },
+                                        "checkout": {
+                                            "type": "object",
+                                            "properties": {
+                                                "authorization_url": {},
+                                                "access_code": {},
+                                                "reference": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "authorization_url",
+                                                "access_code",
+                                                "reference"
+                                            ]
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "checkout",
+                                        "invoice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing/verify/{reference}": {
+            "get": {
+                "operationId": "merchantBilling.verify",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Billing checkout verified successfully."
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        },
+                                        "billing": {
+                                            "$ref": "#/components/schemas/MerchantBillingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "invoice",
+                                        "billing"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing/invoices": {
+            "get": {
+                "operationId": "merchantBilling.invoices",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invoices": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "invoices"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing/invoices/{invoice}/download": {
+            "get": {
+                "operationId": "merchantBilling.downloadInvoice",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "invoice",
+                        "in": "path",
+                        "required": true,
+                        "description": "The invoice ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -14121,6 +14780,70 @@
                     }
                 }
             }
+        },
+        "/billing/paystack/webhook": {
+            "post": {
+                "operationId": "v1.paystackWebhook",
+                "tags": [
+                    "PaystackWebhook"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Webhook processed successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "Invalid Paystack payload."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "const": "Invalid Paystack signature."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -14230,6 +14953,88 @@
                 ],
                 "title": "AuditLogResource"
             },
+            "BillingPlanResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "string"
+                    },
+                    "display_amount": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "interval": {
+                        "type": "string"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "features": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "metadata": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "description",
+                    "amount",
+                    "display_amount",
+                    "currency",
+                    "interval",
+                    "provider",
+                    "features",
+                    "metadata",
+                    "is_active"
+                ],
+                "title": "BillingPlanResource"
+            },
             "CuisineOptionResource": {
                 "type": "object",
                 "properties": {
@@ -14324,6 +15129,54 @@
                     "email"
                 ],
                 "title": "ForgotPasswordRequest"
+            },
+            "GuestCommunicationSettingResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "restaurant_id": {
+                        "type": "string"
+                    },
+                    "automated_messaging": {
+                        "type": "object",
+                        "properties": {
+                            "enabled": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "reservation_messaging": {
+                        "type": "object",
+                        "properties": {
+                            "enabled": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "enabled"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "automated_messaging",
+                    "reservation_messaging",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "GuestCommunicationSettingResource"
             },
             "GuestCompleteProfileRequest": {
                 "type": "object",
@@ -14466,6 +15319,196 @@
                     "card_url"
                 ],
                 "title": "MediaAssetResource"
+            },
+            "MerchantBillingResource": {
+                "type": "object",
+                "properties": {
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "unpaid"
+                                ]
+                            }
+                        ]
+                    },
+                    "payment_url": {
+                        "type": "string"
+                    },
+                    "subscription": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "provider": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "current_period_start": {
+                                "type": "string"
+                            },
+                            "current_period_end": {
+                                "type": "string"
+                            },
+                            "next_payment_at": {
+                                "type": "string"
+                            },
+                            "plan": {
+                                "$ref": "#/components/schemas/BillingPlanResource"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "provider",
+                            "status",
+                            "current_period_start",
+                            "current_period_end",
+                            "next_payment_at",
+                            "plan"
+                        ]
+                    },
+                    "payment_method": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "provider": {
+                                "type": "string"
+                            },
+                            "brand": {
+                                "type": "string"
+                            },
+                            "card_type": {
+                                "type": "string"
+                            },
+                            "last4": {
+                                "type": "string"
+                            },
+                            "exp_month": {
+                                "type": "string"
+                            },
+                            "exp_year": {
+                                "type": "string"
+                            },
+                            "bank": {
+                                "type": "string"
+                            },
+                            "channel": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "provider",
+                            "brand",
+                            "card_type",
+                            "last4",
+                            "exp_month",
+                            "exp_year",
+                            "bank",
+                            "channel"
+                        ]
+                    },
+                    "upcoming_invoice": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MerchantInvoiceResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "is_active",
+                    "status",
+                    "payment_url",
+                    "subscription",
+                    "payment_method",
+                    "upcoming_invoice"
+                ],
+                "title": "MerchantBillingResource"
+            },
+            "MerchantInvoiceResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "invoice_number": {
+                        "type": "string"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "provider_reference": {
+                        "type": "string"
+                    },
+                    "receipt_number": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "string"
+                    },
+                    "display_amount": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "billing_period_start": {
+                        "type": "string"
+                    },
+                    "billing_period_end": {
+                        "type": "string"
+                    },
+                    "due_at": {
+                        "type": "string"
+                    },
+                    "paid_at": {
+                        "type": "string"
+                    },
+                    "plan": {
+                        "$ref": "#/components/schemas/BillingPlanResource"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "invoice_number",
+                    "provider",
+                    "provider_reference",
+                    "receipt_number",
+                    "amount",
+                    "display_amount",
+                    "currency",
+                    "status",
+                    "billing_period_start",
+                    "billing_period_end",
+                    "due_at",
+                    "paid_at",
+                    "created_at"
+                ],
+                "title": "MerchantInvoiceResource"
             },
             "NotifyWaitlistEntryRequest": {
                 "type": "object",
@@ -15567,6 +16610,18 @@
                     "password"
                 ],
                 "title": "StaffLoginRequest"
+            },
+            "StartBillingCheckoutRequest": {
+                "type": "object",
+                "properties": {
+                    "plan": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "plan"
+                ],
+                "title": "StartBillingCheckoutRequest"
             },
             "StoreAdminBusinessOnboardingRequest": {
                 "type": "object",
@@ -17899,6 +18954,18 @@
                     }
                 },
                 "title": "UpdateGalleryCategoryRequest"
+            },
+            "UpdateGuestCommunicationSettingRequest": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "enabled"
+                ],
+                "title": "UpdateGuestCommunicationSettingRequest"
             },
             "UpdateMediaAssetRequest": {
                 "type": "object",

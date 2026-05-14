@@ -145,6 +145,40 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(WaitlistEntry::class);
     }
 
+    public function guestCommunicationSetting(): HasOne
+    {
+        return $this->hasOne(GuestCommunicationSetting::class);
+    }
+
+    public function billingSubscriptions(): HasMany
+    {
+        return $this->hasMany(MerchantSubscription::class);
+    }
+
+    public function activeBillingSubscription(): HasOne
+    {
+        return $this->hasOne(MerchantSubscription::class)
+            ->whereIn('status', ['active', 'trialing'])
+            ->latestOfMany();
+    }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(MerchantPaymentMethod::class);
+    }
+
+    public function defaultPaymentMethod(): HasOne
+    {
+        return $this->hasOne(MerchantPaymentMethod::class)
+            ->where('is_default', true)
+            ->latestOfMany();
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(MerchantInvoice::class);
+    }
+
     public function socialHandles(): HasMany
     {
         return $this->hasMany(RestaurantSocialHandle::class)->orderBy('platform');
