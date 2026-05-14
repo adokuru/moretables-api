@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BillingPlan;
 use App\Models\Restaurant;
 use App\Services\BillingService;
 use Closure;
@@ -25,7 +26,15 @@ class EnsureMerchantBillingActive
             $restaurant = Restaurant::query()->find($restaurant);
         }
 
-        if (! $restaurant || $this->billingService->isRestaurantBillable($restaurant)) {
+        if (! $restaurant || ! $this->hasActiveBillingPlans()) {
+            return $next($request);
+        }
+
+        if ($request->user()?->canAccessRestaurant($restaurant) === false) {
+            return $next($request);
+        }
+
+        if ($this->billingService->isRestaurantBillable($restaurant)) {
             return $next($request);
         }
 
@@ -39,5 +48,12 @@ class EnsureMerchantBillingActive
                 'checkout_url' => url('/api/v1/merchant/restaurants/'.$restaurant->id.'/billing/checkout'),
             ],
         ], 402);
+    }
+
+    protected function hasActiveBillingPlans(): bool
+    {
+        return BillingPlan::query()
+            ->where('is_active', true)
+            ->exists();
     }
 }

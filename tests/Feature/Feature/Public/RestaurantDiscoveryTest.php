@@ -314,7 +314,10 @@ it('lets authenticated users create update and list restaurant reviews', functio
     Sanctum::actingAs($customer);
 
     $createResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews', [
-        'rating' => 5,
+        'food_rating' => 5,
+        'service_rating' => 5,
+        'ambience_rating' => 5,
+        'value_rating' => 5,
         'title' => 'Excellent dinner',
         'body' => 'Loved the tasting menu and service.',
         'review_images' => [
@@ -331,7 +334,10 @@ it('lets authenticated users create update and list restaurant reviews', functio
         ->assertJsonPath('review.reviewer.name', 'Ada Okafor');
 
     $duplicateResponse = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews', [
-        'rating' => 4,
+        'food_rating' => 4,
+        'service_rating' => 4,
+        'ambience_rating' => 4,
+        'value_rating' => 4,
     ]);
 
     $duplicateResponse->assertUnprocessable()
@@ -340,7 +346,10 @@ it('lets authenticated users create update and list restaurant reviews', functio
     $reviewId = $createResponse->json('review.id');
 
     $updateResponse = $this->patchJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews/'.$reviewId, [
-        'rating' => 4,
+        'food_rating' => 4,
+        'service_rating' => 4,
+        'ambience_rating' => 4,
+        'value_rating' => 4,
         'body' => 'Still great, but dessert was the highlight.',
         'review_images' => [],
     ]);
