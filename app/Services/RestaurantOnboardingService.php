@@ -15,6 +15,14 @@ class RestaurantOnboardingService
 
     private const STATUS_PENDING = 'pending';
 
+    private const REQUIRED_STEPS = [
+        RestaurantOnboardingStep::Basics,
+        RestaurantOnboardingStep::Location,
+        RestaurantOnboardingStep::Cuisine,
+        RestaurantOnboardingStep::Meals,
+        RestaurantOnboardingStep::Hours,
+    ];
+
     public function syncCuisines(Restaurant $restaurant, ?int $primaryId, array $additionalIds = []): void
     {
         if ($primaryId === null) {
@@ -153,15 +161,8 @@ class RestaurantOnboardingService
             ),
         ];
 
-        $reviewIsComplete = collect([
-            RestaurantOnboardingStep::Basics,
-            RestaurantOnboardingStep::Location,
-            RestaurantOnboardingStep::Cuisine,
-            RestaurantOnboardingStep::Meals,
-            RestaurantOnboardingStep::Hours,
-            RestaurantOnboardingStep::Media,
-            RestaurantOnboardingStep::Policies,
-        ])->every(fn (RestaurantOnboardingStep $step): bool => $progress[$step->value] === self::STATUS_COMPLETED);
+        $reviewIsComplete = collect(self::REQUIRED_STEPS)
+            ->every(fn (RestaurantOnboardingStep $step): bool => $progress[$step->value] === self::STATUS_COMPLETED);
 
         $reviewIsStarted = collect($progress)->contains(
             fn (string $status): bool => $status !== self::STATUS_PENDING,
@@ -169,13 +170,13 @@ class RestaurantOnboardingService
 
         $progress[RestaurantOnboardingStep::Review->value] = $this->stepStatus($reviewIsComplete, $reviewIsStarted);
         $progress[RestaurantOnboardingStep::Published->value] = $this->stepStatus(
-            (bool) $restaurant->is_profile_published,
+            $reviewIsComplete,
             $reviewIsComplete,
         );
 
         return [
             'current_step' => $this->currentStep($progress),
-            'is_profile_published' => (bool) $restaurant->is_profile_published,
+            'is_profile_published' => $reviewIsComplete,
             'progress' => $progress,
         ];
     }
@@ -194,7 +195,7 @@ class RestaurantOnboardingService
      */
     private function currentStep(array $progress): ?string
     {
-        foreach (RestaurantOnboardingStep::cases() as $step) {
+        foreach (self::REQUIRED_STEPS as $step) {
             if (($progress[$step->value] ?? self::STATUS_PENDING) !== self::STATUS_COMPLETED) {
                 return $step->value;
             }

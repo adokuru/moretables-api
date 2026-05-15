@@ -3,6 +3,7 @@
 use App\AuthChallengeType;
 use App\Enums\RestaurantOnboardingStep;
 use App\Models\CuisineOption;
+use App\Models\Restaurant;
 use App\Models\RestaurantMealSchedule;
 use App\Models\RestaurantMealType;
 use App\Models\RestaurantSocialHandle;
@@ -573,6 +574,40 @@ it('does not publish the profile until required onboarding steps are complete', 
         'id' => $data['restaurant']->id,
         'is_profile_published' => false,
     ]);
+});
+
+it('publishes the profile when the required onboarding steps are complete', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $restaurant = Restaurant::factory()->create([
+        'description' => str_repeat('A welcoming dining room with seasonal menus and attentive service. ', 2),
+        'is_profile_published' => false,
+    ]);
+    $primaryCuisine = CuisineOption::factory()->create();
+    $restaurant->cuisines()->attach($primaryCuisine->id, ['is_primary' => true]);
+    $mealType = RestaurantMealType::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Dinner',
+    ]);
+    $actor = User::factory()->create();
+    assignScopedRole($actor, Role::MarketingGrowth, $restaurant->organization, $restaurant);
+
+    Sanctum::actingAs($actor);
+
+    $response = $this->putJson(obUrl($restaurant->id, '/business-hours'), [
+        'schedules' => [
+            ['restaurant_meal_type_id' => $mealType->id, 'day_of_week' => 1, 'opens_at' => '18:00', 'closes_at' => '22:00'],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('onboarding_status.current_step', null)
+        ->assertJsonPath('onboarding_status.is_profile_published', true)
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Review->value, 'completed')
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Published->value, 'completed')
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Media->value, 'pending')
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Policies->value, 'pending');
+
+    expect($restaurant->refresh()->is_profile_published)->toBeTrue();
 });
 
 it('rejects an invalid step enum value in status update', function () {
