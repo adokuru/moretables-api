@@ -897,7 +897,8 @@
                 "{{restaurant_id}}"
               ]
             }
-          }
+          },
+          "description": "Public restaurant detail response including a summary with review count, average rating, and ratings_breakdown keyed from 5 to 1."
         },
         {
           "name": "Restaurant availability",

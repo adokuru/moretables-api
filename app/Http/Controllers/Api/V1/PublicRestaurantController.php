@@ -151,6 +151,18 @@ class PublicRestaurantController extends Controller
             ->whereKey($restaurant->getKey())
             ->firstOrFail();
 
+        $ratingsBreakdown = $restaurant->reviews()
+            ->selectRaw('round(rating) as rating_bucket, count(*) as aggregate')
+            ->groupBy('rating_bucket')
+            ->get()
+            ->mapWithKeys(fn (RestaurantReview $review): array => [
+                (string) (int) round((float) $review->rating_bucket) => (int) $review->aggregate,
+            ]);
+
+        $restaurant->setAttribute('ratings_breakdown', (object) collect(range(5, 1))
+            ->mapWithKeys(fn (int $rating): array => [(string) $rating => (int) ($ratingsBreakdown[$rating] ?? 0)])
+            ->all());
+
         return RestaurantDetailResource::make($restaurant->load([
             'cuisines',
             'media',

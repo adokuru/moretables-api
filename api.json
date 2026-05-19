@@ -16071,6 +16071,59 @@
                             "$ref": "#/components/schemas/MediaAssetResource"
                         }
                     },
+                    "summary": {
+                        "type": "object",
+                        "properties": {
+                            "reviews_count": {
+                                "type": "integer"
+                            },
+                            "average_rating": {
+                                "anyOf": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "object",
+                                "properties": {
+                                    "5": {
+                                        "type": "integer"
+                                    },
+                                    "4": {
+                                        "type": "integer"
+                                    },
+                                    "3": {
+                                        "type": "integer"
+                                    },
+                                    "2": {
+                                        "type": "integer"
+                                    },
+                                    "1": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "required": [
+                                    "5",
+                                    "4",
+                                    "3",
+                                    "2",
+                                    "1"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "reviews_count",
+                            "average_rating",
+                            "ratings_breakdown"
+                        ]
+                    },
                     "discovery_metrics": {
                         "type": "object",
                         "properties": {
@@ -16101,6 +16154,33 @@
                                         ]
                                     }
                                 ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "object",
+                                "properties": {
+                                    "5": {
+                                        "type": "integer"
+                                    },
+                                    "4": {
+                                        "type": "integer"
+                                    },
+                                    "3": {
+                                        "type": "integer"
+                                    },
+                                    "2": {
+                                        "type": "integer"
+                                    },
+                                    "1": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "required": [
+                                    "5",
+                                    "4",
+                                    "3",
+                                    "2",
+                                    "1"
+                                ]
                             }
                         },
                         "required": [
@@ -16109,7 +16189,8 @@
                             "saves_count",
                             "list_adds_count",
                             "reviews_count",
-                            "average_rating"
+                            "average_rating",
+                            "ratings_breakdown"
                         ]
                     },
                     "media": {
@@ -16213,6 +16294,7 @@
                     "featured_image",
                     "gallery_images",
                     "menu_documents",
+                    "summary",
                     "discovery_metrics"
                 ],
                 "title": "RestaurantDetailResource"

@@ -41,12 +41,21 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             ],
             [
                 'subject' => $subject,
-                'subtitle' => $this->subtitle(),
+                'title' => $this->title($restaurant->name),
+                'subtitle' => $this->subtitle($restaurant->name),
                 'guestName' => $this->guestName(),
                 'restaurantName' => $restaurant->name,
                 'formattedDate' => $this->formattedDate(),
                 'formattedTime' => $this->formattedTime(),
                 'partySize' => $this->reservation->party_size,
+                'tableInfo' => $this->tableInfo(),
+                'confirmationNumber' => $this->reservation->reservation_reference,
+                'showRestaurantContactDetails' => $this->showRestaurantContactDetails(),
+                'addressLineOne' => $restaurant->address_line_1,
+                'addressLineTwo' => $this->addressLineTwo(),
+                'restaurantPhone' => $restaurant->phone,
+                'menuUrl' => $restaurant->menu_link,
+                'directionsUrl' => $this->directionsUrl(),
                 'extraBody' => $this->extraBody(),
                 'ctaUrl' => config('app.url').'/reservations/'.$this->reservation->reservation_reference,
                 'ctaLabel' => 'Manage reservation',
@@ -57,6 +66,18 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'footerLink2Label' => 'Unsubscribe',
             ],
         );
+    }
+
+    protected function title(string $restaurantName): string
+    {
+        return match ($this->action) {
+            'created' => 'Reservation confirmed',
+            'updated' => 'Reservation changed',
+            'cancelled' => 'Reservation canceled',
+            'guest_added' => 'You have been added to the below reservation',
+            'upcoming_reminder' => "Your reservation is coming up at {$restaurantName} in {$this->daysUntilReservationLabel()}",
+            default => 'Reservation update',
+        };
     }
 
     protected function subject(string $restaurantName): string
@@ -71,14 +92,13 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
         };
     }
 
-    protected function subtitle(): string
+    protected function subtitle(string $restaurantName): string
     {
         return match ($this->action) {
-            'created' => 'Your reservation has been successfully confirmed! 🎉',
-            'updated' => 'Your reservation has been updated.',
-            'cancelled' => 'Your reservation has been cancelled.',
-            'guest_added' => "You've been added to an upcoming reservation.",
-            'upcoming_reminder' => 'Just a quick reminder about your upcoming reservation:',
+            'created' => 'Thanks for using MoreTables',
+            'updated' => 'Here are the new details:',
+            'guest_added', 'upcoming_reminder' => 'Here are the details',
+            'cancelled' => "You've successfully canceled your reservation at {$restaurantName}.",
             default => 'There is an update to your reservation.',
         };
     }
@@ -147,6 +167,54 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             ->copy()
             ->timezone($restaurantTimezone)
             ->format('g:iA');
+    }
+
+    protected function tableInfo(): string
+    {
+        if ($this->reservation->starts_at === null) {
+            return "Table for {$this->reservation->party_size}";
+        }
+
+        $restaurantTimezone = $this->reservation->restaurant->timezone ?: config('app.timezone');
+        $startsAt = $this->reservation->starts_at->copy()->timezone($restaurantTimezone);
+
+        return sprintf(
+            'Table for %d on %s at %s',
+            $this->reservation->party_size,
+            $startsAt->format('l, F j, Y'),
+            $startsAt->format('g:i a'),
+        );
+    }
+
+    protected function showRestaurantContactDetails(): bool
+    {
+        return in_array($this->action, ['created', 'updated'], true);
+    }
+
+    protected function addressLineTwo(): ?string
+    {
+        $restaurant = $this->reservation->restaurant;
+        $parts = array_filter([
+            $restaurant->address_line_2,
+            $restaurant->city,
+            $restaurant->state,
+            $restaurant->country,
+        ]);
+
+        return $parts === [] ? null : implode(', ', $parts);
+    }
+
+    protected function directionsUrl(): ?string
+    {
+        $restaurant = $this->reservation->restaurant;
+
+        if ($restaurant->latitude === null || $restaurant->longitude === null) {
+            return null;
+        }
+
+        $coordinates = number_format((float) $restaurant->latitude, 7, '.', '').','.number_format((float) $restaurant->longitude, 7, '.', '');
+
+        return 'https://www.google.com/maps/search/?api=1&query='.urlencode($coordinates);
     }
 
     /**
