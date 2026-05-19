@@ -140,6 +140,55 @@ it('allows business admins to create restaurants with featured and gallery image
         ->assertJsonCount(2, 'restaurant.gallery_images');
 });
 
+it('allows admins to see and update restaurant feature settings', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'internal_notes' => 'Initial admin note',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->patchJson('/api/v1/admin/restaurants/'.$restaurant->id, [
+        'internal_notes' => 'Updated by admin',
+        'cuisines' => ['Nigerian', 'Contemporary'],
+        'hours' => [
+            ['day_of_week' => 0, 'opens_at' => '09:00', 'closes_at' => '21:00', 'is_closed' => false],
+            ['day_of_week' => 1, 'is_closed' => true],
+        ],
+        'policy' => [
+            'booking_window_days' => 21,
+            'reservation_duration_minutes' => 75,
+            'cancellation_cutoff_hours' => 4,
+            'min_party_size' => 2,
+            'max_party_size' => 8,
+            'deposit_required' => true,
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('restaurant.internal_notes', 'Updated by admin')
+        ->assertJsonPath('restaurant.cuisines.0', 'Nigerian')
+        ->assertJsonPath('restaurant.cuisines.1', 'Contemporary')
+        ->assertJsonPath('restaurant.hours.0.day_of_week', 0)
+        ->assertJsonPath('restaurant.hours.0.opens_at', '09:00')
+        ->assertJsonPath('restaurant.hours.1.is_closed', true)
+        ->assertJsonPath('restaurant.policy.booking_window_days', 21)
+        ->assertJsonPath('restaurant.policy.reservation_duration_minutes', 75)
+        ->assertJsonPath('restaurant.policy.deposit_required', true);
+
+    $showResponse = $this->getJson('/api/v1/admin/restaurants/'.$restaurant->id);
+
+    $showResponse->assertOk()
+        ->assertJsonPath('data.internal_notes', 'Updated by admin')
+        ->assertJsonPath('data.policy.max_party_size', 8)
+        ->assertJsonFragment(['Contemporary']);
+});
+
 it('returns audit logs to authorized admins', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $admin = User::factory()->create();

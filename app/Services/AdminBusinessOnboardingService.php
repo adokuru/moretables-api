@@ -84,13 +84,13 @@ class AdminBusinessOnboardingService
             'primary_contact_phone' => $payload['owner_phone'],
             'business_phone' => $payload['business_phone'],
             'business_email' => $payload['business_email'],
-            'website' => $payload['business_website'],
+            'website' => $payload['business_website'] ?? null,
             'billing_email' => $payload['billing_email'] ?? null,
             'tax_id' => $payload['tax_id'] ?? null,
             'registration_number' => $payload['registration_number'] ?? null,
-            'city' => $payload['business_city'],
-            'state' => $payload['business_state'],
-            'country' => $payload['business_country'],
+            'city' => $payload['business_city'] ?? data_get($payload, 'restaurants.0.city'),
+            'state' => $payload['business_state'] ?? data_get($payload, 'restaurants.0.state'),
+            'country' => $payload['business_country'] ?? data_get($payload, 'restaurants.0.country'),
             'status' => 'active',
         ];
     }
@@ -133,18 +133,18 @@ class AdminBusinessOnboardingService
             'city' => $restaurantPayload['city'],
             'state' => $restaurantPayload['state'] ?? null,
             'country' => $restaurantPayload['country'],
-            'address_line_1' => $restaurantPayload['address_line_1'],
+            'address_line_1' => $restaurantPayload['address_line_1'] ?? null,
             'address_line_2' => $restaurantPayload['address_line_2'] ?? null,
             'latitude' => $restaurantPayload['latitude'] ?? null,
             'longitude' => $restaurantPayload['longitude'] ?? null,
             'description' => $restaurantPayload['description'] ?? null,
             'website' => $restaurantPayload['website'] ?? null,
             'instagram_handle' => $restaurantPayload['instagram_handle'] ?? null,
-            'average_price_range' => $restaurantPayload['average_price_range'],
-            'dining_style' => $restaurantPayload['dining_style'],
-            'dress_code' => $restaurantPayload['dress_code'],
-            'total_seating_capacity' => $restaurantPayload['total_seating_capacity'],
-            'number_of_tables' => $restaurantPayload['number_of_tables'],
+            'average_price_range' => $restaurantPayload['average_price_range'] ?? null,
+            'dining_style' => $restaurantPayload['dining_style'] ?? null,
+            'dress_code' => $restaurantPayload['dress_code'] ?? null,
+            'total_seating_capacity' => $restaurantPayload['total_seating_capacity'] ?? null,
+            'number_of_tables' => $restaurantPayload['number_of_tables'] ?? null,
             'menu_source' => $menuMode,
             'menu_link' => $menuMode === 'link' ? data_get($restaurantPayload, 'menu.link') : null,
             'payment_options' => array_values(array_unique($restaurantPayload['payment_options'] ?? [])),
@@ -157,10 +157,12 @@ class AdminBusinessOnboardingService
      */
     protected function createRestaurantPolicy(Restaurant $restaurant, array $restaurantPayload): void
     {
-        $restaurant->policy()->create([
-            'reservation_duration_minutes' => $restaurantPayload['reservation_duration_minutes'],
-            'booking_window_days' => $restaurantPayload['booking_window_days'],
-        ]);
+        $attributes = collect([
+            'reservation_duration_minutes' => $restaurantPayload['reservation_duration_minutes'] ?? null,
+            'booking_window_days' => $restaurantPayload['booking_window_days'] ?? null,
+        ])->filter(fn ($value): bool => $value !== null)->all();
+
+        $restaurant->policy()->create($attributes);
     }
 
     /**
@@ -188,7 +190,7 @@ class AdminBusinessOnboardingService
      */
     protected function createRestaurantHours(Restaurant $restaurant, array $restaurantPayload): void
     {
-        foreach ($restaurantPayload['hours'] as $hour) {
+        foreach ($restaurantPayload['hours'] ?? [] as $hour) {
             $restaurant->hours()->create([
                 'day_of_week' => $hour['day_of_week'],
                 'opens_at' => $hour['opens_at'] ?? null,
@@ -203,14 +205,19 @@ class AdminBusinessOnboardingService
      */
     protected function createRestaurantTables(Restaurant $restaurant, array $restaurantPayload): void
     {
+        $numberOfTables = (int) ($restaurantPayload['number_of_tables'] ?? 0);
+        $totalSeatingCapacity = (int) ($restaurantPayload['total_seating_capacity'] ?? 0);
+
+        if ($numberOfTables < 1 || $totalSeatingCapacity < 1) {
+            return;
+        }
+
         $diningArea = $restaurant->diningAreas()->create([
             'name' => 'Main Dining',
             'is_active' => true,
             'sort_order' => 0,
         ]);
 
-        $numberOfTables = (int) $restaurantPayload['number_of_tables'];
-        $totalSeatingCapacity = (int) $restaurantPayload['total_seating_capacity'];
         $baseCapacity = intdiv($totalSeatingCapacity, $numberOfTables);
         $remainder = $totalSeatingCapacity % $numberOfTables;
 

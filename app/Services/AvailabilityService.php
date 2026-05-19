@@ -52,7 +52,7 @@ class AvailabilityService
         return RestaurantTable::query()
             ->where('restaurant_id', $restaurant->id)
             ->where('is_active', true)
-            ->where('min_capacity', '<=', $partySize)
+            ->when($partySize > 1, fn ($query) => $query->where('min_capacity', '<=', $partySize))
             ->where('max_capacity', '>=', $partySize)
             ->where('status', '!=', TableStatus::Unavailable->value)
             ->whereNotIn('id', $blockedTableIds)
