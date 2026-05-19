@@ -114,6 +114,10 @@ class RestaurantOnboardingService
             ]);
         }
 
+        if (array_key_exists('last_step', $data)) {
+            $restaurant->update(['onboarding_last_step' => $data['last_step']]);
+        }
+
         return $this->syncStatus($restaurant);
     }
 
@@ -176,6 +180,7 @@ class RestaurantOnboardingService
 
         return [
             'current_step' => $this->currentStep($progress),
+            'last_step' => $restaurant->onboarding_last_step,
             'is_profile_published' => $reviewIsComplete,
             'progress' => $progress,
         ];

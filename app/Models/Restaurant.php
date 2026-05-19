@@ -53,6 +53,7 @@ class Restaurant extends Model implements HasMedia
         'accessibility_features',
         'onboarding_progress',
         'onboarding_current_step',
+        'onboarding_last_step',
         'is_profile_published',
         'contact_email_verified_at',
         'contact_phone_verified_at',

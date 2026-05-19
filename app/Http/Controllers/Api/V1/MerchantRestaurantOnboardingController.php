@@ -272,6 +272,40 @@ class MerchantRestaurantOnboardingController extends Controller
         ]);
     }
 
+    public function showData(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+
+        $restaurant->loadMissing(['cuisines', 'socialHandles', 'media']);
+
+        $featuredMedia = $restaurant->media->firstWhere('collection_name', 'featured');
+
+        return response()->json([
+            'email' => $restaurant->email,
+            'email_verified' => $restaurant->contact_email_verified_at !== null,
+            'phone' => $restaurant->phone,
+            'website' => $restaurant->website,
+            'average_price_range' => $restaurant->average_price_range,
+            'description' => $restaurant->description,
+            'cuisines' => $restaurant->cuisines->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'is_primary' => (bool) ($c->pivot->is_primary ?? false),
+            ])->values(),
+            'social_handles' => $restaurant->socialHandles->map(fn ($h) => [
+                'platform' => $h->platform,
+                'handle' => $h->handle,
+            ])->values(),
+            'featured_image' => $featuredMedia ? [
+                'url' => $featuredMedia->getFullUrl(),
+                'thumb_url' => $featuredMedia->hasGeneratedConversion('thumb')
+                    ? $featuredMedia->getUrl('thumb')
+                    : null,
+            ] : null,
+        ]);
+    }
+
     public function showStatus(Restaurant $restaurant): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
