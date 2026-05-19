@@ -626,6 +626,50 @@
                             "minimum": 1,
                             "maximum": 100
                         }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "party_size",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reservation_times_limit",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 10
+                        }
                     }
                 ],
                 "responses": {
@@ -771,6 +815,50 @@
                             ],
                             "minimum": 1,
                             "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "party_size",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reservation_times_limit",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 10
                         }
                     }
                 ],
@@ -16352,6 +16440,40 @@
                     },
                     "cuisines": {
                         "type": "string"
+                    },
+                    "reservation_times": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "starts_at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "ends_at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "local_starts_at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "local_ends_at": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "table_id": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "starts_at",
+                                "ends_at",
+                                "local_starts_at",
+                                "local_ends_at",
+                                "table_id"
+                            ]
+                        }
                     },
                     "has_saved": {
                         "type": "boolean"

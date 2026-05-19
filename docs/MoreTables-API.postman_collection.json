@@ -946,7 +946,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/restaurants/discovery?limit=10&city=Lagos",
+              "raw": "{{baseUrl}}/api/v1/restaurants/discovery?limit=10&city=Lagos&date=2025-12-25&party_size=2&reservation_times_limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -964,10 +964,22 @@
                 {
                   "key": "city",
                   "value": "Lagos"
+                },
+                {
+                  "key": "date",
+                  "value": "2025-12-25"
+                },
+                {
+                  "key": "party_size",
+                  "value": "2"
+                },
+                {
+                  "key": "reservation_times_limit",
+                  "value": "5"
                 }
               ]
             },
-            "description": "Homepage discovery rails for mobile and web."
+            "description": "Homepage discovery rails for mobile and web. Each restaurant includes reservation_times for the requested date and party size when tables are available."
           }
         },
         {
@@ -981,7 +993,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/restaurants/discovery/{{discovery_section}}?per_page=15",
+              "raw": "{{baseUrl}}/api/v1/restaurants/discovery/{{discovery_section}}?per_page=15&date=2025-12-25&party_size=2&reservation_times_limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -996,10 +1008,22 @@
                 {
                   "key": "per_page",
                   "value": "15"
+                },
+                {
+                  "key": "date",
+                  "value": "2025-12-25"
+                },
+                {
+                  "key": "party_size",
+                  "value": "2"
+                },
+                {
+                  "key": "reservation_times_limit",
+                  "value": "5"
                 }
               ]
             },
-            "description": "Paginated view for a single discovery section."
+            "description": "Paginated view for a single discovery section. Each restaurant includes reservation_times for the requested date and party size when tables are available."
           }
         },
         {

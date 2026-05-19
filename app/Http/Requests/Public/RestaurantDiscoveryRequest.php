@@ -23,6 +23,10 @@ class RestaurantDiscoveryRequest extends FormRequest
             'radius_km' => ['nullable', 'numeric', 'min:0.1'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:20'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'party_size' => ['nullable', 'integer', 'min:1'],
+            'timezone' => ['nullable', 'timezone'],
+            'reservation_times_limit' => ['nullable', 'integer', 'min:1', 'max:10'],
         ];
     }
 
