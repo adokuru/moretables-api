@@ -395,10 +395,28 @@ it('lets authenticated users create update and list restaurant reviews', functio
     $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');
 
     $indexResponse->assertOk()
-        ->assertJsonStructure(['data', 'summary', 'links', 'meta'])
+        ->assertJsonStructure([
+            'data',
+            'summary' => [
+                'reviews_count',
+                'average_rating',
+                'ratings_breakdown',
+                'category_breakdown',
+            ],
+            'links',
+            'meta',
+        ])
         ->assertJsonPath('summary.reviews_count', 1)
         ->assertJsonPath('summary.average_rating', 4)
         ->assertJsonPath('summary.ratings_breakdown.4', 1)
+        ->assertJsonPath('summary.category_breakdown.0.key', 'food')
+        ->assertJsonPath('summary.category_breakdown.0.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.1.key', 'service')
+        ->assertJsonPath('summary.category_breakdown.1.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.2.key', 'ambience')
+        ->assertJsonPath('summary.category_breakdown.2.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.3.key', 'value')
+        ->assertJsonPath('summary.category_breakdown.3.average_rating', 4)
         ->assertJsonPath('links.prev', null)
         ->assertJsonPath('data.0.reviewer.name', 'Ada Okafor')
         ->assertJsonPath('data.0.reviewer.initials', 'AO');

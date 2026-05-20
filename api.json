@@ -1094,12 +1094,117 @@
                                                     "additionalProperties": {
                                                         "type": "string"
                                                     }
+                                                },
+                                                "category_breakdown": {
+                                                    "type": "array",
+                                                    "prefixItems": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "food"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Food"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "service"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Service"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "ambience"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Ambience"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "value"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Value"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "minItems": 4,
+                                                    "maxItems": 4,
+                                                    "additionalItems": false
                                                 }
                                             },
                                             "required": [
                                                 "reviews_count",
                                                 "average_rating",
-                                                "ratings_breakdown"
+                                                "ratings_breakdown",
+                                                "category_breakdown"
                                             ]
                                         },
                                         "links": {
@@ -16180,12 +16285,29 @@
                             },
                             "ratings_breakdown": {
                                 "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
                             }
                         },
                         "required": [
                             "reviews_count",
                             "average_rating",
-                            "ratings_breakdown"
+                            "ratings_breakdown",
+                            "category_breakdown"
                         ]
                     },
                     "discovery_metrics": {
@@ -16221,6 +16343,22 @@
                             },
                             "ratings_breakdown": {
                                 "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
                             }
                         },
                         "required": [
@@ -16230,7 +16368,8 @@
                             "list_adds_count",
                             "reviews_count",
                             "average_rating",
-                            "ratings_breakdown"
+                            "ratings_breakdown",
+                            "category_breakdown"
                         ]
                     },
                     "media": {

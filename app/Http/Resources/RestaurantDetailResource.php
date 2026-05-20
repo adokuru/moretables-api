@@ -37,12 +37,14 @@ class RestaurantDetailResource extends JsonResource
             'ratings_breakdown' => $this->resource->getAttribute('ratings_breakdown') ?? (object) collect(range(5, 1))
                 ->mapWithKeys(fn (int $rating): array => [(string) $rating => 0])
                 ->all(),
+            'category_breakdown' => $this->resource->getAttribute('category_breakdown') ?? [],
         ];
 
         $summary = [
             'reviews_count' => $discoveryMetrics['reviews_count'],
             'average_rating' => $discoveryMetrics['average_rating'],
             'ratings_breakdown' => $discoveryMetrics['ratings_breakdown'],
+            'category_breakdown' => $discoveryMetrics['category_breakdown'],
         ];
 
         return [

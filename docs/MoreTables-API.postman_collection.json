@@ -898,7 +898,7 @@
               ]
             }
           },
-          "description": "Public restaurant detail response including a summary with review count, average rating, and ratings_breakdown keyed from 5 to 1."
+          "description": "Public restaurant detail response including summary and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5–1), and category_breakdown (food, service, ambience, value averages)."
         },
         {
           "name": "Restaurant availability",
@@ -1148,7 +1148,7 @@
                 "reviews"
               ]
             },
-            "description": "Public review feed with pagination links, rating breakdown, and presentation-ready reviewer details."
+            "description": "Public review feed with pagination links, summary (reviews_count, average_rating, ratings_breakdown, category_breakdown for food/service/ambience/value), and presentation-ready reviewer details."
           }
         }
       ]
