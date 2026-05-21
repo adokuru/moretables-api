@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\RestaurantDiscoveryRequest;
 use App\Http\Resources\RestaurantListResource;
+use App\Models\Restaurant;
+use App\Services\AvailabilityService;
 use App\Services\RestaurantDiscoveryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 #[Group('Public Restaurants', weight: 2)]
 class PublicRestaurantDiscoveryController extends Controller
 {
-    public function __construct(protected RestaurantDiscoveryService $restaurantDiscoveryService) {}
+    public function __construct(
+        protected RestaurantDiscoveryService $restaurantDiscoveryService,
+        protected AvailabilityService $availabilityService,
+    ) {}
 
     /**
      * Return the homepage discovery rail sections for mobile and web.
@@ -28,7 +34,7 @@ class PublicRestaurantDiscoveryController extends Controller
         foreach ($this->restaurantDiscoveryService->listSections($validated, $limit, $user?->id) as $section => $restaurants) {
             $sections[$section] = [
                 'label' => $this->restaurantDiscoveryService->sectionLabel($section),
-                'restaurants' => RestaurantListResource::collection($restaurants)->resolve($request),
+                'restaurants' => RestaurantListResource::collection($this->withReservationTimes($restaurants, $validated))->resolve($request),
             ];
         }
 
@@ -57,9 +63,34 @@ class PublicRestaurantDiscoveryController extends Controller
         return response()->json([
             'section' => $this->restaurantDiscoveryService->normalizeSection($section),
             'label' => $this->restaurantDiscoveryService->sectionLabel($section),
-            'data' => RestaurantListResource::collection($paginator->getCollection())->resolve($request),
+            'data' => RestaurantListResource::collection($this->withReservationTimes($paginator->getCollection(), $validated))->resolve($request),
             'meta' => $this->paginationMeta($paginator),
         ]);
+    }
+
+    /**
+     * @param  Collection<int, Restaurant>  $restaurants
+     * @param  array<string, mixed>  $validated
+     * @return Collection<int, Restaurant>
+     */
+    protected function withReservationTimes(Collection $restaurants, array $validated): Collection
+    {
+        $date = (string) ($validated['date'] ?? now()->toDateString());
+        $partySize = (int) ($validated['party_size'] ?? 2);
+        $timezone = isset($validated['timezone']) ? (string) $validated['timezone'] : null;
+        $limit = (int) ($validated['reservation_times_limit'] ?? 5);
+
+        return $restaurants->each(function (Restaurant $restaurant) use ($date, $partySize, $timezone, $limit): void {
+            $restaurant->setAttribute('reservation_times', collect($this->availabilityService->listAvailableSlots(
+                restaurant: $restaurant,
+                date: $date,
+                partySize: $partySize,
+                requesterTimezone: $timezone,
+            ))
+                ->take($limit)
+                ->values()
+                ->all());
+        });
     }
 
     /**

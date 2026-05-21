@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantReview;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
+use App\Services\RestaurantReviewSummaryService;
 use App\Services\RestaurantSearchService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
@@ -25,6 +26,7 @@ class PublicRestaurantController extends Controller
     public function __construct(
         protected AvailabilityService $availabilityService,
         protected RestaurantSearchService $restaurantSearchService,
+        protected RestaurantReviewSummaryService $reviewSummary,
     ) {}
 
     public function search(RestaurantSearchRequest $request): JsonResponse
@@ -150,6 +152,11 @@ class PublicRestaurantController extends Controller
             ->withAvg('reviews as average_rating', 'rating')
             ->whereKey($restaurant->getKey())
             ->firstOrFail();
+
+        $reviewSummary = $this->reviewSummary->summarize($restaurant->reviews());
+
+        $restaurant->setAttribute('ratings_breakdown', (object) $reviewSummary['ratings_breakdown']);
+        $restaurant->setAttribute('category_breakdown', $reviewSummary['category_breakdown']);
 
         return RestaurantDetailResource::make($restaurant->load([
             'cuisines',

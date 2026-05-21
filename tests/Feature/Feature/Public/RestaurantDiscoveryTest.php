@@ -3,7 +3,11 @@
 use App\Models\Organization;
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantMealSchedule;
+use App\Models\RestaurantMealType;
+use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
+use App\Models\RestaurantTable;
 use App\Models\RestaurantView;
 use App\Models\SavedRestaurant;
 use App\Models\User;
@@ -38,6 +42,7 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         'organization_id' => $organization->id,
         'name' => 'Saved Champion',
         'slug' => 'saved-champion',
+        'timezone' => 'Africa/Lagos',
         'created_at' => now()->subDays(4),
         'updated_at' => now()->subDays(4),
     ]);
@@ -112,6 +117,31 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         'sort_order' => 0,
     ]);
 
+    RestaurantPolicy::factory()->create([
+        'restaurant_id' => $savedChampion->id,
+        'reservation_duration_minutes' => 120,
+    ]);
+
+    RestaurantTable::factory()->create([
+        'restaurant_id' => $savedChampion->id,
+        'dining_area_id' => null,
+        'max_capacity' => 4,
+    ]);
+
+    $tomorrow = now('Africa/Lagos')->addDay();
+    $dinner = RestaurantMealType::factory()->create([
+        'restaurant_id' => $savedChampion->id,
+        'name' => 'Dinner',
+    ]);
+
+    RestaurantMealSchedule::create([
+        'restaurant_id' => $savedChampion->id,
+        'restaurant_meal_type_id' => $dinner->id,
+        'day_of_week' => $tomorrow->dayOfWeek,
+        'opens_at' => '18:00:00',
+        'closes_at' => '21:00:00',
+    ]);
+
     $reviewers = User::factory()->count(3)->create();
 
     RestaurantReview::factory()->create([
@@ -153,12 +183,15 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
             ],
         ]);
 
-    $sectionResponse = $this->getJson('/api/v1/restaurants/discovery/top-saved?per_page=2');
+    $sectionResponse = $this->getJson('/api/v1/restaurants/discovery/top-saved?per_page=2&date='.$tomorrow->toDateString().'&party_size=2&reservation_times_limit=2');
 
     $sectionResponse->assertOk()
         ->assertJsonPath('section', 'top_saved')
         ->assertJsonPath('label', 'Top Saved')
         ->assertJsonPath('data.0.id', $savedChampion->id)
+        ->assertJsonCount(2, 'data.0.reservation_times')
+        ->assertJsonPath('data.0.reservation_times.0.local_starts_at', $tomorrow->copy()->setTime(18, 0)->toIso8601String())
+        ->assertJsonPath('data.0.reservation_times.1.local_starts_at', $tomorrow->copy()->setTime(18, 15)->toIso8601String())
         ->assertJsonPath('meta.per_page', 2);
 
     $lineupSectionResponse = $this->getJson('/api/v1/restaurants/discovery/moretable-lineup?per_page=2');
@@ -362,10 +395,28 @@ it('lets authenticated users create update and list restaurant reviews', functio
     $indexResponse = $this->getJson('/api/v1/restaurants/'.$restaurant->slug.'/reviews');
 
     $indexResponse->assertOk()
-        ->assertJsonStructure(['data', 'summary', 'links', 'meta'])
+        ->assertJsonStructure([
+            'data',
+            'summary' => [
+                'reviews_count',
+                'average_rating',
+                'ratings_breakdown',
+                'category_breakdown',
+            ],
+            'links',
+            'meta',
+        ])
         ->assertJsonPath('summary.reviews_count', 1)
         ->assertJsonPath('summary.average_rating', 4)
         ->assertJsonPath('summary.ratings_breakdown.4', 1)
+        ->assertJsonPath('summary.category_breakdown.0.key', 'food')
+        ->assertJsonPath('summary.category_breakdown.0.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.1.key', 'service')
+        ->assertJsonPath('summary.category_breakdown.1.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.2.key', 'ambience')
+        ->assertJsonPath('summary.category_breakdown.2.average_rating', 4)
+        ->assertJsonPath('summary.category_breakdown.3.key', 'value')
+        ->assertJsonPath('summary.category_breakdown.3.average_rating', 4)
         ->assertJsonPath('links.prev', null)
         ->assertJsonPath('data.0.reviewer.name', 'Ada Okafor')
         ->assertJsonPath('data.0.reviewer.initials', 'AO');

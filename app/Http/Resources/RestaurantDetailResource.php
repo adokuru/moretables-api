@@ -34,6 +34,17 @@ class RestaurantDetailResource extends JsonResource
             'average_rating' => $this->resource->getAttribute('average_rating') !== null
                 ? round((float) $this->resource->getAttribute('average_rating'), 2)
                 : 0,
+            'ratings_breakdown' => $this->resource->getAttribute('ratings_breakdown') ?? (object) collect(range(5, 1))
+                ->mapWithKeys(fn (int $rating): array => [(string) $rating => 0])
+                ->all(),
+            'category_breakdown' => $this->resource->getAttribute('category_breakdown') ?? [],
+        ];
+
+        $summary = [
+            'reviews_count' => $discoveryMetrics['reviews_count'],
+            'average_rating' => $discoveryMetrics['average_rating'],
+            'ratings_breakdown' => $discoveryMetrics['ratings_breakdown'],
+            'category_breakdown' => $discoveryMetrics['category_breakdown'],
         ];
 
         return [
@@ -101,6 +112,7 @@ class RestaurantDetailResource extends JsonResource
                 'sort_order' => $c->sort_order,
             ])->values()),
             'menu_documents' => MediaAssetResource::collection($menuDocuments),
+            'summary' => $summary,
             'discovery_metrics' => $discoveryMetrics,
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
             'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [

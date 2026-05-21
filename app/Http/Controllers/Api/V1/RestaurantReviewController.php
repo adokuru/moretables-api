@@ -9,6 +9,7 @@ use App\Http\Resources\PublicRestaurantReviewResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantReview;
 use App\RestaurantStatus;
+use App\Services\RestaurantReviewSummaryService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,10 @@ use Illuminate\Validation\ValidationException;
 #[Group('Restaurant Reviews', weight: 6)]
 class RestaurantReviewController extends Controller
 {
+    public function __construct(
+        private readonly RestaurantReviewSummaryService $reviewSummary,
+    ) {}
+
     /**
      * List public reviews and summary stats for a restaurant.
      */
@@ -35,26 +40,11 @@ class RestaurantReviewController extends Controller
             ->paginate($this->perPage($request, 15, 50))
             ->appends($request->query());
 
-        $summary = $restaurant->reviews()
-            ->selectRaw('count(*) as reviews_count, avg(rating) as average_rating')
-            ->first();
-        $ratingsBreakdown = $restaurant->reviews()
-            ->selectRaw('round(rating) as rating_bucket, count(*) as aggregate')
-            ->groupBy('rating_bucket')
-            ->get()
-            ->mapWithKeys(fn (RestaurantReview $review): array => [
-                (string) (int) round((float) $review->rating_bucket) => (int) $review->aggregate,
-            ]);
+        $summary = $this->reviewSummary->summarize($restaurant->reviews());
 
         return response()->json([
             'data' => PublicRestaurantReviewResource::collection($reviews->getCollection())->resolve($request),
-            'summary' => [
-                'reviews_count' => (int) ($summary?->reviews_count ?? 0),
-                'average_rating' => $summary?->average_rating !== null ? round((float) $summary->average_rating, 2) : null,
-                'ratings_breakdown' => collect(range(5, 1))
-                    ->mapWithKeys(fn (int $rating): array => [(string) $rating => (int) ($ratingsBreakdown[$rating] ?? 0)])
-                    ->all(),
-            ],
+            'summary' => $summary,
             'links' => [
                 'first' => $reviews->url(1),
                 'last' => $reviews->url($reviews->lastPage()),

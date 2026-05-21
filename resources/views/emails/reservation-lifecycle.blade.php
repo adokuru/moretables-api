@@ -79,7 +79,11 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 
 {{-- Subtitle --}}
 <tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">{{ $subtitle }}</p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">{{ $title }}</p>
+</td></tr>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="left">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $subtitle }}</p>
 </td></tr>
 
 {{-- Spacer --}}
@@ -89,17 +93,34 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 <tr><td align="left">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
 <tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Restaurant: <strong>{{ $restaurantName }}</strong></p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;"><strong>{{ $restaurantName }}</strong></p>
 </td></tr>
 <tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Date: <strong>{{ $formattedDate }}</strong></p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $tableInfo }}</p>
 </td></tr>
 <tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Time: <strong>{{ $formattedTime }}</strong></p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Name: <strong>{{ $guestName }}</strong></p>
 </td></tr>
 <tr><td>
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Guests: <strong>{{ $partySize }} {{ $partySize === 1 ? 'Guest' : 'Guests' }}</strong></p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Confirmation #: <strong>{{ $confirmationNumber }}</strong></p>
 </td></tr>
+@if($showRestaurantContactDetails)
+@if(filled($addressLineOne))
+<tr><td style="padding-top:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $addressLineOne }}</p>
+</td></tr>
+@endif
+@if(filled($addressLineTwo))
+<tr><td style="padding-top:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $addressLineTwo }}</p>
+</td></tr>
+@endif
+@if(filled($restaurantPhone))
+<tr><td style="padding-top:6px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $restaurantPhone }}</p>
+</td></tr>
+@endif
+@endif
 </table>
 </td></tr>
 
@@ -122,6 +143,18 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 <tr><td align="left">
 <a href="{{ $ctaUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">{{ $ctaLabel }}</a>
 </td></tr>
+@if(filled($menuUrl))
+<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="left">
+<a href="{{ $menuUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">See Menu</a>
+</td></tr>
+@endif
+@if(filled($directionsUrl))
+<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="left">
+<a href="{{ $directionsUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">Get Directions</a>
+</td></tr>
+@endif
 
 {{-- Spacer --}}
 <tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>

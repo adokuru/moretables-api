@@ -3,6 +3,7 @@
 use App\Models\RestaurantHour;
 use App\Models\RestaurantMealSchedule;
 use App\Models\RestaurantMealType;
+use App\Models\RestaurantTable;
 use App\RestaurantStatus;
 use Carbon\Carbon;
 
@@ -87,6 +88,36 @@ it('generates slots 15 minutes apart using meal schedules', function () {
 
     $diff = (int) Carbon::parse($slots[0]['local_starts_at'])->diffInMinutes(Carbon::parse($slots[1]['local_starts_at']));
     expect($diff)->toBe(15);
+});
+
+it('returns slots for solo diners when the smallest table has a minimum capacity of two', function () {
+    $data = createBookableRestaurant();
+    $restaurant = $data['restaurant'];
+    $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
+
+    RestaurantTable::query()->where('restaurant_id', $restaurant->id)->update([
+        'min_capacity' => 2,
+        'max_capacity' => 2,
+    ]);
+
+    $tomorrow = Carbon::tomorrow('UTC');
+    $dayOfWeek = $tomorrow->dayOfWeek;
+
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
+    RestaurantHour::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'day_of_week' => $dayOfWeek,
+        'opens_at' => '18:00',
+        'closes_at' => '21:00',
+        'is_closed' => false,
+    ]);
+
+    $response = $this->getJson(availUrl($restaurant->slug, $tomorrow->format('Y-m-d'), 1));
+
+    $response->assertOk();
+
+    expect($response->json('slots'))->not->toBeEmpty();
+    expect(Carbon::parse($response->json('slots.0.local_starts_at'))->format('H:i'))->toBe('18:00');
 });
 
 // ── Meal schedules preferred over legacy hours ────────────────────────────────

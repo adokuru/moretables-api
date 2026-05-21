@@ -626,6 +626,50 @@
                             "minimum": 1,
                             "maximum": 100
                         }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "party_size",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reservation_times_limit",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 10
+                        }
                     }
                 ],
                 "responses": {
@@ -771,6 +815,50 @@
                             ],
                             "minimum": 1,
                             "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "party_size",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reservation_times_limit",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 10
                         }
                     }
                 ],
@@ -1006,12 +1094,117 @@
                                                     "additionalProperties": {
                                                         "type": "string"
                                                     }
+                                                },
+                                                "category_breakdown": {
+                                                    "type": "array",
+                                                    "prefixItems": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "food"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Food"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "service"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Service"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "ambience"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Ambience"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "key": {
+                                                                    "type": "string",
+                                                                    "const": "value"
+                                                                },
+                                                                "label": {
+                                                                    "type": "string",
+                                                                    "const": "Value"
+                                                                },
+                                                                "average_rating": {
+                                                                    "type": [
+                                                                        "number",
+                                                                        "null"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "key",
+                                                                "label",
+                                                                "average_rating"
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "minItems": 4,
+                                                    "maxItems": 4,
+                                                    "additionalItems": false
                                                 }
                                             },
                                             "required": [
                                                 "reviews_count",
                                                 "average_rating",
-                                                "ratings_breakdown"
+                                                "ratings_breakdown",
+                                                "category_breakdown"
                                             ]
                                         },
                                         "links": {
@@ -16071,6 +16264,52 @@
                             "$ref": "#/components/schemas/MediaAssetResource"
                         }
                     },
+                    "summary": {
+                        "type": "object",
+                        "properties": {
+                            "reviews_count": {
+                                "type": "integer"
+                            },
+                            "average_rating": {
+                                "anyOf": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "reviews_count",
+                            "average_rating",
+                            "ratings_breakdown",
+                            "category_breakdown"
+                        ]
+                    },
                     "discovery_metrics": {
                         "type": "object",
                         "properties": {
@@ -16101,6 +16340,25 @@
                                         ]
                                     }
                                 ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
                             }
                         },
                         "required": [
@@ -16109,7 +16367,9 @@
                             "saves_count",
                             "list_adds_count",
                             "reviews_count",
-                            "average_rating"
+                            "average_rating",
+                            "ratings_breakdown",
+                            "category_breakdown"
                         ]
                     },
                     "media": {
@@ -16213,6 +16473,7 @@
                     "featured_image",
                     "gallery_images",
                     "menu_documents",
+                    "summary",
                     "discovery_metrics"
                 ],
                 "title": "RestaurantDetailResource"
@@ -16269,6 +16530,9 @@
                         "type": "string"
                     },
                     "cuisines": {
+                        "type": "string"
+                    },
+                    "reservation_times": {
                         "type": "string"
                     },
                     "has_saved": {
@@ -16660,7 +16924,10 @@
                         "maxLength": 255
                     },
                     "business_website": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "uri",
                         "maxLength": 2048
                     },
@@ -16687,15 +16954,24 @@
                         "maxLength": 255
                     },
                     "business_city": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
                     "business_state": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
                     "business_country": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 100
                     },
                     "restaurants_count": {
@@ -16765,15 +17041,24 @@
                                     "maxLength": 100
                                 },
                                 "average_price_range": {
-                                    "type": "string",
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
                                     "maxLength": 100
                                 },
                                 "dining_style": {
-                                    "type": "string",
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
                                     "maxLength": 100
                                 },
                                 "dress_code": {
-                                    "type": "string",
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
                                     "maxLength": 100
                                 },
                                 "country": {
@@ -16792,7 +17077,10 @@
                                     "maxLength": 100
                                 },
                                 "address_line_1": {
-                                    "type": "string",
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
                                     "maxLength": 255
                                 },
                                 "address_line_2": {
@@ -16819,7 +17107,10 @@
                                     "maximum": 180
                                 },
                                 "hours": {
-                                    "type": "array",
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
                                     "items": {
                                         "type": "object",
                                         "properties": {
@@ -16864,7 +17155,10 @@
                                     }
                                 },
                                 "payment_options": {
-                                    "type": "array",
+                                    "type": [
+                                        "array",
+                                        "null"
+                                    ],
                                     "items": {
                                         "type": "string",
                                         "maxLength": 50
@@ -16894,23 +17188,38 @@
                                     "maxItems": 10
                                 },
                                 "total_seating_capacity": {
-                                    "type": "integer",
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
                                     "minimum": 1
                                 },
                                 "number_of_tables": {
-                                    "type": "integer",
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
                                     "minimum": 1
                                 },
                                 "booking_window_days": {
-                                    "type": "integer",
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
                                     "minimum": 1
                                 },
                                 "reservation_duration_minutes": {
-                                    "type": "integer",
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
                                     "minimum": 30
                                 },
                                 "menu": {
-                                    "type": "object",
+                                    "type": [
+                                        "object",
+                                        "null"
+                                    ],
                                     "properties": {
                                         "mode": {
                                             "type": "string",
@@ -16978,29 +17287,15 @@
                                             },
                                             "minItems": 1
                                         }
-                                    },
-                                    "required": [
-                                        "mode"
-                                    ]
+                                    }
                                 }
                             },
                             "required": [
                                 "name",
                                 "phone",
                                 "cuisine_type",
-                                "average_price_range",
-                                "dining_style",
-                                "dress_code",
                                 "country",
-                                "city",
-                                "address_line_1",
-                                "hours",
-                                "payment_options",
-                                "total_seating_capacity",
-                                "number_of_tables",
-                                "booking_window_days",
-                                "reservation_duration_minutes",
-                                "menu"
+                                "city"
                             ]
                         },
                         "minItems": 1
@@ -17013,10 +17308,6 @@
                     "owner_phone",
                     "owner_email",
                     "business_email",
-                    "business_website",
-                    "business_city",
-                    "business_state",
-                    "business_country",
                     "restaurants_count",
                     "restaurants"
                 ],
@@ -17199,6 +17490,12 @@
                             "null"
                         ]
                     },
+                    "internal_notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "website": {
                         "type": [
                             "string",
@@ -17313,6 +17610,61 @@
                             "maxLength": 120
                         }
                     },
+                    "cuisines": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "policy": {
+                        "type": "object",
+                        "properties": {
+                            "reservation_duration_minutes": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 30
+                            },
+                            "booking_window_days": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 1
+                            },
+                            "cancellation_cutoff_hours": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 0
+                            },
+                            "min_party_size": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 1
+                            },
+                            "max_party_size": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "deposit_required": {
+                                "type": [
+                                    "boolean",
+                                    "null"
+                                ]
+                            }
+                        }
+                    },
                     "gallery_images": {
                         "type": [
                             "array",
@@ -17348,6 +17700,40 @@
                                 "integer",
                                 "null"
                             ]
+                        }
+                    },
+                    "hours": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "day_of_week": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                },
+                                "opens_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "closes_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "is_closed": {
+                                    "type": [
+                                        "boolean",
+                                        "null"
+                                    ]
+                                }
+                            }
                         }
                     }
                 },
@@ -18622,6 +19008,12 @@
                             "null"
                         ]
                     },
+                    "internal_notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "website": {
                         "type": [
                             "string",
@@ -18736,6 +19128,61 @@
                             "maxLength": 120
                         }
                     },
+                    "cuisines": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "policy": {
+                        "type": "object",
+                        "properties": {
+                            "reservation_duration_minutes": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 30
+                            },
+                            "booking_window_days": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 1
+                            },
+                            "cancellation_cutoff_hours": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 0
+                            },
+                            "min_party_size": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 1
+                            },
+                            "max_party_size": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "deposit_required": {
+                                "type": [
+                                    "boolean",
+                                    "null"
+                                ]
+                            }
+                        }
+                    },
                     "gallery_images": {
                         "type": [
                             "array",
@@ -18771,6 +19218,40 @@
                                 "integer",
                                 "null"
                             ]
+                        }
+                    },
+                    "hours": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "day_of_week": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 6
+                                },
+                                "opens_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "closes_at": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "is_closed": {
+                                    "type": [
+                                        "boolean",
+                                        "null"
+                                    ]
+                                }
+                            }
                         }
                     }
                 },

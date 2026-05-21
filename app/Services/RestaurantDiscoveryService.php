@@ -159,7 +159,13 @@ class RestaurantDiscoveryService
         $hasCoordinates = isset($filters['latitude'], $filters['longitude']);
 
         return Restaurant::query()
-            ->with(['cuisines', 'media'])
+            ->with([
+                'cuisines',
+                'media',
+                'hours' => fn ($query) => $query->orderBy('day_of_week'),
+                'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+                'policy',
+            ])
             ->where('status', RestaurantStatus::Active->value)
             ->when($userId !== null, function (Builder $query) use ($userId): void {
                 $query->withExists([

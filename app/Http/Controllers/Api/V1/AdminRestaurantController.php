@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantPolicy;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
 use App\Services\ScopedRoleAssignmentService;
 use App\UserAuthMethod;
@@ -29,6 +30,7 @@ class AdminRestaurantController extends Controller
     public function __construct(
         protected MediaLibraryService $mediaLibraryService,
         protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
+        protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
     ) {}
 
     #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
@@ -100,11 +102,15 @@ class AdminRestaurantController extends Controller
                 'gallery_images',
                 'gallery_image_alt_texts',
                 'menu_document',
+                'cuisines',
+                'hours',
+                'policy',
             ])->toArray(),
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
         ]);
 
         RestaurantPolicy::query()->firstOrCreate(['restaurant_id' => $restaurant->id]);
+        $this->syncRestaurantFeatures($restaurant, $validated);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
         $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
@@ -118,6 +124,7 @@ class AdminRestaurantController extends Controller
                 'hours',
                 'menuItems.media',
                 'diningAreas.tables',
+                'galleryCategories',
             ])),
         ], 201);
     }
@@ -134,6 +141,7 @@ class AdminRestaurantController extends Controller
             'hours',
             'diningAreas.tables',
             'menuItems.media',
+            'galleryCategories',
         ]));
     }
 
@@ -153,9 +161,13 @@ class AdminRestaurantController extends Controller
                 'gallery_images',
                 'gallery_image_alt_texts',
                 'menu_document',
+                'cuisines',
+                'hours',
+                'policy',
             ])->toArray(),
         );
 
+        $this->syncRestaurantFeatures($restaurant, $validated);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
         $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
@@ -169,6 +181,7 @@ class AdminRestaurantController extends Controller
                 'hours',
                 'menuItems.media',
                 'diningAreas.tables',
+                'galleryCategories',
             ])),
         ]);
     }
@@ -222,5 +235,35 @@ class AdminRestaurantController extends Controller
         return response()->json([
             'message' => 'Restaurant deleted successfully.',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncRestaurantFeatures(Restaurant $restaurant, array $validated): void
+    {
+        if (array_key_exists('cuisines', $validated) && is_array($validated['cuisines'])) {
+            $this->cuisineOptionRestaurantSyncService->syncFromNames(
+                $restaurant,
+                $validated['cuisines'],
+            );
+        }
+
+        if (array_key_exists('hours', $validated) && is_array($validated['hours'])) {
+            foreach ($validated['hours'] as $hour) {
+                $restaurant->hours()->updateOrCreate(
+                    ['day_of_week' => $hour['day_of_week']],
+                    [
+                        'opens_at' => $hour['opens_at'] ?? null,
+                        'closes_at' => $hour['closes_at'] ?? null,
+                        'is_closed' => $hour['is_closed'] ?? false,
+                    ],
+                );
+            }
+        }
+
+        if (array_key_exists('policy', $validated) && is_array($validated['policy'])) {
+            $restaurant->policy()->updateOrCreate(['restaurant_id' => $restaurant->id], $validated['policy']);
+        }
     }
 }

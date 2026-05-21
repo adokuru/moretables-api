@@ -6,19 +6,19 @@
 Name: {!! $guestName !!}
 Confirmation #: {!! $confirmationNumber !!}
 @if($showRestaurantContactDetails)
-@if($addressLineOne)
+@if(filled($addressLineOne))
 {!! $addressLineOne !!}
 @endif
-@if($addressLineTwo)
+@if(filled($addressLineTwo))
 {!! $addressLineTwo !!}
 @endif
-@if($restaurantPhone)
+@if(filled($restaurantPhone))
 {!! $restaurantPhone !!}
 @endif
 @endif
-@if($menuUrl)
+@if(filled($menuUrl))
 See Menu: {!! $menuUrl !!}
 @endif
-@if($directionsUrl)
+@if(filled($directionsUrl))
 Get Directions: {!! $directionsUrl !!}
 @endif

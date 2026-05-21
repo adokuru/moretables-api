@@ -76,6 +76,52 @@ it('allows business admins to onboard a business with multiple restaurants', fun
     expect($pdfRestaurant->getMedia('menu_documents'))->toHaveCount(1);
 });
 
+it('allows business admins to onboard a business with the minimal restaurant upload fields', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->postJson('/api/v1/admin/organizations/onboard', [
+        'business_name' => 'Minimal Restaurant Group',
+        'business_phone' => '+2348000000300',
+        'owner_name' => 'Minimal Owner',
+        'owner_phone' => '+2348000000301',
+        'owner_email' => 'minimal-owner@example.com',
+        'business_email' => 'minimal@example.com',
+        'restaurants_count' => 1,
+        'restaurants' => [
+            [
+                'name' => 'Minimal Bistro',
+                'cuisine_type' => 'Nigerian',
+                'phone' => '+2348000000302',
+                'country' => 'Nigeria',
+                'city' => 'Lagos',
+            ],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('organization.business_email', 'minimal@example.com')
+        ->assertJsonPath('organization.city', 'Lagos')
+        ->assertJsonPath('organization.country', 'Nigeria')
+        ->assertJsonPath('restaurants.0.name', 'Minimal Bistro')
+        ->assertJsonPath('restaurants.0.city', 'Lagos')
+        ->assertJsonPath('restaurants.0.country', 'Nigeria')
+        ->assertJsonPath('restaurants.0.policy.booking_window_days', 30)
+        ->assertJsonPath('restaurants.0.policy.reservation_duration_minutes', 120)
+        ->assertJsonFragment(['Nigerian']);
+
+    $restaurant = Restaurant::query()->where('name', 'Minimal Bistro')->firstOrFail();
+
+    expect($restaurant->hours()->count())->toBe(0);
+    expect($restaurant->tables()->count())->toBe(0);
+    expect($restaurant->menuItems()->count())->toBe(0);
+});
+
 it('validates onboarding request counts and menu payloads', function (Closure $mutate, string $errorField) {
     Storage::fake('public');
     $this->seed(RoleAndPermissionSeeder::class);

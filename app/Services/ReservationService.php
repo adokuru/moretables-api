@@ -378,7 +378,7 @@ class ReservationService
 
     public function assignTable(Reservation $reservation, RestaurantTable $table, User $actor): Reservation
     {
-        if ($table->max_capacity < $reservation->party_size || $table->min_capacity > $reservation->party_size) {
+        if ($table->max_capacity < $reservation->party_size || ((int) $reservation->party_size > 1 && $table->min_capacity > $reservation->party_size)) {
             throw ValidationException::withMessages([
                 'restaurant_table_id' => ['Selected table cannot accommodate this party size.'],
             ]);

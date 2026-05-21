@@ -75,7 +75,20 @@ it('includes grouped menu items in the public restaurant detail response', funct
 
     RestaurantReview::factory()->create([
         'restaurant_id' => $restaurant->id,
+        'rating' => 5,
+        'food_rating' => 5,
+        'service_rating' => 4,
+        'ambience_rating' => 4,
+        'value_rating' => 4,
+    ]);
+
+    RestaurantReview::factory()->create([
+        'restaurant_id' => $restaurant->id,
         'rating' => 4,
+        'food_rating' => 3,
+        'service_rating' => 5,
+        'ambience_rating' => 4,
+        'value_rating' => 5,
     ]);
 
     $response = $this->getJson('/api/v1/restaurants/'.$restaurant->slug);
@@ -92,8 +105,45 @@ it('includes grouped menu items in the public restaurant detail response', funct
         ->assertJsonPath('data.discovery_metrics.views_count', 0)
         ->assertJsonPath('data.discovery_metrics.saves_count', 0)
         ->assertJsonPath('data.discovery_metrics.list_adds_count', 0)
-        ->assertJsonPath('data.discovery_metrics.reviews_count', 1)
-        ->assertJsonPath('data.discovery_metrics.average_rating', 4);
+        ->assertJsonPath('data.discovery_metrics.reviews_count', 2)
+        ->assertJsonPath('data.discovery_metrics.average_rating', 4.5)
+        ->assertJsonPath('data.discovery_metrics.ratings_breakdown', [
+            '5' => 1,
+            '4' => 1,
+            '3' => 0,
+            '2' => 0,
+            '1' => 0,
+        ])
+        ->assertJsonPath('data.summary.reviews_count', 2)
+        ->assertJsonPath('data.summary.average_rating', 4.5)
+        ->assertJsonPath('data.summary.ratings_breakdown', [
+            '5' => 1,
+            '4' => 1,
+            '3' => 0,
+            '2' => 0,
+            '1' => 0,
+        ])
+        ->assertJsonPath('data.summary.category_breakdown.0', [
+            'key' => 'food',
+            'label' => 'Food',
+            'average_rating' => 4,
+        ])
+        ->assertJsonPath('data.summary.category_breakdown.1', [
+            'key' => 'service',
+            'label' => 'Service',
+            'average_rating' => 4.5,
+        ])
+        ->assertJsonPath('data.summary.category_breakdown.2', [
+            'key' => 'ambience',
+            'label' => 'Ambience',
+            'average_rating' => 4,
+        ])
+        ->assertJsonPath('data.summary.category_breakdown.3', [
+            'key' => 'value',
+            'label' => 'Value',
+            'average_rating' => 4.5,
+        ])
+        ->assertJsonPath('data.discovery_metrics.category_breakdown.0.key', 'food');
 });
 
 it('includes has_saved in the public restaurant detail response for authenticated users', function () {
