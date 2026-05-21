@@ -13,7 +13,7 @@ use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[Group('Merchant Restaurant Profile', weight: 30)]
+#[Group('Merchant Onboarding', weight: 35)]
 class MerchantRestaurantMediaController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}

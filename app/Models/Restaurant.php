@@ -216,6 +216,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantGalleryCategory::class)->orderBy('sort_order')->orderBy('name');
     }
 
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(RestaurantInternalNote::class)->latest();
+    }
+
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);

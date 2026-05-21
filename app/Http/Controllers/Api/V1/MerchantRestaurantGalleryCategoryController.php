@@ -11,7 +11,7 @@ use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
-#[Group('Merchant Gallery', weight: 32)]
+#[Group('Merchant Onboarding', weight: 35)]
 class MerchantRestaurantGalleryCategoryController extends Controller
 {
     public function __construct(protected MediaLibraryService $mediaLibraryService) {}
