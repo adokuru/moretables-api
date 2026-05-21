@@ -298,7 +298,7 @@ class MerchantRestaurantOnboardingController extends Controller
                 'handle' => $h->handle,
             ])->values(),
             'featured_image' => $featuredMedia ? [
-                'url' => $featuredMedia->getFullUrl(),
+                'original_url' => $featuredMedia->getFullUrl(),
                 'thumb_url' => $featuredMedia->hasGeneratedConversion('thumb')
                     ? $featuredMedia->getUrl('thumb')
                     : null,
