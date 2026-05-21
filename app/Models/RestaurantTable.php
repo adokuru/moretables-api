@@ -33,6 +33,8 @@ class RestaurantTable extends Model
         'height',
         'rotation',
         'color',
+        'layout_type',
+        'chair_color',
     ];
 
     protected function casts(): array

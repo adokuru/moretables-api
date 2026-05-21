@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreDiningAreaRequest;
+use App\Http\Requests\Merchant\SyncDiningAreaLayoutRequest;
 use App\Http\Requests\Merchant\UpdateDiningAreaRequest;
 use App\Http\Resources\DiningAreaResource;
 use App\Models\DiningArea;
@@ -69,6 +70,37 @@ class MerchantDiningAreaController extends Controller
 
         return response()->json([
             'message' => 'Dining area deleted successfully.',
+        ]);
+    }
+
+    public function syncLayout(SyncDiningAreaLayoutRequest $request, Restaurant $restaurant, DiningArea $diningArea): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
+        abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
+
+        $rotationMap = ['r1' => 0, 'r2' => 90, 'r3' => 180, 'r4' => 270];
+
+        $diningArea->tables()->delete();
+
+        foreach ($request->validated()['tables'] as $index => $table) {
+            $diningArea->tables()->create([
+                'restaurant_id' => $restaurant->id,
+                'name'          => $table['table_label'],
+                'layout_type'   => $table['layout_type'],
+                'x_position'    => $table['x_position'],
+                'y_position'    => $table['y_position'],
+                'color'         => $table['table_color'] ?? null,
+                'chair_color'   => $table['chair_color'] ?? null,
+                'rotation'      => $rotationMap[$table['rotate'] ?? 'r1'],
+                'min_capacity'  => $table['min_party_size'] ?? null,
+                'max_capacity'  => $table['max_party_size'] ?? 1,
+                'sort_order'    => $index,
+            ]);
+        }
+
+        return response()->json([
+            'message'     => 'Layout saved successfully.',
+            'dining_area' => DiningAreaResource::make($diningArea->refresh()->load('tables')),
         ]);
     }
 }

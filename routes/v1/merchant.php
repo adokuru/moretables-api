@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('dining-areas', [MerchantDiningAreaController::class, 'store']);
         Route::patch('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'update']);
         Route::delete('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'destroy']);
+        Route::put('dining-areas/{diningArea}/layout', [MerchantDiningAreaController::class, 'syncLayout']);
 
         Route::get('tables', [MerchantTableController::class, 'index']);
         Route::post('tables', [MerchantTableController::class, 'store']);
