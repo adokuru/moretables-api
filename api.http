@@ -1,0 +1,233 @@
+@baseUrl = http://127.0.0.1:8000/api/v1
+@contentType = application/json
+@accept = application/json
+
+# Paste values here after each step
+@adminToken = 6|fEqUFemzr7TSLmENuTggLfejYkkgRN1kV0H3p0Jvb04178ab
+@challengeToken = 72bc0a91-313d-41d6-866b-819bc0731cdd
+@merchantToken =
+@organizationId =
+@restaurantId =
+
+
+###############################################################################
+# STEP 1 — Admin Login (triggers 2FA code to laravel.log)
+###############################################################################
+
+# @name adminLogin
+POST {{baseUrl}}/admin/auth/login
+Content-Type: {{contentType}}
+Accept: {{accept}}
+
+{
+  "identifier": "business@moretables.com",
+  "password": "Password123!"
+}
+
+
+###############################################################################
+# STEP 2 — Admin Verify 2FA (paste challenge_token from step 1 above)
+#          Then paste the token from this response into @adminToken
+###############################################################################
+
+# @name adminVerify
+POST {{baseUrl}}/admin/auth/verify-2fa
+Content-Type: {{contentType}}
+Accept: {{accept}}
+
+{
+  "challenge_token": "72bc0a91-313d-41d6-866b-819bc0731cdd",
+  "code": "0297",
+  "device_name": "local-http-client"
+}
+
+
+###############################################################################
+# STEP 3 — Admin: who am I?
+###############################################################################
+
+GET {{baseUrl}}/admin/auth/me
+Accept: {{accept}}
+Authorization: Bearer {{adminToken}}
+
+
+###############################################################################
+# STEP 4 — Onboard a Business (creates org + owner + restaurant)
+#          Owner gets a password reset email → check laravel.log
+###############################################################################
+
+# @name onboard
+POST {{baseUrl}}/admin/organizations/onboard
+Content-Type: {{contentType}}
+Accept: {{accept}}
+Authorization: Bearer {{adminToken}}
+
+{
+  "business_name": "Wally Food",
+  "business_phone": "+2348012345678",
+  "business_email": "infowallyfood@yopmail.com",
+  "business_website": "https://wallyfood.com",
+  "business_city": "Lagos",
+  "business_state": "Lagos",
+  "business_country": "Nigeria",
+  "owner_name": "Wally Owner",
+  "owner_email": "wally@yopmail.com",
+  "owner_phone": "+2348087654321",
+  "restaurants_count": 1,
+  "restaurants": [
+    {
+      "name": "Wally's Kitchen",
+      "phone": "+2348012345678",
+      "cuisine_type": "Nigerian",
+      "average_price_range": "5000 - 15000",
+      "dining_style": "Casual",
+      "dress_code": "Smart Casual",
+      "country": "Nigeria",
+      "city": "Lagos",
+      "address_line_1": "12 Broad Street, Lagos Island",
+      "total_seating_capacity": 50,
+      "number_of_tables": 10,
+      "booking_window_days": 30,
+      "reservation_duration_minutes": 90,
+      "payment_options": ["cash", "card"],
+      "hours": [
+        { "day_of_week": 0, "opens_at": "09:00", "closes_at": "22:00", "is_closed": false },
+        { "day_of_week": 6, "is_closed": true }
+      ],
+      "menu": {
+        "mode": "link",
+        "link": "https://wallyfood.com/menu"
+      }
+    }
+  ]
+}
+
+
+###############################################################################
+# STEP 5 — List all organizations (to grab organizationId)
+###############################################################################
+
+GET {{baseUrl}}/admin/organizations
+Accept: {{accept}}
+Authorization: Bearer {{adminToken}}
+
+
+###############################################################################
+# STEP 6 — Resend owner password reset (if needed)
+###############################################################################
+
+POST {{baseUrl}}/admin/organizations/{{organizationId}}/resend-owner-password-reset
+Accept: {{accept}}
+Authorization: Bearer {{adminToken}}
+
+
+###############################################################################
+# STAFF AUTH
+# After owner sets password via the reset link in laravel.log
+###############################################################################
+
+# STEP 7 — Staff Login (owner logs in here, not admin endpoint)
+# @name staffLogin
+POST {{baseUrl}}/auth/staff/login
+Content-Type: {{contentType}}
+Accept: {{accept}}
+
+{
+  "identifier": "wally@wallyfood.com",
+  "password": "NEW_PASSWORD_AFTER_RESET"
+}
+
+
+# STEP 8 — Staff Verify 2FA
+POST {{baseUrl}}/auth/staff/verify-2fa
+Content-Type: {{contentType}}
+Accept: {{accept}}
+
+{
+  "challenge_token": "{{challengeToken}}",
+  "code": "PASTE_CODE_FROM_LOG",
+  "device_name": "local-http-client"
+}
+
+
+###############################################################################
+# MERCHANT ENDPOINTS (use merchantToken after staff login)
+###############################################################################
+
+# List restaurants for logged-in merchant
+GET {{baseUrl}}/merchant/restaurants
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+# Get restaurant details
+GET {{baseUrl}}/merchant/restaurants/{{restaurantId}}
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+# List staff for a restaurant
+GET {{baseUrl}}/merchant/restaurants/{{restaurantId}}/staff
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+# Add a staff member (they get a password reset email → check laravel.log)
+POST {{baseUrl}}/merchant/restaurants/{{restaurantId}}/staff
+Content-Type: {{contentType}}
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+{
+  "name": "John Staff",
+  "email": "john@wallyfood.com",
+  "phone": "+2348011111111",
+  "role": "restaurant_staff"
+}
+
+
+# List reservations
+GET {{baseUrl}}/merchant/restaurants/{{restaurantId}}/reservations
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+# Create a reservation
+POST {{baseUrl}}/merchant/restaurants/{{restaurantId}}/reservations
+Content-Type: {{contentType}}
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+{
+  "guest_name": "Test Guest",
+  "guest_email": "guest@example.com",
+  "guest_phone": "+2348099999999",
+  "party_size": 2,
+  "reservation_date": "2026-05-25",
+  "reservation_time": "19:00"
+}
+
+
+# List dining areas
+GET {{baseUrl}}/merchant/restaurants/{{restaurantId}}/dining-areas
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+# List tables
+GET {{baseUrl}}/merchant/restaurants/{{restaurantId}}/tables
+Accept: {{accept}}
+Authorization: Bearer {{merchantToken}}
+
+
+###############################################################################
+# FORGOT PASSWORD (for existing staff/owner)
+###############################################################################
+
+POST {{baseUrl}}/auth/password/forgot
+Content-Type: {{contentType}}
+Accept: {{accept}}
+
+{
+  "email": "wally@wallyfood.com"
+}

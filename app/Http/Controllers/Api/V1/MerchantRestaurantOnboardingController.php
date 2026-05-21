@@ -9,7 +9,6 @@ use App\Http\Requests\Merchant\StoreRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingContactRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingDescriptionRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingHoursRequest;
-use App\Http\Requests\Merchant\UpdateRestaurantOnboardingInternalNotesRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingStatusRequest;
 use App\Http\Requests\Merchant\UploadRestaurantOnboardingPhotoRequest;
@@ -105,22 +104,6 @@ class MerchantRestaurantOnboardingController extends Controller
             'message' => 'Description updated successfully.',
             'onboarding_status' => $onboardingStatus,
             'description' => $restaurant->description,
-        ]);
-    }
-
-    public function updateInternalNotes(UpdateRestaurantOnboardingInternalNotesRequest $request, Restaurant $restaurant): JsonResponse
-    {
-        $restaurant->update([
-            'internal_notes' => $request->boolean('skip') ? null : $request->validated('internal_notes'),
-        ]);
-        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
-
-        return response()->json([
-            'message' => $request->boolean('skip')
-                ? 'Internal notes skipped successfully.'
-                : 'Internal notes updated successfully.',
-            'onboarding_status' => $onboardingStatus,
-            'internal_notes' => $restaurant->internal_notes,
         ]);
     }
 
@@ -269,6 +252,40 @@ class MerchantRestaurantOnboardingController extends Controller
             'onboarding_status' => $onboardingStatus,
             'email' => $restaurant->email,
             'contact_email_verified_at' => $restaurant->contact_email_verified_at->toIso8601String(),
+        ]);
+    }
+
+    public function showData(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+
+        $restaurant->loadMissing(['cuisines', 'socialHandles', 'media']);
+
+        $featuredMedia = $restaurant->media->firstWhere('collection_name', 'featured');
+
+        return response()->json([
+            'email' => $restaurant->email,
+            'email_verified' => $restaurant->contact_email_verified_at !== null,
+            'phone' => $restaurant->phone,
+            'website' => $restaurant->website,
+            'average_price_range' => $restaurant->average_price_range,
+            'description' => $restaurant->description,
+            'cuisines' => $restaurant->cuisines->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'is_primary' => (bool) ($c->pivot->is_primary ?? false),
+            ])->values(),
+            'social_handles' => $restaurant->socialHandles->map(fn ($h) => [
+                'platform' => $h->platform,
+                'handle' => $h->handle,
+            ])->values(),
+            'featured_image' => $featuredMedia ? [
+                'original_url' => $featuredMedia->getFullUrl(),
+                'thumb_url' => $featuredMedia->hasGeneratedConversion('thumb')
+                    ? $featuredMedia->getUrl('thumb')
+                    : null,
+            ] : null,
         ]);
     }
 

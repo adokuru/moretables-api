@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreDiningAreaRequest;
+use App\Http\Requests\Merchant\SyncDiningAreaLayoutRequest;
 use App\Http\Requests\Merchant\UpdateDiningAreaRequest;
 use App\Http\Resources\DiningAreaResource;
 use App\Models\DiningArea;
@@ -69,6 +70,67 @@ class MerchantDiningAreaController extends Controller
 
         return response()->json([
             'message' => 'Dining area deleted successfully.',
+        ]);
+    }
+
+    public function syncLayout(SyncDiningAreaLayoutRequest $request, Restaurant $restaurant, DiningArea $diningArea): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
+        abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
+
+        $tables = $request->validated()['tables'];
+
+        // Validate min <= max party size
+        foreach ($tables as $table) {
+            $min = $table['min_party_size'] ?? null;
+            $max = $table['max_party_size'] ?? null;
+            if ($min !== null && $max !== null && $min > $max) {
+                abort(422, "Table \"{$table['table_label']}\": min party size ({$min}) cannot be greater than max party size ({$max}).");
+            }
+        }
+
+        // Validate no overlapping table rectangles
+        $placed = [];
+        foreach ($tables as $table) {
+            $x1 = $table['x_position'];
+            $y1 = $table['y_position'];
+            $x2 = $x1 + ($table['width'] ?? 1);
+            $y2 = $y1 + ($table['height'] ?? 1);
+
+            foreach ($placed as [$rx1, $ry1, $rx2, $ry2, $label]) {
+                if ($x1 < $rx2 && $x2 > $rx1 && $y1 < $ry2 && $y2 > $ry1) {
+                    abort(422, "Table \"{$table['table_label']}\" overlaps with table \"{$label}\" at position ({$x1},{$y1}).");
+                }
+            }
+
+            $placed[] = [$x1, $y1, $x2, $y2, $table['table_label']];
+        }
+
+        $rotationMap = ['r1' => 0, 'r2' => 90, 'r3' => 180, 'r4' => 270];
+
+        $diningArea->tables()->delete();
+
+        foreach ($tables as $index => $table) {
+            $diningArea->tables()->create([
+                'restaurant_id' => $restaurant->id,
+                'name'          => $table['table_label'],
+                'layout_type'   => $table['layout_type'],
+                'x_position'    => $table['x_position'],
+                'y_position'    => $table['y_position'],
+                'width'         => $table['width'] ?? 1,
+                'height'        => $table['height'] ?? 1,
+                'color'         => $table['table_color'] ?? null,
+                'chair_color'   => $table['chair_color'] ?? null,
+                'rotation'      => $rotationMap[$table['rotate'] ?? 'r1'],
+                'min_capacity'  => $table['min_party_size'] ?? 1,
+                'max_capacity'  => $table['max_party_size'] ?? 1,
+                'sort_order'    => $index,
+            ]);
+        }
+
+        return response()->json([
+            'message'     => 'Layout saved successfully.',
+            'dining_area' => DiningAreaResource::make($diningArea->refresh()->load('tables')),
         ]);
     }
 }

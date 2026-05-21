@@ -27,9 +27,10 @@ class MediaLibraryService
                 continue;
             }
 
+            $rawCategoryId = $payload['gallery_category_ids'][$index] ?? null;
             $this->addUploadedFileToCollection($model, $galleryImage, 'gallery', [
                 'alt_text' => $payload['gallery_image_alt_texts'][$index] ?? null,
-                'gallery_category_id' => $payload['gallery_category_ids'][$index] ?? null,
+                'gallery_category_id' => $rawCategoryId !== null ? (int) $rawCategoryId : null,
             ]);
         }
     }

@@ -49,10 +49,22 @@ class Restaurant extends Model implements HasMedia
         'number_of_tables',
         'menu_source',
         'menu_link',
+        'executive_chef',
+        'dietary_options',
+        'beverage_options',
+        'amenities',
+        'smoking_policy',
+        'delivery_options',
+        'safety_policies',
+        'parking_info',
+        'closest_landmark',
+        'private_events_info',
+        'catering_info',
         'payment_options',
         'accessibility_features',
         'onboarding_progress',
         'onboarding_current_step',
+        'onboarding_last_step',
         'is_profile_published',
         'contact_email_verified_at',
         'contact_phone_verified_at',
@@ -67,6 +79,11 @@ class Restaurant extends Model implements HasMedia
             'longitude' => 'decimal:7',
             'total_seating_capacity' => 'integer',
             'number_of_tables' => 'integer',
+            'dietary_options' => 'array',
+            'beverage_options' => 'array',
+            'amenities' => 'array',
+            'smoking_policy' => 'array',
+            'safety_policies' => 'array',
             'payment_options' => 'array',
             'accessibility_features' => 'array',
             'onboarding_progress' => 'array',
@@ -197,6 +214,11 @@ class Restaurant extends Model implements HasMedia
     public function galleryCategories(): HasMany
     {
         return $this->hasMany(RestaurantGalleryCategory::class)->orderBy('sort_order')->orderBy('name');
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(RestaurantInternalNote::class)->latest();
     }
 
     public function userRoles(): HasMany

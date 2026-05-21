@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
@@ -45,7 +46,10 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);
             Route::post('profile-photo', [MerchantRestaurantOnboardingController::class, 'uploadProfilePhoto']);
             Route::patch('description', [MerchantRestaurantOnboardingController::class, 'updateDescription']);
-            Route::patch('internal-notes', [MerchantRestaurantOnboardingController::class, 'updateInternalNotes']);
+            Route::get('internal-notes', [MerchantRestaurantInternalNoteController::class, 'index']);
+            Route::post('internal-notes', [MerchantRestaurantInternalNoteController::class, 'store']);
+            Route::patch('internal-notes/{internalNote}', [MerchantRestaurantInternalNoteController::class, 'update']);
+            Route::delete('internal-notes/{internalNote}', [MerchantRestaurantInternalNoteController::class, 'destroy']);
             Route::put('business-hours', [MerchantRestaurantOnboardingController::class, 'updateBusinessHours']);
             Route::get('meal-types', [MerchantRestaurantOnboardingController::class, 'indexMealTypes']);
             Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);
@@ -53,6 +57,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::delete('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'destroyMealType']);
             Route::post('contact-email/send-code', [MerchantRestaurantOnboardingController::class, 'sendEmailVerificationCode']);
             Route::post('contact-email/verify', [MerchantRestaurantOnboardingController::class, 'verifyEmail']);
+            Route::get('data', [MerchantRestaurantOnboardingController::class, 'showData']);
             Route::get('status', [MerchantRestaurantOnboardingController::class, 'showStatus']);
             Route::patch('status', [MerchantRestaurantOnboardingController::class, 'updateStatus']);
         });
@@ -76,6 +81,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('dining-areas', [MerchantDiningAreaController::class, 'store']);
         Route::patch('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'update']);
         Route::delete('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'destroy']);
+        Route::put('dining-areas/{diningArea}/layout', [MerchantDiningAreaController::class, 'syncLayout']);
 
         Route::get('tables', [MerchantTableController::class, 'index']);
         Route::post('tables', [MerchantTableController::class, 'store']);

@@ -19,6 +19,7 @@ class UpdateRestaurantOnboardingStatusRequest extends FormRequest
     {
         return [
             'is_profile_published' => ['nullable', 'boolean'],
+            'last_step' => ['nullable', 'string', 'max:100'],
         ];
     }
 

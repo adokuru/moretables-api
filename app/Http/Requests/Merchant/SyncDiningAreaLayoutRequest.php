@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Http\Requests\Merchant;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class SyncDiningAreaLayoutRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'tables'                      => ['required', 'array'],
+            'tables.*.layout_type'        => ['required', 'string', 'max:50'],
+            'tables.*.x_position'         => ['required', 'integer', 'min:0'],
+            'tables.*.y_position'         => ['required', 'integer', 'min:0'],
+            'tables.*.table_label'        => ['required', 'string', 'max:20'],
+            'tables.*.table_color'        => ['nullable', 'string', 'max:20', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
+            'tables.*.chair_color'        => ['nullable', 'string', 'max:20', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
+            'tables.*.rotate'             => ['nullable', Rule::in(['r1', 'r2', 'r3', 'r4'])],
+            'tables.*.width'              => ['nullable', 'integer', 'min:1'],
+            'tables.*.height'             => ['nullable', 'integer', 'min:1'],
+            'tables.*.min_party_size'     => ['nullable', 'integer', 'min:1'],
+            'tables.*.max_party_size'     => ['nullable', 'integer', 'min:1'],
+        ];
+    }
+}
