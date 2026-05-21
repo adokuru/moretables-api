@@ -23,6 +23,8 @@ class SyncDiningAreaLayoutRequest extends FormRequest
             'tables.*.table_color'        => ['nullable', 'string', 'max:20', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
             'tables.*.chair_color'        => ['nullable', 'string', 'max:20', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
             'tables.*.rotate'             => ['nullable', Rule::in(['r1', 'r2', 'r3', 'r4'])],
+            'tables.*.width'              => ['nullable', 'integer', 'min:1'],
+            'tables.*.height'             => ['nullable', 'integer', 'min:1'],
             'tables.*.min_party_size'     => ['nullable', 'integer', 'min:1'],
             'tables.*.max_party_size'     => ['nullable', 'integer', 'min:1'],
         ];
