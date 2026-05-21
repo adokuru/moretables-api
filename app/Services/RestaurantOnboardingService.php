@@ -131,6 +131,7 @@ class RestaurantOnboardingService
         $restaurant->loadMissing([
             'cuisines',
             'mealTypes.schedules',
+            'internalNotes',
             'policy',
         ]);
 
@@ -158,6 +159,10 @@ class RestaurantOnboardingService
             RestaurantOnboardingStep::Media->value => $this->stepStatus(
                 $this->mediaComplete($restaurant),
                 $this->mediaStarted($restaurant),
+            ),
+            RestaurantOnboardingStep::InternalNotes->value => $this->stepStatus(
+                $this->internalNotesComplete($restaurant),
+                $this->internalNotesStarted($restaurant),
             ),
             RestaurantOnboardingStep::Policies->value => $this->stepStatus(
                 $this->policiesComplete($restaurant),
@@ -301,6 +306,16 @@ class RestaurantOnboardingService
     private function mediaStarted(Restaurant $restaurant): bool
     {
         return $restaurant->getMedia('gallery')->isNotEmpty() || $this->mediaComplete($restaurant);
+    }
+
+    private function internalNotesComplete(Restaurant $restaurant): bool
+    {
+        return $restaurant->internalNotes->isNotEmpty();
+    }
+
+    private function internalNotesStarted(Restaurant $restaurant): bool
+    {
+        return $this->internalNotesComplete($restaurant);
     }
 
     private function policiesComplete(Restaurant $restaurant): bool

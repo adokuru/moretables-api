@@ -12,6 +12,7 @@ enum RestaurantOnboardingStep: string
     case Hours = 'hours';
     case Meals = 'meals';
     case Media = 'media';
+    case InternalNotes = 'internal_notes';
     case Policies = 'policies';
     case Review = 'review';
     case Published = 'published';
