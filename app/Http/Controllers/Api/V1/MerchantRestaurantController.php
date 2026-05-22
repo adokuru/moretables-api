@@ -85,6 +85,7 @@ class MerchantRestaurantController extends Controller
             'policy',
             'menuItems.media',
             'diningAreas.tables',
+            'activeBillingSubscription.plan',
         ]));
     }
 

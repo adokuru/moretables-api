@@ -49,6 +49,12 @@ class MerchantBillingController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
+        if ($this->billingService->isRestaurantBillable($restaurant)) {
+            return response()->json([
+                'message' => 'You already have an active subscription for this restaurant.',
+            ], 422);
+        }
+
         $plan = BillingPlan::query()
             ->where('slug', $request->validated('plan'))
             ->where('is_active', true)
@@ -56,12 +62,17 @@ class MerchantBillingController extends Controller
 
         $checkout = $this->billingService->initializeCheckout($restaurant, $plan);
 
+        $email = $restaurant->organization?->billing_email
+            ?? $restaurant->organization?->business_email
+            ?? $restaurant->email
+            ?? 'billing@moretables.local';
+
         return response()->json([
             'message' => 'Billing checkout initialized successfully.',
             'checkout' => [
-                'authorization_url' => $checkout['authorization_url'],
-                'access_code' => $checkout['access_code'],
                 'reference' => $checkout['reference'],
+                'email' => $email,
+                'plan_code' => $plan->provider_plan_code,
             ],
             'invoice' => MerchantInvoiceResource::make($checkout['invoice']->load('plan')),
         ], 201);

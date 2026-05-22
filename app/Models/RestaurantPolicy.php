@@ -19,6 +19,7 @@ class RestaurantPolicy extends Model
         'cancellation_cutoff_hours',
         'min_party_size',
         'max_party_size',
+        'large_party_threshold',
         'deposit_required',
     ];
 

@@ -176,6 +176,10 @@ class Restaurant extends Model implements HasMedia
     {
         return $this->hasOne(MerchantSubscription::class)
             ->whereIn('status', ['active', 'trialing'])
+            ->where(function ($q): void {
+                $q->whereNull('current_period_end')
+                    ->orWhere('current_period_end', '>=', now());
+            })
             ->latestOfMany();
     }
 
