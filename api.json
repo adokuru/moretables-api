@@ -48,9 +48,6 @@
             "name": "Merchant Staff"
         },
         {
-            "name": "Merchant Gallery"
-        },
-        {
             "name": "Merchant Floor Plan"
         },
         {
@@ -85,6 +82,9 @@
         },
         {
             "name": "Admin Organizations"
+        },
+        {
+            "name": "Admin Cuisines"
         },
         {
             "name": "Admin Restaurants"
@@ -3883,503 +3883,6 @@
                 }
             }
         },
-        "/merchant/restaurants/{restaurant}/gallery": {
-            "get": {
-                "operationId": "merchantRestaurantMedia.gallery",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "categories": {
-                                            "type": "string"
-                                        },
-                                        "uncategorised": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MediaAssetResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "categories",
-                                        "uncategorised"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/media": {
-            "post": {
-                "operationId": "merchantRestaurantMedia.store",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UploadModelMediaRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Restaurant media uploaded successfully."
-                                        },
-                                        "featured_image": {
-                                            "anyOf": [
-                                                {
-                                                    "$ref": "#/components/schemas/MediaAssetResource"
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ]
-                                        },
-                                        "gallery_images": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MediaAssetResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "featured_image",
-                                        "gallery_images"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/media/{media}": {
-            "patch": {
-                "operationId": "merchantRestaurantMedia.update",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "media",
-                        "in": "path",
-                        "required": true,
-                        "description": "The media ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateMediaAssetRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Restaurant media updated successfully."
-                                        },
-                                        "media": {
-                                            "$ref": "#/components/schemas/MediaAssetResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "media"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            },
-            "delete": {
-                "operationId": "merchantRestaurantMedia.destroy",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "media",
-                        "in": "path",
-                        "required": true,
-                        "description": "The media ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Restaurant media deleted successfully."
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/media/reorder": {
-            "post": {
-                "operationId": "merchantRestaurantMedia.reorder",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ReorderMediaRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Restaurant gallery reordered successfully."
-                                        },
-                                        "gallery_images": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MediaAssetResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "gallery_images"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/media/{media}/feature": {
-            "post": {
-                "operationId": "merchantRestaurantMedia.feature",
-                "tags": [
-                    "Merchant Restaurant Profile"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "media",
-                        "in": "path",
-                        "required": true,
-                        "description": "The media ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Restaurant featured image updated successfully."
-                                        },
-                                        "featured_image": {
-                                            "$ref": "#/components/schemas/MediaAssetResource"
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "featured_image"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
         "/merchant/restaurants/{restaurant}/staff": {
             "get": {
                 "operationId": "merchantRestaurantStaff.index",
@@ -4964,6 +4467,98 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/dining-areas/{diningArea}/layout": {
+            "put": {
+                "operationId": "merchantDiningArea.syncLayout",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "diningArea",
+                        "in": "path",
+                        "required": true,
+                        "description": "The dining area ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SyncDiningAreaLayoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Layout saved successfully."
+                                        },
+                                        "dining_area": {
+                                            "$ref": "#/components/schemas/DiningAreaResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "dining_area"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/tables": {
             "get": {
                 "operationId": "merchantTable.index",
@@ -5357,348 +4952,6 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/gallery/categories": {
-            "get": {
-                "operationId": "merchantRestaurantGalleryCategory.index",
-                "tags": [
-                    "Merchant Gallery"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "categories": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "categories"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            },
-            "post": {
-                "operationId": "merchantRestaurantGalleryCategory.store",
-                "tags": [
-                    "Merchant Gallery"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StoreGalleryCategoryRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Gallery category created successfully."
-                                        },
-                                        "category": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                },
-                                                "sort_order": {
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "required": [
-                                                "id",
-                                                "name",
-                                                "sort_order"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "category"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            }
-        },
-        "/merchant/restaurants/{restaurant}/gallery/categories/{galleryCategory}": {
-            "patch": {
-                "operationId": "merchantRestaurantGalleryCategory.update",
-                "tags": [
-                    "Merchant Gallery"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "galleryCategory",
-                        "in": "path",
-                        "required": true,
-                        "description": "The gallery category ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UpdateGalleryCategoryRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Gallery category updated successfully."
-                                        },
-                                        "category": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                },
-                                                "sort_order": {
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "required": [
-                                                "id",
-                                                "name",
-                                                "sort_order"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "message",
-                                        "category"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    }
-                }
-            },
-            "delete": {
-                "operationId": "merchantRestaurantGalleryCategory.destroy",
-                "tags": [
-                    "Merchant Gallery"
-                ],
-                "parameters": [
-                    {
-                        "name": "restaurant",
-                        "in": "path",
-                        "required": true,
-                        "description": "The restaurant ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "galleryCategory",
-                        "in": "path",
-                        "required": true,
-                        "description": "The gallery category ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "const": "Gallery category deleted. Photos have been moved to uncategorised."
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "An error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
-                                        }
-                                    },
-                                    "required": [
-                                        "message"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -6525,6 +5778,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -6534,6 +5793,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -6654,6 +5914,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -6663,6 +5929,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -6747,6 +6014,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -6756,6 +6029,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -6792,8 +6066,71 @@
             }
         },
         "/merchant/restaurants/{restaurant}/onboarding/internal-notes": {
-            "patch": {
-                "operationId": "merchantRestaurantOnboarding.updateInternalNotes",
+            "get": {
+                "operationId": "merchantRestaurantInternalNote.index",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notes": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "notes"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantInternalNote.store",
                 "tags": [
                     "Merchant Onboarding"
                 ],
@@ -6809,10 +6146,151 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UpdateRestaurantOnboardingInternalNotesRequest"
+                                "type": "object",
+                                "properties": {
+                                    "body": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 10000
+                                    }
+                                },
+                                "required": [
+                                    "body"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Internal note created successfully."
+                                        },
+                                        "note": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "body",
+                                                "created_at",
+                                                "updated_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "note"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/onboarding/internal-notes/{internalNote}": {
+            "patch": {
+                "operationId": "merchantRestaurantInternalNote.update",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "internalNote",
+                        "in": "path",
+                        "required": true,
+                        "description": "The internal note ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "body": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 10000
+                                    }
+                                },
+                                "required": [
+                                    "body"
+                                ]
                             }
                         }
                     }
@@ -6827,41 +6305,139 @@
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "enum": [
-                                                "Internal notes skipped successfully.",
-                                                "Internal notes updated successfully."
-                                            ]
+                                            "const": "Internal note updated successfully."
                                         },
-                                        "onboarding_status": {
+                                        "note": {
                                             "type": "object",
                                             "properties": {
-                                                "current_step": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "body": {
+                                                    "type": "string"
+                                                },
+                                                "created_at": {
                                                     "type": [
                                                         "string",
                                                         "null"
-                                                    ]
+                                                    ],
+                                                    "format": "date-time"
                                                 },
-                                                "is_profile_published": {
-                                                    "type": "boolean"
-                                                },
-                                                "progress": {
-                                                    "type": "string"
+                                                "updated_at": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "required": [
-                                                "current_step",
-                                                "is_profile_published",
-                                                "progress"
+                                                "id",
+                                                "body",
+                                                "created_at",
+                                                "updated_at"
                                             ]
-                                        },
-                                        "internal_notes": {
-                                            "type": "string"
                                         }
                                     },
                                     "required": [
                                         "message",
-                                        "onboarding_status",
-                                        "internal_notes"
+                                        "note"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantInternalNote.destroy",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "internalNote",
+                        "in": "path",
+                        "required": true,
+                        "description": "The internal note ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Internal note deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
                                     ]
                                 }
                             }
@@ -6872,12 +6448,6 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -6930,6 +6500,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -6939,6 +6515,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -7082,6 +6659,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -7091,6 +6674,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -7205,6 +6789,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -7214,6 +6804,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -7307,6 +6898,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -7316,6 +6913,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -7490,6 +7088,12 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "last_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "is_profile_published": {
                                                     "type": "boolean"
                                                 },
@@ -7499,6 +7103,7 @@
                                             },
                                             "required": [
                                                 "current_step",
+                                                "last_step",
                                                 "is_profile_published",
                                                 "progress"
                                             ]
@@ -7538,6 +7143,136 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/onboarding/data": {
+            "get": {
+                "operationId": "merchantRestaurantOnboarding.showData",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "email": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "email_verified": {
+                                            "type": "boolean"
+                                        },
+                                        "phone": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "website": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "average_price_range": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "description": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "cuisines": {
+                                            "type": "string"
+                                        },
+                                        "social_handles": {
+                                            "type": "string"
+                                        },
+                                        "featured_image": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "original_url": {
+                                                    "type": "string"
+                                                },
+                                                "thumb_url": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "original_url",
+                                                "thumb_url"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "email",
+                                        "email_verified",
+                                        "phone",
+                                        "website",
+                                        "average_price_range",
+                                        "description",
+                                        "cuisines",
+                                        "social_handles",
+                                        "featured_image"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/onboarding/status": {
             "get": {
                 "operationId": "merchantRestaurantOnboarding.showStatus",
@@ -7569,6 +7304,12 @@
                                                 "null"
                                             ]
                                         },
+                                        "last_step": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
                                         "is_profile_published": {
                                             "type": "boolean"
                                         },
@@ -7578,6 +7319,7 @@
                                     },
                                     "required": [
                                         "current_step",
+                                        "last_step",
                                         "is_profile_published",
                                         "progress"
                                     ]
@@ -7656,6 +7398,12 @@
                                                 "null"
                                             ]
                                         },
+                                        "last_step": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
                                         "is_profile_published": {
                                             "type": "boolean"
                                         },
@@ -7666,6 +7414,7 @@
                                     "required": [
                                         "message",
                                         "current_step",
+                                        "last_step",
                                         "is_profile_published",
                                         "progress"
                                     ]
@@ -7684,6 +7433,845 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/gallery": {
+            "get": {
+                "operationId": "merchantRestaurantMedia.gallery",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "categories": {
+                                            "type": "string"
+                                        },
+                                        "uncategorised": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MediaAssetResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "categories",
+                                        "uncategorised"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/gallery/categories": {
+            "get": {
+                "operationId": "merchantRestaurantGalleryCategory.index",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "categories": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "categories"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantGalleryCategory.store",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreGalleryCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category created successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/gallery/categories/{galleryCategory}": {
+            "patch": {
+                "operationId": "merchantRestaurantGalleryCategory.update",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "galleryCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The gallery category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGalleryCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category updated successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantGalleryCategory.destroy",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "galleryCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The gallery category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Gallery category deleted. Photos have been moved to uncategorised."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/media": {
+            "post": {
+                "operationId": "merchantRestaurantMedia.store",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UploadModelMediaRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant media uploaded successfully."
+                                        },
+                                        "featured_image": {
+                                            "anyOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/MediaAssetResource"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
+                                        "gallery_images": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MediaAssetResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "featured_image",
+                                        "gallery_images"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/media/{media}": {
+            "patch": {
+                "operationId": "merchantRestaurantMedia.update",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "media",
+                        "in": "path",
+                        "required": true,
+                        "description": "The media ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMediaAssetRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant media updated successfully."
+                                        },
+                                        "media": {
+                                            "$ref": "#/components/schemas/MediaAssetResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "media"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantMedia.destroy",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "media",
+                        "in": "path",
+                        "required": true,
+                        "description": "The media ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant media deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/media/reorder": {
+            "post": {
+                "operationId": "merchantRestaurantMedia.reorder",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReorderMediaRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant gallery reordered successfully."
+                                        },
+                                        "gallery_images": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MediaAssetResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "gallery_images"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/media/{media}/feature": {
+            "post": {
+                "operationId": "merchantRestaurantMedia.feature",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "media",
+                        "in": "path",
+                        "required": true,
+                        "description": "The media ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant featured image updated successfully."
+                                        },
+                                        "featured_image": {
+                                            "$ref": "#/components/schemas/MediaAssetResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "featured_image"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -9020,7 +9608,10 @@
                                                 "authorization_url": {},
                                                 "access_code": {},
                                                 "reference": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 }
                                             },
                                             "required": [
@@ -11403,6 +11994,341 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/admin/cuisines": {
+            "get": {
+                "operationId": "adminCuisine.index",
+                "tags": [
+                    "Admin Cuisines"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        },
+                        "example": 20
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CuisineResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "adminCuisine.store",
+                "tags": [
+                    "Admin Cuisines"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreAdminCuisineRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Cuisine created successfully."
+                                        },
+                                        "cuisine": {
+                                            "$ref": "#/components/schemas/CuisineResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "cuisine"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/cuisines/{cuisine}": {
+            "get": {
+                "operationId": "adminCuisine.show",
+                "tags": [
+                    "Admin Cuisines"
+                ],
+                "parameters": [
+                    {
+                        "name": "cuisine",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cuisine ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`CuisineResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CuisineResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "adminCuisine.update",
+                "tags": [
+                    "Admin Cuisines"
+                ],
+                "parameters": [
+                    {
+                        "name": "cuisine",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cuisine ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAdminCuisineRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Cuisine updated successfully."
+                                        },
+                                        "cuisine": {
+                                            "$ref": "#/components/schemas/CuisineResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "cuisine"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "adminCuisine.destroy",
+                "tags": [
+                    "Admin Cuisines"
+                ],
+                "parameters": [
+                    {
+                        "name": "cuisine",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cuisine ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Cuisine deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -13832,16 +14758,28 @@
                                                         "type": "object",
                                                         "properties": {
                                                             "food": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "service": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "ambience": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "value": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             }
                                                         },
                                                         "required": [
@@ -14042,16 +14980,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -14179,16 +15129,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -14326,16 +15288,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -15150,7 +16124,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
@@ -15159,10 +16133,13 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "display_amount": {
                         "type": "string"
@@ -15179,7 +16156,11 @@
                     "features": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "null"
                             },
                             {
                                 "type": "array",
@@ -15195,7 +16176,11 @@
                     "metadata": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "null"
                             },
                             {
                                 "type": "array",
@@ -15247,6 +16232,34 @@
                     "slug"
                 ],
                 "title": "CuisineOptionResource"
+            },
+            "CuisineResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "CuisineResource"
             },
             "DiningAreaResource": {
                 "type": "object",
@@ -15327,10 +16340,10 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "restaurant_id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "automated_messaging": {
                         "type": "object",
@@ -15640,7 +16653,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "invoice_number": {
                         "type": "string"
@@ -15649,13 +16662,19 @@
                         "type": "string"
                     },
                     "provider_reference": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "receipt_number": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "display_amount": {
                         "type": "string"
@@ -16201,6 +17220,104 @@
                     "menu_link": {
                         "type": "string"
                     },
+                    "executive_chef": {
+                        "type": "string"
+                    },
+                    "dietary_options": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "beverage_options": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "amenities": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "smoking_policy": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "delivery_options": {
+                        "type": "string"
+                    },
+                    "safety_policies": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "parking_info": {
+                        "type": "string"
+                    },
+                    "closest_landmark": {
+                        "type": "string"
+                    },
+                    "private_events_info": {
+                        "type": "string"
+                    },
+                    "catering_info": {
+                        "type": "string"
+                    },
                     "payment_options": {
                         "anyOf": [
                             {
@@ -16468,6 +17585,17 @@
                     "number_of_tables",
                     "menu_source",
                     "menu_link",
+                    "executive_chef",
+                    "dietary_options",
+                    "beverage_options",
+                    "amenities",
+                    "smoking_policy",
+                    "delivery_options",
+                    "safety_policies",
+                    "parking_info",
+                    "closest_landmark",
+                    "private_events_info",
+                    "catering_info",
                     "payment_options",
                     "accessibility_features",
                     "featured_image",
@@ -16714,10 +17842,25 @@
                     "name": {
                         "type": "string"
                     },
+                    "table_label": {
+                        "type": "string"
+                    },
+                    "layout_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "min_capacity": {
                         "type": "integer"
                     },
                     "max_capacity": {
+                        "type": "integer"
+                    },
+                    "min_party_size": {
+                        "type": "integer"
+                    },
+                    "max_party_size": {
                         "type": "integer"
                     },
                     "table_type": {
@@ -16736,22 +17879,56 @@
                         "type": "integer"
                     },
                     "x_position": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "y_position": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "width": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "height": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "rotation": {
-                        "type": "string"
+                        "type": "integer"
                     },
-                    "color": {
-                        "type": "string"
+                    "rotate": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "r1"
+                                ]
+                            }
+                        ]
+                    },
+                    "table_color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "chair_color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -16759,8 +17936,12 @@
                     "restaurant_id",
                     "dining_area_id",
                     "name",
+                    "table_label",
+                    "layout_type",
                     "min_capacity",
                     "max_capacity",
+                    "min_party_size",
+                    "max_party_size",
                     "table_type",
                     "shape",
                     "status",
@@ -16771,7 +17952,9 @@
                     "width",
                     "height",
                     "rotation",
-                    "color"
+                    "rotate",
+                    "table_color",
+                    "chair_color"
                 ],
                 "title": "RestaurantTableResource"
             },
@@ -16924,10 +18107,7 @@
                         "maxLength": 255
                     },
                     "business_website": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
+                        "type": "string",
                         "format": "uri",
                         "maxLength": 2048
                     },
@@ -17004,10 +18184,7 @@
                                     ]
                                 },
                                 "email": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ],
+                                    "type": "string",
                                     "format": "email",
                                     "maxLength": 255
                                 },
@@ -17041,32 +18218,29 @@
                                     "maxLength": 100
                                 },
                                 "average_price_range": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ],
+                                    "type": "string",
                                     "maxLength": 100
                                 },
                                 "dining_style": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ],
+                                    "type": "string",
                                     "maxLength": 100
                                 },
                                 "dress_code": {
+                                    "type": "string",
+                                    "maxLength": 100
+                                },
+                                "country": {
                                     "type": [
                                         "string",
                                         "null"
                                     ],
                                     "maxLength": 100
                                 },
-                                "country": {
-                                    "type": "string",
-                                    "maxLength": 100
-                                },
                                 "city": {
-                                    "type": "string",
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
                                     "maxLength": 100
                                 },
                                 "state": {
@@ -17077,10 +18251,7 @@
                                     "maxLength": 100
                                 },
                                 "address_line_1": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ],
+                                    "type": "string",
                                     "maxLength": 255
                                 },
                                 "address_line_2": {
@@ -17091,18 +18262,12 @@
                                     "maxLength": 255
                                 },
                                 "latitude": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ],
+                                    "type": "number",
                                     "minimum": -90,
                                     "maximum": 90
                                 },
                                 "longitude": {
-                                    "type": [
-                                        "number",
-                                        "null"
-                                    ],
+                                    "type": "number",
                                     "minimum": -180,
                                     "maximum": 180
                                 },
@@ -17141,8 +18306,7 @@
                                         "required": [
                                             "day_of_week"
                                         ]
-                                    },
-                                    "minItems": 1
+                                    }
                                 },
                                 "accessibility_features": {
                                     "type": [
@@ -17162,8 +18326,7 @@
                                     "items": {
                                         "type": "string",
                                         "maxLength": 50
-                                    },
-                                    "minItems": 1
+                                    }
                                 },
                                 "restaurant_logo": {
                                     "type": [
@@ -17172,7 +18335,7 @@
                                     ],
                                     "format": "binary",
                                     "contentMediaType": "application/octet-stream",
-                                    "maxLength": 2048
+                                    "maxLength": 10240
                                 },
                                 "restaurant_photos": {
                                     "type": [
@@ -17183,7 +18346,7 @@
                                         "type": "string",
                                         "format": "binary",
                                         "contentMediaType": "application/octet-stream",
-                                        "maxLength": 2048
+                                        "maxLength": 10240
                                     },
                                     "maxItems": 10
                                 },
@@ -17292,10 +18455,15 @@
                             },
                             "required": [
                                 "name",
+                                "email",
                                 "phone",
                                 "cuisine_type",
-                                "country",
-                                "city"
+                                "average_price_range",
+                                "dining_style",
+                                "dress_code",
+                                "address_line_1",
+                                "latitude",
+                                "longitude"
                             ]
                         },
                         "minItems": 1
@@ -17308,10 +18476,32 @@
                     "owner_phone",
                     "owner_email",
                     "business_email",
+                    "business_website",
                     "restaurants_count",
                     "restaurants"
                 ],
                 "title": "StoreAdminBusinessOnboardingRequest"
+            },
+            "StoreAdminCuisineRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                        "maxLength": 100
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "StoreAdminCuisineRequest"
             },
             "StoreAdminReservationRequest": {
                 "type": "object",
@@ -18806,6 +19996,101 @@
                 ],
                 "title": "StoreWaitlistEntryRequest"
             },
+            "SyncDiningAreaLayoutRequest": {
+                "type": "object",
+                "properties": {
+                    "tables": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "layout_type": {
+                                    "type": "string",
+                                    "maxLength": 50
+                                },
+                                "x_position": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "y_position": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                },
+                                "table_label": {
+                                    "type": "string",
+                                    "maxLength": 20
+                                },
+                                "table_color": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+                                    "maxLength": 20
+                                },
+                                "chair_color": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
+                                    "maxLength": 20
+                                },
+                                "rotate": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "enum": [
+                                        "r1",
+                                        "r2",
+                                        "r3",
+                                        "r4"
+                                    ]
+                                },
+                                "width": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "height": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "min_party_size": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "max_party_size": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                }
+                            },
+                            "required": [
+                                "layout_type",
+                                "x_position",
+                                "y_position",
+                                "table_label"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "tables"
+                ],
+                "title": "SyncDiningAreaLayoutRequest"
+            },
             "TableShape": {
                 "type": "string",
                 "enum": [
@@ -18840,6 +20125,21 @@
                     "outdoor"
                 ],
                 "title": "TableType"
+            },
+            "UpdateAdminCuisineRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "slug": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                        "maxLength": 100
+                    }
+                },
+                "title": "UpdateAdminCuisineRequest"
             },
             "UpdateAdminReservationRequest": {
                 "type": "object",
@@ -19971,20 +21271,6 @@
                 ],
                 "title": "UpdateRestaurantOnboardingHoursRequest"
             },
-            "UpdateRestaurantOnboardingInternalNotesRequest": {
-                "type": "object",
-                "properties": {
-                    "skip": {
-                        "type": "boolean"
-                    },
-                    "internal_notes": {
-                        "type": "string",
-                        "minLength": 100,
-                        "maxLength": 10000
-                    }
-                },
-                "title": "UpdateRestaurantOnboardingInternalNotesRequest"
-            },
             "UpdateRestaurantOnboardingMealTypeRequest": {
                 "type": "object",
                 "properties": {
@@ -20007,6 +21293,13 @@
                             "boolean",
                             "null"
                         ]
+                    },
+                    "last_step": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
                     }
                 },
                 "title": "UpdateRestaurantOnboardingStatusRequest"
@@ -20180,6 +21473,46 @@
                         "contentMediaType": "application/octet-stream",
                         "maxLength": 20480
                     },
+                    "executive_chef": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "delivery_options": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "parking_info": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "closest_landmark": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "private_events_info": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "catering_info": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "status": {
                         "$ref": "#/components/schemas/RestaurantStatus"
                     },
@@ -20198,6 +21531,56 @@
                             "null"
                         ],
                         "maxLength": 255
+                    },
+                    "dietary_options": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "beverage_options": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "amenities": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "smoking_policy": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    "safety_policies": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 200
+                        }
                     },
                     "payment_options": {
                         "type": [

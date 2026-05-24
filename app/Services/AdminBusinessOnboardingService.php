@@ -123,20 +123,19 @@ class AdminBusinessOnboardingService
     {
         $menuMode = data_get($restaurantPayload, 'menu.mode');
 
-        return [
+        $attributes = [
             'name' => $restaurantPayload['name'],
             'slug' => $restaurantPayload['slug'] ?? $this->generateUniqueSlug(Restaurant::class, $restaurantPayload['name']),
             'status' => $this->normalizeRestaurantStatus($restaurantPayload['status'] ?? RestaurantStatus::Active),
             'is_featured' => (bool) ($restaurantPayload['is_featured'] ?? false),
-            'email' => $restaurantPayload['email'] ?? null,
+            'email' => $restaurantPayload['email'],
             'phone' => $restaurantPayload['phone'],
-            'city' => $restaurantPayload['city'],
-            'state' => $restaurantPayload['state'] ?? null,
-            'country' => $restaurantPayload['country'],
-            'address_line_1' => $restaurantPayload['address_line_1'] ?? null,
-            'address_line_2' => $restaurantPayload['address_line_2'] ?? null,
-            'latitude' => $restaurantPayload['latitude'] ?? null,
-            'longitude' => $restaurantPayload['longitude'] ?? null,
+            'city' => $this->nullableString($restaurantPayload['city'] ?? null),
+            'state' => $this->nullableString($restaurantPayload['state'] ?? null),
+            'address_line_1' => $restaurantPayload['address_line_1'],
+            'address_line_2' => $this->nullableString($restaurantPayload['address_line_2'] ?? null),
+            'latitude' => $restaurantPayload['latitude'],
+            'longitude' => $restaurantPayload['longitude'],
             'description' => $restaurantPayload['description'] ?? null,
             'website' => $restaurantPayload['website'] ?? null,
             'instagram_handle' => $restaurantPayload['instagram_handle'] ?? null,
@@ -150,6 +149,14 @@ class AdminBusinessOnboardingService
             'payment_options' => array_values(array_unique($restaurantPayload['payment_options'] ?? [])),
             'accessibility_features' => array_values(array_unique($restaurantPayload['accessibility_features'] ?? [])),
         ];
+
+        $country = $this->nullableString($restaurantPayload['country'] ?? null);
+
+        if ($country !== null) {
+            $attributes['country'] = $country;
+        }
+
+        return $attributes;
     }
 
     /**
@@ -157,12 +164,10 @@ class AdminBusinessOnboardingService
      */
     protected function createRestaurantPolicy(Restaurant $restaurant, array $restaurantPayload): void
     {
-        $attributes = collect([
-            'reservation_duration_minutes' => $restaurantPayload['reservation_duration_minutes'] ?? null,
-            'booking_window_days' => $restaurantPayload['booking_window_days'] ?? null,
-        ])->filter(fn ($value): bool => $value !== null)->all();
-
-        $restaurant->policy()->create($attributes);
+        $restaurant->policy()->create([
+            'reservation_duration_minutes' => $restaurantPayload['reservation_duration_minutes'] ?? 120,
+            'booking_window_days' => $restaurantPayload['booking_window_days'] ?? 30,
+        ]);
     }
 
     /**
@@ -307,5 +312,16 @@ class AdminBusinessOnboardingService
     protected function normalizeRestaurantStatus(RestaurantStatus|string $status): string
     {
         return $status instanceof RestaurantStatus ? $status->value : $status;
+    }
+
+    protected function nullableString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }

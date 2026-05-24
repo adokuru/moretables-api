@@ -92,25 +92,27 @@ it('allows business admins to onboard a business with the minimal restaurant upl
         'owner_phone' => '+2348000000301',
         'owner_email' => 'minimal-owner@example.com',
         'business_email' => 'minimal@example.com',
+        'business_website' => 'https://minimal.example.com',
         'restaurants_count' => 1,
         'restaurants' => [
             [
                 'name' => 'Minimal Bistro',
+                'email' => 'hello@minimal-bistro.example.com',
                 'cuisine_type' => 'Nigerian',
+                'average_price_range' => '$$',
+                'dining_style' => 'Casual Dining',
+                'dress_code' => 'Casual',
                 'phone' => '+2348000000302',
-                'country' => 'Nigeria',
-                'city' => 'Lagos',
+                'address_line_1' => '12 Marina Road, Lagos',
+                'latitude' => 6.4541,
+                'longitude' => 3.3947,
             ],
         ],
     ]);
 
     $response->assertCreated()
         ->assertJsonPath('organization.business_email', 'minimal@example.com')
-        ->assertJsonPath('organization.city', 'Lagos')
-        ->assertJsonPath('organization.country', 'Nigeria')
         ->assertJsonPath('restaurants.0.name', 'Minimal Bistro')
-        ->assertJsonPath('restaurants.0.city', 'Lagos')
-        ->assertJsonPath('restaurants.0.country', 'Nigeria')
         ->assertJsonPath('restaurants.0.policy.booking_window_days', 30)
         ->assertJsonPath('restaurants.0.policy.reservation_duration_minutes', 120)
         ->assertJsonFragment(['Nigerian']);
@@ -120,6 +122,66 @@ it('allows business admins to onboard a business with the minimal restaurant upl
     expect($restaurant->hours()->count())->toBe(0);
     expect($restaurant->tables()->count())->toBe(0);
     expect($restaurant->menuItems()->count())->toBe(0);
+    expect($restaurant->country)->toBe('Nigeria');
+    expect((float) $restaurant->latitude)->toBe(6.4541);
+    expect((float) $restaurant->longitude)->toBe(3.3947);
+});
+
+it('accepts the current admin onboarding form without optional sections', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->postJson('/api/v1/admin/organizations/onboard', [
+        'business_name' => 'Slim Form Restaurant Group',
+        'business_phone' => '+2348000000400',
+        'owner_name' => 'Slim Owner',
+        'owner_phone' => '+2348000000401',
+        'owner_email' => 'slim-owner@example.com',
+        'business_email' => 'slim@example.com',
+        'business_website' => 'https://slim.example.com',
+        'restaurants_count' => 1,
+        'restaurants' => [
+            [
+                'name' => 'Slim Bistro',
+                'email' => 'hello@slim-bistro.example.com',
+                'phone' => '+2348000000402',
+                'description' => 'A geocoded location without city metadata.',
+                'cuisine_type' => 'Contemporary',
+                'average_price_range' => '$$$',
+                'dining_style' => 'Fine Dining',
+                'dress_code' => 'Smart Casual',
+                'address_line_1' => 'Plot 5 Admiralty Way, Lekki Phase 1',
+                'address_line_2' => '',
+                'latitude' => 6.4474,
+                'longitude' => 3.4700,
+                'menu' => [
+                    'mode' => 'link',
+                    'link' => 'https://slim.example.com/menu',
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('restaurants.0.city', null)
+        ->assertJsonPath('restaurants.0.state', null)
+        ->assertJsonPath('restaurants.0.website', null)
+        ->assertJsonPath('restaurants.0.instagram_handle', null)
+        ->assertJsonPath('restaurants.0.total_seating_capacity', null)
+        ->assertJsonPath('restaurants.0.number_of_tables', null)
+        ->assertJsonPath('restaurants.0.policy.booking_window_days', 30)
+        ->assertJsonPath('restaurants.0.policy.reservation_duration_minutes', 120);
+
+    $restaurant = Restaurant::query()->where('name', 'Slim Bistro')->firstOrFail();
+
+    expect($restaurant->hours)->toBeEmpty();
+    expect($restaurant->payment_options)->toBe([]);
+    expect($restaurant->accessibility_features)->toBe([]);
 });
 
 it('validates onboarding request counts and menu payloads', function (Closure $mutate, string $errorField) {
@@ -303,6 +365,7 @@ function adminBusinessOnboardingPayload(): array
         'restaurants' => [
             [
                 'name' => 'Chicken Republic Ikeja',
+                'email' => 'ikeja@chicken-republic.test',
                 'phone' => '+2348000000002',
                 'description' => 'The flagship Ikeja branch.',
                 'website' => 'https://ikeja.chicken-republic.test',
@@ -336,6 +399,7 @@ function adminBusinessOnboardingPayload(): array
             ],
             [
                 'name' => 'Chicken Republic Victoria Island',
+                'email' => 'vi@chicken-republic.test',
                 'phone' => '+2348000000003',
                 'description' => 'The waterfront location.',
                 'website' => 'https://vi.chicken-republic.test',
@@ -348,6 +412,8 @@ function adminBusinessOnboardingPayload(): array
                 'city' => 'Lagos',
                 'state' => 'Lagos',
                 'address_line_1' => '88 Admiralty Way',
+                'latitude' => 6.4281,
+                'longitude' => 3.4219,
                 'hours' => restaurantHoursPayload(),
                 'accessibility_features' => ['Step-free access (no stairs)'],
                 'payment_options' => ['Visa', 'Mastercard'],
@@ -378,6 +444,7 @@ function adminBusinessOnboardingPayload(): array
             ],
             [
                 'name' => 'Chicken Republic Abuja',
+                'email' => 'abuja@chicken-republic.test',
                 'phone' => '+2348000000004',
                 'description' => 'The Abuja city centre branch.',
                 'website' => 'https://abuja.chicken-republic.test',
@@ -390,6 +457,8 @@ function adminBusinessOnboardingPayload(): array
                 'city' => 'Abuja',
                 'state' => 'FCT',
                 'address_line_1' => '10 Central Business District',
+                'latitude' => 9.0765,
+                'longitude' => 7.3986,
                 'hours' => restaurantHoursPayload(),
                 'accessibility_features' => ['Wheelchair Accessible'],
                 'payment_options' => ['Paystack'],
