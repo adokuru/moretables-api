@@ -13,6 +13,8 @@ class DiningAreaResource extends JsonResource
             'id' => $this->id,
             'restaurant_id' => $this->restaurant_id,
             'name' => $this->name,
+            'category' => $this->category,
+            'floor_type' => $this->floor_type,
             'description' => $this->description,
             'tags' => $this->tags ?? [],
             'is_active' => $this->is_active,

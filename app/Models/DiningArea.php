@@ -16,6 +16,8 @@ class DiningArea extends Model
     protected $fillable = [
         'restaurant_id',
         'name',
+        'category',
+        'floor_type',
         'description',
         'tags',
         'is_active',
