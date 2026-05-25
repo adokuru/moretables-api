@@ -96,6 +96,20 @@ class RestaurantAccessConfig extends Model
         ];
     }
 
+    /**
+     * Always return an array even when the DB column is null.
+     *
+     * @return list<string>
+     */
+    public function getPermissionsAttribute(mixed $value): array
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        return is_array($value) ? $value : (json_decode($value, true) ?? []);
+    }
+
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
