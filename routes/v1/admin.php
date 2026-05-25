@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::post('users/{user}/reward-points', [AdminRewardProgramController::class, 'storePoints']);
 
     Route::get('users', [AdminUserController::class, 'index']);
+    Route::get('users/inactive', [AdminUserController::class, 'inactive']);
     Route::post('users', [AdminUserController::class, 'store']);
     Route::get('cuisines', [AdminCuisineController::class, 'index']);
     Route::post('cuisines', [AdminCuisineController::class, 'store']);

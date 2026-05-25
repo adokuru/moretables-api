@@ -76,6 +76,37 @@ it('returns paginated organizations to authorized admins', function () {
         ->assertJsonPath('meta.current_page', 1);
 });
 
+it('returns users inactive for the last seven days to authorized admins', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    $inactiveUser = User::factory()->create([
+        'email' => 'inactive@example.com',
+        'last_active_at' => now()->subDays(8),
+    ]);
+    $neverActiveUser = User::factory()->create([
+        'email' => 'never-active@example.com',
+        'last_active_at' => null,
+    ]);
+    $activeUser = User::factory()->create([
+        'email' => 'active@example.com',
+        'last_active_at' => now()->subDays(2),
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson('/api/v1/admin/users/inactive?per_page=10');
+
+    $response->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonFragment(['email' => $inactiveUser->email])
+        ->assertJsonFragment(['email' => $neverActiveUser->email])
+        ->assertJsonMissing(['email' => $activeUser->email])
+        ->assertJsonPath('meta.total', 2);
+});
+
 it('includes restaurants on admin organization responses and organization on admin restaurant responses', function () {
     $this->seed(RoleAndPermissionSeeder::class);
 

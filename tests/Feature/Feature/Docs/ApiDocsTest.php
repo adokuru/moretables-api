@@ -21,6 +21,7 @@ it('serves the generated api specification route', function () {
         '/admin/roles',
         '/admin/roles/{role}',
         '/admin/reward-program',
+        '/admin/users/inactive',
         '/admin/users/{user}/reward-points',
         '/search',
         '/reviews/random',
@@ -89,6 +90,7 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['properties']['links']['required'])->toContain('first', 'last', 'prev', 'next');
     expect($specification['paths']['/admin/restaurants']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/users']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
+    expect($specification['paths']['/admin/users/inactive']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/roles']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/reservations']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/reviews']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');

@@ -16,6 +16,7 @@ use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,40 @@ class AdminUserController extends Controller
             ->paginate($this->perPage($request))
             ->appends($request->query());
 
+        return $this->paginatedUserResponse($users, $request);
+    }
+
+    #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
+    #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
+    #[Response(200, type: 'array{data: list<UserResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
+    public function inactive(Request $request): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+
+        $users = User::query()
+            ->with([
+                'roles',
+                'roleAssignments.role',
+                'roleAssignments.organization',
+                'roleAssignments.restaurant',
+            ])
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('last_active_at')
+                    ->orWhere('last_active_at', '<', now()->subDays(7));
+            })
+            ->latest()
+            ->paginate($this->perPage($request))
+            ->appends($request->query());
+
+        return $this->paginatedUserResponse($users, $request);
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, User>  $users
+     */
+    protected function paginatedUserResponse(LengthAwarePaginator $users, Request $request): JsonResponse
+    {
         return response()->json([
             'data' => UserResource::collection($users->getCollection())->resolve($request),
             'links' => [
