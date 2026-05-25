@@ -84,6 +84,9 @@
             "name": "Merchant Staff Auth"
         },
         {
+            "name": "Guestbook"
+        },
+        {
             "name": "Merchant Reviews"
         },
         {
@@ -12013,6 +12016,1000 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/guestbook": {
+            "get": {
+                "operationId": "guestbook.index",
+                "description": "Returns a paginated list of non-temporary guest contacts for the restaurant,\nordered alphabetically by first name. Supports name, email, and phone search\nvia the `search_term` query parameter.\n\nThe `total_guests` field in the response reflects the total count across all\npages (unfiltered), matching the \"Total number of guests: N\" header in the UI.",
+                "summary": "List all guests",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search_term",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "total_guests": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "": {}
+                                    },
+                                    "required": [
+                                        "total_guests",
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "guestbook.store",
+                "description": "Manually adds a new guest to the restaurant's guestbook. Use this when\nstaff want to pre-register a guest without an existing reservation.",
+                "summary": "Create a guest",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "first_name": {
+                                        "type": "string",
+                                        "maxLength": 100
+                                    },
+                                    "last_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 150
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 30
+                                    },
+                                    "notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "marketing_opt_in": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    },
+                                    "birthday": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    },
+                                    "wedding_anniversary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "first_name",
+                                    "phone"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Guest created successfully."
+                                        },
+                                        "guest": {
+                                            "$ref": "#/components/schemas/GuestContactResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "guest"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/guestbook/{guestContact}": {
+            "get": {
+                "operationId": "guestbook.show",
+                "description": "Returns the guest's contact information and notable dates (birthday,\nwedding anniversary) \u2014 the \"Personal details\" tab in the Guestbook UI.",
+                "summary": "Get guest personal details",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "guest": {
+                                            "$ref": "#/components/schemas/GuestContactResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "guest"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "guestbook.update",
+                "description": "Updates contact info, notable dates, and marketing opt-in status.\nMaps to the \"Personal details\" tab save action and the Marketing Opt-In toggle.",
+                "summary": "Update guest personal details",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "first_name": {
+                                        "type": "string",
+                                        "maxLength": 100
+                                    },
+                                    "last_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 150
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "maxLength": 30
+                                    },
+                                    "notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "marketing_opt_in": {
+                                        "type": "boolean"
+                                    },
+                                    "birthday": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    },
+                                    "wedding_anniversary": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Guest updated successfully."
+                                        },
+                                        "guest": {
+                                            "$ref": "#/components/schemas/GuestContactResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "guest"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "guestbook.destroy",
+                "description": "Permanently removes the guest contact record from the guestbook.\nExisting reservations and waitlist entries are not deleted but will\nlose their guest contact association.",
+                "summary": "Delete a guest",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Guest removed from guestbook."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/guestbook/{guestContact}/preferences": {
+            "get": {
+                "operationId": "guestbook.showPreferences",
+                "description": "Returns the guest's dining preferences \u2014 the \"Preferences\" tab.\nPreferences are stored as a flexible key/value structure allowing restaurants\nto capture seating, dietary, and communication preferences.",
+                "summary": "Get guest preferences",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "guest_id": {
+                                            "type": "integer"
+                                        },
+                                        "preferences": {
+                                            "type": "object",
+                                            "properties": {
+                                                "seating_preference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "dietary_restrictions": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "allergies": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "favorite_table_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "preferred_server": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "communication_preference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "special_notes": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "seating_preference",
+                                                "dietary_restrictions",
+                                                "allergies",
+                                                "favorite_table_id",
+                                                "preferred_server",
+                                                "communication_preference",
+                                                "special_notes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "guest_id",
+                                        "preferences"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "guestbook.updatePreferences",
+                "description": "Updates the guest's dining preferences. All fields are optional \u2014 only\nsupplied keys will be merged into the existing preferences.",
+                "summary": "Update guest preferences",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "seating_preference": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "favorite_table_id": {
+                                        "type": [
+                                            "integer",
+                                            "null"
+                                        ]
+                                    },
+                                    "preferred_server": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 100
+                                    },
+                                    "communication_preference": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "email",
+                                            "sms",
+                                            "none"
+                                        ]
+                                    },
+                                    "special_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "dietary_restrictions": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string",
+                                            "maxLength": 100
+                                        }
+                                    },
+                                    "allergies": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string",
+                                            "maxLength": 100
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Preferences updated successfully."
+                                        },
+                                        "guest_id": {
+                                            "type": "integer"
+                                        },
+                                        "preferences": {
+                                            "type": "object",
+                                            "properties": {
+                                                "seating_preference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "dietary_restrictions": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "allergies": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "favorite_table_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "preferred_server": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "communication_preference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "special_notes": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "seating_preference",
+                                                "dietary_restrictions",
+                                                "allergies",
+                                                "favorite_table_id",
+                                                "preferred_server",
+                                                "communication_preference",
+                                                "special_notes"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "guest_id",
+                                        "preferences"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/guestbook/{guestContact}/history": {
+            "get": {
+                "operationId": "guestbook.history",
+                "description": "Returns the guest's past and upcoming reservations and waitlist entries\nat this restaurant \u2014 the \"History\" tab in the Guestbook UI.\n\nIncludes summary stats: total visits, total covers, and last visit date.",
+                "summary": "Get guest visit history",
+                "tags": [
+                    "Guestbook"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "guestContact",
+                        "in": "path",
+                        "required": true,
+                        "description": "The guest contact ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "guest_id": {
+                                            "type": "integer"
+                                        },
+                                        "stats": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total_visits": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "total_covers": {
+                                                    "type": "string"
+                                                },
+                                                "last_visit_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "total_visits",
+                                                "total_covers",
+                                                "last_visit_at"
+                                            ]
+                                        },
+                                        "": {}
+                                    },
+                                    "required": [
+                                        "guest_id",
+                                        "stats",
+                                        null
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/auth/staff/login": {
             "post": {
                 "operationId": "auth.staffLogin",
@@ -18513,6 +19510,38 @@
                             "null"
                         ]
                     },
+                    "marketing_opt_in": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "boolean"
+                            }
+                        ]
+                    },
+                    "birthday": {
+                        "type": "string"
+                    },
+                    "wedding_anniversary": {
+                        "type": "string"
+                    },
+                    "preferences": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
                     "created_at": {
                         "type": "string"
                     }
@@ -18525,6 +19554,10 @@
                     "email",
                     "phone",
                     "notes",
+                    "marketing_opt_in",
+                    "birthday",
+                    "wedding_anniversary",
+                    "preferences",
                     "created_at"
                 ],
                 "title": "GuestContactResource"

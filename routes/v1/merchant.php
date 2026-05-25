@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\FrontOfHouseController;
+use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
 use App\Http\Controllers\Api\V1\FrontOfHouseShiftOverviewController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
@@ -130,6 +131,18 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('reservations/{reservation}/left-message', [MerchantReservationController::class, 'leftMessage']);
         Route::post('reservations/{reservation}/running-late', [MerchantReservationController::class, 'runningLate']);
         Route::post('reservations/{reservation}/no-show', [MerchantReservationController::class, 'noShow']);
+
+        // Guestbook
+        Route::prefix('guestbook')->group(function (): void {
+            Route::get('/', [GuestbookController::class, 'index']);
+            Route::post('/', [GuestbookController::class, 'store']);
+            Route::get('{guestContact}', [GuestbookController::class, 'show']);
+            Route::patch('{guestContact}', [GuestbookController::class, 'update']);
+            Route::delete('{guestContact}', [GuestbookController::class, 'destroy']);
+            Route::get('{guestContact}/preferences', [GuestbookController::class, 'showPreferences']);
+            Route::patch('{guestContact}/preferences', [GuestbookController::class, 'updatePreferences']);
+            Route::get('{guestContact}/history', [GuestbookController::class, 'history']);
+        });
 
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {

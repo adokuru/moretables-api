@@ -21,12 +21,20 @@ class GuestContact extends Model
         'phone',
         'notes',
         'is_temporary',
+        'marketing_opt_in',
+        'birthday',
+        'wedding_anniversary',
+        'preferences',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_temporary' => 'boolean',
+            'is_temporary'       => 'boolean',
+            'marketing_opt_in'   => 'boolean',
+            'birthday'           => 'date',
+            'wedding_anniversary' => 'date',
+            'preferences'        => 'array',
         ];
     }
 

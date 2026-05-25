@@ -52,12 +52,48 @@ class ReservationService
             ]);
         }
 
+        // Add the customer to the restaurant's guestbook on first booking.
+        // Match by phone (preferred) then email, so the same person is never
+        // duplicated even if they book from different devices.
+        $guestContact = null;
+
+        if ($user->phone || $user->email) {
+            $guestContact = GuestContact::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->where('is_temporary', false)
+                ->where(function ($q) use ($user): void {
+                    $q->when($user->phone, fn ($q) => $q->where('phone', $user->phone))
+                      ->when($user->email, fn ($q) => $q->orWhere('email', $user->email));
+                })
+                ->first();
+
+            if ($guestContact) {
+                // Keep the record fresh with the latest details from their profile
+                $guestContact->fill(array_filter([
+                    'first_name' => $user->first_name,
+                    'last_name'  => $user->last_name,
+                    'email'      => $user->email,
+                    'phone'      => $user->phone,
+                ], fn ($v) => $v !== null))->save();
+            } else {
+                $guestContact = GuestContact::query()->create([
+                    'restaurant_id' => $restaurant->id,
+                    'first_name'    => $user->first_name,
+                    'last_name'     => $user->last_name,
+                    'email'         => $user->email,
+                    'phone'         => $user->phone,
+                    'is_temporary'  => false,
+                ]);
+            }
+        }
+
         return $this->createReservation(
             actor: $user,
             restaurant: $restaurant,
             source: ReservationSource::Customer,
             attributes: $attributes,
             user: $user,
+            guestContact: $guestContact,
         );
     }
 
@@ -69,15 +105,31 @@ class ReservationService
         $guestContact = null;
 
         if (! empty($attributes['guest_contact']) && empty($attributes['user_id'])) {
-            $guestContact = GuestContact::query()->create([
-                'restaurant_id' => $restaurant->id,
-                'first_name' => $attributes['guest_contact']['first_name'],
-                'last_name' => $attributes['guest_contact']['last_name'] ?? null,
-                'email' => $attributes['guest_contact']['email'] ?? null,
-                'phone' => $attributes['guest_contact']['phone'],
-                'notes' => $attributes['notes'] ?? null,
-                'is_temporary' => true,
-            ]);
+            // Find an existing permanent guest by phone (same restaurant) or create a new one.
+            // This prevents duplicate guestbook entries when the same person books again.
+            $guestContact = GuestContact::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->where('phone', $attributes['guest_contact']['phone'])
+                ->where('is_temporary', false)
+                ->first();
+
+            if ($guestContact) {
+                // Update any missing details from the new booking
+                $guestContact->fill(array_filter([
+                    'last_name' => $guestContact->last_name ?? ($attributes['guest_contact']['last_name'] ?? null),
+                    'email'     => $guestContact->email ?? ($attributes['guest_contact']['email'] ?? null),
+                ]))->save();
+            } else {
+                $guestContact = GuestContact::query()->create([
+                    'restaurant_id' => $restaurant->id,
+                    'first_name'    => $attributes['guest_contact']['first_name'],
+                    'last_name'     => $attributes['guest_contact']['last_name'] ?? null,
+                    'email'         => $attributes['guest_contact']['email'] ?? null,
+                    'phone'         => $attributes['guest_contact']['phone'],
+                    'notes'         => $attributes['notes'] ?? null,
+                    'is_temporary'  => false,
+                ]);
+            }
         }
 
         return $this->createReservation(
