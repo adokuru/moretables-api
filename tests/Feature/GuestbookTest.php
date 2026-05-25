@@ -18,8 +18,8 @@ use Laravel\Sanctum\Sanctum;
 function guestbookSetup(): array
 {
     $organization = Organization::factory()->create();
-    $restaurant   = Restaurant::factory()->create(['organization_id' => $organization->id]);
-    $manager      = User::factory()->create(['status' => UserStatus::Active]);
+    $restaurant = Restaurant::factory()->create(['organization_id' => $organization->id]);
+    $manager = User::factory()->create(['status' => UserStatus::Active]);
 
     assignScopedRole($manager, Role::RestaurantManager, restaurant: $restaurant);
 
@@ -71,19 +71,19 @@ it('searches guests by name, phone and email', function () {
 
     GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'first_name'    => 'Yousuf',
-        'last_name'     => 'Adamu',
-        'phone'         => '+2348011111111',
-        'email'         => 'yousuf@example.com',
-        'is_temporary'  => false,
+        'first_name' => 'Yousuf',
+        'last_name' => 'Adamu',
+        'phone' => '+2348011111111',
+        'email' => 'yousuf@example.com',
+        'is_temporary' => false,
     ]);
     GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'first_name'    => 'Kosi',
-        'last_name'     => 'Usman',
-        'phone'         => '+2348022222222',
-        'email'         => 'kosi@example.com',
-        'is_temporary'  => false,
+        'first_name' => 'Kosi',
+        'last_name' => 'Usman',
+        'phone' => '+2348022222222',
+        'email' => 'kosi@example.com',
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -110,12 +110,12 @@ it('creates a permanent guest manually', function () {
     Sanctum::actingAs($manager);
 
     $response = $this->postJson("/api/v1/merchant/restaurants/{$restaurant->id}/guestbook", [
-        'first_name'       => 'Abayomi',
-        'last_name'        => 'Thompson',
-        'phone'            => '+2348033333333',
-        'email'            => 'abayomi@example.com',
+        'first_name' => 'Abayomi',
+        'last_name' => 'Thompson',
+        'phone' => '+2348033333333',
+        'email' => 'abayomi@example.com',
         'marketing_opt_in' => true,
-        'birthday'         => '1990-12-31',
+        'birthday' => '1990-12-31',
     ]);
 
     $response->assertCreated()
@@ -126,8 +126,8 @@ it('creates a permanent guest manually', function () {
 
     $this->assertDatabaseHas('guest_contacts', [
         'restaurant_id' => $restaurant->id,
-        'phone'         => '+2348033333333',
-        'is_temporary'  => false,
+        'phone' => '+2348033333333',
+        'is_temporary' => false,
     ]);
 });
 
@@ -151,15 +151,15 @@ it('returns guest personal details', function () {
     ['restaurant' => $restaurant, 'manager' => $manager] = guestbookSetup();
 
     $guest = GuestContact::factory()->create([
-        'restaurant_id'      => $restaurant->id,
-        'first_name'         => 'Mazi',
-        'last_name'          => 'Okeke',
-        'phone'              => '+2348044444444',
-        'email'              => 'mazi@example.com',
-        'marketing_opt_in'   => false,
-        'birthday'           => '1985-07-15',
+        'restaurant_id' => $restaurant->id,
+        'first_name' => 'Mazi',
+        'last_name' => 'Okeke',
+        'phone' => '+2348044444444',
+        'email' => 'mazi@example.com',
+        'marketing_opt_in' => false,
+        'birthday' => '1985-07-15',
         'wedding_anniversary' => '2010-01-12',
-        'is_temporary'       => false,
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -180,7 +180,7 @@ it('returns 404 when guest belongs to a different restaurant', function () {
     $otherRestaurant = Restaurant::factory()->create();
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $otherRestaurant->id,
-        'is_temporary'  => false,
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -198,17 +198,17 @@ it('updates guest personal details and notable dates', function () {
     ['restaurant' => $restaurant, 'manager' => $manager] = guestbookSetup();
 
     $guest = GuestContact::factory()->create([
-        'restaurant_id'    => $restaurant->id,
+        'restaurant_id' => $restaurant->id,
         'marketing_opt_in' => false,
-        'birthday'         => null,
-        'is_temporary'     => false,
+        'birthday' => null,
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
 
     $this->patchJson("/api/v1/merchant/restaurants/{$restaurant->id}/guestbook/{$guest->id}", [
-        'marketing_opt_in'    => true,
-        'birthday'            => '1992-12-31',
+        'marketing_opt_in' => true,
+        'birthday' => '1992-12-31',
         'wedding_anniversary' => '2015-01-12',
     ])
         ->assertOk()
@@ -231,8 +231,8 @@ it('returns guest preferences', function () {
 
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'preferences'   => ['seating_preference' => 'window', 'dietary_restrictions' => ['vegetarian']],
-        'is_temporary'  => false,
+        'preferences' => ['seating_preference' => 'window', 'dietary_restrictions' => ['vegetarian']],
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -249,18 +249,18 @@ it('updates guest preferences', function () {
 
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'preferences'   => [],
-        'is_temporary'  => false,
+        'preferences' => [],
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
 
     $this->patchJson("/api/v1/merchant/restaurants/{$restaurant->id}/guestbook/{$guest->id}/preferences", [
-        'seating_preference'       => 'booth',
-        'dietary_restrictions'     => ['gluten-free'],
-        'allergies'                => ['nuts'],
+        'seating_preference' => 'booth',
+        'dietary_restrictions' => ['gluten-free'],
+        'allergies' => ['nuts'],
         'communication_preference' => 'email',
-        'special_notes'            => 'Prefers quiet corner',
+        'special_notes' => 'Prefers quiet corner',
     ])
         ->assertOk()
         ->assertJsonPath('message', 'Preferences updated successfully.')
@@ -278,8 +278,8 @@ it('merges preferences rather than replacing them', function () {
 
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'preferences'   => ['seating_preference' => 'window', 'special_notes' => 'Existing note'],
-        'is_temporary'  => false,
+        'preferences' => ['seating_preference' => 'window', 'special_notes' => 'Existing note'],
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -304,22 +304,22 @@ it('returns guest visit history with stats', function () {
 
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'is_temporary'  => false,
+        'is_temporary' => false,
     ]);
 
     Reservation::factory()->count(2)->create([
-        'restaurant_id'    => $restaurant->id,
+        'restaurant_id' => $restaurant->id,
         'guest_contact_id' => $guest->id,
-        'status'           => ReservationStatus::Completed,
-        'party_size'       => 3,
-        'completed_at'     => now()->subDays(5),
+        'status' => ReservationStatus::Completed,
+        'party_size' => 3,
+        'completed_at' => now()->subDays(5),
     ]);
 
     Reservation::factory()->create([
-        'restaurant_id'    => $restaurant->id,
+        'restaurant_id' => $restaurant->id,
         'guest_contact_id' => $guest->id,
-        'status'           => ReservationStatus::Booked,
-        'party_size'       => 2,
+        'status' => ReservationStatus::Booked,
+        'party_size' => 2,
     ]);
 
     Sanctum::actingAs($manager);
@@ -342,7 +342,7 @@ it('deletes a guest from the guestbook', function () {
 
     $guest = GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'is_temporary'  => false,
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
@@ -368,21 +368,21 @@ it('auto-enrolls a guest when a merchant creates a reservation with new guest_co
     Sanctum::actingAs($manager);
 
     $this->postJson("/api/v1/merchant/restaurants/{$restaurant->id}/reservations", [
-        'source'     => 'staff',
+        'source' => 'staff',
         'party_size' => 2,
-        'starts_at'  => now()->addDay()->setHour(12)->setMinute(0)->toIso8601String(),
+        'starts_at' => now()->addDay()->setHour(12)->setMinute(0)->toIso8601String(),
         'guest_contact' => [
             'first_name' => 'Juliet',
-            'last_name'  => 'Ibazebo',
-            'phone'      => '+2348055555555',
-            'email'      => 'juliet@example.com',
+            'last_name' => 'Ibazebo',
+            'phone' => '+2348055555555',
+            'email' => 'juliet@example.com',
         ],
     ])->assertCreated();
 
     $this->assertDatabaseHas('guest_contacts', [
         'restaurant_id' => $restaurant->id,
-        'phone'         => '+2348055555555',
-        'is_temporary'  => false,
+        'phone' => '+2348055555555',
+        'is_temporary' => false,
     ]);
 });
 
@@ -396,19 +396,19 @@ it('reuses an existing guest when the same phone number books again', function (
     // Pre-existing permanent guest with the same phone
     GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'phone'         => '+2348055555555',
-        'is_temporary'  => false,
+        'phone' => '+2348055555555',
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($manager);
 
     $this->postJson("/api/v1/merchant/restaurants/{$restaurant->id}/reservations", [
-        'source'     => 'staff',
+        'source' => 'staff',
         'party_size' => 2,
-        'starts_at'  => now()->addDay()->setHour(13)->setMinute(0)->toIso8601String(),
+        'starts_at' => now()->addDay()->setHour(13)->setMinute(0)->toIso8601String(),
         'guest_contact' => [
             'first_name' => 'Juliet',
-            'phone'      => '+2348055555555',
+            'phone' => '+2348055555555',
         ],
     ])->assertCreated();
 
@@ -427,26 +427,26 @@ it('auto-enrolls a customer app user as a guest on their first reservation', fun
 
     $customer = User::factory()->create([
         'first_name' => 'Kazeem',
-        'last_name'  => 'Ayuba',
-        'email'      => 'kazeem@example.com',
-        'phone'      => '+2348066666666',
-        'status'     => UserStatus::Active,
+        'last_name' => 'Ayuba',
+        'email' => 'kazeem@example.com',
+        'phone' => '+2348066666666',
+        'status' => UserStatus::Active,
     ]);
     assignScopedRole($customer, Role::Customer);
 
     Sanctum::actingAs($customer);
 
-    $this->postJson("/api/v1/reservations", [
+    $this->postJson('/api/v1/reservations', [
         'restaurant_id' => $restaurant->id,
-        'party_size'    => 2,
-        'starts_at'     => now()->addDay()->setHour(14)->setMinute(0)->toIso8601String(),
+        'party_size' => 2,
+        'starts_at' => now()->addDay()->setHour(14)->setMinute(0)->toIso8601String(),
     ])->assertCreated();
 
     $this->assertDatabaseHas('guest_contacts', [
         'restaurant_id' => $restaurant->id,
-        'first_name'    => 'Kazeem',
-        'email'         => 'kazeem@example.com',
-        'is_temporary'  => false,
+        'first_name' => 'Kazeem',
+        'email' => 'kazeem@example.com',
+        'is_temporary' => false,
     ]);
 });
 
@@ -455,8 +455,8 @@ it('does not duplicate guest when same customer books the same restaurant again'
     ['restaurant' => $restaurant] = createBookableRestaurant();
 
     $customer = User::factory()->create([
-        'email'  => 'kazeem@example.com',
-        'phone'  => '+2348066666666',
+        'email' => 'kazeem@example.com',
+        'phone' => '+2348066666666',
         'status' => UserStatus::Active,
     ]);
     assignScopedRole($customer, Role::Customer);
@@ -464,17 +464,17 @@ it('does not duplicate guest when same customer books the same restaurant again'
     // Existing guest contact from a previous booking
     GuestContact::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'email'         => 'kazeem@example.com',
-        'phone'         => '+2348066666666',
-        'is_temporary'  => false,
+        'email' => 'kazeem@example.com',
+        'phone' => '+2348066666666',
+        'is_temporary' => false,
     ]);
 
     Sanctum::actingAs($customer);
 
-    $this->postJson("/api/v1/reservations", [
+    $this->postJson('/api/v1/reservations', [
         'restaurant_id' => $restaurant->id,
-        'party_size'    => 2,
-        'starts_at'     => now()->addDay()->setHour(15)->setMinute(0)->toIso8601String(),
+        'party_size' => 2,
+        'starts_at' => now()->addDay()->setHour(15)->setMinute(0)->toIso8601String(),
     ])->assertCreated();
 
     expect(

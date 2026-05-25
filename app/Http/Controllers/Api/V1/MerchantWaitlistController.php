@@ -51,11 +51,11 @@ class MerchantWaitlistController extends Controller
             if (! $guestContact) {
                 $guestContact = GuestContact::query()->create([
                     'restaurant_id' => $restaurant->id,
-                    'first_name'    => $request->input('guest_contact.first_name'),
-                    'last_name'     => $request->input('guest_contact.last_name'),
-                    'email'         => $request->input('guest_contact.email'),
-                    'phone'         => $request->input('guest_contact.phone'),
-                    'is_temporary'  => false,
+                    'first_name' => $request->input('guest_contact.first_name'),
+                    'last_name' => $request->input('guest_contact.last_name'),
+                    'email' => $request->input('guest_contact.email'),
+                    'phone' => $request->input('guest_contact.phone'),
+                    'is_temporary' => false,
                 ]);
             }
         }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\GuestContactResource;
 use App\Http\Resources\ReservationResource;
-use App\Http\Resources\WaitlistEntryResource;
 use App\Models\GuestContact;
 use App\Models\Restaurant;
 use Dedoc\Scramble\Attributes\Group;
@@ -74,13 +73,13 @@ class GuestbookController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
 
         $validated = $request->validate([
-            'first_name'          => ['required', 'string', 'max:100'],
-            'last_name'           => ['nullable', 'string', 'max:100'],
-            'email'               => ['nullable', 'email', 'max:150'],
-            'phone'               => ['required', 'string', 'max:30'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
-            'marketing_opt_in'    => ['nullable', 'boolean'],
-            'birthday'            => ['nullable', 'date_format:Y-m-d'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'phone' => ['required', 'string', 'max:30'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'marketing_opt_in' => ['nullable', 'boolean'],
+            'birthday' => ['nullable', 'date_format:Y-m-d'],
             'wedding_anniversary' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
@@ -91,7 +90,7 @@ class GuestbookController extends Controller
 
         return response()->json([
             'message' => 'Guest created successfully.',
-            'guest'   => GuestContactResource::make($guest),
+            'guest' => GuestContactResource::make($guest),
         ], 201);
     }
 
@@ -123,13 +122,13 @@ class GuestbookController extends Controller
         abort_unless($guestContact->restaurant_id === $restaurant->id, 404);
 
         $validated = $request->validate([
-            'first_name'          => ['sometimes', 'string', 'max:100'],
-            'last_name'           => ['sometimes', 'nullable', 'string', 'max:100'],
-            'email'               => ['sometimes', 'nullable', 'email', 'max:150'],
-            'phone'               => ['sometimes', 'string', 'max:30'],
-            'notes'               => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'marketing_opt_in'    => ['sometimes', 'boolean'],
-            'birthday'            => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'first_name' => ['sometimes', 'string', 'max:100'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:150'],
+            'phone' => ['sometimes', 'string', 'max:30'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'marketing_opt_in' => ['sometimes', 'boolean'],
+            'birthday' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'wedding_anniversary' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
         ]);
 
@@ -137,7 +136,7 @@ class GuestbookController extends Controller
 
         return response()->json([
             'message' => 'Guest updated successfully.',
-            'guest'   => GuestContactResource::make($guestContact->fresh()),
+            'guest' => GuestContactResource::make($guestContact->fresh()),
         ]);
     }
 
@@ -154,7 +153,7 @@ class GuestbookController extends Controller
         abort_unless($guestContact->restaurant_id === $restaurant->id, 404);
 
         return response()->json([
-            'guest_id'    => $guestContact->id,
+            'guest_id' => $guestContact->id,
             'preferences' => $this->formatPreferences($guestContact->preferences ?? []),
         ]);
     }
@@ -171,25 +170,25 @@ class GuestbookController extends Controller
         abort_unless($guestContact->restaurant_id === $restaurant->id, 404);
 
         $validated = $request->validate([
-            'seating_preference'       => ['nullable', 'string', 'max:100'],
-            'dietary_restrictions'     => ['nullable', 'array'],
-            'dietary_restrictions.*'   => ['string', 'max:100'],
-            'allergies'                => ['nullable', 'array'],
-            'allergies.*'              => ['string', 'max:100'],
-            'favorite_table_id'        => ['nullable', 'integer', 'exists:restaurant_tables,id'],
-            'preferred_server'         => ['nullable', 'string', 'max:100'],
+            'seating_preference' => ['nullable', 'string', 'max:100'],
+            'dietary_restrictions' => ['nullable', 'array'],
+            'dietary_restrictions.*' => ['string', 'max:100'],
+            'allergies' => ['nullable', 'array'],
+            'allergies.*' => ['string', 'max:100'],
+            'favorite_table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
+            'preferred_server' => ['nullable', 'string', 'max:100'],
             'communication_preference' => ['nullable', 'string', 'in:email,sms,none'],
-            'special_notes'            => ['nullable', 'string', 'max:2000'],
+            'special_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $current     = $guestContact->preferences ?? [];
+        $current = $guestContact->preferences ?? [];
         $preferences = array_merge($current, array_filter($validated, fn ($v) => $v !== null));
 
         $guestContact->update(['preferences' => $preferences]);
 
         return response()->json([
-            'message'     => 'Preferences updated successfully.',
-            'guest_id'    => $guestContact->id,
+            'message' => 'Preferences updated successfully.',
+            'guest_id' => $guestContact->id,
             'preferences' => $this->formatPreferences($guestContact->fresh()->preferences ?? []),
         ]);
     }
@@ -218,9 +217,9 @@ class GuestbookController extends Controller
 
         return response()->json([
             'guest_id' => $guestContact->id,
-            'stats'    => [
-                'total_visits'  => $completedReservations->count(),
-                'total_covers'  => $completedReservations->sum('party_size'),
+            'stats' => [
+                'total_visits' => $completedReservations->count(),
+                'total_covers' => $completedReservations->sum('party_size'),
                 'last_visit_at' => $completedReservations->sortByDesc('completed_at')->first()?->completed_at?->toIso8601String(),
             ],
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
@@ -253,13 +252,13 @@ class GuestbookController extends Controller
     private function formatPreferences(array $preferences): array
     {
         return [
-            'seating_preference'       => $preferences['seating_preference'] ?? null,
-            'dietary_restrictions'     => $preferences['dietary_restrictions'] ?? [],
-            'allergies'                => $preferences['allergies'] ?? [],
-            'favorite_table_id'        => $preferences['favorite_table_id'] ?? null,
-            'preferred_server'         => $preferences['preferred_server'] ?? null,
+            'seating_preference' => $preferences['seating_preference'] ?? null,
+            'dietary_restrictions' => $preferences['dietary_restrictions'] ?? [],
+            'allergies' => $preferences['allergies'] ?? [],
+            'favorite_table_id' => $preferences['favorite_table_id'] ?? null,
+            'preferred_server' => $preferences['preferred_server'] ?? null,
             'communication_preference' => $preferences['communication_preference'] ?? null,
-            'special_notes'            => $preferences['special_notes'] ?? null,
+            'special_notes' => $preferences['special_notes'] ?? null,
         ];
     }
 }

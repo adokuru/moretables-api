@@ -30,11 +30,11 @@ class GuestContact extends Model
     protected function casts(): array
     {
         return [
-            'is_temporary'       => 'boolean',
-            'marketing_opt_in'   => 'boolean',
-            'birthday'           => 'date',
+            'is_temporary' => 'boolean',
+            'marketing_opt_in' => 'boolean',
+            'birthday' => 'date',
             'wedding_anniversary' => 'date',
-            'preferences'        => 'array',
+            'preferences' => 'array',
         ];
     }
 
