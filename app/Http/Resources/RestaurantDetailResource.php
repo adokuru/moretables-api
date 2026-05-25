@@ -127,6 +127,7 @@ class RestaurantDetailResource extends JsonResource
                 'cancellation_cutoff_hours' => $this->policy?->cancellation_cutoff_hours,
                 'min_party_size' => $this->policy?->min_party_size,
                 'max_party_size' => $this->policy?->max_party_size,
+                'large_party_threshold' => $this->policy?->large_party_threshold,
                 'deposit_required' => $this->policy?->deposit_required,
             ]),
             'menus' => $this->whenLoaded('menuItems', fn () => $this->menuItems
@@ -144,6 +145,14 @@ class RestaurantDetailResource extends JsonResource
                     'is_profile_published' => (bool) $this->is_profile_published,
                     'progress' => $this->onboarding_progress ?? (object) [],
                 ],
+            ),
+            'is_subscribed' => $this->when(
+                $this->relationLoaded('activeBillingSubscription'),
+                fn () => $this->activeBillingSubscription !== null,
+            ),
+            'subscription_type' => $this->when(
+                $this->relationLoaded('activeBillingSubscription'),
+                fn () => $this->activeBillingSubscription?->plan?->slug?->value,
             ),
         ];
     }

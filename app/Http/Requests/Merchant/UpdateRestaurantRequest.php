@@ -76,6 +76,7 @@ class UpdateRestaurantRequest extends FormRequest
             'policy.cancellation_cutoff_hours' => ['nullable', 'integer', 'min:0'],
             'policy.min_party_size' => ['nullable', 'integer', 'min:1'],
             'policy.max_party_size' => ['nullable', 'integer', 'gte:policy.min_party_size'],
+            'policy.large_party_threshold' => ['nullable', 'integer', 'min:1'],
             'policy.deposit_required' => ['nullable', 'boolean'],
             ...$this->mediaUploadRules(),
         ];

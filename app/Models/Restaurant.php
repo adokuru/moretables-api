@@ -137,6 +137,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Reservation::class);
     }
 
+    public function guestContacts(): HasMany
+    {
+        return $this->hasMany(GuestContact::class)->orderBy('first_name')->orderBy('last_name');
+    }
+
     public function views(): HasMany
     {
         return $this->hasMany(RestaurantView::class);
@@ -176,6 +181,10 @@ class Restaurant extends Model implements HasMedia
     {
         return $this->hasOne(MerchantSubscription::class)
             ->whereIn('status', ['active', 'trialing'])
+            ->where(function ($q): void {
+                $q->whereNull('current_period_end')
+                    ->orWhere('current_period_end', '>=', now());
+            })
             ->latestOfMany();
     }
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
@@ -37,6 +38,8 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
     Route::middleware('merchant.billing.active')->group(function (): void {
         Route::get('/', [MerchantRestaurantController::class, 'show']);
         Route::patch('/', [MerchantRestaurantController::class, 'update']);
+
+        Route::get('guests', [MerchantRestaurantGuestController::class, 'index']);
 
         Route::get('guest-communication', [MerchantGuestCommunicationController::class, 'show']);
         Route::patch('guest-communication/automated-messaging', [MerchantGuestCommunicationController::class, 'updateAutomatedMessaging']);

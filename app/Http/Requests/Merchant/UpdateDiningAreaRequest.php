@@ -15,6 +15,8 @@ class UpdateDiningAreaRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'floor_type' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
