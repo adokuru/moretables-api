@@ -436,7 +436,7 @@ it('auto-enrolls a customer app user as a guest on their first reservation', fun
 
     Sanctum::actingAs($customer);
 
-    $this->postJson("/api/v1/customer/reservations", [
+    $this->postJson("/api/v1/reservations", [
         'restaurant_id' => $restaurant->id,
         'party_size'    => 2,
         'starts_at'     => now()->addDay()->setHour(14)->setMinute(0)->toIso8601String(),
@@ -471,7 +471,7 @@ it('does not duplicate guest when same customer books the same restaurant again'
 
     Sanctum::actingAs($customer);
 
-    $this->postJson("/api/v1/customer/reservations", [
+    $this->postJson("/api/v1/reservations", [
         'restaurant_id' => $restaurant->id,
         'party_size'    => 2,
         'starts_at'     => now()->addDay()->setHour(15)->setMinute(0)->toIso8601String(),
