@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\FrontOfHouseController;
 use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
+use App\Http\Controllers\Api\V1\FrontOfHouseShiftOverviewController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
@@ -142,6 +143,12 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
 
             Route::get('floors', [FrontOfHouseFloorPlanController::class, 'index']);
             Route::get('floors/{diningArea}', [FrontOfHouseFloorPlanController::class, 'show']);
+
+            // Shift Overview
+            Route::get('shift-overview/cover-count', [FrontOfHouseShiftOverviewController::class, 'coverCountReport']);
+            Route::get('shift-overview/covers-by-time', [FrontOfHouseShiftOverviewController::class, 'coversByTime']);
+            Route::get('shift-overview/covers-by-source', [FrontOfHouseShiftOverviewController::class, 'coversBySource']);
+            Route::get('shift-overview/covers-by-party-size', [FrontOfHouseShiftOverviewController::class, 'coversByPartySize']);
         });
     });
 });

@@ -69,6 +69,9 @@
             "name": "Merchant Guests"
         },
         {
+            "name": "Front of House / Shift Overview"
+        },
+        {
             "name": "Merchant Guest Communication"
         },
         {
@@ -6852,6 +6855,96 @@
             }
         },
         "/merchant/restaurants/{restaurant}/onboarding/internal-notes": {
+            "patch": {
+                "operationId": "merchantRestaurantOnboarding.updateInternalNotes",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantOnboardingInternalNotesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Internal notes updated successfully."
+                                        },
+                                        "onboarding_status": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_step": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last_step": {
+                                                    "type": "string"
+                                                },
+                                                "is_profile_published": {
+                                                    "type": "boolean"
+                                                },
+                                                "progress": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_step",
+                                                "last_step",
+                                                "is_profile_published",
+                                                "progress"
+                                            ]
+                                        },
+                                        "internal_notes": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "onboarding_status",
+                                        "internal_notes"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
             "get": {
                 "operationId": "merchantRestaurantInternalNote.index",
                 "tags": [
@@ -10290,6 +10383,578 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/front-of-house/shift-overview/cover-count": {
+            "get": {
+                "operationId": "frontOfHouseShiftOverview.coverCountReport",
+                "description": "Returns every reservation for the day bucketed into 30-minute time slots\n(configurable via `slot_minutes`). Each slot lists the individual\nreservations within it so the UI can render the timeline grid.\n\nEach reservation entry includes `party_size`, `source`, `status`, and\n`guest_name` \u2014 enough to render a labelled, colour-coded block on the timeline.",
+                "summary": "Cover count report",
+                "tags": [
+                    "Front of House / Shift Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "slot_minutes",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 30
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "period": {
+                                            "type": "object",
+                                            "properties": {
+                                                "meal_type": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ]
+                                                },
+                                                "starts_at": {
+                                                    "type": "string"
+                                                },
+                                                "ends_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "meal_type",
+                                                "starts_at",
+                                                "ends_at"
+                                            ]
+                                        },
+                                        "slot_minutes": {
+                                            "type": "integer"
+                                        },
+                                        "slots": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "time": {
+                                                        "type": "string"
+                                                    },
+                                                    "time_label": {
+                                                        "type": "string"
+                                                    },
+                                                    "total_covers": {
+                                                        "type": "string"
+                                                    },
+                                                    "reservations": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "time",
+                                                    "time_label",
+                                                    "total_covers",
+                                                    "reservations"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "period",
+                                        "slot_minutes",
+                                        "slots"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/front-of-house/shift-overview/covers-by-time": {
+            "get": {
+                "operationId": "frontOfHouseShiftOverview.coversByTime",
+                "description": "Returns the total cover count (sum of `party_size`) per time slot for the\nday. Use this to render the bar chart on the shift overview.",
+                "summary": "Covers by time",
+                "tags": [
+                    "Front of House / Shift Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "slot_minutes",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 30
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "period": {
+                                            "type": "object",
+                                            "properties": {
+                                                "meal_type": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ]
+                                                },
+                                                "starts_at": {
+                                                    "type": "string"
+                                                },
+                                                "ends_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "meal_type",
+                                                "starts_at",
+                                                "ends_at"
+                                            ]
+                                        },
+                                        "slot_minutes": {
+                                            "type": "integer"
+                                        },
+                                        "total_covers": {
+                                            "type": "string"
+                                        },
+                                        "slots": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "time": {
+                                                        "type": "string"
+                                                    },
+                                                    "time_label": {
+                                                        "type": "string"
+                                                    },
+                                                    "covers": {
+                                                        "type": "string"
+                                                    },
+                                                    "parties": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "time",
+                                                    "time_label",
+                                                    "covers",
+                                                    "parties"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "period",
+                                        "slot_minutes",
+                                        "total_covers",
+                                        "slots"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/front-of-house/shift-overview/covers-by-source": {
+            "get": {
+                "operationId": "frontOfHouseShiftOverview.coversBySource",
+                "description": "Returns the total cover count broken down by how the booking originated.\nSources are grouped into display categories:\n\n| `source_group`   | Raw sources included               |\n|------------------|------------------------------------|\n| `phone_in_house` | `phone`, `staff`                   |\n| `walk_in`        | `walk_in`, `waitlist`              |\n| `online`         | `customer`                         |",
+                "summary": "Covers by source",
+                "tags": [
+                    "Front of House / Shift Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "period": {
+                                            "type": "object",
+                                            "properties": {
+                                                "meal_type": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ]
+                                                },
+                                                "starts_at": {
+                                                    "type": "string"
+                                                },
+                                                "ends_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "meal_type",
+                                                "starts_at",
+                                                "ends_at"
+                                            ]
+                                        },
+                                        "total_covers": {
+                                            "type": "string"
+                                        },
+                                        "total_parties": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "by_source": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "source_group": {
+                                                        "type": "string"
+                                                    },
+                                                    "label": {
+                                                        "type": "string"
+                                                    },
+                                                    "covers": {
+                                                        "type": "string"
+                                                    },
+                                                    "parties": {
+                                                        "type": "string"
+                                                    },
+                                                    "percentage": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "number"
+                                                            },
+                                                            {
+                                                                "type": "integer",
+                                                                "enum": [
+                                                                    0
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "required": [
+                                                    "source_group",
+                                                    "label",
+                                                    "covers",
+                                                    "parties",
+                                                    "percentage"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "period",
+                                        "total_covers",
+                                        "total_parties",
+                                        "by_source"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/front-of-house/shift-overview/covers-by-party-size": {
+            "get": {
+                "operationId": "frontOfHouseShiftOverview.coversByPartySize",
+                "description": "Returns the distribution of parties grouped by `party_size`. Sizes of 10\nor more are bucketed together under `\"10+\"`. Use this to render the\n\"Parties by Party Size\" bar chart on the shift overview.",
+                "summary": "Covers by party size",
+                "tags": [
+                    "Front of House / Shift Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "period": {
+                                            "type": "object",
+                                            "properties": {
+                                                "meal_type": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ]
+                                                },
+                                                "starts_at": {
+                                                    "type": "string"
+                                                },
+                                                "ends_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "meal_type",
+                                                "starts_at",
+                                                "ends_at"
+                                            ]
+                                        },
+                                        "total_covers": {
+                                            "type": "string"
+                                        },
+                                        "total_parties": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "by_party_size": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "party_size": {
+                                                        "type": "string"
+                                                    },
+                                                    "party_count": {
+                                                        "type": "string"
+                                                    },
+                                                    "total_covers": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "party_size",
+                                                    "party_count",
+                                                    "total_covers"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "period",
+                                        "total_covers",
+                                        "total_parties",
+                                        "by_party_size"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/guests": {
             "get": {
                 "operationId": "merchantRestaurantGuest.index",
@@ -11067,12 +11732,16 @@
                                                 },
                                                 "plan_code": {
                                                     "type": "string"
-                                                }
+                                                },
+                                                "authorization_url": {},
+                                                "access_code": {}
                                             },
                                             "required": [
                                                 "reference",
                                                 "email",
-                                                "plan_code"
+                                                "plan_code",
+                                                "authorization_url",
+                                                "access_code"
                                             ]
                                         },
                                         "invoice": {
@@ -19363,6 +20032,9 @@
                             }
                         ]
                     },
+                    "color": {
+                        "type": "string"
+                    },
                     "table_color": {
                         "type": "string"
                     },
@@ -19392,6 +20064,7 @@
                     "height",
                     "rotation",
                     "rotate",
+                    "color",
                     "table_color",
                     "chair_color"
                 ],
@@ -22723,6 +23396,20 @@
                     "schedules"
                 ],
                 "title": "UpdateRestaurantOnboardingHoursRequest"
+            },
+            "UpdateRestaurantOnboardingInternalNotesRequest": {
+                "type": "object",
+                "properties": {
+                    "skip": {
+                        "type": "boolean"
+                    },
+                    "internal_notes": {
+                        "type": "string",
+                        "minLength": 100,
+                        "maxLength": 10000
+                    }
+                },
+                "title": "UpdateRestaurantOnboardingInternalNotesRequest"
             },
             "UpdateRestaurantOnboardingMealTypeRequest": {
                 "type": "object",
