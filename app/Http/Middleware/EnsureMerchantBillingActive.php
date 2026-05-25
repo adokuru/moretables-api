@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Models\BillingPlan;
-use App\Models\Restaurant;
 use App\Services\BillingService;
 use Closure;
 use Illuminate\Http\Request;

@@ -1,14 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\V1\FrontOfHouseController;
+use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
-use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
@@ -119,5 +121,17 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('waitlist-entries', [MerchantWaitlistController::class, 'store']);
         Route::post('waitlist-entries/{waitlistEntry}/notify', [MerchantWaitlistController::class, 'notify']);
         Route::post('waitlist-entries/{waitlistEntry}/assign-table', [MerchantWaitlistController::class, 'assignTable']);
+
+        // Front of House
+        Route::prefix('front-of-house')->group(function (): void {
+            Route::get('summary', [FrontOfHouseController::class, 'summary']);
+            Route::get('reservations', [FrontOfHouseController::class, 'reservations']);
+            Route::get('waitlist', [FrontOfHouseController::class, 'waitlist']);
+            Route::get('seated', [FrontOfHouseController::class, 'seated']);
+            Route::get('finished', [FrontOfHouseController::class, 'finished']);
+
+            Route::get('floors', [FrontOfHouseFloorPlanController::class, 'index']);
+            Route::get('floors/{diningArea}', [FrontOfHouseFloorPlanController::class, 'show']);
+        });
     });
 });

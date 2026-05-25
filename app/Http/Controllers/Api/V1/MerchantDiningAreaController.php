@@ -113,23 +113,23 @@ class MerchantDiningAreaController extends Controller
         foreach ($tables as $index => $table) {
             $diningArea->tables()->create([
                 'restaurant_id' => $restaurant->id,
-                'name'          => $table['table_label'],
-                'layout_type'   => $table['layout_type'],
-                'x_position'    => $table['x_position'],
-                'y_position'    => $table['y_position'],
-                'width'         => $table['width'] ?? 1,
-                'height'        => $table['height'] ?? 1,
-                'color'         => $table['table_color'] ?? null,
-                'chair_color'   => $table['chair_color'] ?? null,
-                'rotation'      => $rotationMap[$table['rotate'] ?? 'r1'],
-                'min_capacity'  => $table['min_party_size'] ?? 1,
-                'max_capacity'  => $table['max_party_size'] ?? 1,
-                'sort_order'    => $index,
+                'name' => $table['table_label'],
+                'layout_type' => $table['layout_type'],
+                'x_position' => $table['x_position'],
+                'y_position' => $table['y_position'],
+                'width' => $table['width'] ?? 1,
+                'height' => $table['height'] ?? 1,
+                'color' => $table['table_color'] ?? null,
+                'chair_color' => $table['chair_color'] ?? null,
+                'rotation' => $rotationMap[$table['rotate'] ?? 'r1'],
+                'min_capacity' => $table['min_party_size'] ?? 1,
+                'max_capacity' => $table['max_party_size'] ?? 1,
+                'sort_order' => $index,
             ]);
         }
 
         return response()->json([
-            'message'     => 'Layout saved successfully.',
+            'message' => 'Layout saved successfully.',
             'dining_area' => DiningAreaResource::make($diningArea->refresh()->load('tables')),
         ]);
     }

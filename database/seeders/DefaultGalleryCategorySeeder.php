@@ -24,7 +24,7 @@ class DefaultGalleryCategorySeeder extends Seeder
 
             foreach (array_values(self::DEFAULTS) as $i => $name) {
                 $restaurant->galleryCategories()->create([
-                    'name'       => $name,
+                    'name' => $name,
                     'sort_order' => $i + 1,
                 ]);
             }

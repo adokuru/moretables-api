@@ -22,7 +22,7 @@ class ExpireSubscriptions extends Command
             ])
             ->where('current_period_end', '<', now())
             ->update([
-                'status'     => MerchantSubscriptionStatus::Expired,
+                'status' => MerchantSubscriptionStatus::Expired,
                 'canceled_at' => now(),
             ]);
 

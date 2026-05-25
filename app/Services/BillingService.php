@@ -97,18 +97,18 @@ class BillingService
 
                     if ($subscription) {
                         $invoice = MerchantInvoice::query()->create([
-                            'restaurant_id'           => $subscription->restaurant_id,
-                            'billing_plan_id'         => $subscription->billing_plan_id,
+                            'restaurant_id' => $subscription->restaurant_id,
+                            'billing_plan_id' => $subscription->billing_plan_id,
                             'merchant_subscription_id' => $subscription->id,
-                            'invoice_number'          => $this->generateInvoiceNumber(),
-                            'provider'                => BillingProvider::Paystack,
-                            'provider_reference'      => $reference,
-                            'amount'                  => (int) Arr::get($data, 'amount', $subscription->plan?->amount ?? 0),
-                            'currency'                => Arr::get($data, 'currency', $subscription->plan?->currency ?? 'NGN'),
-                            'status'                  => MerchantInvoiceStatus::Pending,
-                            'billing_period_start'    => now(),
-                            'billing_period_end'      => now()->addMonth(),
-                            'due_at'                  => now(),
+                            'invoice_number' => $this->generateInvoiceNumber(),
+                            'provider' => BillingProvider::Paystack,
+                            'provider_reference' => $reference,
+                            'amount' => (int) Arr::get($data, 'amount', $subscription->plan?->amount ?? 0),
+                            'currency' => Arr::get($data, 'currency', $subscription->plan?->currency ?? 'NGN'),
+                            'status' => MerchantInvoiceStatus::Pending,
+                            'billing_period_start' => now(),
+                            'billing_period_end' => now()->addMonth(),
+                            'due_at' => now(),
                         ]);
                     }
                 }
@@ -286,10 +286,10 @@ class BillingService
         MerchantSubscription::query()
             ->where('provider_subscription_code', $subscriptionCode)
             ->update([
-                'status'              => $status,
+                'status' => $status,
                 'cancel_at_period_end' => $cancelAtPeriodEnd,
-                'next_payment_at'     => $this->dateOrNull(Arr::get($data, 'next_payment_date')),
-                'canceled_at'         => $status === MerchantSubscriptionStatus::Canceled ? now() : null,
+                'next_payment_at' => $this->dateOrNull(Arr::get($data, 'next_payment_date')),
+                'canceled_at' => $status === MerchantSubscriptionStatus::Canceled ? now() : null,
                 'raw_provider_payload' => $data,
             ]);
     }
