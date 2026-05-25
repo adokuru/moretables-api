@@ -123,4 +123,69 @@ class MerchantReservationController extends Controller
             'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }
+
+    public function arrive(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->arriveReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation marked as arrived.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    public function noShow(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->noShowReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation marked as no-show.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    public function partiallyArrive(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->partiallyArriveReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation marked as partially arrived.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    public function leftMessage(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->leftMessageReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation marked as left message.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    public function runningLate(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->runningLateReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation marked as running late.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
 }

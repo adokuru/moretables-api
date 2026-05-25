@@ -450,6 +450,71 @@ class ReservationService
         return $reservation;
     }
 
+    public function arriveReservation(Reservation $reservation, User $actor): Reservation
+    {
+        $reservation->forceFill([
+            'status' => ReservationStatus::Arrived,
+        ])->save();
+
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        event(new ReservationUpdated($reservation, 'arrived'));
+
+        return $reservation;
+    }
+
+    public function partiallyArriveReservation(Reservation $reservation, User $actor): Reservation
+    {
+        $reservation->forceFill([
+            'status' => ReservationStatus::PartiallyArrived,
+        ])->save();
+
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        event(new ReservationUpdated($reservation, 'partially_arrived'));
+
+        return $reservation;
+    }
+
+    public function leftMessageReservation(Reservation $reservation, User $actor): Reservation
+    {
+        $reservation->forceFill([
+            'status' => ReservationStatus::LeftMessage,
+        ])->save();
+
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        event(new ReservationUpdated($reservation, 'left_message'));
+
+        return $reservation;
+    }
+
+    public function runningLateReservation(Reservation $reservation, User $actor): Reservation
+    {
+        $reservation->forceFill([
+            'status' => ReservationStatus::RunningLate,
+        ])->save();
+
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        event(new ReservationUpdated($reservation, 'running_late'));
+
+        return $reservation;
+    }
+
+    public function noShowReservation(Reservation $reservation, User $actor): Reservation
+    {
+        $reservation->forceFill([
+            'status' => ReservationStatus::NoShow,
+        ])->save();
+
+        if ($reservation->table) {
+            $reservation->table->update(['status' => TableStatus::Available]);
+            event(new TableStatusUpdated($reservation->table, 'available'));
+        }
+
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        event(new ReservationUpdated($reservation, 'no_show'));
+
+        return $reservation;
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */

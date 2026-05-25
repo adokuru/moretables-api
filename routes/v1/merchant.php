@@ -122,13 +122,22 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
         Route::post('waitlist-entries/{waitlistEntry}/notify', [MerchantWaitlistController::class, 'notify']);
         Route::post('waitlist-entries/{waitlistEntry}/assign-table', [MerchantWaitlistController::class, 'assignTable']);
 
+        // Status transitions
+        Route::post('reservations/{reservation}/arrive', [MerchantReservationController::class, 'arrive']);
+        Route::post('reservations/{reservation}/partially-arrive', [MerchantReservationController::class, 'partiallyArrive']);
+        Route::post('reservations/{reservation}/left-message', [MerchantReservationController::class, 'leftMessage']);
+        Route::post('reservations/{reservation}/running-late', [MerchantReservationController::class, 'runningLate']);
+        Route::post('reservations/{reservation}/no-show', [MerchantReservationController::class, 'noShow']);
+
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {
             Route::get('summary', [FrontOfHouseController::class, 'summary']);
             Route::get('reservations', [FrontOfHouseController::class, 'reservations']);
+            Route::get('arrived', [FrontOfHouseController::class, 'arrived']);
             Route::get('waitlist', [FrontOfHouseController::class, 'waitlist']);
             Route::get('seated', [FrontOfHouseController::class, 'seated']);
             Route::get('finished', [FrontOfHouseController::class, 'finished']);
+            Route::get('no-show', [FrontOfHouseController::class, 'noshow']);
 
             Route::get('floors', [FrontOfHouseFloorPlanController::class, 'index']);
             Route::get('floors/{diningArea}', [FrontOfHouseFloorPlanController::class, 'show']);

@@ -106,7 +106,12 @@ class FrontOfHouseController extends Controller
         }
 
         $reservationCount = (clone $baseRes)
-            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed, ReservationStatus::Arrived])
+            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed])
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
+            ->first();
+
+        $arrivedCount = (clone $baseRes)
+            ->where('status', ReservationStatus::Arrived)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
             ->first();
 
@@ -117,6 +122,11 @@ class FrontOfHouseController extends Controller
 
         $finishedCount = (clone $baseRes)
             ->where('status', ReservationStatus::Completed)
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
+            ->first();
+
+        $noShowCount = (clone $baseRes)
+            ->where('status', ReservationStatus::NoShow)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
             ->first();
 
@@ -142,15 +152,19 @@ class FrontOfHouseController extends Controller
             'date' => $date->toDateString(),
             'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
             'summary' => [
-                'expected_diners' => (int) $reservationCount->diners + (int) $seatedCount->diners,
-                'reservation_count' => (int) $reservationCount->count,
+                'expected_diners'    => (int) $reservationCount->diners + (int) $arrivedCount->diners + (int) $seatedCount->diners,
+                'reservation_count'  => (int) $reservationCount->count,
                 'reservation_diners' => (int) $reservationCount->diners,
-                'waitlist_count' => (int) $waitlistCount->count,
-                'waitlist_diners' => (int) $waitlistCount->diners,
-                'seated_count' => (int) $seatedCount->count,
-                'seated_diners' => (int) $seatedCount->diners,
-                'finished_count' => (int) $finishedCount->count,
-                'finished_diners' => (int) $finishedCount->diners,
+                'arrived_count'      => (int) $arrivedCount->count,
+                'arrived_diners'     => (int) $arrivedCount->diners,
+                'waitlist_count'     => (int) $waitlistCount->count,
+                'waitlist_diners'    => (int) $waitlistCount->diners,
+                'seated_count'       => (int) $seatedCount->count,
+                'seated_diners'      => (int) $seatedCount->diners,
+                'finished_count'     => (int) $finishedCount->count,
+                'finished_diners'    => (int) $finishedCount->diners,
+                'no_show_count'      => (int) $noShowCount->count,
+                'no_show_diners'     => (int) $noShowCount->diners,
             ],
         ]);
     }
@@ -158,9 +172,9 @@ class FrontOfHouseController extends Controller
     /**
      * List upcoming reservations.
      *
-     * Returns paginated reservations with a status of `booked`, `confirmed`, or
-     * `arrived` — i.e. guests expected but not yet seated — for the requested date
-     * and optional service window.
+     * Returns paginated reservations with a status of `booked` or `confirmed` —
+     * guests expected but not yet arrived — for the requested date and optional
+     * service window.
      */
     public function reservations(Request $request, Restaurant $restaurant): JsonResponse
     {
@@ -174,7 +188,43 @@ class FrontOfHouseController extends Controller
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
             ->whereDate('starts_at', $date->toDateString())
-            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed, ReservationStatus::Arrived])
+            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed])
+            ->orderBy('starts_at');
+
+        if ($windowStart && $windowEnd) {
+            $query->whereTime('starts_at', '>=', $windowStart)
+                ->whereTime('starts_at', '<=', $windowEnd);
+        }
+
+        $reservations = $query->paginate(20);
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            ...(ReservationResource::collection($reservations)->response()->getData(true)),
+        ]);
+    }
+
+    /**
+     * List arrived reservations.
+     *
+     * Returns paginated reservations with a status of `arrived` — guests who have
+     * checked in but are not yet seated — for the requested date and optional
+     * service window.
+     */
+    public function arrived(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+
+        $this->validateCommonParams($request);
+
+        $date = $this->resolveDate($request, $restaurant);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+
+        $query = $restaurant->reservations()
+            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->whereDate('starts_at', $date->toDateString())
+            ->where('status', ReservationStatus::Arrived)
             ->orderBy('starts_at');
 
         if ($windowStart && $windowEnd) {
@@ -286,6 +336,41 @@ class FrontOfHouseController extends Controller
             ->whereDate('starts_at', $date->toDateString())
             ->where('status', ReservationStatus::Completed)
             ->orderBy('completed_at');
+
+        if ($windowStart && $windowEnd) {
+            $query->whereTime('starts_at', '>=', $windowStart)
+                ->whereTime('starts_at', '<=', $windowEnd);
+        }
+
+        $reservations = $query->paginate(20);
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            ...(ReservationResource::collection($reservations)->response()->getData(true)),
+        ]);
+    }
+
+    /**
+     * List no-show reservations.
+     *
+     * Returns paginated reservations with a status of `no_show` for the requested
+     * date and optional service window.
+     */
+    public function noshow(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+
+        $this->validateCommonParams($request);
+
+        $date = $this->resolveDate($request, $restaurant);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+
+        $query = $restaurant->reservations()
+            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->whereDate('starts_at', $date->toDateString())
+            ->where('status', ReservationStatus::NoShow)
+            ->orderBy('starts_at');
 
         if ($windowStart && $windowEnd) {
             $query->whereTime('starts_at', '>=', $windowStart)
