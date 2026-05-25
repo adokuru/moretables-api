@@ -84,6 +84,14 @@ class AdminUserSeeder extends Seeder
                 'role' => Role::SuperAdmin,
             ],
             [
+                'first_name' => 'Alfa',
+                'last_name' => 'Daji',
+                'email' => 'alfadaji@gmail.com',
+                'phone' => '+2348010000007',
+                'password' => 'Password123!',
+                'role' => Role::SuperAdmin,
+            ],
+            [
                 'first_name' => 'David',
                 'last_name' => 'Adokuru',
                 'email' => 'david.adokuru@danoitech.com',

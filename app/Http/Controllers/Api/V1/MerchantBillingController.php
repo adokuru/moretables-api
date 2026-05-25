@@ -73,6 +73,8 @@ class MerchantBillingController extends Controller
                 'reference' => $checkout['reference'],
                 'email' => $email,
                 'plan_code' => $plan->provider_plan_code,
+                'authorization_url' => data_get($checkout, 'provider_response.data.authorization_url'),
+                'access_code' => data_get($checkout, 'provider_response.data.access_code'),
             ],
             'invoice' => MerchantInvoiceResource::make($checkout['invoice']->load('plan')),
         ], 201);

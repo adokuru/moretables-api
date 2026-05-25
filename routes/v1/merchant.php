@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);
             Route::post('profile-photo', [MerchantRestaurantOnboardingController::class, 'uploadProfilePhoto']);
             Route::patch('description', [MerchantRestaurantOnboardingController::class, 'updateDescription']);
+            Route::patch('internal-notes', [MerchantRestaurantOnboardingController::class, 'updateInternalNotes']);
             Route::get('internal-notes', [MerchantRestaurantInternalNoteController::class, 'index']);
             Route::post('internal-notes', [MerchantRestaurantInternalNoteController::class, 'store']);
             Route::patch('internal-notes/{internalNote}', [MerchantRestaurantInternalNoteController::class, 'update']);

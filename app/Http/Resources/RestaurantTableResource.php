@@ -33,6 +33,7 @@ class RestaurantTableResource extends JsonResource
             'height' => $this->height,
             'rotation' => $this->rotation,
             'rotate' => $rotateMap[$this->rotation] ?? 'r1',
+            'color' => $this->color,
             'table_color' => $this->color,
             'chair_color' => $this->chair_color,
         ];

@@ -9,6 +9,7 @@ use App\Http\Requests\Merchant\StoreRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingContactRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingDescriptionRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingHoursRequest;
+use App\Http\Requests\Merchant\UpdateRestaurantOnboardingInternalNotesRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingStatusRequest;
 use App\Http\Requests\Merchant\UploadRestaurantOnboardingPhotoRequest;
@@ -104,6 +105,21 @@ class MerchantRestaurantOnboardingController extends Controller
             'message' => 'Description updated successfully.',
             'onboarding_status' => $onboardingStatus,
             'description' => $restaurant->description,
+        ]);
+    }
+
+    public function updateInternalNotes(UpdateRestaurantOnboardingInternalNotesRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        $restaurant->update([
+            'internal_notes' => $request->boolean('skip') ? null : $request->validated('internal_notes'),
+        ]);
+
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
+
+        return response()->json([
+            'message' => 'Internal notes updated successfully.',
+            'onboarding_status' => $onboardingStatus,
+            'internal_notes' => $restaurant->internal_notes,
         ]);
     }
 

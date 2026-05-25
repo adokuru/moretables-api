@@ -19,8 +19,21 @@ class EnsureMerchantBillingActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // TODO: enable per-plan feature gating once subscription tiers are defined.
-        // Each plan slug (foundation / core / premium) will unlock different features.
+        if ($request->is('api/v1/merchant/restaurants/*/onboarding*')) {
+            return $next($request);
+        }
+
+        $restaurant = $request->route('restaurant');
+
+        if ($restaurant && $this->hasActiveBillingPlans() && ! $this->billingService->isRestaurantBillable($restaurant)) {
+            return response()->json([
+                'message' => 'An active billing subscription is required for this restaurant.',
+                'billing' => [
+                    'status' => 'unpaid',
+                ],
+            ], 402);
+        }
+
         return $next($request);
     }
 

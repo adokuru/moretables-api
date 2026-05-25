@@ -40,9 +40,12 @@ class BillingService
             'due_at' => now()->addDay(),
         ]);
 
+        $providerResponse = $this->provider->initializeSubscriptionCheckout($restaurant, $plan, $invoice);
+
         return [
             'reference' => $invoice->provider_reference,
             'invoice' => $invoice,
+            'provider_response' => $providerResponse,
         ];
     }
 
