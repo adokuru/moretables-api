@@ -57,6 +57,86 @@ it('lets a customer cancel their reservation before the cutoff window', function
         ->assertJsonPath('reservation.status', 'cancelled');
 });
 
+it('lets a customer update a future reservation', function () {
+    Notification::fake();
+    Event::fake([ReservationUpdated::class]);
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(3)->setTime(18, 0),
+        'ends_at' => now()->addDays(3)->setTime(20, 0),
+        'notes' => 'Original note',
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $newStartsAt = now()->addDays(4)->setTime(19, 0);
+
+    $this->patchJson('/api/v1/reservations/'.$reservation->id, [
+        'starts_at' => $newStartsAt->toDateTimeString(),
+        'party_size' => 3,
+        'notes' => 'Updated note',
+    ])->assertOk()
+        ->assertJsonPath('reservation.party_size', 3)
+        ->assertJsonPath('reservation.notes', 'Updated note');
+
+    $reservation->refresh();
+
+    expect($reservation->starts_at->toDateTimeString())->toBe($newStartsAt->toDateTimeString());
+    expect($reservation->ends_at->toDateTimeString())->toBe($newStartsAt->copy()->addHours(2)->toDateTimeString());
+    Event::assertDispatched(ReservationUpdated::class);
+    Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
+});
+
+it('prevents customers from modifying reservations after the cutoff window', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => now()->addHours(12),
+        'ends_at' => now()->addHours(14),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->patchJson('/api/v1/reservations/'.$reservation->id, [
+        'notes' => 'Too late',
+    ])->assertUnprocessable();
+
+    $this->deleteJson('/api/v1/reservations/'.$reservation->id)
+        ->assertUnprocessable();
+});
+
+it('does not expose another customers reservation', function () {
+    $data = createBookableRestaurant();
+    $owner = User::factory()->create();
+    $otherCustomer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $owner->id,
+        'restaurant_table_id' => $data['table']->id,
+    ]);
+
+    Sanctum::actingAs($otherCustomer);
+
+    $this->getJson('/api/v1/reservations/'.$reservation->id)
+        ->assertNotFound();
+
+    $this->patchJson('/api/v1/reservations/'.$reservation->id, [
+        'notes' => 'Not mine',
+    ])->assertNotFound();
+});
+
 it('updates guests on a customer reservation through a dedicated endpoint', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
@@ -385,6 +465,42 @@ it('rejects guest updates when guest count exceeds additional guest cap', functi
 
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['guests']);
+});
+
+it('rejects shrinking party size below the current guest list', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 4,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Guest One',
+                'email_address' => 'guest.one@example.com',
+            ],
+            [
+                'attendee_name' => 'Guest Two',
+                'email_address' => 'guest.two@example.com',
+            ],
+        ],
+    ])->assertOk();
+
+    $this->patchJson('/api/v1/reservations/'.$reservation->id, [
+        'party_size' => 2,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['party_size']);
+
+    expect($reservation->refresh()->party_size)->toBe(4);
 });
 
 it('merges guests when adding in separate requests without losing prior guests', function () {
