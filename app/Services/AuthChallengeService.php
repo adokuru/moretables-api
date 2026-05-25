@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,7 @@ class AuthChallengeService
                 ->update(['status' => AuthChallengeStatus::Cancelled->value]);
 
             $code = $this->generateCode();
+            Log::info('Code: '.$code);
 
             $challenge = AuthChallenge::query()->create([
                 'user_id' => $user->id,

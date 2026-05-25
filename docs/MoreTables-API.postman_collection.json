@@ -5411,6 +5411,210 @@
           }
         },
         {
+          "name": "Cuisines list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cuisines?per_page=20&page=1&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cuisines"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Paginated list of cuisines (independent from legacy cuisine-options)."
+          }
+        },
+        {
+          "name": "Cuisine create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cuisines",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cuisines"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Peruvian\",\n  \"slug\": \"peruvian\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cuisine show",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cuisines/{{cuisine_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cuisines",
+                "{{cuisine_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cuisine update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cuisines/{{cuisine_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cuisines",
+                "{{cuisine_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Peruvian Fusion\",\n  \"slug\": \"peruvian-fusion\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Cuisine delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cuisines/{{cuisine_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cuisines",
+                "{{cuisine_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Roles list",
           "request": {
             "method": "GET",
@@ -5690,9 +5894,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"business_name\": \"Chicken Republic Limited\",\n  \"business_phone\": \"+2348000000000\",\n  \"owner_name\": \"Ada Okafor\",\n  \"owner_phone\": \"+2348011111111\",\n  \"owner_email\": \"ada@chickenrepublic.example\",\n  \"business_email\": \"contact@chickenrepublic.example\",\n  \"restaurants_count\": 1,\n  \"restaurants\": [\n    {\n      \"name\": \"Chicken Republic Ikeja\",\n      \"cuisine_type\": \"Nigerian\",\n      \"phone\": \"+2348022222222\",\n      \"country\": \"Nigeria\",\n      \"city\": \"Lagos\"\n    }\n  ]\n}"
+              "raw": "{\n  \"business_name\": \"Chicken Republic Limited\",\n  \"business_phone\": \"+2348000000000\",\n  \"owner_name\": \"Ada Okafor\",\n  \"owner_phone\": \"+2348011111111\",\n  \"owner_email\": \"ada@chickenrepublic.example\",\n  \"business_email\": \"contact@chickenrepublic.example\",\n  \"business_website\": \"https://chickenrepublic.example\",\n  \"restaurants_count\": 1,\n  \"restaurants\": [\n    {\n      \"name\": \"Chicken Republic Ikeja\",\n      \"email\": \"ikeja@chickenrepublic.example\",\n      \"phone\": \"+2348022222222\",\n      \"description\": \"Flagship branch.\",\n      \"cuisine_type\": \"Nigerian\",\n      \"average_price_range\": \"$$\",\n      \"dining_style\": \"Casual Dining\",\n      \"dress_code\": \"Casual\",\n      \"address_line_1\": \"12 Allen Avenue, Ikeja\",\n      \"address_line_2\": \"\",\n      \"latitude\": 6.6018,\n      \"longitude\": 3.3515,\n      \"menu\": {\n        \"mode\": \"link\",\n        \"link\": \"https://chickenrepublic.example/menu\"\n      }\n    }\n  ]\n}"
             },
-            "description": "Admin step-1/2/3 onboarding payload submitted as one final request."
+            "description": "Admin step-1/2/3 onboarding payload submitted as one final request. Optional org fields (billing_email, business_city, etc.) and restaurant sections (hours, accessibility, payment_options, seating settings) may be omitted."
           }
         },
         {

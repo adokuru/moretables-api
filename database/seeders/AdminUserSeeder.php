@@ -76,9 +76,9 @@ class AdminUserSeeder extends Seeder
                 'role' => Role::BusinessAdmin,
             ],
             [
-                'first_name' => 'Alfadaji',
-                'last_name' => 'Muhtar',
-                'email' => 'alfadaji@gmail.com',
+                'first_name' => 'Raphael',
+                'last_name' => 'Fadimu',
+                'email' => 'raphaelfadimu@gmail.com',
                 'phone' => '+2348010000004',
                 'password' => 'Password123!',
                 'role' => Role::SuperAdmin,

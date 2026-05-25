@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AdminAuditLogController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
+use App\Http\Controllers\Api\V1\AdminCuisineController;
 use App\Http\Controllers\Api\V1\AdminDashboardController;
 use App\Http\Controllers\Api\V1\AdminOnboardingRequestController;
 use App\Http\Controllers\Api\V1\AdminOrganizationController;
@@ -36,6 +37,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
 
     Route::get('users', [AdminUserController::class, 'index']);
     Route::post('users', [AdminUserController::class, 'store']);
+    Route::get('cuisines', [AdminCuisineController::class, 'index']);
+    Route::post('cuisines', [AdminCuisineController::class, 'store']);
+    Route::get('cuisines/{cuisine}', [AdminCuisineController::class, 'show']);
+    Route::patch('cuisines/{cuisine}', [AdminCuisineController::class, 'update']);
+    Route::delete('cuisines/{cuisine}', [AdminCuisineController::class, 'destroy']);
+
     Route::get('roles', [AdminRoleController::class, 'index']);
     Route::post('roles', [AdminRoleController::class, 'store']);
     Route::get('roles/{role}', [AdminRoleController::class, 'show']);
