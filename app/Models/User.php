@@ -169,27 +169,42 @@ class User extends Authenticatable implements HasMedia
     ): bool {
         $organization ??= $restaurant?->organization;
 
-        return $this->roleAssignments()
-            ->whereHas('role.permissions', fn ($query) => $query->where('name', $permissionName))
-            ->where(function ($query) use ($restaurant, $organization): void {
-                $query->where(function ($scopeQuery): void {
+        $scopeFilter = function ($query) use ($restaurant, $organization): void {
+            $query->where(function ($scopeQuery): void {
+                $scopeQuery
+                    ->whereNull('organization_id')
+                    ->whereNull('restaurant_id');
+            });
+
+            if ($restaurant) {
+                $query->orWhere('restaurant_id', $restaurant->getKey());
+            }
+
+            if ($organization) {
+                $query->orWhere(function ($scopeQuery) use ($organization): void {
                     $scopeQuery
-                        ->whereNull('organization_id')
+                        ->where('organization_id', $organization->getKey())
                         ->whereNull('restaurant_id');
                 });
+            }
+        };
 
-                if ($restaurant) {
-                    $query->orWhere('restaurant_id', $restaurant->getKey());
-                }
+        // Check via restaurant access config (per-restaurant role)
+        $viaAccessConfig = $this->roleAssignments()
+            ->whereNotNull('access_config_id')
+            ->whereHas('accessConfig', fn ($q) => $q->whereJsonContains('permissions', $permissionName))
+            ->where($scopeFilter)
+            ->exists();
 
-                if ($organization) {
-                    $query->orWhere(function ($scopeQuery) use ($organization): void {
-                        $scopeQuery
-                            ->where('organization_id', $organization->getKey())
-                            ->whereNull('restaurant_id');
-                    });
-                }
-            })
+        if ($viaAccessConfig) {
+            return true;
+        }
+
+        // Fall back to global role permissions (org owner, admin roles, etc.)
+        return $this->roleAssignments()
+            ->whereNull('access_config_id')
+            ->whereHas('role.permissions', fn ($query) => $query->where('name', $permissionName))
+            ->where($scopeFilter)
             ->exists();
     }
 

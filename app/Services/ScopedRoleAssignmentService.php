@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Organization;
 use App\Models\Restaurant;
+use App\Models\RestaurantAccessConfig;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
@@ -34,21 +35,54 @@ class ScopedRoleAssignmentService
 
     public function assignRestaurantPrincipalAdmin(User $user, Restaurant $restaurant, int $assignedBy): void
     {
-        $this->syncRestaurantRole(
+        $accessConfig = RestaurantAccessConfig::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('slug', 'principal_admin')
+            ->first();
+
+        $this->syncRestaurantAccessConfig(
             user: $user,
             restaurant: $restaurant,
-            roleName: Role::PrincipalAdmin,
+            accessConfig: $accessConfig,
             assignedBy: $assignedBy,
         );
     }
 
+    /**
+     * Assign a staff member to a restaurant access config (per-restaurant role).
+     * Replaces any existing restaurant staff assignment for this user.
+     */
+    public function syncRestaurantAccessConfig(
+        User $user,
+        Restaurant $restaurant,
+        RestaurantAccessConfig $accessConfig,
+        int $assignedBy,
+    ): UserRole {
+        $this->removeRestaurantRoles($user, $restaurant);
+
+        // Use the legacy global role as a fallback role_id for backward compat checks
+        // (e.g. canAccessRestaurant, requiresStaffLogin). We pick principal_admin as the
+        // stand-in since access config handles actual permissions.
+        $roleName = Role::PrincipalAdmin;
+        $roleId = Role::query()->where('name', $roleName)->value('id');
+
+        return UserRole::query()->create([
+            'user_id' => $user->id,
+            'role_id' => $roleId,
+            'access_config_id' => $accessConfig->id,
+            'organization_id' => $restaurant->organization_id,
+            'restaurant_id' => $restaurant->id,
+            'scope_type' => RoleScopeType::Restaurant->value,
+            'assigned_by' => $assignedBy,
+        ]);
+    }
+
+    /**
+     * Legacy method — kept for backward compat with non-access-config assignments.
+     */
     public function syncRestaurantRole(User $user, Restaurant $restaurant, string $roleName, int $assignedBy): UserRole
     {
-        UserRole::query()
-            ->where('user_id', $user->id)
-            ->where('restaurant_id', $restaurant->id)
-            ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
-            ->delete();
+        $this->removeRestaurantRoles($user, $restaurant);
 
         return $this->assignRole(
             user: $user,

@@ -230,6 +230,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantInternalNote::class)->latest();
     }
 
+    public function accessConfigs(): HasMany
+    {
+        return $this->hasMany(RestaurantAccessConfig::class);
+    }
+
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);

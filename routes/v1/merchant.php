@@ -1,9 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\FrontOfHouseController;
-use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
 use App\Http\Controllers\Api\V1\FrontOfHouseShiftOverviewController;
+use App\Http\Controllers\Api\V1\GuestbookController;
+use App\Http\Controllers\Api\V1\MerchantAccessConfigController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
@@ -69,6 +70,13 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::get('status', [MerchantRestaurantOnboardingController::class, 'showStatus']);
             Route::patch('status', [MerchantRestaurantOnboardingController::class, 'updateStatus']);
         });
+        Route::get('access-configs', [MerchantAccessConfigController::class, 'index']);
+        Route::post('access-configs', [MerchantAccessConfigController::class, 'store']);
+        Route::get('access-configs/permissions', [MerchantAccessConfigController::class, 'permissions']);
+        Route::get('access-configs/{accessConfig}', [MerchantAccessConfigController::class, 'show']);
+        Route::patch('access-configs/{accessConfig}', [MerchantAccessConfigController::class, 'update']);
+        Route::delete('access-configs/{accessConfig}', [MerchantAccessConfigController::class, 'destroy']);
+
         Route::get('staff', [MerchantRestaurantStaffController::class, 'index']);
         Route::post('staff', [MerchantRestaurantStaffController::class, 'store']);
         Route::patch('staff/{user}', [MerchantRestaurantStaffController::class, 'update']);

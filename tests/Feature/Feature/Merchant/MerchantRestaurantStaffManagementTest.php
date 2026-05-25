@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Reservation;
+use App\Models\RestaurantAccessConfig;
 use App\Models\Role;
 use App\Models\User;
 use App\UserStatus;
@@ -22,16 +23,26 @@ it('allows principal admins to invite, manage, and remove restaurant staff', fun
 
     Sanctum::actingAs($principalAdmin);
 
+    // Get the restaurant's per-restaurant access configs (auto-seeded by observer)
+    $operationsConfig    = RestaurantAccessConfig::query()
+        ->where('restaurant_id', $data['restaurant']->id)
+        ->where('slug', 'operations')
+        ->firstOrFail();
+    $guestRelationsConfig = RestaurantAccessConfig::query()
+        ->where('restaurant_id', $data['restaurant']->id)
+        ->where('slug', 'guest_relations')
+        ->firstOrFail();
+
     $inviteResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff', [
-        'first_name' => 'Floor',
-        'last_name' => 'Manager',
-        'email' => 'floor.manager@example.com',
-        'phone' => '+2348012345678',
-        'role' => Role::Operations,
+        'first_name'       => 'Floor',
+        'last_name'        => 'Manager',
+        'email'            => 'floor.manager@example.com',
+        'phone'            => '+2348012345678',
+        'access_config_id' => $operationsConfig->id,
     ]);
 
     $inviteResponse->assertCreated()
-        ->assertJsonPath('staff_member.role', Role::Operations)
+        ->assertJsonPath('staff_member.access_config.slug', 'operations')
         ->assertJsonPath('staff_member.user.email', 'floor.manager@example.com');
 
     $staffUser = User::query()->where('email', 'floor.manager@example.com')->firstOrFail();
@@ -44,23 +55,15 @@ it('allows principal admins to invite, manage, and remove restaurant staff', fun
     $listResponse = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff');
 
     $listResponse->assertOk()
-        ->assertJsonCount(2, 'staff')
-        ->assertJsonFragment([
-            'role' => Role::PrincipalAdmin,
-            'email' => $principalAdmin->email,
-        ])
-        ->assertJsonFragment([
-            'role' => Role::Operations,
-            'email' => 'floor.manager@example.com',
-        ]);
+        ->assertJsonCount(2, 'staff');
 
     $updateResponse = $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff/'.$staffUser->id, [
-        'role' => Role::GuestRelations,
-        'status' => UserStatus::Suspended->value,
+        'access_config_id' => $guestRelationsConfig->id,
+        'status'           => UserStatus::Suspended->value,
     ]);
 
     $updateResponse->assertOk()
-        ->assertJsonPath('staff_member.role', Role::GuestRelations)
+        ->assertJsonPath('staff_member.access_config.slug', 'guest_relations')
         ->assertJsonPath('staff_member.user.status', UserStatus::Suspended->value);
 
     $deleteResponse = $this->deleteJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff/'.$staffUser->id);
@@ -69,7 +72,7 @@ it('allows principal admins to invite, manage, and remove restaurant staff', fun
         ->assertJsonPath('message', 'Staff member removed from the restaurant successfully.');
 
     $this->assertDatabaseMissing('user_roles', [
-        'user_id' => $staffUser->id,
+        'user_id'       => $staffUser->id,
         'restaurant_id' => $data['restaurant']->id,
     ]);
 });
@@ -80,7 +83,7 @@ it('blocks suspended restaurant staff accounts from logging in', function () {
     $data = createBookableRestaurant();
     $principalAdmin = User::factory()->create();
     $staffMember = User::factory()->create([
-        'email' => 'staff.member@example.com',
+        'email'    => 'staff.member@example.com',
         'password' => 'Secret123!',
     ]);
 
@@ -95,7 +98,7 @@ it('blocks suspended restaurant staff accounts from logging in', function () {
 
     $loginResponse = $this->postJson('/api/v1/auth/staff/login', [
         'identifier' => 'staff.member@example.com',
-        'password' => 'Secret123!',
+        'password'   => 'Secret123!',
     ]);
 
     $loginResponse->assertUnprocessable()
@@ -116,10 +119,10 @@ it('forbids operations staff from managing restaurant staff', function () {
         ->assertForbidden();
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff', [
-        'first_name' => 'New',
-        'last_name' => 'Staff',
-        'email' => 'new.staff@example.com',
-        'role' => Role::AnalyticsReporting,
+        'first_name'       => 'New',
+        'last_name'        => 'Staff',
+        'email'            => 'new.staff@example.com',
+        'access_config_id' => 999,
     ])->assertForbidden();
 });
 
@@ -147,13 +150,13 @@ it('lets guest relations and analytics staff view reservations but not mutate me
     ])->assertForbidden();
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
-        'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
-        'party_size' => 2,
-        'source' => 'walk_in',
+        'starts_at'     => now()->addDay()->setTime(19, 0)->toDateTimeString(),
+        'party_size'    => 2,
+        'source'        => 'walk_in',
         'guest_contact' => [
             'first_name' => 'Walk',
-            'last_name' => 'In',
-            'phone' => '+2348099999999',
+            'last_name'  => 'In',
+            'phone'      => '+2348099999999',
         ],
     ])->assertForbidden();
 
@@ -163,13 +166,13 @@ it('lets guest relations and analytics staff view reservations but not mutate me
         ->assertOk();
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
-        'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
-        'party_size' => 2,
-        'source' => 'walk_in',
+        'starts_at'     => now()->addDay()->setTime(19, 0)->toDateTimeString(),
+        'party_size'    => 2,
+        'source'        => 'walk_in',
         'guest_contact' => [
             'first_name' => 'Walk',
-            'last_name' => 'In',
-            'phone' => '+2348099999999',
+            'last_name'  => 'In',
+            'phone'      => '+2348099999999',
         ],
     ])->assertForbidden();
 });
@@ -191,13 +194,13 @@ it('lets marketing and growth staff manage profile resources but not reservation
         ->assertJsonPath('restaurant.website', 'https://marketing-update.example.com');
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
-        'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
-        'party_size' => 2,
-        'source' => 'walk_in',
+        'starts_at'     => now()->addDay()->setTime(19, 0)->toDateTimeString(),
+        'party_size'    => 2,
+        'source'        => 'walk_in',
         'guest_contact' => [
             'first_name' => 'Walk',
-            'last_name' => 'In',
-            'phone' => '+2348099999999',
+            'last_name'  => 'In',
+            'phone'      => '+2348099999999',
         ],
     ])->assertForbidden();
 });

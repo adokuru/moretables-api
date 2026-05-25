@@ -16,6 +16,7 @@ class UserRole extends Model
     protected $fillable = [
         'user_id',
         'role_id',
+        'access_config_id',
         'scope_type',
         'organization_id',
         'restaurant_id',
@@ -47,6 +48,11 @@ class UserRole extends Model
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
+    }
+
+    public function accessConfig(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantAccessConfig::class, 'access_config_id');
     }
 
     public function assignedBy(): BelongsTo

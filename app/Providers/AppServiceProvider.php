@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentProvider;
+use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\Channels\MoreTablesMailChannel;
+use App\Observers\RestaurantObserver;
 use App\Services\Payments\PaystackPaymentProvider;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -25,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Restaurant::observe(RestaurantObserver::class);
+
         ResetPassword::createUrlUsing(function (object $notifiable, string $token): string {
             $audience = match (true) {
                 $notifiable instanceof User && $notifiable->requiresAdminLogin() => 'admin',

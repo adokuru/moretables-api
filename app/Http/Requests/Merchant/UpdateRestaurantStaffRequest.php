@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Merchant;
 
 use App\Models\Restaurant;
-use App\Models\Role;
+use App\Models\RestaurantAccessConfig;
 use App\UserStatus;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,8 +21,15 @@ class UpdateRestaurantStaffRequest extends FormRequest
 
     public function rules(): array
     {
+        $restaurant = $this->route('restaurant');
+
         return [
-            'role' => ['sometimes', Rule::in(Role::restaurantStaffRoles())],
+            'access_config_id' => [
+                'sometimes',
+                'integer',
+                Rule::exists(RestaurantAccessConfig::class, 'id')
+                    ->where('restaurant_id', $restaurant instanceof Restaurant ? $restaurant->id : null),
+            ],
             'status' => ['sometimes', Rule::in([
                 UserStatus::Active->value,
                 UserStatus::Suspended->value,
@@ -34,8 +41,8 @@ class UpdateRestaurantStaffRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if (! $this->has('role') && ! $this->has('status')) {
-                    $validator->errors()->add('role', 'Provide a role, a status, or both when updating restaurant staff.');
+                if (! $this->has('access_config_id') && ! $this->has('status')) {
+                    $validator->errors()->add('access_config_id', 'Provide an access_config_id, a status, or both when updating restaurant staff.');
                 }
             },
         ];
@@ -44,7 +51,7 @@ class UpdateRestaurantStaffRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'role.in' => 'The selected restaurant staff role is invalid.',
+            'access_config_id.exists' => 'The selected access config does not belong to this restaurant.',
             'status.in' => 'Staff status must be active or suspended.',
         ];
     }

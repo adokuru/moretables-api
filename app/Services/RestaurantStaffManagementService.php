@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Restaurant;
+use App\Models\RestaurantAccessConfig;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
@@ -24,14 +25,14 @@ class RestaurantStaffManagementService
     public function listForRestaurant(Restaurant $restaurant): Collection
     {
         return $restaurant->userRoles()
-            ->with(['user.roles', 'role.permissions', 'assignedBy'])
+            ->with(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy'])
             ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
             ->latest()
             ->get();
     }
 
     /**
-     * @param  array{first_name: string, last_name: string, email: string, phone?: ?string, role: string}  $payload
+     * @param  array{first_name: string, last_name: string, email: string, phone?: ?string, access_config_id: int}  $payload
      */
     public function invite(Restaurant $restaurant, array $payload, User $actor): UserRole
     {
@@ -40,10 +41,14 @@ class RestaurantStaffManagementService
 
             $this->ensureUserCanBeManaged($restaurant, $user);
 
-            $assignment = $this->scopedRoleAssignmentService->syncRestaurantRole(
+            $accessConfig = RestaurantAccessConfig::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->findOrFail($payload['access_config_id']);
+
+            $assignment = $this->scopedRoleAssignmentService->syncRestaurantAccessConfig(
                 user: $user,
                 restaurant: $restaurant,
-                roleName: $payload['role'],
+                accessConfig: $accessConfig,
                 assignedBy: $actor->id,
             );
 
@@ -51,12 +56,12 @@ class RestaurantStaffManagementService
                 Password::sendResetLink(['email' => $user->email]);
             });
 
-            return $assignment->load(['user.roles', 'role.permissions', 'assignedBy']);
+            return $assignment->load(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy']);
         });
     }
 
     /**
-     * @param  array{role?: string, status?: string}  $payload
+     * @param  array{access_config_id?: int, status?: string}  $payload
      */
     public function update(Restaurant $restaurant, User $staffMember, array $payload, User $actor): UserRole
     {
@@ -68,20 +73,25 @@ class RestaurantStaffManagementService
             ])->save();
         }
 
-        if (! array_key_exists('role', $payload)) {
+        if (! array_key_exists('access_config_id', $payload)) {
             return $this->staffAssignmentForRestaurant($restaurant, $staffMember)->load([
                 'user.roles',
                 'role.permissions',
+                'accessConfig',
                 'assignedBy',
             ]);
         }
 
-        return $this->scopedRoleAssignmentService->syncRestaurantRole(
+        $accessConfig = RestaurantAccessConfig::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->findOrFail($payload['access_config_id']);
+
+        return $this->scopedRoleAssignmentService->syncRestaurantAccessConfig(
             user: $staffMember,
             restaurant: $restaurant,
-            roleName: $payload['role'],
+            accessConfig: $accessConfig,
             assignedBy: $actor->id,
-        )->load(['user.roles', 'role.permissions', 'assignedBy']);
+        )->load(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy']);
     }
 
     public function remove(Restaurant $restaurant, User $staffMember): void
@@ -168,7 +178,7 @@ class RestaurantStaffManagementService
     protected function staffAssignmentForRestaurant(Restaurant $restaurant, User $staffMember): UserRole
     {
         return $restaurant->userRoles()
-            ->with(['user.roles', 'role.permissions', 'assignedBy'])
+            ->with(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy'])
             ->where('user_id', $staffMember->id)
             ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
             ->firstOrFail();

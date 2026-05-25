@@ -45,6 +45,9 @@
             "name": "Merchant Restaurant Profile"
         },
         {
+            "name": "Merchant Access Config"
+        },
+        {
             "name": "Merchant Staff"
         },
         {
@@ -3722,6 +3725,692 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/access-configs": {
+            "get": {
+                "operationId": "merchantAccessConfig.index",
+                "description": "Returns all access configurations for the restaurant, including the 5\nsystem defaults and any custom configs created by the merchant.",
+                "summary": "List access configs",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "access_configs": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "access_configs"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantAccessConfig.store",
+                "description": "Creates a custom access configuration with a chosen set of permissions.",
+                "summary": "Create an access config",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 100
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 500
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "restaurants.view",
+                                                "restaurants.manage",
+                                                "reservations.view",
+                                                "reservations.manage",
+                                                "waitlist.manage",
+                                                "tables.manage",
+                                                "staff.manage",
+                                                "audit_logs.view"
+                                            ]
+                                        },
+                                        "minItems": 1
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "permissions"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Access config created successfully."
+                                        },
+                                        "access_config": {
+                                            "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "access_config"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/access-configs/permissions": {
+            "get": {
+                "operationId": "merchantAccessConfig.permissions",
+                "description": "Returns all permission slugs that can be assigned to an access config.",
+                "summary": "List available permissions",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "permissions": {
+                                            "type": "array",
+                                            "prefixItems": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "restaurants.view"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "View restaurant profile and settings"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "restaurants.manage"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "Edit restaurant profile and settings"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "reservations.view"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "View reservations and guest details"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "reservations.manage"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "Create, update, and cancel reservations"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "waitlist.manage"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "Manage the waitlist"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "tables.manage"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "Manage tables and floor plans"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "staff.manage"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "Invite and manage staff members"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string",
+                                                            "const": "audit_logs.view"
+                                                        },
+                                                        "description": {
+                                                            "type": "string",
+                                                            "const": "View audit logs and reports"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "description"
+                                                    ]
+                                                }
+                                            ],
+                                            "minItems": 8,
+                                            "maxItems": 8,
+                                            "additionalItems": false
+                                        }
+                                    },
+                                    "required": [
+                                        "permissions"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/access-configs/{accessConfig}": {
+            "get": {
+                "operationId": "merchantAccessConfig.show",
+                "summary": "Get an access config",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "accessConfig",
+                        "in": "path",
+                        "required": true,
+                        "description": "The access config ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "access_config": {
+                                            "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "access_config"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "merchantAccessConfig.update",
+                "description": "Updates the name, description, and/or permissions of an access config.\nThe permissions of default configs can be adjusted to suit the restaurant's needs.",
+                "summary": "Update an access config",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "accessConfig",
+                        "in": "path",
+                        "required": true,
+                        "description": "The access config ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 100
+                                    },
+                                    "description": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 500
+                                    },
+                                    "permissions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "restaurants.view",
+                                                "restaurants.manage",
+                                                "reservations.view",
+                                                "reservations.manage",
+                                                "waitlist.manage",
+                                                "tables.manage",
+                                                "staff.manage",
+                                                "audit_logs.view"
+                                            ]
+                                        },
+                                        "minItems": 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Access config updated successfully."
+                                        },
+                                        "access_config": {
+                                            "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "access_config"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantAccessConfig.destroy",
+                "description": "Default access configs can be deleted if no staff are currently assigned to them.\nCustom configs can always be deleted (staff assignments will lose their config reference).",
+                "summary": "Delete an access config",
+                "tags": [
+                    "Merchant Access Config"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "accessConfig",
+                        "in": "path",
+                        "required": true,
+                        "description": "The access config ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Access config deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": "Cannot delete an access config that has staff members assigned to it."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants": {
             "get": {
                 "operationId": "merchantRestaurant.index",
@@ -6580,7 +7269,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -6713,7 +7405,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -6810,7 +7505,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -6905,7 +7603,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -6922,7 +7623,10 @@
                                             ]
                                         },
                                         "internal_notes": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -7063,16 +7767,24 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "body": {
                                                     "type": "string"
                                                 },
                                                 "created_at": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
                                                 },
                                                 "updated_at": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "required": [
@@ -7185,16 +7897,24 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "body": {
                                                     "type": "string"
                                                 },
                                                 "created_at": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
                                                 },
                                                 "updated_at": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ],
+                                                    "format": "date-time"
                                                 }
                                             },
                                             "required": [
@@ -7367,7 +8087,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -7523,7 +8246,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -7650,7 +8376,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -7756,7 +8485,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -7943,7 +8675,10 @@
                                                     ]
                                                 },
                                                 "last_step": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "is_profile_published": {
                                                     "type": "boolean"
@@ -8156,7 +8891,10 @@
                                             ]
                                         },
                                         "last_step": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "is_profile_published": {
                                             "type": "boolean"
@@ -8247,7 +8985,10 @@
                                             ]
                                         },
                                         "last_step": {
-                                            "type": "string"
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
                                         },
                                         "is_profile_published": {
                                             "type": "boolean"
@@ -9274,10 +10015,16 @@
                                                     "type": "string"
                                                 },
                                                 "category": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "floor_type": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "description": {
                                                     "type": [
@@ -11715,7 +12462,10 @@
                                             "type": "object",
                                             "properties": {
                                                 "reference": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "email": {
                                                     "anyOf": [
@@ -11734,7 +12484,10 @@
                                                     ]
                                                 },
                                                 "plan_code": {
-                                                    "type": "string"
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
                                                 },
                                                 "authorization_url": {},
                                                 "access_code": {}
@@ -17879,16 +18632,28 @@
                                                         "type": "object",
                                                         "properties": {
                                                             "food": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "service": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "ambience": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             },
                                                             "value": {
-                                                                "type": "string"
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
                                                             }
                                                         },
                                                         "required": [
@@ -18089,16 +18854,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -18226,16 +19003,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -18373,16 +19162,28 @@
                                                     "type": "object",
                                                     "properties": {
                                                         "food": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "service": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "ambience": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         },
                                                         "value": {
-                                                            "type": "string"
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
                                                         }
                                                     },
                                                     "required": [
@@ -19197,7 +19998,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
@@ -19206,10 +20007,13 @@
                         "type": "string"
                     },
                     "description": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "display_amount": {
                         "type": "string"
@@ -19226,7 +20030,11 @@
                     "features": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "null"
                             },
                             {
                                 "type": "array",
@@ -19242,7 +20050,11 @@
                     "metadata": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "null"
                             },
                             {
                                 "type": "array",
@@ -19299,7 +20111,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
@@ -19336,10 +20148,16 @@
                         "type": "string"
                     },
                     "category": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "floor_type": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "description": {
                         "type": [
@@ -19410,10 +20228,10 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "restaurant_id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "automated_messaging": {
                         "type": "object",
@@ -19511,14 +20329,7 @@
                         ]
                     },
                     "marketing_opt_in": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "boolean"
-                            }
-                        ]
+                        "type": "boolean"
                     },
                     "birthday": {
                         "type": "string"
@@ -19529,7 +20340,11 @@
                     "preferences": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "null"
                             },
                             {
                                 "type": "array",
@@ -19808,7 +20623,7 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "invoice_number": {
                         "type": "string"
@@ -19817,13 +20632,19 @@
                         "type": "string"
                     },
                     "provider_reference": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "receipt_number": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "display_amount": {
                         "type": "string"
@@ -20275,6 +21096,63 @@
                     "password_confirmation"
                 ],
                 "title": "ResetPasswordRequest"
+            },
+            "RestaurantAccessConfigResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "permissions": {
+                        "anyOf": [
+                            {
+                                "type": "array",
+                                "items": {}
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "is_default": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "description",
+                    "permissions",
+                    "is_default",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "RestaurantAccessConfigResource"
             },
             "RestaurantDetailResource": {
                 "type": "object",
@@ -20939,6 +21817,9 @@
                     "organization_id": {
                         "type": "string"
                     },
+                    "access_config": {
+                        "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                    },
                     "role": {
                         "type": "string"
                     },
@@ -21008,7 +21889,10 @@
                         "type": "string"
                     },
                     "layout_type": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "min_capacity": {
                         "type": "integer"
@@ -21038,19 +21922,31 @@
                         "type": "integer"
                     },
                     "x_position": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "y_position": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "width": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "height": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "rotation": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "rotate": {
                         "anyOf": [
@@ -21066,13 +21962,22 @@
                         ]
                     },
                     "color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "table_color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "chair_color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -22924,22 +23829,15 @@
                         ],
                         "maxLength": 30
                     },
-                    "role": {
-                        "type": "string",
-                        "enum": [
-                            "principal_admin",
-                            "operations",
-                            "analytics_reporting",
-                            "marketing_growth",
-                            "guest_relations"
-                        ]
+                    "access_config_id": {
+                        "type": "integer"
                     }
                 },
                 "required": [
                     "first_name",
                     "last_name",
                     "email",
-                    "role"
+                    "access_config_id"
                 ],
                 "title": "StoreRestaurantStaffRequest"
             },
@@ -24977,15 +25875,8 @@
             "UpdateRestaurantStaffRequest": {
                 "type": "object",
                 "properties": {
-                    "role": {
-                        "type": "string",
-                        "enum": [
-                            "principal_admin",
-                            "operations",
-                            "analytics_reporting",
-                            "marketing_growth",
-                            "guest_relations"
-                        ]
+                    "access_config_id": {
+                        "type": "integer"
                     },
                     "status": {
                         "type": "string",
