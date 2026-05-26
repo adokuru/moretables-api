@@ -68,6 +68,11 @@ class User extends Authenticatable implements HasMedia
         ];
     }
 
+    public function allergies(): HasMany
+    {
+        return $this->hasMany(UserAllergy::class)->orderBy('name');
+    }
+
     public function authChallenges(): HasMany
     {
         return $this->hasMany(AuthChallenge::class);

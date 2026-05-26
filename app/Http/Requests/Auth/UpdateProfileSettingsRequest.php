@@ -18,6 +18,8 @@ class UpdateProfileSettingsRequest extends FormRequest
             'last_name' => ['sometimes', 'string', 'max:120'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'birthday' => ['nullable', 'date', 'before_or_equal:today'],
+            'allergies' => ['nullable', 'array'],
+            'allergies.*' => ['string', 'max:100'],
         ];
     }
 
@@ -29,6 +31,9 @@ class UpdateProfileSettingsRequest extends FormRequest
             'bio.max' => 'Your bio may not be greater than 1000 characters.',
             'birthday.date' => 'Your birthday must be a valid date.',
             'birthday.before_or_equal' => 'Your birthday must be today or earlier.',
+            'allergies.array' => 'Allergies must be a list.',
+            'allergies.*.string' => 'Each allergy must be a string.',
+            'allergies.*.max' => 'Each allergy may not be greater than 100 characters.',
         ];
     }
 }

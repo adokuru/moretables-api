@@ -99,6 +99,44 @@ it('uploads the authenticated user profile picture', function () {
         ->assertJsonPath('user.profile_picture.collection', 'profile_picture');
 });
 
+it('saves and returns allergies on the user profile', function () {
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile', [
+        'allergies' => ['Nuts', 'Shellfish', 'Gluten'],
+    ]);
+
+    // Returned alphabetically (table is ordered by name)
+    $response->assertOk()
+        ->assertJsonPath('user.allergies', ['Gluten', 'Nuts', 'Shellfish']);
+
+    expect($user->allergies()->pluck('name')->sort()->values()->all())
+        ->toBe(['Gluten', 'Nuts', 'Shellfish']);
+});
+
+it('clears allergies when passed an empty array', function () {
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+    ]);
+
+    $user->allergies()->create(['name' => 'Nuts']);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile', [
+        'allergies' => [],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.allergies', []);
+});
+
 it('validates birthday when updating profile settings', function () {
     $user = User::factory()->create([
         'auth_method' => UserAuthMethod::Passwordless,

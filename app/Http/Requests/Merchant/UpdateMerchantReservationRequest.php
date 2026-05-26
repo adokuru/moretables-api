@@ -21,6 +21,7 @@ class UpdateMerchantReservationRequest extends FormRequest
             'party_size' => ['sometimes', 'integer', 'min:1'],
             'status' => ['nullable', Rule::enum(ReservationStatus::class)],
             'notes' => ['nullable', 'string', 'max:500'],
+            'occasion' => ['nullable', 'string', 'max:100'],
             'internal_notes' => ['nullable', 'string', 'max:500'],
         ];
     }
