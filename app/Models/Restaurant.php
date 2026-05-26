@@ -181,6 +181,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(MerchantSubscription::class);
     }
 
+    public function latestBillingSubscription(): HasOne
+    {
+        return $this->hasOne(MerchantSubscription::class)->latestOfMany();
+    }
+
     public function activeBillingSubscription(): HasOne
     {
         return $this->hasOne(MerchantSubscription::class)
