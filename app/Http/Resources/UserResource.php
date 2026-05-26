@@ -33,6 +33,12 @@ class UserResource extends JsonResource
             'account_type' => $this->accountType(),
             'email_verified_at' => optional($this->email_verified_at)?->toIso8601String(),
             'last_active_at' => optional($this->last_active_at)?->toIso8601String(),
+            'notification_preferences' => [
+                'dining_rating_emails' => (bool) $this->notify_dining_rating_emails,
+                'marketing_emails' => (bool) $this->notify_marketing_emails,
+                'sms_alerts' => (bool) $this->notify_sms_alerts,
+                'push_notifications' => (bool) $this->notify_push_notifications,
+            ],
             'profile_picture' => $profilePicture ? MediaAssetResource::make($profilePicture) : null,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')->values()),
             'role_assignments' => $this->whenLoaded('roleAssignments', fn () => $this->roleAssignments

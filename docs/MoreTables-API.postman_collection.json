@@ -728,7 +728,12 @@
             "description": "Update the authenticated user's profile settings. Supports first_name, last_name, bio, and birthday.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Samuel\",\n  \"last_name\": \"Adebayo\",\n  \"bio\": \"Tell us a bit about yourself\",\n  \"birthday\": \"1992-08-14\"\n}"
+              "raw": "{\n  \"first_name\": \"Ada\",\n  \"last_name\": \"Okafor\",\n  \"bio\": \"Tell us a bit about yourself\",\n  \"birthday\": \"1994-05-21\",\n  \"allergies\": [\n    \"Nuts\",\n    \"Shellfish\"\n  ],\n  \"notify_dining_rating_emails\": true,\n  \"notify_marketing_emails\": true,\n  \"notify_sms_alerts\": true,\n  \"notify_push_notifications\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         },
@@ -781,6 +786,86 @@
               ]
             }
           }
+        },
+        {
+          "name": "PATCH Update Phone Number",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/profile/phone",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "phone"
+              ]
+            },
+            "description": "Update the authenticated customer's phone number. Phone must be unique.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+2348099999999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/profile/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "password"
+              ]
+            },
+            "description": "Change the authenticated user's password. Requires correct current_password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"OldPassword1!\",\n  \"password\": \"NewPassword2@\",\n  \"password_confirmation\": \"NewPassword2@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -898,7 +983,7 @@
               ]
             }
           },
-          "description": "Public restaurant detail response including summary and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5–1), and category_breakdown (food, service, ambience, value averages)."
+          "description": "Public restaurant detail response including summary and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages)."
         },
         {
           "name": "Restaurant availability",
@@ -2168,6 +2253,46 @@
               "raw": "{}"
             }
           }
+        },
+        {
+          "name": "POST Add guests to reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reservations/{{reservation_id}}/guests",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{reservation_id}}",
+                "guests"
+              ]
+            },
+            "description": "Add additional guests to the reservation.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"attendee_name\": \"Jane Doe\",\n    \"email_address\": \"jane@example.com\",\n    \"phone_number\": \"+2348011111111\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
