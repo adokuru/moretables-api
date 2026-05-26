@@ -94,7 +94,7 @@ class AuthController extends Controller
         abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
 
         return response()->json([
-            'user' => UserResource::make($user->load('roles')),
+            'user' => UserResource::make($user->load(['roles', 'roleAssignments.restaurant.activeBillingSubscription.plan'])),
         ]);
     }
 
