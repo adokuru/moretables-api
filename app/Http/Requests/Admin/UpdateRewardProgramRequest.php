@@ -33,6 +33,10 @@ class UpdateRewardProgramRequest extends FormRequest
             'levels.*.start_points' => ['required_with:levels', 'integer', 'min:0'],
             'levels.*.end_points' => ['nullable', 'integer', 'min:0'],
             'levels.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'redemption_tiers' => ['sometimes', 'array', 'min:1'],
+            'redemption_tiers.*.points' => ['required_with:redemption_tiers', 'integer', 'min:1'],
+            'redemption_tiers.*.credit_value' => ['required_with:redemption_tiers', 'integer', 'min:1'],
+            'redemption_tiers.*.credit_currency' => ['nullable', 'string', 'size:3'],
         ];
     }
 

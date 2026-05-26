@@ -20,6 +20,8 @@ class UpdateRestaurantSettingsRequest extends FormRequest
             'state' => ['sometimes', 'nullable', 'string', 'max:100'],
             'city' => ['sometimes', 'nullable', 'string', 'max:100'],
             'address_line_1' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'rewards_enabled' => ['sometimes', 'boolean'],
+            'reservation_reward_points' => ['sometimes', 'integer', 'min:1', 'max:10000'],
         ];
     }
 }

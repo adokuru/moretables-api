@@ -22,6 +22,7 @@ use App\Notifications\WaitlistOfferExpiredNotification;
 use App\Notifications\WaitlistTableNoLongerAvailableNotification;
 use App\ReservationSource;
 use App\ReservationStatus;
+use App\RewardPointTransactionType;
 use App\TableStatus;
 use App\UserStatus;
 use App\WaitlistExpiryReason;
@@ -39,6 +40,7 @@ class ReservationService
     public function __construct(
         protected AvailabilityService $availabilityService,
         protected AuditLogService $auditLogService,
+        protected RewardProgramService $rewardProgramService,
     ) {}
 
     /**
@@ -506,7 +508,43 @@ class ReservationService
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, 'completed'));
 
+        $this->maybeAwardReservationPoints($reservation);
+
         return $reservation;
+    }
+
+    /**
+     * Award loyalty points to the user for a completed reservation,
+     * if the reservation has `accept_points` set and the restaurant participates in rewards.
+     */
+    protected function maybeAwardReservationPoints(Reservation $reservation): void
+    {
+        if (! $reservation->accept_points) {
+            return;
+        }
+
+        if (! $reservation->user_id) {
+            return;
+        }
+
+        $reservation->loadMissing('restaurant');
+
+        if (! $reservation->restaurant->rewards_enabled) {
+            return;
+        }
+
+        $points = $reservation->restaurant->reservation_reward_points ?? 100;
+
+        $this->rewardProgramService->awardPoints(
+            user: $reservation->user,
+            attributes: [
+                'points' => $points,
+                'type' => RewardPointTransactionType::Earn,
+                'description' => 'Points earned for completing a reservation.',
+                'reference_type' => Reservation::class,
+                'reference_id' => $reservation->id,
+            ],
+        );
     }
 
     public function arriveReservation(Reservation $reservation, User $actor): Reservation
@@ -798,6 +836,9 @@ class ReservationService
                 'starts_at' => $startsAt,
                 'ends_at' => $this->availabilityService->calculateEndTime($restaurant, $startsAt),
                 'notes' => $attributes['notes'] ?? null,
+                'occasion' => $attributes['occasion'] ?? null,
+                'accept_points' => (bool) ($attributes['accept_points'] ?? false),
+                'subscribe_to_promotions' => (bool) ($attributes['subscribe_to_promotions'] ?? false),
                 'internal_notes' => $attributes['internal_notes'] ?? null,
             ]);
 

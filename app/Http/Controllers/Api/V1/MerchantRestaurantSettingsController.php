@@ -36,6 +36,8 @@ class MerchantRestaurantSettingsController extends Controller
                     'interval' => $plan?->interval,
                     'is_subscribed' => $subscription !== null,
                 ],
+                'rewards_enabled' => $restaurant->rewards_enabled,
+                'reservation_reward_points' => $restaurant->reservation_reward_points,
             ],
         ]);
     }
@@ -57,6 +59,8 @@ class MerchantRestaurantSettingsController extends Controller
                 'state' => $restaurant->state,
                 'city' => $restaurant->city,
                 'address_line_1' => $restaurant->address_line_1,
+                'rewards_enabled' => $restaurant->rewards_enabled,
+                'reservation_reward_points' => $restaurant->reservation_reward_points,
             ],
         ]);
     }

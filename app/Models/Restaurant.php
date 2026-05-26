@@ -28,6 +28,8 @@ class Restaurant extends Model implements HasMedia
         'slug',
         'status',
         'is_featured',
+        'rewards_enabled',
+        'reservation_reward_points',
         'email',
         'phone',
         'city',
@@ -75,6 +77,8 @@ class Restaurant extends Model implements HasMedia
         return [
             'status' => RestaurantStatus::class,
             'is_featured' => 'boolean',
+            'rewards_enabled' => 'boolean',
+            'reservation_reward_points' => 'integer',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'total_seating_capacity' => 'integer',

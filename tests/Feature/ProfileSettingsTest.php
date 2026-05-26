@@ -33,7 +33,12 @@ it('returns the authenticated user profile settings', function () {
         ->assertJsonPath('user.first_name', 'Samuel')
         ->assertJsonPath('user.last_name', 'Adebayo')
         ->assertJsonPath('user.bio', 'Food explorer and brunch enthusiast.')
-        ->assertJsonPath('user.birthday', '1992-08-14');
+        ->assertJsonPath('user.birthday', '1992-08-14')
+        ->assertJsonStructure([
+            'rewards' => ['points', 'current_level', 'points_to_next_level', 'progress_percentage'],
+        ])
+        ->assertJsonPath('rewards.points', 0)
+        ->assertJsonPath('rewards.current_level.slug', 'bronze');
 });
 
 it('updates the authenticated user profile settings', function () {

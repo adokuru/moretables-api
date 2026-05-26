@@ -22,6 +22,7 @@ class RewardProgram extends Model
         'resets_points',
         'tier_locked_until_period_end',
         'is_active',
+        'redemption_tiers',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class RewardProgram extends Model
             'resets_points' => 'boolean',
             'tier_locked_until_period_end' => 'boolean',
             'is_active' => 'boolean',
+            'redemption_tiers' => 'array',
         ];
     }
 

@@ -28,6 +28,9 @@ class Reservation extends Model
         'starts_at',
         'ends_at',
         'notes',
+        'occasion',
+        'accept_points',
+        'subscribe_to_promotions',
         'internal_notes',
         'seated_at',
         'completed_at',
@@ -45,6 +48,8 @@ class Reservation extends Model
             'seated_at' => 'datetime',
             'completed_at' => 'datetime',
             'canceled_at' => 'datetime',
+            'accept_points' => 'boolean',
+            'subscribe_to_promotions' => 'boolean',
             'metadata' => 'array',
         ];
     }

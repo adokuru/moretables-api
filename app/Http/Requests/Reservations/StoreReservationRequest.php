@@ -18,6 +18,9 @@ class StoreReservationRequest extends FormRequest
             'starts_at' => ['required', 'date', 'after:now'],
             'party_size' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'occasion' => ['nullable', 'string', 'max:100'],
+            'accept_points' => ['nullable', 'boolean'],
+            'subscribe_to_promotions' => ['nullable', 'boolean'],
         ];
     }
 }

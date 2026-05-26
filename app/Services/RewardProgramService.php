@@ -18,6 +18,16 @@ class RewardProgramService
     protected const DEFAULT_PROGRAM_SLUG = 'moretables-lifetime-loyalty';
 
     /**
+     * @var list<array{points: int, credit_value: int, credit_currency: string}>
+     */
+    protected const DEFAULT_REDEMPTION_TIERS = [
+        ['points' => 1000, 'credit_value' => 3000, 'credit_currency' => 'NGN'],
+        ['points' => 2500, 'credit_value' => 5000, 'credit_currency' => 'NGN'],
+        ['points' => 5000, 'credit_value' => 10000, 'credit_currency' => 'NGN'],
+        ['points' => 10000, 'credit_value' => 30000, 'credit_currency' => 'NGN'],
+    ];
+
+    /**
      * @var list<array{name: string, slug: string, start_points: int, end_points: ?int, sort_order: int}>
      */
     protected const DEFAULT_LEVELS = [
@@ -178,6 +188,20 @@ class RewardProgramService
                 $program->levels()->createMany($levels);
             }
 
+            if (array_key_exists('redemption_tiers', $attributes)) {
+                $tiers = collect($attributes['redemption_tiers'])
+                    ->sortBy('points')
+                    ->values()
+                    ->map(fn (array $tier): array => [
+                        'points' => (int) $tier['points'],
+                        'credit_value' => (int) $tier['credit_value'],
+                        'credit_currency' => strtoupper((string) ($tier['credit_currency'] ?? 'NGN')),
+                    ])
+                    ->all();
+
+                $program->update(['redemption_tiers' => $tiers]);
+            }
+
             return $program->refresh()->load('levels');
         });
     }
@@ -227,6 +251,10 @@ class RewardProgramService
                 ->values()
                 ->map(fn (RewardLevel $level): array => $this->levelPayload($level))
                 ->all(),
+            'redemption_tiers' => collect($program->redemption_tiers ?? [])
+                ->sortBy('points')
+                ->values()
+                ->all(),
         ];
     }
 
@@ -271,6 +299,7 @@ class RewardProgramService
                     'resets_points' => false,
                     'tier_locked_until_period_end' => false,
                     'is_active' => true,
+                    'redemption_tiers' => self::DEFAULT_REDEMPTION_TIERS,
                 ],
             );
 

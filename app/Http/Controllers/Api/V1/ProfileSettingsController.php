@@ -9,21 +9,33 @@ use App\Http\Resources\MediaAssetResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\MediaLibraryService;
+use App\Services\RewardProgramService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
 #[Group('Customer Auth', weight: 11)]
 class ProfileSettingsController extends Controller
 {
-    public function __construct(protected MediaLibraryService $mediaLibraryService) {}
+    public function __construct(
+        protected MediaLibraryService $mediaLibraryService,
+        protected RewardProgramService $rewardProgramService,
+    ) {}
 
     public function show(): JsonResponse
     {
         /** @var User $user */
         $user = request()->user();
 
+        $rewardStatus = $this->rewardProgramService->statusForUser($user);
+
         return response()->json([
             'user' => UserResource::make($user->load(['roles', 'media'])),
+            'rewards' => [
+                'points' => $rewardStatus['points'],
+                'current_level' => $rewardStatus['current_level'],
+                'points_to_next_level' => $rewardStatus['points_to_next_level'],
+                'progress_percentage' => $rewardStatus['progress_percentage'],
+            ],
         ]);
     }
 
