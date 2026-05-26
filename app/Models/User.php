@@ -39,6 +39,10 @@ class User extends Authenticatable implements HasMedia
         'status',
         'auth_method',
         'last_active_at',
+        'notify_dining_rating_emails',
+        'notify_marketing_emails',
+        'notify_sms_alerts',
+        'notify_push_notifications',
     ];
 
     /**
@@ -65,6 +69,10 @@ class User extends Authenticatable implements HasMedia
             'status' => UserStatus::class,
             'auth_method' => UserAuthMethod::class,
             'last_active_at' => 'datetime',
+            'notify_dining_rating_emails' => 'boolean',
+            'notify_marketing_emails' => 'boolean',
+            'notify_sms_alerts' => 'boolean',
+            'notify_push_notifications' => 'boolean',
         ];
     }
 

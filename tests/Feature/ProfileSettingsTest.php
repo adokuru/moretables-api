@@ -137,6 +137,83 @@ it('clears allergies when passed an empty array', function () {
         ->assertJsonPath('user.allergies', []);
 });
 
+it('updates the authenticated customer phone number', function () {
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+        'phone' => '+2348011111111',
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile/phone', [
+        'phone' => '+2348099999999',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('message', 'Phone number updated successfully.')
+        ->assertJsonPath('user.phone', '+2348099999999');
+
+    expect($user->refresh()->phone)->toBe('+2348099999999');
+});
+
+it('rejects a phone number already used by another account', function () {
+    User::factory()->create(['phone' => '+2348077777777']);
+
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+        'phone' => '+2348011111111',
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile/phone', [
+        'phone' => '+2348077777777',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['phone']);
+});
+
+it('changes password for a customer with an existing password', function () {
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+        'password' => bcrypt('OldPassword1!'),
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile/password', [
+        'current_password' => 'OldPassword1!',
+        'password' => 'NewPassword2@',
+        'password_confirmation' => 'NewPassword2@',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('message', 'Password changed successfully.');
+});
+
+it('rejects incorrect current password when changing password', function () {
+    $user = User::factory()->create([
+        'auth_method' => UserAuthMethod::Passwordless,
+        'status' => UserStatus::Active,
+        'password' => bcrypt('OldPassword1!'),
+    ]);
+
+    $token = $user->createToken('profile-settings')->plainTextToken;
+
+    $response = $this->withToken($token)->patchJson('/api/v1/auth/profile/password', [
+        'current_password' => 'WrongPassword!',
+        'password' => 'NewPassword2@',
+        'password_confirmation' => 'NewPassword2@',
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['current_password']);
+});
+
 it('validates birthday when updating profile settings', function () {
     $user = User::factory()->create([
         'auth_method' => UserAuthMethod::Passwordless,

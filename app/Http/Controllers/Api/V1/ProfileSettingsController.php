@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\UpdatePhoneRequest;
 use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
 use App\Http\Requests\Auth\UploadProfilePictureRequest;
 use App\Http\Resources\MediaAssetResource;
@@ -72,6 +74,37 @@ class ProfileSettingsController extends Controller
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user' => UserResource::make($user->refresh()->load(['roles', 'media', 'allergies'])),
+        ]);
+    }
+
+    /**
+     * Update the authenticated customer's phone number.
+     */
+    public function updatePhone(UpdatePhoneRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->fill(['phone' => $request->validated('phone')])->save();
+
+        return response()->json([
+            'message' => 'Phone number updated successfully.',
+            'user' => UserResource::make($user->refresh()->load(['roles', 'media', 'allergies'])),
+        ]);
+    }
+
+    /**
+     * Change the authenticated customer's password.
+     */
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->fill(['password' => $request->validated('password')])->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
         ]);
     }
 

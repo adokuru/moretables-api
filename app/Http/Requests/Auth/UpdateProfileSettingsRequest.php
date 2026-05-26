@@ -20,6 +20,10 @@ class UpdateProfileSettingsRequest extends FormRequest
             'birthday' => ['nullable', 'date', 'before_or_equal:today'],
             'allergies' => ['nullable', 'array'],
             'allergies.*' => ['string', 'max:100'],
+            'notify_dining_rating_emails' => ['sometimes', 'boolean'],
+            'notify_marketing_emails' => ['sometimes', 'boolean'],
+            'notify_sms_alerts' => ['sometimes', 'boolean'],
+            'notify_push_notifications' => ['sometimes', 'boolean'],
         ];
     }
 
