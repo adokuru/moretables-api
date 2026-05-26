@@ -1,10 +1,6 @@
 <?php
 
-use App\MerchantSubscriptionStatus;
-use App\Models\BillingPlan;
-use App\Models\MerchantSubscription;
 use App\Models\Reservation;
-use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
@@ -246,13 +242,3 @@ it('emails guest when operations staff notifies guest-only waitlist with email',
         return ($notifiable->routes['mail'] ?? null) === 'waitlist.guest@example.com';
     });
 });
-
-function activateMerchantBilling(Restaurant $restaurant): void
-{
-    MerchantSubscription::factory()->create([
-        'restaurant_id' => $restaurant->id,
-        'billing_plan_id' => BillingPlan::query()->where('slug', 'foundation')->value('id'),
-        'status' => MerchantSubscriptionStatus::Active,
-        'current_period_end' => now()->addMonth(),
-    ]);
-}

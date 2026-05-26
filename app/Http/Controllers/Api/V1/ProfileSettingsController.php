@@ -32,6 +32,7 @@ class ProfileSettingsController extends Controller
             'user' => UserResource::make($user->load([
                 'roles',
                 'media',
+                'allergies',
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
             ])),
@@ -61,9 +62,22 @@ class ProfileSettingsController extends Controller
 
         $user->save();
 
+        if (array_key_exists('allergies', $validated)) {
+            $user->allergies()->delete();
+
+            if (! empty($validated['allergies'])) {
+                $user->allergies()->createMany(
+                    collect($validated['allergies'])
+                        ->unique()
+                        ->map(fn (string $name): array => ['name' => $name])
+                        ->all()
+                );
+            }
+        }
+
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'user' => UserResource::make($user->refresh()->load(['roles', 'media'])),
+            'user' => UserResource::make($user->refresh()->load(['roles', 'media', 'allergies'])),
         ]);
     }
 

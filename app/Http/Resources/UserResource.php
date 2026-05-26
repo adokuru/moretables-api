@@ -23,6 +23,9 @@ class UserResource extends JsonResource
             'last_name' => $this->last_name,
             'bio' => $this->bio,
             'birthday' => optional($this->birthday)?->toDateString(),
+            'allergies' => $this->relationLoaded('allergies')
+                ? $this->allergies->pluck('name')->values()
+                : $this->allergies()->pluck('name')->values(),
             'email' => $this->email,
             'phone' => $this->phone,
             'status' => $this->status?->value,

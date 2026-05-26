@@ -107,27 +107,37 @@ class ReservationService
         $guestContact = null;
 
         if (! empty($attributes['guest_contact']) && empty($attributes['user_id'])) {
+            $contact = $attributes['guest_contact'];
+
+            // Support a single `full_name` field — split on first space.
+            if (! empty($contact['full_name']) && empty($contact['first_name'])) {
+                $parts = explode(' ', trim($contact['full_name']), 2);
+                $contact['first_name'] = $parts[0];
+                $contact['last_name'] = $parts[1] ?? null;
+            }
+
             // Find an existing permanent guest by phone (same restaurant) or create a new one.
             // This prevents duplicate guestbook entries when the same person books again.
             $guestContact = GuestContact::query()
                 ->where('restaurant_id', $restaurant->id)
-                ->where('phone', $attributes['guest_contact']['phone'])
+                ->where('phone', $contact['phone'])
                 ->where('is_temporary', false)
                 ->first();
 
             if ($guestContact) {
-                // Update any missing details from the new booking
+                // Update any missing details from the new booking.
                 $guestContact->fill(array_filter([
-                    'last_name' => $guestContact->last_name ?? ($attributes['guest_contact']['last_name'] ?? null),
-                    'email' => $guestContact->email ?? ($attributes['guest_contact']['email'] ?? null),
-                ]))->save();
+                    'first_name' => $contact['first_name'] ?? null,
+                    'last_name' => $guestContact->last_name ?? ($contact['last_name'] ?? null),
+                    'email' => $guestContact->email ?? ($contact['email'] ?? null),
+                ], fn ($v) => $v !== null))->save();
             } else {
                 $guestContact = GuestContact::query()->create([
                     'restaurant_id' => $restaurant->id,
-                    'first_name' => $attributes['guest_contact']['first_name'],
-                    'last_name' => $attributes['guest_contact']['last_name'] ?? null,
-                    'email' => $attributes['guest_contact']['email'] ?? null,
-                    'phone' => $attributes['guest_contact']['phone'],
+                    'first_name' => $contact['first_name'],
+                    'last_name' => $contact['last_name'] ?? null,
+                    'email' => $contact['email'] ?? null,
+                    'phone' => $contact['phone'],
                     'notes' => $attributes['notes'] ?? null,
                     'is_temporary' => false,
                 ]);

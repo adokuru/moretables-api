@@ -1,5 +1,8 @@
 <?php
 
+use App\MerchantSubscriptionStatus;
+use App\Models\BillingPlan;
+use App\Models\MerchantSubscription;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantHour;
@@ -103,4 +106,14 @@ function createBookableRestaurant(): array
     ]);
 
     return compact('organization', 'restaurant', 'table');
+}
+
+function activateMerchantBilling(Restaurant $restaurant): void
+{
+    MerchantSubscription::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'billing_plan_id' => BillingPlan::query()->where('slug', 'foundation')->value('id'),
+        'status' => MerchantSubscriptionStatus::Active,
+        'current_period_end' => now()->addMonth(),
+    ]);
 }
