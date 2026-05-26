@@ -56,16 +56,27 @@ class UserResource extends JsonResource
                 ->values()),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'subscription' => $this->whenLoaded('roleAssignments', function () {
-                $subscription = $this->roleAssignments
+                $restaurants = $this->roleAssignments
                     ->filter(fn ($ra) => $ra->restaurant_id !== null)
-                    ->map(fn ($ra) => $ra->restaurant?->activeBillingSubscription)
+                    ->map(fn ($ra) => $ra->restaurant)
+                    ->filter();
+
+                $activeSubscription = $restaurants
+                    ->map(fn ($r) => $r->activeBillingSubscription)
+                    ->filter()
+                    ->first();
+
+                $latestSubscription = $restaurants
+                    ->map(fn ($r) => $r->latestBillingSubscription)
                     ->filter()
                     ->first();
 
                 return [
-                    'is_active' => $subscription !== null,
-                    'plan' => $subscription?->plan?->name,
-                    'plan_slug' => $subscription?->plan?->slug?->value,
+                    'is_active' => $activeSubscription !== null,
+                    'status' => $latestSubscription?->status?->value ?? 'unpaid',
+                    'payment_url' => config('billing.frontend_billing_url'),
+                    'plan' => $activeSubscription?->plan?->name,
+                    'plan_slug' => $activeSubscription?->plan?->slug?->value,
                 ];
             }),
         ];

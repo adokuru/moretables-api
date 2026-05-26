@@ -29,7 +29,12 @@ class ProfileSettingsController extends Controller
         $rewardStatus = $this->rewardProgramService->statusForUser($user);
 
         return response()->json([
-            'user' => UserResource::make($user->load(['roles', 'media'])),
+            'user' => UserResource::make($user->load([
+                'roles',
+                'media',
+                'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.latestBillingSubscription.plan',
+            ])),
             'rewards' => [
                 'points' => $rewardStatus['points'],
                 'current_level' => $rewardStatus['current_level'],
