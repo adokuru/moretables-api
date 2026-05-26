@@ -15,6 +15,7 @@ class MerchantBillingResource extends JsonResource
     public function toArray(Request $request): array
     {
         $subscription = $this->resource['subscription'] ?? null;
+        $paymentMethod = $this->resource['payment_method'] ?? null;
 
         return [
             'is_active' => (bool) ($this->resource['is_active'] ?? false),
@@ -28,6 +29,15 @@ class MerchantBillingResource extends JsonResource
                     'slug' => $subscription->plan?->slug?->value,
                     'interval' => $subscription->plan?->interval,
                 ],
+            ] : null,
+            'payment_method' => $paymentMethod ? [
+                'last4' => $paymentMethod->last4,
+                'card_type' => $paymentMethod->card_type,
+                'brand' => $paymentMethod->brand,
+                'exp_month' => $paymentMethod->exp_month,
+                'exp_year' => $paymentMethod->exp_year,
+                'bank' => $paymentMethod->bank,
+                'channel' => $paymentMethod->channel,
             ] : null,
         ];
     }
