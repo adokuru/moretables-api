@@ -24,10 +24,16 @@ class MerchantBillingResource extends JsonResource
             'subscription' => $subscription ? [
                 'status' => $subscription->status?->value,
                 'subscribed_at' => $subscription->current_period_start?->toISOString(),
+                'next_payment_at' => $subscription->next_payment_at?->toISOString(),
                 'plan' => [
                     'name' => $subscription->plan?->name,
                     'slug' => $subscription->plan?->slug?->value,
                     'interval' => $subscription->plan?->interval,
+                    'amount' => $subscription->plan?->amount,
+                    'display_amount' => $subscription->plan?->amount !== null
+                        ? number_format($subscription->plan->amount / 100, 2)
+                        : null,
+                    'currency' => $subscription->plan?->currency,
                 ],
             ] : null,
             'payment_method' => $paymentMethod ? [
