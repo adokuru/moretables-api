@@ -688,12 +688,14 @@ it('allows a customer to book the same restaurant at the same time after cancell
 
     $startsAt = now()->addDay()->setTime(18, 0)->toDateTimeString();
 
-    Reservation::factory()->cancelled()->create([
+    Reservation::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'user_id' => $customer->id,
         'restaurant_table_id' => $data['table']->id,
         'starts_at' => $startsAt,
         'ends_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+        'status' => \App\ReservationStatus::Cancelled,
+        'canceled_at' => now(),
     ]);
 
     Sanctum::actingAs($customer);
