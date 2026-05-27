@@ -37,7 +37,7 @@ it('allows operations staff to manage floor resources and walk-in reservations',
         'dining_area_id' => $diningAreaResponse->json('dining_area.id'),
         'name' => 'VIP-1',
         'min_capacity' => 1,
-        'max_capacity' => 4,
+        'max_capacity' => 10,
         'table_type' => 'booth',
         'shape' => 'rectangle',
         'x_position' => 128,
@@ -119,6 +119,53 @@ it('validates floor table layout and type values', function () {
             'rotation',
             'color',
         ]);
+});
+
+it('defaults new tables to one minimum seat and ten maximum seats', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $response = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables', [
+        'name' => 'Default Capacity',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('table.min_capacity', 1)
+        ->assertJsonPath('table.max_capacity', 10);
+});
+
+it('defaults synced layout tables to one minimum seat and ten maximum seats', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $diningAreaResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Main Floor',
+    ]);
+
+    $diningAreaResponse->assertCreated();
+
+    $response = $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$diningAreaResponse->json('dining_area.id').'/layout', [
+        'tables' => [
+            [
+                'layout_type' => 'square-2-tb',
+                'x_position' => 0,
+                'y_position' => 0,
+                'table_label' => 'A1',
+            ],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('dining_area.tables.0.min_capacity', 1)
+        ->assertJsonPath('dining_area.tables.0.max_capacity', 10);
 });
 
 it('allows restaurant managers to configure guest communication messaging', function () {

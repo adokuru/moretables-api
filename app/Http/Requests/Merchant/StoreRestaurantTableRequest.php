@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Merchant;
 
+use App\Models\RestaurantTable;
 use App\TableShape;
 use App\TableStatus;
 use App\TableType;
@@ -21,7 +22,7 @@ class StoreRestaurantTableRequest extends FormRequest
             'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
             'name' => ['required', 'string', 'max:120'],
             'min_capacity' => ['nullable', 'integer', 'min:1'],
-            'max_capacity' => ['required', 'integer', 'min:1', 'gte:min_capacity'],
+            'max_capacity' => ['nullable', 'integer', 'min:'.RestaurantTable::DEFAULT_MAX_CAPACITY, 'gte:min_capacity'],
             'table_type' => ['sometimes', Rule::enum(TableType::class)],
             'shape' => ['sometimes', Rule::enum(TableShape::class)],
             'status' => ['nullable', Rule::enum(TableStatus::class)],

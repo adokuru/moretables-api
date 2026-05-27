@@ -9,6 +9,7 @@ use App\Http\Requests\Merchant\UpdateDiningAreaRequest;
 use App\Http\Resources\DiningAreaResource;
 use App\Models\DiningArea;
 use App\Models\Restaurant;
+use App\Models\RestaurantTable;
 use App\Services\AuditLogService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -122,8 +123,8 @@ class MerchantDiningAreaController extends Controller
                 'color' => $table['table_color'] ?? null,
                 'chair_color' => $table['chair_color'] ?? null,
                 'rotation' => $rotationMap[$table['rotate'] ?? 'r1'],
-                'min_capacity' => $table['min_party_size'] ?? 1,
-                'max_capacity' => $table['max_party_size'] ?? 1,
+                'min_capacity' => $table['min_party_size'] ?? RestaurantTable::DEFAULT_MIN_CAPACITY,
+                'max_capacity' => $table['max_party_size'] ?? RestaurantTable::DEFAULT_MAX_CAPACITY,
                 'sort_order' => $index,
             ]);
         }
