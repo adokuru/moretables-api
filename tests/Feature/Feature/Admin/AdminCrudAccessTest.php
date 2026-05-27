@@ -7,6 +7,9 @@ use App\Models\Restaurant;
 use App\Models\RestaurantReview;
 use App\Models\Role;
 use App\Models\User;
+use App\OnboardingContactReason;
+use App\OnboardingJobTitle;
+use App\OnboardingLocationCount;
 use App\OnboardingRequestStatus;
 use App\ReservationSource;
 use App\ReservationStatus;
@@ -361,10 +364,14 @@ it('allows admins to manage reviews and onboarding approvals', function () {
         ->assertJsonPath('review.notes', 'Friendly service and nice ambience.');
 
     $onboardingCreateResponse = $this->postJson('/api/v1/admin/onboarding-requests', [
+        'first_name' => 'Ada',
+        'last_name' => 'Owner',
         'restaurant_name' => 'Pending Place',
-        'owner_name' => 'Ada Owner',
         'email' => 'pending@example.com',
         'phone' => '+2348000000123',
+        'job_title' => OnboardingJobTitle::Owner->value,
+        'location_count' => OnboardingLocationCount::One->value,
+        'contact_reason' => OnboardingContactReason::BookADemo->value,
         'address' => '12 Marina, Lagos',
         'notes' => 'Needs fast review',
     ]);
