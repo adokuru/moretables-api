@@ -84,7 +84,12 @@ class PublicRestaurantController extends Controller
         $user = $this->authenticatedUserFromToken($request);
 
         $restaurants = Restaurant::query()
-            ->with(['cuisines', 'media'])
+            ->with([
+                'cuisines',
+                'media',
+                'hours' => fn ($query) => $query->orderBy('day_of_week'),
+                'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+            ])
             ->where('status', RestaurantStatus::Active->value)
             ->when($user, function ($query, $user): void {
                 $query->withExists([

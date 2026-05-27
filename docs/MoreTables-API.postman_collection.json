@@ -220,7 +220,8 @@
               "mode": "raw",
               "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\",\n  \"code\": \"1234\",\n  \"device_name\": \"postman-customer\"\n}"
             }
-          }
+          },
+          "description": "Public restaurant listing response includes hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours)."
         },
         {
           "name": "Guest \u2014 Resend OTP",

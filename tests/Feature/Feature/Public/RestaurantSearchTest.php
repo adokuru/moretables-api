@@ -2,6 +2,9 @@
 
 use App\Models\Organization;
 use App\Models\Restaurant;
+use App\Models\RestaurantHour;
+use App\Models\RestaurantMealSchedule;
+use App\Models\RestaurantMealType;
 use App\Models\SavedRestaurant;
 use App\Models\User;
 
@@ -70,4 +73,50 @@ it('includes has_saved for authenticated users on restaurant listings', function
             'id' => $unsavedRestaurant->id,
             'has_saved' => false,
         ]);
+});
+
+it('uses meal schedules to summarize hours on restaurant listings', function () {
+    $restaurant = Restaurant::factory()->create([
+        'slug' => 'scheduled-restaurant',
+        'city' => 'Lagos',
+    ]);
+    RestaurantHour::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'day_of_week' => 4,
+        'opens_at' => '09:00',
+        'closes_at' => '10:00',
+    ]);
+    $breakfast = RestaurantMealType::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Breakfast',
+    ]);
+    $dinner = RestaurantMealType::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Dinner',
+    ]);
+
+    RestaurantMealSchedule::create([
+        'restaurant_id' => $restaurant->id,
+        'restaurant_meal_type_id' => $breakfast->id,
+        'day_of_week' => 4,
+        'opens_at' => '06:00',
+        'closes_at' => '09:30',
+    ]);
+    RestaurantMealSchedule::create([
+        'restaurant_id' => $restaurant->id,
+        'restaurant_meal_type_id' => $dinner->id,
+        'day_of_week' => 4,
+        'opens_at' => '18:00',
+        'closes_at' => '22:00',
+    ]);
+
+    $response = $this->getJson('/api/v1/restaurants?city=Lagos');
+
+    $response->assertOk()
+        ->assertJsonPath('0.id', $restaurant->id)
+        ->assertJsonCount(7, '0.hours')
+        ->assertJsonPath('0.hours.4.day_of_week', 4)
+        ->assertJsonPath('0.hours.4.opens_at', '06:00')
+        ->assertJsonPath('0.hours.4.closes_at', '22:00')
+        ->assertJsonPath('0.hours.4.is_closed', false);
 });

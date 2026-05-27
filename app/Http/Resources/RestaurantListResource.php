@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class RestaurantListResource extends JsonResource
@@ -45,12 +46,10 @@ class RestaurantListResource extends JsonResource
             'email' => $this->email,
             'description' => $this->description,
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
-            'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
-                'day_of_week' => $hour->day_of_week,
-                'opens_at' => $hour->opens_at,
-                'closes_at' => $hour->closes_at,
-                'is_closed' => $hour->is_closed,
-            ])->values()),
+            'hours' => $this->when(
+                $this->relationLoaded('mealSchedules') || $this->relationLoaded('hours'),
+                fn () => $this->formattedHours(),
+            ),
             'reservation_times' => $this->when(
                 $this->resource->getAttribute('reservation_times') !== null,
                 fn () => $this->resource->getAttribute('reservation_times'),
@@ -63,5 +62,39 @@ class RestaurantListResource extends JsonResource
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'discovery_metrics' => $this->when($discoveryMetrics !== [], $discoveryMetrics),
         ];
+    }
+
+    protected function formattedHours(): Collection
+    {
+        if ($this->relationLoaded('mealSchedules') && $this->mealSchedules->isNotEmpty()) {
+            $schedulesByDay = $this->mealSchedules->groupBy('day_of_week');
+
+            return collect(range(0, 6))->map(function (int $dayOfWeek) use ($schedulesByDay): array {
+                $schedules = $schedulesByDay->get($dayOfWeek, collect());
+
+                if ($schedules->isEmpty()) {
+                    return [
+                        'day_of_week' => $dayOfWeek,
+                        'opens_at' => null,
+                        'closes_at' => null,
+                        'is_closed' => true,
+                    ];
+                }
+
+                return [
+                    'day_of_week' => $dayOfWeek,
+                    'opens_at' => $schedules->min('opens_at'),
+                    'closes_at' => $schedules->max('closes_at'),
+                    'is_closed' => false,
+                ];
+            })->values();
+        }
+
+        return $this->hours->map(fn ($hour) => [
+            'day_of_week' => $hour->day_of_week,
+            'opens_at' => $hour->opens_at,
+            'closes_at' => $hour->closes_at,
+            'is_closed' => $hour->is_closed,
+        ])->values();
     }
 }
