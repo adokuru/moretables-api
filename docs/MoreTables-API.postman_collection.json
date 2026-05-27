@@ -6663,9 +6663,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/notifications",
+              "raw": "{{baseUrl}}/api/v1/auth/notifications",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -6695,9 +6695,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/notifications/:notification/read",
+              "raw": "{{baseUrl}}/api/v1/auth/notifications/:notification/read",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
@@ -6728,9 +6728,9 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/notifications/read-all",
+              "raw": "{{baseUrl}}/api/v1/auth/notifications/read-all",
               "host": [
-                "{{base_url}}"
+                "{{baseUrl}}"
               ],
               "path": [
                 "api",
