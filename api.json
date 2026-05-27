@@ -22783,7 +22783,7 @@
                         }
                     },
                     "hours": {
-                        "type": "string"
+                        "type": "object"
                     },
                     "meal_types": {
                         "type": "string"
@@ -22961,6 +22961,9 @@
                         "type": "string"
                     },
                     "cuisines": {
+                        "type": "string"
+                    },
+                    "hours": {
                         "type": "string"
                     },
                     "reservation_times": {
