@@ -98,7 +98,7 @@ class MerchantBillingController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         $invoices = $restaurant->invoices()
-            ->with('plan')
+            ->with(['plan', 'restaurant.organization', 'payments'])
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
