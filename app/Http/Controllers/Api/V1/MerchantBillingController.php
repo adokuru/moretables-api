@@ -103,7 +103,13 @@ class MerchantBillingController extends Controller
             ->paginate($request->integer('per_page', 15));
 
         return response()->json([
-            'invoices' => MerchantInvoiceResource::collection($invoices),
+            'invoices' => [
+                'data' => MerchantInvoiceResource::collection($invoices->items()),
+                'current_page' => $invoices->currentPage(),
+                'last_page' => $invoices->lastPage(),
+                'per_page' => $invoices->perPage(),
+                'total' => $invoices->total(),
+            ],
         ]);
     }
 
