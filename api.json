@@ -21174,13 +21174,118 @@
                             "subscribed_at",
                             "plan"
                         ]
+                    },
+                    "payment_method": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "last4": {
+                                "type": "string"
+                            },
+                            "card_type": {
+                                "type": "string"
+                            },
+                            "brand": {
+                                "type": "string"
+                            },
+                            "exp_month": {
+                                "type": "string"
+                            },
+                            "exp_year": {
+                                "type": "string"
+                            },
+                            "bank": {
+                                "type": "string"
+                            },
+                            "channel": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "last4",
+                            "card_type",
+                            "brand",
+                            "exp_month",
+                            "exp_year",
+                            "bank",
+                            "channel",
+                            "email"
+                        ]
+                    },
+                    "upcoming_invoice": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "invoice_number": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "string"
+                            },
+                            "display_amount": {
+                                "type": "string"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "due_at": {
+                                "type": "string"
+                            },
+                            "billing_period_start": {
+                                "type": "string"
+                            },
+                            "billing_period_end": {
+                                "type": "string"
+                            },
+                            "plan": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "slug"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "invoice_number",
+                            "amount",
+                            "display_amount",
+                            "currency",
+                            "due_at",
+                            "billing_period_start",
+                            "billing_period_end",
+                            "plan"
+                        ]
                     }
                 },
                 "required": [
                     "is_active",
                     "status",
                     "payment_url",
-                    "subscription"
+                    "subscription",
+                    "payment_method",
+                    "upcoming_invoice"
                 ],
                 "title": "MerchantBillingResource"
             },
@@ -21230,6 +21335,12 @@
                         "type": "string"
                     },
                     "paid_at": {
+                        "type": "string"
+                    },
+                    "billing_address": {
+                        "type": "string"
+                    },
+                    "channel": {
                         "type": "string"
                     },
                     "plan": {
@@ -27067,6 +27178,22 @@
                             "is_active": {
                                 "type": "boolean"
                             },
+                            "status": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "unpaid"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "payment_url": {
+                                "type": "string"
+                            },
                             "plan": {
                                 "type": "string"
                             },
@@ -27076,6 +27203,8 @@
                         },
                         "required": [
                             "is_active",
+                            "status",
+                            "payment_url",
                             "plan",
                             "plan_slug"
                         ]
