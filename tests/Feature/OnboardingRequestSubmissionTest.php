@@ -1,11 +1,31 @@
 <?php
 
 use App\Models\OnboardingRequest;
+use App\Models\Role;
+use App\Models\User;
+use App\Notifications\OnboardingRequestSubmittedNotification;
 use App\OnboardingContactReason;
 use App\OnboardingJobTitle;
 use App\OnboardingLocationCount;
+use App\UserStatus;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Support\Facades\Notification;
 
 it('submits an onboarding request with all fields', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $businessAdmin = User::factory()->create();
+    assignScopedRole($businessAdmin, Role::BusinessAdmin);
+
+    $suspendedAdmin = User::factory()->create([
+        'status' => UserStatus::Suspended,
+    ]);
+    assignScopedRole($suspendedAdmin, Role::SuperAdmin);
+
+    $customer = User::factory()->create();
+    assignScopedRole($customer, Role::Customer);
+
     $response = $this->postJson('/api/v1/onboarding-requests', [
         'first_name' => 'Chidi',
         'last_name' => 'Okeke',
@@ -29,6 +49,21 @@ it('submits an onboarding request with all fields', function () {
         ->assertJsonPath('onboarding_request.status', 'pending');
 
     expect(OnboardingRequest::query()->where('email', 'chidi@bistro.ng')->exists())->toBeTrue();
+
+    Notification::assertSentTo(
+        $businessAdmin,
+        OnboardingRequestSubmittedNotification::class,
+        function (OnboardingRequestSubmittedNotification $notification, array $channels): bool {
+            $databasePayload = $notification->toArray(new stdClass);
+
+            return $channels === ['mail', 'database']
+                && $databasePayload['type'] === 'onboarding_request_submitted'
+                && $databasePayload['restaurant_name'] === 'Chidi\'s Bistro'
+                && $databasePayload['email'] === 'chidi@bistro.ng';
+        },
+    );
+    Notification::assertNotSentTo($suspendedAdmin, OnboardingRequestSubmittedNotification::class);
+    Notification::assertNotSentTo($customer, OnboardingRequestSubmittedNotification::class);
 });
 
 it('validates required fields on onboarding request submission', function () {

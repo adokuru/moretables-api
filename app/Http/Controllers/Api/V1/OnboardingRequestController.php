@@ -6,13 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreOnboardingRequestRequest;
 use App\Http\Resources\OnboardingRequestResource;
 use App\Models\OnboardingRequest;
+use App\Services\OnboardingRequestNotificationService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
 #[Group('Onboarding Requests', weight: 5)]
 class OnboardingRequestController extends Controller
 {
-    public function store(StoreOnboardingRequestRequest $request): JsonResponse
+    /**
+     * Submit an onboarding request and notify MoreTables admins by email and database notification.
+     */
+    public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {
         $validated = $request->validated();
 
@@ -22,6 +26,8 @@ class OnboardingRequestController extends Controller
         ])));
 
         $onboardingRequest = OnboardingRequest::query()->create($validated);
+
+        $notifications->notifyAdmins($onboardingRequest);
 
         return response()->json([
             'message' => 'Onboarding request submitted successfully.',

@@ -897,9 +897,10 @@
                 "onboarding-requests"
               ]
             },
+            "description": "Submit an onboarding request. MoreTables admins receive both email and database notifications when the request is created.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"restaurant_name\": \"The Bistro\",\n  \"owner_name\": \"Jane Owner\",\n  \"email\": \"owner@example.com\",\n  \"phone\": \"+2348000000000\",\n  \"address\": \"123 Main St\",\n  \"notes\": \"optional\"\n}"
+              "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Owner\",\n  \"restaurant_name\": \"The Bistro\",\n  \"email\": \"owner@example.com\",\n  \"phone\": \"+2348000000000\",\n  \"job_title\": \"owner\",\n  \"location_count\": \"1\",\n  \"contact_reason\": \"book_a_demo\",\n  \"address\": \"123 Main St\",\n  \"notes\": \"optional\"\n}"
             }
           }
         },
