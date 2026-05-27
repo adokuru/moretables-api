@@ -650,3 +650,59 @@ it('validates guest payload using attendee fields', function () {
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['guests.0.email_address']);
 });
+
+it('prevents a customer from booking the same restaurant at the same date and time twice', function () {
+    Notification::fake();
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $startsAt = now()->addDay()->setTime(18, 0)->toDateTimeString();
+
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => $startsAt,
+        'ends_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => $startsAt,
+        'party_size' => 2,
+    ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['starts_at']);
+});
+
+it('allows a customer to book the same restaurant at the same time after cancelling the original reservation', function () {
+    Notification::fake();
+    Event::fake([ReservationUpdated::class]);
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $startsAt = now()->addDay()->setTime(18, 0)->toDateTimeString();
+
+    Reservation::factory()->cancelled()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => $startsAt,
+        'ends_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => $startsAt,
+        'party_size' => 2,
+    ]);
+
+    $response->assertCreated();
+});
