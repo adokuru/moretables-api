@@ -45,6 +45,12 @@ class RestaurantListResource extends JsonResource
             'email' => $this->email,
             'description' => $this->description,
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
+            'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
+                'day_of_week' => $hour->day_of_week,
+                'opens_at' => $hour->opens_at,
+                'closes_at' => $hour->closes_at,
+                'is_closed' => $hour->is_closed,
+            ])->values()),
             'reservation_times' => $this->when(
                 $this->resource->getAttribute('reservation_times') !== null,
                 fn () => $this->resource->getAttribute('reservation_times'),
