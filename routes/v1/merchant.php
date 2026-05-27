@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
@@ -43,6 +44,7 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
 
     Route::middleware('merchant.billing.active')->group(function (): void {
         Route::get('/', [MerchantRestaurantController::class, 'show']);
+        Route::get('overview', [MerchantRestaurantOverviewController::class, 'show']);
         Route::patch('/', [MerchantRestaurantController::class, 'update']);
 
         Route::get('settings', [MerchantRestaurantSettingsController::class, 'show']);
