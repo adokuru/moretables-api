@@ -38,6 +38,8 @@ class AdminOnboardingRequestController extends Controller
                     $onboardingQuery
                         ->where('restaurant_name', 'like', '%'.$search.'%')
                         ->orWhere('owner_name', 'like', '%'.$search.'%')
+                        ->orWhere('first_name', 'like', '%'.$search.'%')
+                        ->orWhere('last_name', 'like', '%'.$search.'%')
                         ->orWhere('email', 'like', '%'.$search.'%')
                         ->orWhere('phone', 'like', '%'.$search.'%');
                 }),

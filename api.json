@@ -13284,10 +13284,34 @@
                                     "type": "object",
                                     "properties": {
                                         "invoices": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MerchantInvoiceResource"
-                                            }
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                                    }
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -21320,6 +21344,9 @@
                             "subscribed_at": {
                                 "type": "string"
                             },
+                            "next_payment_at": {
+                                "type": "string"
+                            },
                             "plan": {
                                 "type": "object",
                                 "properties": {
@@ -21331,18 +21358,34 @@
                                     },
                                     "interval": {
                                         "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "string"
+                                    },
+                                    "display_amount": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "currency": {
+                                        "type": "string"
                                     }
                                 },
                                 "required": [
                                     "name",
                                     "slug",
-                                    "interval"
+                                    "interval",
+                                    "amount",
+                                    "display_amount",
+                                    "currency"
                                 ]
                             }
                         },
                         "required": [
                             "status",
                             "subscribed_at",
+                            "next_payment_at",
                             "plan"
                         ]
                     },
@@ -21585,16 +21628,65 @@
                 },
                 "title": "NotifyWaitlistEntryRequest"
             },
+            "OnboardingContactReason": {
+                "type": "string",
+                "enum": [
+                    "book_a_demo",
+                    "pricing",
+                    "partnership",
+                    "support",
+                    "other"
+                ],
+                "title": "OnboardingContactReason"
+            },
+            "OnboardingJobTitle": {
+                "type": "string",
+                "enum": [
+                    "owner",
+                    "general_manager",
+                    "operations_manager",
+                    "marketing_manager",
+                    "executive_chef",
+                    "other"
+                ],
+                "title": "OnboardingJobTitle"
+            },
+            "OnboardingLocationCount": {
+                "type": "string",
+                "enum": [
+                    "1",
+                    "2-5",
+                    "6-10",
+                    "11-20",
+                    "20+"
+                ],
+                "title": "OnboardingLocationCount"
+            },
             "OnboardingRequestResource": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "integer"
                     },
-                    "restaurant_name": {
-                        "type": "string"
+                    "first_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
-                    "owner_name": {
+                    "last_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "full_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "restaurant_name": {
                         "type": "string"
                     },
                     "email": {
@@ -21603,8 +21695,20 @@
                     "phone": {
                         "type": "string"
                     },
-                    "address": {
+                    "job_title": {
                         "type": "string"
+                    },
+                    "location_count": {
+                        "type": "string"
+                    },
+                    "contact_reason": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -21627,10 +21731,15 @@
                 },
                 "required": [
                     "id",
+                    "first_name",
+                    "last_name",
+                    "full_name",
                     "restaurant_name",
-                    "owner_name",
                     "email",
                     "phone",
+                    "job_title",
+                    "location_count",
+                    "contact_reason",
                     "address",
                     "notes",
                     "status",
@@ -24305,13 +24414,13 @@
             "StoreOnboardingRequestRequest": {
                 "type": "object",
                 "properties": {
-                    "restaurant_name": {
+                    "first_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
-                    "owner_name": {
+                    "last_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
                     "email": {
                         "type": "string",
@@ -24322,8 +24431,24 @@
                         "type": "string",
                         "maxLength": 30
                     },
+                    "restaurant_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "job_title": {
+                        "$ref": "#/components/schemas/OnboardingJobTitle"
+                    },
+                    "location_count": {
+                        "$ref": "#/components/schemas/OnboardingLocationCount"
+                    },
+                    "contact_reason": {
+                        "$ref": "#/components/schemas/OnboardingContactReason"
+                    },
                     "address": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -24333,11 +24458,14 @@
                     }
                 },
                 "required": [
-                    "restaurant_name",
-                    "owner_name",
+                    "first_name",
+                    "last_name",
                     "email",
                     "phone",
-                    "address"
+                    "restaurant_name",
+                    "job_title",
+                    "location_count",
+                    "contact_reason"
                 ],
                 "title": "StoreOnboardingRequestRequest"
             },
