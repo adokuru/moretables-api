@@ -27,6 +27,9 @@
             "name": "Customer Devices"
         },
         {
+            "name": "Customer Notifications"
+        },
+        {
             "name": "Customer Reservations"
         },
         {
@@ -2243,6 +2246,174 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications": {
+            "get": {
+                "operationId": "notification.index",
+                "summary": "List the authenticated user's notifications, unread first",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notifications": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NotificationResource"
+                                            }
+                                        },
+                                        "unread_count": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "notifications",
+                                        "unread_count",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications/read-all": {
+            "patch": {
+                "operationId": "notification.markAllAsRead",
+                "summary": "Mark all notifications as read for the authenticated user",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "All notifications marked as read."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications/{notification}/read": {
+            "patch": {
+                "operationId": "notification.markAsRead",
+                "summary": "Mark a single notification as read",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "parameters": [
+                    {
+                        "name": "notification",
+                        "in": "path",
+                        "required": true,
+                        "description": "The notification ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Notification marked as read."
+                                        },
+                                        "notification": {
+                                            "$ref": "#/components/schemas/NotificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "notification"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -21367,6 +21538,38 @@
                     "created_at"
                 ],
                 "title": "MerchantInvoiceResource"
+            },
+            "NotificationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "read_at": {
+                        "type": "string"
+                    },
+                    "is_read": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "data",
+                    "read_at",
+                    "is_read",
+                    "created_at"
+                ],
+                "title": "NotificationResource"
             },
             "NotifyWaitlistEntryRequest": {
                 "type": "object",

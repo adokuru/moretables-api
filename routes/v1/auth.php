@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\GuestAuthController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileSettingsController;
 use App\Http\Controllers\Api\V1\SocialAuthController;
 use Illuminate\Support\Facades\Route;
@@ -28,5 +29,8 @@ Route::prefix('auth')->group(function (): void {
         Route::post('profile-picture', [ProfileSettingsController::class, 'updateProfilePicture']);
         Route::get('staff/profile', [AuthController::class, 'profile']);
         Route::patch('staff/profile', [AuthController::class, 'updateProfile']);
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     });
 });

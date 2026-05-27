@@ -6648,6 +6648,102 @@
           }
         }
       ]
+    },
+    {
+      "name": "Customer Auth",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Returns paginated notifications for the authenticated user, unread first."
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/notifications/:notification/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications",
+                ":notification",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "notification",
+                  "value": "{{notification_id}}"
+                }
+              ]
+            },
+            "description": "Mark a single notification as read."
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/notifications/read-all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark all notifications as read for the authenticated user."
+          }
+        }
+      ]
     }
   ]
 }
