@@ -54,6 +54,22 @@ class ReservationService
             ]);
         }
 
+        $startsAt = Carbon::parse($attributes['starts_at']);
+
+        $duplicate = Reservation::query()
+            ->where('user_id', $user->id)
+            ->where('restaurant_id', $restaurant->id)
+            ->whereDate('starts_at', $startsAt->toDateString())
+            ->whereTime('starts_at', $startsAt->toTimeString())
+            ->where('status', '!=', ReservationStatus::Cancelled)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'starts_at' => ['You already have a reservation at this restaurant for the selected date and time.'],
+            ]);
+        }
+
         // Add the customer to the restaurant's guestbook on first booking.
         // Match by phone (preferred) then email, so the same person is never
         // duplicated even if they book from different devices.
