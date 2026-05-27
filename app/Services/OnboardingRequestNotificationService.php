@@ -14,7 +14,7 @@ class OnboardingRequestNotificationService
     public function notifyAdmins(OnboardingRequest $onboardingRequest): void
     {
         $admins = User::query()
-            ->where('status', UserStatus::Active)
+            ->where('status', UserStatus::Active->value)
             ->whereHas('roles', fn ($query) => $query->whereIn('name', Role::adminRoles()))
             ->get();
 
