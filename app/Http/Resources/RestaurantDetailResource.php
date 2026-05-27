@@ -121,6 +121,24 @@ class RestaurantDetailResource extends JsonResource
                 'closes_at' => $hour->closes_at,
                 'is_closed' => $hour->is_closed,
             ])->values()),
+            'meal_types' => $this->whenLoaded('mealTypes', fn () => $this->mealTypes->map(fn ($type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+                'sort_order' => $type->sort_order,
+                'schedules' => $type->relationLoaded('schedules') ? $type->schedules->map(fn ($schedule) => [
+                    'id' => $schedule->id,
+                    'day_of_week' => $schedule->day_of_week,
+                    'opens_at' => $schedule->opens_at,
+                    'closes_at' => $schedule->closes_at,
+                ])->values() : [],
+            ])->values()),
+            'meal_schedules' => $this->whenLoaded('mealSchedules', fn () => $this->mealSchedules->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'restaurant_meal_type_id' => $schedule->restaurant_meal_type_id,
+                'day_of_week' => $schedule->day_of_week,
+                'opens_at' => $schedule->opens_at,
+                'closes_at' => $schedule->closes_at,
+            ])->values()),
             'policy' => $this->whenLoaded('policy', fn () => [
                 'reservation_duration_minutes' => $this->policy?->reservation_duration_minutes,
                 'booking_window_days' => $this->policy?->booking_window_days,

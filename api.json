@@ -63,6 +63,9 @@
             "name": "Merchant Menu"
         },
         {
+            "name": "Merchant Overview"
+        },
+        {
             "name": "Merchant Onboarding"
         },
         {
@@ -1010,6 +1013,7 @@
         "/onboarding-requests": {
             "post": {
                 "operationId": "onboardingRequest.store",
+                "summary": "Submit an onboarding request and notify MoreTables admins by email and database notification",
                 "tags": [
                     "Onboarding Requests"
                 ],
@@ -10485,6 +10489,256 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/overview": {
+            "get": {
+                "operationId": "merchantRestaurantOverview.show",
+                "description": "Returns quick-view stats (total reservations, guests, servers, users)\nand a 7-day calendar overview for the current week (Sunday\u2013Saturday),\nscoped to the restaurant's timezone.",
+                "summary": "Restaurant overview dashboard",
+                "tags": [
+                    "Merchant Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "quick_view": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total_reservations": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "this_month": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "previous_month": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "change_percentage": {
+                                                            "type": "number"
+                                                        },
+                                                        "trend": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "date": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "count": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "date",
+                                                                    "count"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "this_month",
+                                                        "previous_month",
+                                                        "change_percentage",
+                                                        "trend"
+                                                    ]
+                                                },
+                                                "total_guests": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer"
+                                                        },
+                                                        "this_month": {
+                                                            "type": "integer"
+                                                        },
+                                                        "previous_month": {
+                                                            "type": "integer"
+                                                        },
+                                                        "change_percentage": {
+                                                            "type": "number"
+                                                        },
+                                                        "trend": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "date": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "count": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "date",
+                                                                    "count"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "this_month",
+                                                        "previous_month",
+                                                        "change_percentage",
+                                                        "trend"
+                                                    ]
+                                                },
+                                                "total_servers": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value"
+                                                    ]
+                                                },
+                                                "total_users": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "total_reservations",
+                                                "total_guests",
+                                                "total_servers",
+                                                "total_users"
+                                            ]
+                                        },
+                                        "calendar_overview": {
+                                            "type": "object",
+                                            "properties": {
+                                                "week_start": {
+                                                    "type": "string"
+                                                },
+                                                "week_end": {
+                                                    "type": "string"
+                                                },
+                                                "days": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string"
+                                                            },
+                                                            "day_of_week": {
+                                                                "type": "string"
+                                                            },
+                                                            "day_label": {
+                                                                "type": "string"
+                                                            },
+                                                            "is_today": {
+                                                                "type": "string"
+                                                            },
+                                                            "reservations_count": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "total_covers": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "average_covers_historical": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "date",
+                                                            "day_of_week",
+                                                            "day_label",
+                                                            "is_today",
+                                                            "reservations_count",
+                                                            "total_covers",
+                                                            "average_covers_historical"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "week_start",
+                                                "week_end",
+                                                "days"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "quick_view",
+                                        "calendar_overview"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/front-of-house/floors": {
             "get": {
                 "operationId": "frontOfHouseFloorPlan.index",
@@ -18543,6 +18797,7 @@
             },
             "post": {
                 "operationId": "adminOnboardingRequest.store",
+                "summary": "Create an onboarding request and notify MoreTables admins by email and database notification",
                 "tags": [
                     "Admin Onboarding Requests"
                 ],
@@ -22530,6 +22785,12 @@
                     "hours": {
                         "type": "string"
                     },
+                    "meal_types": {
+                        "type": "string"
+                    },
+                    "meal_schedules": {
+                        "type": "string"
+                    },
                     "policy": {
                         "type": "object",
                         "properties": {
@@ -25928,11 +26189,15 @@
             "UpdateOnboardingRequestRequest": {
                 "type": "object",
                 "properties": {
-                    "restaurant_name": {
+                    "first_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
-                    "owner_name": {
+                    "last_name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "restaurant_name": {
                         "type": "string",
                         "maxLength": 255
                     },
@@ -25945,8 +26210,20 @@
                         "type": "string",
                         "maxLength": 30
                     },
+                    "job_title": {
+                        "$ref": "#/components/schemas/OnboardingJobTitle"
+                    },
+                    "location_count": {
+                        "$ref": "#/components/schemas/OnboardingLocationCount"
+                    },
+                    "contact_reason": {
+                        "$ref": "#/components/schemas/OnboardingContactReason"
+                    },
                     "address": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [

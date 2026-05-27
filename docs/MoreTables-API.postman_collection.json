@@ -984,7 +984,7 @@
               ]
             }
           },
-          "description": "Public restaurant detail response including summary and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages)."
+          "description": "Public restaurant detail response including legacy hours plus preferred meal_types / meal_schedules for business hours, summary, and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages)."
         },
         {
           "name": "Restaurant availability",

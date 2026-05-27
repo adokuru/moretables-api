@@ -162,6 +162,8 @@ class PublicRestaurantController extends Controller
             'cuisines',
             'media',
             'hours',
+            'mealTypes.schedules',
+            'mealSchedules',
             'policy',
             'menuItems.media',
             'diningAreas.tables',
