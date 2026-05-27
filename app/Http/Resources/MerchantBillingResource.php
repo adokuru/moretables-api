@@ -38,6 +38,21 @@ class MerchantBillingResource extends JsonResource
                 'exp_year' => $paymentMethod->exp_year,
                 'bank' => $paymentMethod->bank,
                 'channel' => $paymentMethod->channel,
+                'email' => $paymentMethod->email,
+            ] : null,
+            'upcoming_invoice' => ($upcomingInvoice = $this->resource['upcoming_invoice'] ?? null) ? [
+                'id' => $upcomingInvoice->id,
+                'invoice_number' => $upcomingInvoice->invoice_number,
+                'amount' => $upcomingInvoice->amount,
+                'display_amount' => number_format($upcomingInvoice->amount / 100, 2),
+                'currency' => $upcomingInvoice->currency,
+                'due_at' => $upcomingInvoice->due_at?->toISOString(),
+                'billing_period_start' => $upcomingInvoice->billing_period_start?->toISOString(),
+                'billing_period_end' => $upcomingInvoice->billing_period_end?->toISOString(),
+                'plan' => $upcomingInvoice->relationLoaded('plan') ? [
+                    'name' => $upcomingInvoice->plan?->name,
+                    'slug' => $upcomingInvoice->plan?->slug?->value,
+                ] : null,
             ] : null,
         ];
     }
