@@ -20,6 +20,12 @@ it('returns overview data for a restaurant with reservations', function () {
     $staff = User::factory()->create();
     assignScopedRole($staff, Role::Operations, $data['organization'], $data['restaurant']);
 
+    // Add two more staff users so total_users = 3 (staff + the one created above)
+    $extraStaff1 = User::factory()->create();
+    $extraStaff2 = User::factory()->create();
+    assignScopedRole($extraStaff1, Role::GuestRelations, $data['organization'], $data['restaurant']);
+    assignScopedRole($extraStaff2, Role::Operations, $data['organization'], $data['restaurant']);
+
     foreach (range(1, 3) as $i) {
         Reservation::factory()->create([
             'restaurant_id' => $data['restaurant']->id,

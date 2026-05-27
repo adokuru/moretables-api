@@ -58,10 +58,7 @@ class MerchantRestaurantOverviewController extends Controller
             ->whereHas('role', fn ($q) => $q->whereIn('name', Role::allRestaurantStaffRoles()))
             ->count();
 
-        $totalUsers = $restaurant->reservations()
-            ->whereNotNull('user_id')
-            ->distinct('user_id')
-            ->count('user_id');
+        $totalUsers = $restaurant->userRoles()->distinct()->count('user_id');
 
         // ------------------------------------------------------------------ //
         //  30-day sparkline trends (PHP-side grouping for DB compatibility)   //
