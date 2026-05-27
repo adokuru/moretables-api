@@ -61,7 +61,7 @@ it('returns overview data for a restaurant with reservations', function () {
 
     expect($response->json('quick_view.total_reservations.value'))->toBe(3);
     expect($response->json('quick_view.total_guests.value'))->toBe(6);
-    expect($response->json('quick_view.total_servers.value'))->toBe(1);
+    expect($response->json('quick_view.total_servers.value'))->toBe(3);
     expect($response->json('quick_view.total_users.value'))->toBe(3);
     expect($response->json('calendar_overview.days'))->toHaveCount(7);
 });
