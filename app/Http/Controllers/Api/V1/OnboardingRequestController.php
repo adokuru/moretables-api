@@ -14,7 +14,14 @@ class OnboardingRequestController extends Controller
 {
     public function store(StoreOnboardingRequestRequest $request): JsonResponse
     {
-        $onboardingRequest = OnboardingRequest::query()->create($request->validated());
+        $validated = $request->validated();
+
+        $validated['owner_name'] = trim(implode(' ', array_filter([
+            $validated['first_name'] ?? null,
+            $validated['last_name'] ?? null,
+        ])));
+
+        $onboardingRequest = OnboardingRequest::query()->create($validated);
 
         return response()->json([
             'message' => 'Onboarding request submitted successfully.',

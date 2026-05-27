@@ -11,10 +11,15 @@ class OnboardingRequestResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'full_name' => trim(implode(' ', array_filter([$this->first_name, $this->last_name]))) ?: $this->owner_name,
             'restaurant_name' => $this->restaurant_name,
-            'owner_name' => $this->owner_name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'job_title' => $this->job_title?->value,
+            'location_count' => $this->location_count?->value,
+            'contact_reason' => $this->contact_reason?->value,
             'address' => $this->address,
             'notes' => $this->notes,
             'status' => $this->status?->value,
