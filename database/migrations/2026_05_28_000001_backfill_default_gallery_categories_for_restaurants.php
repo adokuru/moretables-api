@@ -1,11 +1,9 @@
 <?php
 
-namespace Database\Seeders;
-
 use App\Models\Restaurant;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
 
-class DefaultGalleryCategorySeeder extends Seeder
+return new class extends Migration
 {
     private const array DEFAULTS = [
         'Food',
@@ -14,7 +12,7 @@ class DefaultGalleryCategorySeeder extends Seeder
         'Exterior',
     ];
 
-    public function run(): void
+    public function up(): void
     {
         Restaurant::query()->each(function (Restaurant $restaurant): void {
             if ($restaurant->galleryCategories()->exists()) {
@@ -27,8 +25,11 @@ class DefaultGalleryCategorySeeder extends Seeder
                     'sort_order' => $i + 1,
                 ]);
             }
-
-            $this->command->info("Seeded gallery categories for restaurant: {$restaurant->name}");
         });
     }
-}
+
+    public function down(): void
+    {
+        //
+    }
+};

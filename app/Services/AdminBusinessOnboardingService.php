@@ -49,6 +49,7 @@ class AdminBusinessOnboardingService
                 $this->createRestaurantHours($restaurant, $restaurantPayload);
                 $this->createRestaurantTables($restaurant, $restaurantPayload);
                 $this->createRestaurantMenu($restaurant, $restaurantPayload);
+                $this->createDefaultGalleryCategories($restaurant);
                 $this->attachRestaurantMedia($restaurant, $restaurantPayload);
 
                 $restaurants->push($restaurant->load([
@@ -157,6 +158,18 @@ class AdminBusinessOnboardingService
         }
 
         return $attributes;
+    }
+
+    protected function createDefaultGalleryCategories(Restaurant $restaurant): void
+    {
+        $defaults = ['Food', 'Drinks', 'Interior', 'Exterior'];
+
+        foreach (array_values($defaults) as $i => $name) {
+            $restaurant->galleryCategories()->create([
+                'name' => $name,
+                'sort_order' => $i + 1,
+            ]);
+        }
     }
 
     /**
