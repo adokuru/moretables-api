@@ -14,16 +14,16 @@ class UpdateAdminCuisineRequest extends FormRequest
 
     public function rules(): array
     {
-        $cuisineId = $this->route('cuisine')?->id;
+        $cuisineId = $this->route('cuisineOption')?->id;
 
         return [
-            'name' => ['sometimes', 'string', 'max:100', Rule::unique('cuisines', 'name')->ignore($cuisineId)],
+            'name' => ['sometimes', 'string', 'max:100', Rule::unique('cuisine_options', 'name')->ignore($cuisineId)],
             'slug' => [
                 'sometimes',
                 'string',
                 'max:100',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                Rule::unique('cuisines', 'slug')->ignore($cuisineId),
+                Rule::unique('cuisine_options', 'slug')->ignore($cuisineId),
             ],
         ];
     }

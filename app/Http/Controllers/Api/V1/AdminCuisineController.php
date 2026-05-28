@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminCuisineRequest;
 use App\Http\Requests\Admin\UpdateAdminCuisineRequest;
 use App\Http\Resources\CuisineResource;
-use App\Models\Cuisine;
+use App\Models\CuisineOption;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
@@ -25,7 +25,7 @@ class AdminCuisineController extends Controller
     {
         $this->ensureAdminAccess($request);
 
-        $cuisines = Cuisine::query()
+        $cuisines = CuisineOption::query()
             ->when(
                 filled($request->string('search')->toString()),
                 fn ($query) => $query->where(function ($cuisineQuery) use ($request): void {
@@ -68,7 +68,7 @@ class AdminCuisineController extends Controller
         $name = $validated['name'];
         $slug = $validated['slug'] ?? $this->uniqueSlugForName($name);
 
-        $cuisine = Cuisine::query()->create([
+        $cuisine = CuisineOption::query()->create([
             'name' => $name,
             'slug' => $slug,
         ]);
@@ -79,42 +79,42 @@ class AdminCuisineController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, Cuisine $cuisine): CuisineResource
+    public function show(Request $request, CuisineOption $cuisineOption): CuisineResource
     {
         $this->ensureAdminAccess($request);
 
-        return CuisineResource::make($cuisine);
+        return CuisineResource::make($cuisineOption);
     }
 
-    public function update(UpdateAdminCuisineRequest $request, Cuisine $cuisine): JsonResponse
+    public function update(UpdateAdminCuisineRequest $request, CuisineOption $cuisineOption): JsonResponse
     {
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
 
         if (array_key_exists('name', $validated)) {
-            $cuisine->name = $validated['name'];
+            $cuisineOption->name = $validated['name'];
         }
 
         if (array_key_exists('slug', $validated)) {
-            $cuisine->slug = $validated['slug'];
+            $cuisineOption->slug = $validated['slug'];
         } elseif (array_key_exists('name', $validated)) {
-            $cuisine->slug = $this->uniqueSlugForName($validated['name'], $cuisine->id);
+            $cuisineOption->slug = $this->uniqueSlugForName($validated['name'], $cuisineOption->id);
         }
 
-        $cuisine->save();
+        $cuisineOption->save();
 
         return response()->json([
             'message' => 'Cuisine updated successfully.',
-            'cuisine' => CuisineResource::make($cuisine->refresh()),
+            'cuisine' => CuisineResource::make($cuisineOption->refresh()),
         ]);
     }
 
-    public function destroy(Request $request, Cuisine $cuisine): JsonResponse
+    public function destroy(Request $request, CuisineOption $cuisineOption): JsonResponse
     {
         $this->ensureAdminAccess($request);
 
-        $cuisine->delete();
+        $cuisineOption->delete();
 
         return response()->json([
             'message' => 'Cuisine deleted successfully.',
@@ -129,7 +129,7 @@ class AdminCuisineController extends Controller
         $suffix = 2;
 
         while (
-            Cuisine::query()
+            CuisineOption::query()
                 ->when($ignoreId !== null, fn ($query) => $query->where('id', '!=', $ignoreId))
                 ->where('slug', $candidate)
                 ->exists()

@@ -40,9 +40,9 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
     Route::post('users', [AdminUserController::class, 'store']);
     Route::get('cuisines', [AdminCuisineController::class, 'index']);
     Route::post('cuisines', [AdminCuisineController::class, 'store']);
-    Route::get('cuisines/{cuisine}', [AdminCuisineController::class, 'show']);
-    Route::patch('cuisines/{cuisine}', [AdminCuisineController::class, 'update']);
-    Route::delete('cuisines/{cuisine}', [AdminCuisineController::class, 'destroy']);
+    Route::get('cuisines/{cuisineOption}', [AdminCuisineController::class, 'show']);
+    Route::patch('cuisines/{cuisineOption}', [AdminCuisineController::class, 'update']);
+    Route::delete('cuisines/{cuisineOption}', [AdminCuisineController::class, 'destroy']);
 
     Route::get('roles', [AdminRoleController::class, 'index']);
     Route::post('roles', [AdminRoleController::class, 'store']);
