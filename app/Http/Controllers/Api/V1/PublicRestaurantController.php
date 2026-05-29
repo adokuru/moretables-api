@@ -91,6 +91,7 @@ class PublicRestaurantController extends Controller
                 'hours' => fn ($query) => $query->orderBy('day_of_week'),
                 'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
             ])
+            ->withCount('reviews as reviews_count')
             ->withAvg('reviews as average_rating', 'rating')
             ->where('status', RestaurantStatus::Active->value)
             ->when($user, function ($query, $user): void {
