@@ -19,6 +19,7 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 #[Group('Public Restaurants', weight: 0)]
 class PublicRestaurantController extends Controller
@@ -84,7 +85,13 @@ class PublicRestaurantController extends Controller
         $user = $this->authenticatedUserFromToken($request);
 
         $restaurants = Restaurant::query()
-            ->with(['cuisines', 'media'])
+            ->with([
+                'cuisines',
+                'media',
+                'hours' => fn ($query) => $query->orderBy('day_of_week'),
+                'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+            ])
+            ->withAvg('reviews as average_rating', 'rating')
             ->where('status', RestaurantStatus::Active->value)
             ->when($user, function ($query, $user): void {
                 $query->withExists([
@@ -106,20 +113,25 @@ class PublicRestaurantController extends Controller
                 });
             })
             ->when($hasCoordinates, function ($query) use ($validated): void {
+                $lat = (float) $validated['latitude'];
+                $lng = (float) $validated['longitude'];
                 $radiusKm = (float) ($validated['radius_km'] ?? 25);
                 $bounds = $this->coordinateBounds(
-                    latitude: (float) $validated['latitude'],
-                    longitude: (float) $validated['longitude'],
+                    latitude: $lat,
+                    longitude: $lng,
                     radiusKm: $radiusKm,
                 );
 
-                $query->whereNotNull('latitude')
+                $query->addSelect(DB::raw(
+                    "(6371 * acos(cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude)))) AS distance_km"
+                ))
+                    ->whereNotNull('latitude')
                     ->whereNotNull('longitude')
                     ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
                     ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']])
                     ->orderByRaw(
                         'ABS(latitude - ?) + ABS(longitude - ?) asc',
-                        [(float) $validated['latitude'], (float) $validated['longitude']],
+                        [$lat, $lng],
                     );
             })
             ->paginate($validated['per_page'] ?? 15);
@@ -162,6 +174,8 @@ class PublicRestaurantController extends Controller
             'cuisines',
             'media',
             'hours',
+            'mealTypes.schedules',
+            'mealSchedules',
             'policy',
             'menuItems.media',
             'diningAreas.tables',

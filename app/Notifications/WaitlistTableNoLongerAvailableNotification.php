@@ -16,7 +16,7 @@ class WaitlistTableNoLongerAvailableNotification extends Notification implements
 
     public function via(object $notifiable): array
     {
-        $channels = ['mail'];
+        $channels = ['mail', 'database'];
 
         if ($notifiable->notify_push_notifications) {
             $channels[] = ExpoPushChannel::class;

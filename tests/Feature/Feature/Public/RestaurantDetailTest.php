@@ -3,6 +3,8 @@
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantHour;
+use App\Models\RestaurantMealSchedule;
+use App\Models\RestaurantMealType;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
@@ -161,6 +163,56 @@ it('includes has_saved in the public restaurant detail response for authenticate
     $response->assertOk()
         ->assertJsonPath('data.id', $restaurant->id)
         ->assertJsonPath('data.has_saved', true);
+});
+
+it('uses meal schedules to summarize public restaurant detail hours', function () {
+    $restaurant = Restaurant::factory()->create();
+    RestaurantHour::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'day_of_week' => 5,
+        'opens_at' => '09:00',
+        'closes_at' => '10:00',
+    ]);
+    $breakfast = RestaurantMealType::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Breakfast',
+        'sort_order' => 0,
+    ]);
+    $dinner = RestaurantMealType::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Dinner',
+        'sort_order' => 1,
+    ]);
+
+    RestaurantMealSchedule::create([
+        'restaurant_id' => $restaurant->id,
+        'restaurant_meal_type_id' => $breakfast->id,
+        'day_of_week' => 5,
+        'opens_at' => '06:00',
+        'closes_at' => '09:30',
+    ]);
+    RestaurantMealSchedule::create([
+        'restaurant_id' => $restaurant->id,
+        'restaurant_meal_type_id' => $dinner->id,
+        'day_of_week' => 5,
+        'opens_at' => '18:00',
+        'closes_at' => '22:00',
+    ]);
+
+    $response = $this->getJson('/api/v1/restaurants/'.$restaurant->slug);
+
+    $response->assertOk()
+        ->assertJsonCount(7, 'data.hours')
+        ->assertJsonPath('data.hours.5.day_of_week', 5)
+        ->assertJsonPath('data.hours.5.opens_at', '06:00')
+        ->assertJsonPath('data.hours.5.closes_at', '22:00')
+        ->assertJsonPath('data.hours.5.is_closed', false)
+        ->assertJsonPath('data.hours.0.is_closed', true)
+        ->assertJsonPath('data.meal_types.0.name', 'Breakfast')
+        ->assertJsonPath('data.meal_types.0.schedules.0.day_of_week', 5)
+        ->assertJsonPath('data.meal_types.0.schedules.0.opens_at', '06:00')
+        ->assertJsonPath('data.meal_types.1.name', 'Dinner')
+        ->assertJsonPath('data.meal_schedules.0.restaurant_meal_type_id', $breakfast->id);
 });
 
 it('only includes internal notes for users who can access the restaurant', function () {

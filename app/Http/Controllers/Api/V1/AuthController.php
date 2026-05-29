@@ -73,7 +73,11 @@ class AuthController extends Controller
             type: AuthChallengeType::StaffLogin,
         );
 
-        $user = $challenge->user->load('roles');
+        $user = $challenge->user->load([
+            'roles',
+            'roleAssignments.restaurant.activeBillingSubscription.plan',
+            'roleAssignments.restaurant.latestBillingSubscription.plan',
+        ]);
         $user->forceFill(['last_active_at' => now()])->save();
 
         $token = $user->createToken($request->input('device_name', 'staff-api'))->plainTextToken;
@@ -94,7 +98,11 @@ class AuthController extends Controller
         abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
 
         return response()->json([
-            'user' => UserResource::make($user->load(['roles', 'roleAssignments.restaurant.activeBillingSubscription.plan'])),
+            'user' => UserResource::make($user->load([
+                'roles',
+                'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.latestBillingSubscription.plan',
+            ])),
         ]);
     }
 

@@ -28,6 +28,19 @@ class MerchantInvoiceResource extends JsonResource
             'billing_period_end' => $this->billing_period_end?->toISOString(),
             'due_at' => $this->due_at?->toISOString(),
             'paid_at' => $this->paid_at?->toISOString(),
+            'billing_address' => $this->whenLoaded('restaurant', function () {
+                $org = $this->restaurant?->organization;
+
+                return $org?->billing_email
+                    ?? $org?->business_email
+                    ?? $this->restaurant?->email;
+            }),
+            'channel' => $this->whenLoaded('payments', function () {
+                return $this->payments
+                    ->sortByDesc('paid_at')
+                    ->first()
+                    ?->channel;
+            }),
             'plan' => BillingPlanResource::make($this->whenLoaded('plan')),
             'created_at' => $this->created_at?->toISOString(),
         ];

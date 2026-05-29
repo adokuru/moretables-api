@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Cuisine;
-use App\Support\DefaultCuisines;
+use App\Models\CuisineOption;
+use App\Support\DefaultCuisineOptions;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class CuisineSeeder extends Seeder
 {
@@ -13,13 +12,11 @@ class CuisineSeeder extends Seeder
     {
         $now = now();
 
-        foreach (DefaultCuisines::names() as $name) {
-            $slug = Str::slug($name);
-
-            Cuisine::query()->updateOrCreate(
-                ['slug' => $slug],
+        foreach (DefaultCuisineOptions::definitions() as $definition) {
+            CuisineOption::query()->updateOrCreate(
+                ['slug' => $definition['slug']],
                 [
-                    'name' => $name,
+                    'name' => $definition['name'],
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],

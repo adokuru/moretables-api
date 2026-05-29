@@ -19,7 +19,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
 
     public function via(object $notifiable): array
     {
-        $channels = ['mail'];
+        $channels = ['mail', 'database'];
 
         if ($notifiable->notify_push_notifications) {
             $channels[] = ExpoPushChannel::class;

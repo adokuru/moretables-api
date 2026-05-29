@@ -27,6 +27,9 @@
             "name": "Customer Devices"
         },
         {
+            "name": "Customer Notifications"
+        },
+        {
             "name": "Customer Reservations"
         },
         {
@@ -48,6 +51,9 @@
             "name": "Merchant Access Config"
         },
         {
+            "name": "Merchant Restaurant Settings"
+        },
+        {
             "name": "Merchant Staff"
         },
         {
@@ -55,6 +61,9 @@
         },
         {
             "name": "Merchant Menu"
+        },
+        {
+            "name": "Merchant Overview"
         },
         {
             "name": "Merchant Onboarding"
@@ -1004,6 +1013,7 @@
         "/onboarding-requests": {
             "post": {
                 "operationId": "onboardingRequest.store",
+                "summary": "Submit an onboarding request and notify MoreTables admins by email and database notification",
                 "tags": [
                     "Onboarding Requests"
                 ],
@@ -1891,10 +1901,70 @@
                                     "properties": {
                                         "user": {
                                             "$ref": "#/components/schemas/UserResource"
+                                        },
+                                        "rewards": {
+                                            "type": "object",
+                                            "properties": {
+                                                "points": {
+                                                    "type": "integer"
+                                                },
+                                                "current_level": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "start_points": {
+                                                            "type": "string"
+                                                        },
+                                                        "end_points": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "slug",
+                                                        "start_points",
+                                                        "end_points"
+                                                    ]
+                                                },
+                                                "points_to_next_level": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "object"
+                                                        },
+                                                        {
+                                                            "type": "integer",
+                                                            "enum": [
+                                                                0
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "progress_percentage": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "points",
+                                                "current_level",
+                                                "points_to_next_level",
+                                                "progress_percentage"
+                                            ]
                                         }
                                     },
                                     "required": [
-                                        "user"
+                                        "user",
+                                        "rewards"
                                     ]
                                 }
                             }
@@ -1938,6 +2008,102 @@
                                     "required": [
                                         "message",
                                         "user"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/profile/phone": {
+            "patch": {
+                "operationId": "profileSettings.updatePhone",
+                "summary": "Update the authenticated customer's phone number",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePhoneRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Phone number updated successfully."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "user"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/profile/password": {
+            "patch": {
+                "operationId": "profileSettings.changePassword",
+                "summary": "Change the authenticated customer's password",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Password changed successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
                                     ]
                                 }
                             }
@@ -2084,6 +2250,174 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications": {
+            "get": {
+                "operationId": "notification.index",
+                "summary": "List the authenticated user's notifications, unread first",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notifications": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NotificationResource"
+                                            }
+                                        },
+                                        "unread_count": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "notifications",
+                                        "unread_count",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications/read-all": {
+            "patch": {
+                "operationId": "notification.markAllAsRead",
+                "summary": "Mark all notifications as read for the authenticated user",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "All notifications marked as read."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/auth/notifications/{notification}/read": {
+            "patch": {
+                "operationId": "notification.markAsRead",
+                "summary": "Mark a single notification as read",
+                "tags": [
+                    "Customer Notifications"
+                ],
+                "parameters": [
+                    {
+                        "name": "notification",
+                        "in": "path",
+                        "required": true,
+                        "description": "The notification ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Notification marked as read."
+                                        },
+                                        "notification": {
+                                            "$ref": "#/components/schemas/NotificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "notification"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -3300,6 +3634,10 @@
                                                         },
                                                         "levels": {
                                                             "type": "string"
+                                                        },
+                                                        "redemption_tiers": {
+                                                            "type": "array",
+                                                            "items": {}
                                                         }
                                                     },
                                                     "required": [
@@ -3312,7 +3650,8 @@
                                                         "resets_points",
                                                         "tier_locked_until_period_end",
                                                         "is_active",
-                                                        "levels"
+                                                        "levels",
+                                                        "redemption_tiers"
                                                     ]
                                                 },
                                                 "points": {
@@ -3469,6 +3808,10 @@
                                                         },
                                                         "levels": {
                                                             "type": "string"
+                                                        },
+                                                        "redemption_tiers": {
+                                                            "type": "array",
+                                                            "items": {}
                                                         }
                                                     },
                                                     "required": [
@@ -3481,7 +3824,8 @@
                                                         "resets_points",
                                                         "tier_locked_until_period_end",
                                                         "is_active",
-                                                        "levels"
+                                                        "levels",
+                                                        "redemption_tiers"
                                                     ]
                                                 },
                                                 "points": {
@@ -4550,6 +4894,289 @@
                                     "required": [
                                         "message",
                                         "restaurant"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/settings": {
+            "get": {
+                "operationId": "merchantRestaurantSettings.show",
+                "tags": [
+                    "Merchant Restaurant Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "settings": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "website": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                },
+                                                "state": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "city": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "address_line_1": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "plan": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "amount": {
+                                                            "type": "string"
+                                                        },
+                                                        "currency": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "NGN"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "interval": {
+                                                            "type": "string"
+                                                        },
+                                                        "is_subscribed": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "slug",
+                                                        "amount",
+                                                        "currency",
+                                                        "interval",
+                                                        "is_subscribed"
+                                                    ]
+                                                },
+                                                "rewards_enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "reservation_reward_points": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "website",
+                                                "country",
+                                                "state",
+                                                "city",
+                                                "address_line_1",
+                                                "plan",
+                                                "rewards_enabled",
+                                                "reservation_reward_points"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "settings"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "merchantRestaurantSettings.update",
+                "tags": [
+                    "Merchant Restaurant Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantSettingsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Settings updated successfully."
+                                        },
+                                        "settings": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "website": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                },
+                                                "state": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "city": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "address_line_1": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "rewards_enabled": {
+                                                    "type": "boolean"
+                                                },
+                                                "reservation_reward_points": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "website",
+                                                "country",
+                                                "state",
+                                                "city",
+                                                "address_line_1",
+                                                "rewards_enabled",
+                                                "reservation_reward_points"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "settings"
                                     ]
                                 }
                             }
@@ -9862,6 +10489,256 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/overview": {
+            "get": {
+                "operationId": "merchantRestaurantOverview.show",
+                "description": "Returns quick-view stats (total reservations, guests, servers, users)\nand a 7-day calendar overview for the current week (Sunday\u2013Saturday),\nscoped to the restaurant's timezone.",
+                "summary": "Restaurant overview dashboard",
+                "tags": [
+                    "Merchant Overview"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "quick_view": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total_reservations": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "this_month": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "previous_month": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        },
+                                                        "change_percentage": {
+                                                            "type": "number"
+                                                        },
+                                                        "trend": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "date": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "count": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "date",
+                                                                    "count"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "this_month",
+                                                        "previous_month",
+                                                        "change_percentage",
+                                                        "trend"
+                                                    ]
+                                                },
+                                                "total_guests": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer"
+                                                        },
+                                                        "this_month": {
+                                                            "type": "integer"
+                                                        },
+                                                        "previous_month": {
+                                                            "type": "integer"
+                                                        },
+                                                        "change_percentage": {
+                                                            "type": "number"
+                                                        },
+                                                        "trend": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "date": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "count": {
+                                                                        "type": "integer"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "date",
+                                                                    "count"
+                                                                ]
+                                                            }
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "this_month",
+                                                        "previous_month",
+                                                        "change_percentage",
+                                                        "trend"
+                                                    ]
+                                                },
+                                                "total_servers": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value"
+                                                    ]
+                                                },
+                                                "total_users": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "total_reservations",
+                                                "total_guests",
+                                                "total_servers",
+                                                "total_users"
+                                            ]
+                                        },
+                                        "calendar_overview": {
+                                            "type": "object",
+                                            "properties": {
+                                                "week_start": {
+                                                    "type": "string"
+                                                },
+                                                "week_end": {
+                                                    "type": "string"
+                                                },
+                                                "days": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "date": {
+                                                                "type": "string"
+                                                            },
+                                                            "day_of_week": {
+                                                                "type": "string"
+                                                            },
+                                                            "day_label": {
+                                                                "type": "string"
+                                                            },
+                                                            "is_today": {
+                                                                "type": "string"
+                                                            },
+                                                            "reservations_count": {
+                                                                "type": [
+                                                                    "string",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "total_covers": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "average_covers_historical": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "date",
+                                                            "day_of_week",
+                                                            "day_label",
+                                                            "is_today",
+                                                            "reservations_count",
+                                                            "total_covers",
+                                                            "average_covers_historical"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "week_start",
+                                                "week_end",
+                                                "days"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "quick_view",
+                                        "calendar_overview"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/front-of-house/floors": {
             "get": {
                 "operationId": "frontOfHouseFloorPlan.index",
@@ -12661,10 +13538,34 @@
                                     "type": "object",
                                     "properties": {
                                         "invoices": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/MerchantInvoiceResource"
-                                            }
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                                    }
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
                                         }
                                     },
                                     "required": [
@@ -17462,6 +18363,138 @@
                 }
             }
         },
+        "/admin/users/inactive": {
+            "get": {
+                "operationId": "adminUser.inactive",
+                "tags": [
+                    "Admin Users"
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        },
+                        "example": 20
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "prev": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "next": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "first",
+                                                "last",
+                                                "prev",
+                                                "next"
+                                            ]
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "from": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "path": {
+                                                    "type": "string"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "to": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "from",
+                                                "last_page",
+                                                "path",
+                                                "per_page",
+                                                "to",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "data",
+                                        "links",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/admin/users/{user}": {
             "get": {
                 "operationId": "adminUser.show",
@@ -17764,6 +18797,7 @@
             },
             "post": {
                 "operationId": "adminOnboardingRequest.store",
+                "summary": "Create an onboarding request and notify MoreTables admins by email and database notification",
                 "tags": [
                     "Admin Onboarding Requests"
                 ],
@@ -19373,6 +20407,10 @@
                                                 },
                                                 "levels": {
                                                     "type": "string"
+                                                },
+                                                "redemption_tiers": {
+                                                    "type": "array",
+                                                    "items": {}
                                                 }
                                             },
                                             "required": [
@@ -19385,7 +20423,8 @@
                                                 "resets_points",
                                                 "tier_locked_until_period_end",
                                                 "is_active",
-                                                "levels"
+                                                "levels",
+                                                "redemption_tiers"
                                             ]
                                         }
                                     },
@@ -19466,6 +20505,10 @@
                                                 },
                                                 "levels": {
                                                     "type": "string"
+                                                },
+                                                "redemption_tiers": {
+                                                    "type": "array",
+                                                    "items": {}
                                                 }
                                             },
                                             "required": [
@@ -19478,7 +20521,8 @@
                                                 "resets_points",
                                                 "tier_locked_until_period_end",
                                                 "is_active",
-                                                "levels"
+                                                "levels",
+                                                "redemption_tiers"
                                             ]
                                         }
                                     },
@@ -19698,6 +20742,10 @@
                                                         },
                                                         "levels": {
                                                             "type": "string"
+                                                        },
+                                                        "redemption_tiers": {
+                                                            "type": "array",
+                                                            "items": {}
                                                         }
                                                     },
                                                     "required": [
@@ -19710,7 +20758,8 @@
                                                         "resets_points",
                                                         "tier_locked_until_period_end",
                                                         "is_active",
-                                                        "levels"
+                                                        "levels",
+                                                        "redemption_tiers"
                                                     ]
                                                 },
                                                 "points": {
@@ -20086,6 +21135,26 @@
                     "is_active"
                 ],
                 "title": "BillingPlanResource"
+            },
+            "ChangePasswordRequest": {
+                "type": "object",
+                "properties": {
+                    "current_password": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "password_confirmation": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "current_password",
+                    "password",
+                    "password_confirmation"
+                ],
+                "title": "ChangePasswordRequest"
             },
             "CuisineOptionResource": {
                 "type": "object",
@@ -20524,34 +21593,53 @@
                             "null"
                         ],
                         "properties": {
-                            "id": {
-                                "type": "string"
-                            },
-                            "provider": {
-                                "type": "string"
-                            },
                             "status": {
                                 "type": "string"
                             },
-                            "current_period_start": {
-                                "type": "string"
-                            },
-                            "current_period_end": {
+                            "subscribed_at": {
                                 "type": "string"
                             },
                             "next_payment_at": {
                                 "type": "string"
                             },
                             "plan": {
-                                "$ref": "#/components/schemas/BillingPlanResource"
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "interval": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "string"
+                                    },
+                                    "display_amount": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "slug",
+                                    "interval",
+                                    "amount",
+                                    "display_amount",
+                                    "currency"
+                                ]
                             }
                         },
                         "required": [
-                            "id",
-                            "provider",
                             "status",
-                            "current_period_start",
-                            "current_period_end",
+                            "subscribed_at",
                             "next_payment_at",
                             "plan"
                         ]
@@ -20562,16 +21650,13 @@
                             "null"
                         ],
                         "properties": {
-                            "provider": {
-                                "type": "string"
-                            },
-                            "brand": {
+                            "last4": {
                                 "type": "string"
                             },
                             "card_type": {
                                 "type": "string"
                             },
-                            "last4": {
+                            "brand": {
                                 "type": "string"
                             },
                             "exp_month": {
@@ -20585,27 +21670,81 @@
                             },
                             "channel": {
                                 "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
                             }
                         },
                         "required": [
-                            "provider",
-                            "brand",
-                            "card_type",
                             "last4",
+                            "card_type",
+                            "brand",
                             "exp_month",
                             "exp_year",
                             "bank",
-                            "channel"
+                            "channel",
+                            "email"
                         ]
                     },
                     "upcoming_invoice": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/MerchantInvoiceResource"
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
                             },
-                            {
-                                "type": "null"
+                            "invoice_number": {
+                                "type": "string"
+                            },
+                            "amount": {
+                                "type": "string"
+                            },
+                            "display_amount": {
+                                "type": "string"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "due_at": {
+                                "type": "string"
+                            },
+                            "billing_period_start": {
+                                "type": "string"
+                            },
+                            "billing_period_end": {
+                                "type": "string"
+                            },
+                            "plan": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "slug"
+                                ]
                             }
+                        },
+                        "required": [
+                            "id",
+                            "invoice_number",
+                            "amount",
+                            "display_amount",
+                            "currency",
+                            "due_at",
+                            "billing_period_start",
+                            "billing_period_end",
+                            "plan"
                         ]
                     }
                 },
@@ -20667,6 +21806,12 @@
                     "paid_at": {
                         "type": "string"
                     },
+                    "billing_address": {
+                        "type": "string"
+                    },
+                    "channel": {
+                        "type": "string"
+                    },
                     "plan": {
                         "$ref": "#/components/schemas/BillingPlanResource"
                     },
@@ -20692,6 +21837,38 @@
                 ],
                 "title": "MerchantInvoiceResource"
             },
+            "NotificationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "type": "string"
+                    },
+                    "read_at": {
+                        "type": "string"
+                    },
+                    "is_read": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "data",
+                    "read_at",
+                    "is_read",
+                    "created_at"
+                ],
+                "title": "NotificationResource"
+            },
             "NotifyWaitlistEntryRequest": {
                 "type": "object",
                 "properties": {
@@ -20706,16 +21883,65 @@
                 },
                 "title": "NotifyWaitlistEntryRequest"
             },
+            "OnboardingContactReason": {
+                "type": "string",
+                "enum": [
+                    "book_a_demo",
+                    "pricing",
+                    "partnership",
+                    "support",
+                    "other"
+                ],
+                "title": "OnboardingContactReason"
+            },
+            "OnboardingJobTitle": {
+                "type": "string",
+                "enum": [
+                    "owner",
+                    "general_manager",
+                    "operations_manager",
+                    "marketing_manager",
+                    "executive_chef",
+                    "other"
+                ],
+                "title": "OnboardingJobTitle"
+            },
+            "OnboardingLocationCount": {
+                "type": "string",
+                "enum": [
+                    "1",
+                    "2-5",
+                    "6-10",
+                    "11-20",
+                    "20+"
+                ],
+                "title": "OnboardingLocationCount"
+            },
             "OnboardingRequestResource": {
                 "type": "object",
                 "properties": {
                     "id": {
                         "type": "integer"
                     },
-                    "restaurant_name": {
-                        "type": "string"
+                    "first_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
-                    "owner_name": {
+                    "last_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "full_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "restaurant_name": {
                         "type": "string"
                     },
                     "email": {
@@ -20724,8 +21950,20 @@
                     "phone": {
                         "type": "string"
                     },
-                    "address": {
+                    "job_title": {
                         "type": "string"
+                    },
+                    "location_count": {
+                        "type": "string"
+                    },
+                    "contact_reason": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -20748,10 +21986,15 @@
                 },
                 "required": [
                     "id",
+                    "first_name",
+                    "last_name",
+                    "full_name",
                     "restaurant_name",
-                    "owner_name",
                     "email",
                     "phone",
+                    "job_title",
+                    "location_count",
+                    "contact_reason",
                     "address",
                     "notes",
                     "status",
@@ -20952,6 +22195,18 @@
                             "null"
                         ]
                     },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "accept_points": {
+                        "type": "boolean"
+                    },
+                    "subscribe_to_promotions": {
+                        "type": "boolean"
+                    },
                     "guests": {
                         "type": "array",
                         "items": {
@@ -21038,6 +22293,9 @@
                     "starts_at",
                     "ends_at",
                     "notes",
+                    "occasion",
+                    "accept_points",
+                    "subscribe_to_promotions",
                     "guests",
                     "seated_at",
                     "completed_at",
@@ -21118,8 +22376,7 @@
                     "permissions": {
                         "anyOf": [
                             {
-                                "type": "array",
-                                "items": {}
+                                "type": "string"
                             },
                             {
                                 "type": "array",
@@ -21526,6 +22783,12 @@
                         }
                     },
                     "hours": {
+                        "type": "object"
+                    },
+                    "meal_types": {
+                        "type": "string"
+                    },
+                    "meal_schedules": {
                         "type": "string"
                     },
                     "policy": {
@@ -21699,6 +22962,9 @@
                     },
                     "cuisines": {
                         "type": "string"
+                    },
+                    "hours": {
+                        "type": "object"
                     },
                     "reservation_times": {
                         "type": "string"
@@ -23285,6 +24551,13 @@
                         ],
                         "maxLength": 500
                     },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
                     "internal_notes": {
                         "type": [
                             "string",
@@ -23295,8 +24568,18 @@
                     "guest_contact": {
                         "type": "object",
                         "properties": {
+                            "full_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 255
+                            },
                             "first_name": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "maxLength": 120
                             },
                             "last_name": {
@@ -23395,13 +24678,13 @@
             "StoreOnboardingRequestRequest": {
                 "type": "object",
                 "properties": {
-                    "restaurant_name": {
+                    "first_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
-                    "owner_name": {
+                    "last_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
                     "email": {
                         "type": "string",
@@ -23412,8 +24695,24 @@
                         "type": "string",
                         "maxLength": 30
                     },
+                    "restaurant_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "job_title": {
+                        "$ref": "#/components/schemas/OnboardingJobTitle"
+                    },
+                    "location_count": {
+                        "$ref": "#/components/schemas/OnboardingLocationCount"
+                    },
+                    "contact_reason": {
+                        "$ref": "#/components/schemas/OnboardingContactReason"
+                    },
                     "address": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -23423,11 +24722,14 @@
                     }
                 },
                 "required": [
-                    "restaurant_name",
-                    "owner_name",
+                    "first_name",
+                    "last_name",
                     "email",
                     "phone",
-                    "address"
+                    "restaurant_name",
+                    "job_title",
+                    "location_count",
+                    "contact_reason"
                 ],
                 "title": "StoreOnboardingRequestRequest"
             },
@@ -23566,6 +24868,25 @@
                             "null"
                         ],
                         "maxLength": 500
+                    },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "accept_points": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "subscribe_to_promotions": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -23862,8 +25183,11 @@
                         "minimum": 1
                     },
                     "max_capacity": {
-                        "type": "integer",
-                        "minimum": 1
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 10
                     },
                     "table_type": {
                         "$ref": "#/components/schemas/TableType"
@@ -23933,8 +25257,7 @@
                     }
                 },
                 "required": [
-                    "name",
-                    "max_capacity"
+                    "name"
                 ],
                 "title": "StoreRestaurantTableRequest"
             },
@@ -24117,7 +25440,7 @@
                                         "integer",
                                         "null"
                                     ],
-                                    "minimum": 1
+                                    "minimum": 10
                                 }
                             },
                             "required": [
@@ -24851,6 +26174,13 @@
                         ],
                         "maxLength": 500
                     },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
                     "internal_notes": {
                         "type": [
                             "string",
@@ -24864,11 +26194,15 @@
             "UpdateOnboardingRequestRequest": {
                 "type": "object",
                 "properties": {
-                    "restaurant_name": {
+                    "first_name": {
                         "type": "string",
-                        "maxLength": 255
+                        "maxLength": 120
                     },
-                    "owner_name": {
+                    "last_name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "restaurant_name": {
                         "type": "string",
                         "maxLength": 255
                     },
@@ -24881,8 +26215,20 @@
                         "type": "string",
                         "maxLength": 30
                     },
+                    "job_title": {
+                        "$ref": "#/components/schemas/OnboardingJobTitle"
+                    },
+                    "location_count": {
+                        "$ref": "#/components/schemas/OnboardingLocationCount"
+                    },
+                    "contact_reason": {
+                        "$ref": "#/components/schemas/OnboardingContactReason"
+                    },
                     "address": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -25008,6 +26354,19 @@
                 },
                 "title": "UpdateOrganizationRequest"
             },
+            "UpdatePhoneRequest": {
+                "type": "object",
+                "properties": {
+                    "phone": {
+                        "type": "string",
+                        "maxLength": 30
+                    }
+                },
+                "required": [
+                    "phone"
+                ],
+                "title": "UpdatePhoneRequest"
+            },
             "UpdateProfileSettingsRequest": {
                 "type": "object",
                 "properties": {
@@ -25032,6 +26391,28 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "notify_dining_rating_emails": {
+                        "type": "boolean"
+                    },
+                    "notify_marketing_emails": {
+                        "type": "boolean"
+                    },
+                    "notify_sms_alerts": {
+                        "type": "boolean"
+                    },
+                    "notify_push_notifications": {
+                        "type": "boolean"
+                    },
+                    "allergies": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
                     }
                 },
                 "title": "UpdateProfileSettingsRequest"
@@ -25091,6 +26472,19 @@
                             "null"
                         ],
                         "maxLength": 500
+                    },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "subscribe_to_promotions": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
                     }
                 },
                 "title": "UpdateReservationRequest"
@@ -25872,6 +27266,60 @@
                 },
                 "title": "UpdateRestaurantReviewRequest"
             },
+            "UpdateRestaurantSettingsRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "website": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 255
+                    },
+                    "country": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "state": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "city": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "address_line_1": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "rewards_enabled": {
+                        "type": "boolean"
+                    },
+                    "reservation_reward_points": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                    }
+                },
+                "title": "UpdateRestaurantSettingsRequest"
+            },
             "UpdateRestaurantStaffRequest": {
                 "type": "object",
                 "properties": {
@@ -26056,6 +27504,31 @@
                             }
                         },
                         "minItems": 1
+                    },
+                    "redemption_tiers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "points": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "credit_value": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "credit_currency": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "minLength": 3,
+                                    "maxLength": 3
+                                }
+                            }
+                        },
+                        "minItems": 1
                     }
                 },
                 "title": "UpdateRewardProgramRequest"
@@ -26235,6 +27708,10 @@
                     "birthday": {
                         "type": "string"
                     },
+                    "allergies": {
+                        "type": "array",
+                        "items": {}
+                    },
                     "email": {
                         "type": "string"
                     },
@@ -26265,6 +27742,29 @@
                     "last_active_at": {
                         "type": "string"
                     },
+                    "notification_preferences": {
+                        "type": "object",
+                        "properties": {
+                            "dining_rating_emails": {
+                                "type": "boolean"
+                            },
+                            "marketing_emails": {
+                                "type": "boolean"
+                            },
+                            "sms_alerts": {
+                                "type": "boolean"
+                            },
+                            "push_notifications": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "dining_rating_emails",
+                            "marketing_emails",
+                            "sms_alerts",
+                            "push_notifications"
+                        ]
+                    },
                     "profile_picture": {
                         "anyOf": [
                             {
@@ -26284,6 +27784,43 @@
                     },
                     "created_at": {
                         "type": "string"
+                    },
+                    "subscription": {
+                        "type": "object",
+                        "properties": {
+                            "is_active": {
+                                "type": "boolean"
+                            },
+                            "status": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "unpaid"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "payment_url": {
+                                "type": "string"
+                            },
+                            "plan": {
+                                "type": "string"
+                            },
+                            "plan_slug": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "is_active",
+                            "status",
+                            "payment_url",
+                            "plan",
+                            "plan_slug"
+                        ]
                     }
                 },
                 "required": [
@@ -26293,6 +27830,7 @@
                     "last_name",
                     "bio",
                     "birthday",
+                    "allergies",
                     "email",
                     "phone",
                     "status",
@@ -26300,6 +27838,7 @@
                     "account_type",
                     "email_verified_at",
                     "last_active_at",
+                    "notification_preferences",
                     "profile_picture",
                     "created_at"
                 ],

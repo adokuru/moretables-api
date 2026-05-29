@@ -15,8 +15,8 @@ class StoreAdminCuisineRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:100', Rule::unique('cuisines', 'name')],
-            'slug' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('cuisines', 'slug')],
+            'name' => ['required', 'string', 'max:100', Rule::unique('cuisine_options', 'name')],
+            'slug' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('cuisine_options', 'slug')],
         ];
     }
 

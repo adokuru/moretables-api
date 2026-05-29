@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Cuisine;
+use App\Models\CuisineOption;
 use App\Models\Role;
 use App\Models\User;
-use App\Support\DefaultCuisines;
+use App\Support\DefaultCuisineOptions;
 use Database\Seeders\CuisineSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Laravel\Sanctum\Sanctum;
@@ -11,9 +11,9 @@ use Laravel\Sanctum\Sanctum;
 it('seeds the default cuisines', function (): void {
     $this->seed(CuisineSeeder::class);
 
-    expect(Cuisine::query()->count())->toBe(count(DefaultCuisines::names()));
+    expect(CuisineOption::query()->count())->toBe(count(DefaultCuisineOptions::definitions()));
 
-    $nigerian = Cuisine::query()->where('slug', 'nigerian')->first();
+    $nigerian = CuisineOption::query()->where('slug', 'nigerian')->first();
 
     expect($nigerian)->not->toBeNull()
         ->and($nigerian->name)->toBe('Nigerian');
@@ -62,7 +62,7 @@ it('allows admins to manage cuisines', function (): void {
     $deleteResponse->assertOk()
         ->assertJsonPath('message', 'Cuisine deleted successfully.');
 
-    $this->assertDatabaseMissing('cuisines', ['id' => $cuisineId]);
+    $this->assertDatabaseMissing('cuisine_options', ['id' => $cuisineId]);
 });
 
 it('searches cuisines by name or slug', function (): void {
@@ -85,11 +85,6 @@ it('searches cuisines by name or slug', function (): void {
 
 it('validates unique cuisine names and slugs', function (): void {
     $this->seed(RoleAndPermissionSeeder::class);
-
-    Cuisine::factory()->create([
-        'name' => 'Nigerian',
-        'slug' => 'nigerian',
-    ]);
 
     $admin = User::factory()->create();
     assignScopedRole($admin, Role::BusinessAdmin);

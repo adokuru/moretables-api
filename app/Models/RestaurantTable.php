@@ -16,6 +16,15 @@ class RestaurantTable extends Model
     /** @use HasFactory<RestaurantTableFactory> */
     use HasFactory;
 
+    public const DEFAULT_MIN_CAPACITY = 1;
+
+    public const DEFAULT_MAX_CAPACITY = 10;
+
+    protected $attributes = [
+        'min_capacity' => self::DEFAULT_MIN_CAPACITY,
+        'max_capacity' => self::DEFAULT_MAX_CAPACITY,
+    ];
+
     protected $fillable = [
         'restaurant_id',
         'dining_area_id',

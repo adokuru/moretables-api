@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Merchant;
 
+use App\Models\RestaurantTable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +27,7 @@ class SyncDiningAreaLayoutRequest extends FormRequest
             'tables.*.width' => ['nullable', 'integer', 'min:1'],
             'tables.*.height' => ['nullable', 'integer', 'min:1'],
             'tables.*.min_party_size' => ['nullable', 'integer', 'min:1'],
-            'tables.*.max_party_size' => ['nullable', 'integer', 'min:1'],
+            'tables.*.max_party_size' => ['nullable', 'integer', 'min:'.RestaurantTable::DEFAULT_MAX_CAPACITY],
         ];
     }
 }

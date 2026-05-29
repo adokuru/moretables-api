@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateOnboardingRequestRequest;
 use App\Http\Resources\OnboardingRequestResource;
 use App\Models\OnboardingRequest;
 use App\OnboardingRequestStatus;
+use App\Services\OnboardingRequestNotificationService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
@@ -38,6 +39,8 @@ class AdminOnboardingRequestController extends Controller
                     $onboardingQuery
                         ->where('restaurant_name', 'like', '%'.$search.'%')
                         ->orWhere('owner_name', 'like', '%'.$search.'%')
+                        ->orWhere('first_name', 'like', '%'.$search.'%')
+                        ->orWhere('last_name', 'like', '%'.$search.'%')
                         ->orWhere('email', 'like', '%'.$search.'%')
                         ->orWhere('phone', 'like', '%'.$search.'%');
                 }),
@@ -66,11 +69,16 @@ class AdminOnboardingRequestController extends Controller
         ]);
     }
 
-    public function store(StoreOnboardingRequestRequest $request): JsonResponse
+    /**
+     * Create an onboarding request and notify MoreTables admins by email and database notification.
+     */
+    public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {
         $this->ensureAdminAccess($request);
 
         $onboardingRequest = OnboardingRequest::query()->create($request->validated())->refresh();
+
+        $notifications->notifyAdmins($onboardingRequest);
 
         return response()->json([
             'message' => 'Onboarding request created successfully.',

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class RestaurantDetailResource extends JsonResource
 {
@@ -115,11 +116,27 @@ class RestaurantDetailResource extends JsonResource
             'summary' => $summary,
             'discovery_metrics' => $discoveryMetrics,
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
-            'hours' => $this->whenLoaded('hours', fn () => $this->hours->map(fn ($hour) => [
-                'day_of_week' => $hour->day_of_week,
-                'opens_at' => $hour->opens_at,
-                'closes_at' => $hour->closes_at,
-                'is_closed' => $hour->is_closed,
+            'hours' => $this->when(
+                $this->relationLoaded('mealSchedules') || $this->relationLoaded('hours'),
+                fn () => $this->formattedHours(),
+            ),
+            'meal_types' => $this->whenLoaded('mealTypes', fn () => $this->mealTypes->map(fn ($type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+                'sort_order' => $type->sort_order,
+                'schedules' => $type->relationLoaded('schedules') ? $type->schedules->map(fn ($schedule) => [
+                    'id' => $schedule->id,
+                    'day_of_week' => $schedule->day_of_week,
+                    'opens_at' => $schedule->opens_at,
+                    'closes_at' => $schedule->closes_at,
+                ])->values() : [],
+            ])->values()),
+            'meal_schedules' => $this->whenLoaded('mealSchedules', fn () => $this->mealSchedules->map(fn ($schedule) => [
+                'id' => $schedule->id,
+                'restaurant_meal_type_id' => $schedule->restaurant_meal_type_id,
+                'day_of_week' => $schedule->day_of_week,
+                'opens_at' => $schedule->opens_at,
+                'closes_at' => $schedule->closes_at,
             ])->values()),
             'policy' => $this->whenLoaded('policy', fn () => [
                 'reservation_duration_minutes' => $this->policy?->reservation_duration_minutes,
@@ -155,5 +172,39 @@ class RestaurantDetailResource extends JsonResource
                 fn () => $this->activeBillingSubscription?->plan?->slug?->value,
             ),
         ];
+    }
+
+    protected function formattedHours(): Collection
+    {
+        if ($this->relationLoaded('mealSchedules') && $this->mealSchedules->isNotEmpty()) {
+            $schedulesByDay = $this->mealSchedules->groupBy('day_of_week');
+
+            return collect(range(0, 6))->map(function (int $dayOfWeek) use ($schedulesByDay): array {
+                $schedules = $schedulesByDay->get($dayOfWeek, collect());
+
+                if ($schedules->isEmpty()) {
+                    return [
+                        'day_of_week' => $dayOfWeek,
+                        'opens_at' => null,
+                        'closes_at' => null,
+                        'is_closed' => true,
+                    ];
+                }
+
+                return [
+                    'day_of_week' => $dayOfWeek,
+                    'opens_at' => $schedules->min('opens_at'),
+                    'closes_at' => $schedules->max('closes_at'),
+                    'is_closed' => false,
+                ];
+            })->values();
+        }
+
+        return $this->hours->map(fn ($hour) => [
+            'day_of_week' => $hour->day_of_week,
+            'opens_at' => $hour->opens_at,
+            'closes_at' => $hour->closes_at,
+            'is_closed' => $hour->is_closed,
+        ])->values();
     }
 }

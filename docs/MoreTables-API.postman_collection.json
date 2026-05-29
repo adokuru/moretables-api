@@ -897,9 +897,10 @@
                 "onboarding-requests"
               ]
             },
+            "description": "Submit an onboarding request. MoreTables admins receive both email and database notifications when the request is created.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"restaurant_name\": \"The Bistro\",\n  \"owner_name\": \"Jane Owner\",\n  \"email\": \"owner@example.com\",\n  \"phone\": \"+2348000000000\",\n  \"address\": \"123 Main St\",\n  \"notes\": \"optional\"\n}"
+              "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Owner\",\n  \"restaurant_name\": \"The Bistro\",\n  \"email\": \"owner@example.com\",\n  \"phone\": \"+2348000000000\",\n  \"job_title\": \"owner\",\n  \"location_count\": \"1\",\n  \"contact_reason\": \"book_a_demo\",\n  \"address\": \"123 Main St\",\n  \"notes\": \"optional\"\n}"
             }
           }
         },
@@ -924,7 +925,8 @@
                 "restaurants"
               ]
             }
-          }
+          },
+          "description": "Public restaurant listing response includes hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours)."
         },
         {
           "name": "Search locations restaurants and cuisines",
@@ -983,7 +985,7 @@
               ]
             }
           },
-          "description": "Public restaurant detail response including summary and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages)."
+          "description": "Public restaurant detail response including hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours), meal_types / meal_schedules for business hours, summary, and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages)."
         },
         {
           "name": "Restaurant availability",
@@ -3226,7 +3228,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"T1\",\n  \"max_capacity\": 4,\n  \"min_capacity\": 2,\n  \"dining_area_id\": 1,\n  \"table_type\": \"regular\",\n  \"shape\": \"rectangle\",\n  \"x_position\": 128,\n  \"y_position\": 96,\n  \"width\": 160,\n  \"height\": 96,\n  \"rotation\": 0,\n  \"color\": \"#D9D9D9\"\n}"
+              "raw": "{\n  \"name\": \"T1\",\n  \"max_capacity\": 10,\n  \"min_capacity\": 1,\n  \"dining_area_id\": 1,\n  \"table_type\": \"regular\",\n  \"shape\": \"rectangle\",\n  \"x_position\": 128,\n  \"y_position\": 96,\n  \"width\": 160,\n  \"height\": 96,\n  \"rotation\": 0,\n  \"color\": \"#D9D9D9\"\n}"
             }
           }
         },
@@ -3271,7 +3273,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"max_capacity\": 6,\n  \"name\": \"T1A\",\n  \"table_type\": \"booth\",\n  \"shape\": \"round\",\n  \"x_position\": 240,\n  \"y_position\": 160,\n  \"width\": 112,\n  \"height\": 112,\n  \"rotation\": 45,\n  \"color\": \"#AABBCC\"\n}"
+              "raw": "{\n  \"max_capacity\": 12,\n  \"name\": \"T1A\",\n  \"table_type\": \"booth\",\n  \"shape\": \"round\",\n  \"x_position\": 240,\n  \"y_position\": 160,\n  \"width\": 112,\n  \"height\": 112,\n  \"rotation\": 45,\n  \"color\": \"#AABBCC\"\n}"
             }
           }
         },
@@ -6645,6 +6647,102 @@
               "raw": "{\n  \"points\": 1200,\n  \"type\": \"earn\",\n  \"description\": \"Opening bonus\",\n  \"metadata\": {\n    \"source\": \"manual_adjustment\"\n  }\n}"
             },
             "description": "Creates a reward point transaction for a user and recalculates their current tier."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Auth",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Returns paginated notifications for the authenticated user, unread first."
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/notifications/:notification/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications",
+                ":notification",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "notification",
+                  "value": "{{notification_id}}"
+                }
+              ]
+            },
+            "description": "Mark a single notification as read."
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark all notifications as read for the authenticated user."
           }
         }
       ]
