@@ -202,6 +202,32 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         ->assertJsonPath('meta.per_page', 2);
 });
 
+it('returns distance_km in discovery section when coordinates are provided', function () {
+    Restaurant::factory()->create([
+        'status' => RestaurantStatus::Active,
+        'latitude' => 6.5244,
+        'longitude' => 3.3792,
+    ]);
+
+    $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables?latitude=6.5244&longitude=3.3792');
+
+    $response->assertOk()
+        ->assertJsonPath('section', 'new_on_moretables')
+        ->assertJsonStructure(['data' => [['distance_km']]]);
+
+    expect($response->json('data.0.distance_km'))->toBeNumeric();
+});
+
+it('omits distance_km in discovery section when no coordinates are provided', function () {
+    Restaurant::factory()->create(['status' => RestaurantStatus::Active]);
+
+    $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables');
+
+    $response->assertOk();
+    $firstItem = $response->json('data.0');
+    expect($firstItem)->not->toHaveKey('distance_km');
+});
+
 it('records restaurant views for discovery metrics', function () {
     $restaurant = Restaurant::factory()->create();
 

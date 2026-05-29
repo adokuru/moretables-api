@@ -192,14 +192,20 @@ class RestaurantDiscoveryService
                 });
             })
             ->when($hasCoordinates, function (Builder $query) use ($filters): void {
+                $lat = (float) $filters['latitude'];
+                $lng = (float) $filters['longitude'];
                 $radiusKm = (float) ($filters['radius_km'] ?? 25);
                 $bounds = $this->coordinateBounds(
-                    latitude: (float) $filters['latitude'],
-                    longitude: (float) $filters['longitude'],
+                    latitude: $lat,
+                    longitude: $lng,
                     radiusKm: $radiusKm,
                 );
 
-                $query->whereNotNull('latitude')
+                $query->selectRaw(
+                    'restaurants.*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance_km',
+                    [$lat, $lng, $lat],
+                )
+                    ->whereNotNull('latitude')
                     ->whereNotNull('longitude')
                     ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
                     ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']]);
