@@ -41,6 +41,7 @@ class RestaurantListResource extends JsonResource
             'country' => $this->country,
             'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
+            'average_price_range' => $this->average_price_range,
             'address' => trim(implode(', ', array_filter([$this->address_line_1, $this->city, $this->state]))),
             'phone' => $this->phone,
             'email' => $this->email,
