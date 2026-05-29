@@ -6,6 +6,7 @@ use App\Models\ReservationGuest;
 use App\Models\User;
 use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
+use App\ReservationStatus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -694,7 +695,7 @@ it('allows a customer to book the same restaurant at the same time after cancell
         'restaurant_table_id' => $data['table']->id,
         'starts_at' => $startsAt,
         'ends_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
-        'status' => \App\ReservationStatus::Cancelled,
+        'status' => ReservationStatus::Cancelled,
         'canceled_at' => now(),
     ]);
 
