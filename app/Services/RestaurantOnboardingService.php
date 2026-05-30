@@ -23,6 +23,8 @@ class RestaurantOnboardingService
         RestaurantOnboardingStep::Hours,
     ];
 
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     public function syncCuisines(Restaurant $restaurant, ?int $primaryId, array $additionalIds = []): void
     {
         if ($primaryId === null) {
@@ -38,6 +40,7 @@ class RestaurantOnboardingService
         }
 
         $restaurant->cuisines()->sync($pivot);
+        $this->performanceCache->invalidateRestaurant($restaurant->id);
     }
 
     public function syncSocialHandles(Restaurant $restaurant, array $handles): void

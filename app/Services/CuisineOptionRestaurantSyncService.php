@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 
 class CuisineOptionRestaurantSyncService
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * @param  array<int, mixed>  $names
      */
@@ -40,6 +42,7 @@ class CuisineOptionRestaurantSyncService
 
         if ($orderedDisplayNames === []) {
             $restaurant->cuisines()->sync([]);
+            $this->performanceCache->invalidateRestaurant($restaurant->id);
 
             return;
         }
@@ -56,6 +59,8 @@ class CuisineOptionRestaurantSyncService
 
             $restaurant->cuisines()->sync($sync);
         });
+
+        $this->performanceCache->invalidateRestaurant($restaurant->id);
     }
 
     private function findOrCreateCuisineOption(string $displayName): CuisineOption

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\OnboardingRequest;
+use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -10,7 +11,7 @@ use Illuminate\Notifications\Notification;
 
 class OnboardingRequestSubmittedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, UsesNotificationQueues;
 
     public function __construct(
         protected OnboardingRequest $onboardingRequest,

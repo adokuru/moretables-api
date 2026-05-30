@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -9,7 +10,7 @@ use Illuminate\Notifications\Notification;
 
 class AuthChallengeCodeNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, UsesNotificationQueues;
 
     public function __construct(
         protected string $code,

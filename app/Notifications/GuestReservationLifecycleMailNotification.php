@@ -6,6 +6,7 @@ use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\User;
+use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Notification;
 
 class GuestReservationLifecycleMailNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, UsesNotificationQueues;
 
     public function __construct(
         protected Reservation $reservation,

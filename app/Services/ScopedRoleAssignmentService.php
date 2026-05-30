@@ -12,6 +12,8 @@ use App\RoleScopeType;
 
 class ScopedRoleAssignmentService
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     public function assignOrganizationOwner(User $user, Organization $organization, int $assignedBy): void
     {
         $this->assignRole(
@@ -100,6 +102,8 @@ class ScopedRoleAssignmentService
             ->where('restaurant_id', $restaurant->id)
             ->whereHas('role', fn ($query) => $query->whereIn('name', Role::allRestaurantStaffRoles()))
             ->delete();
+
+        $this->performanceCache->invalidateAuthorization($user->id);
     }
 
     public function assignRole(

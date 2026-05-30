@@ -15,11 +15,15 @@ use App\Models\MerchantSubscription;
 use App\Models\Restaurant;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BillingService
 {
-    public function __construct(protected PaymentProvider $provider) {}
+    public function __construct(
+        protected PaymentProvider $provider,
+        protected PerformanceCacheService $performanceCache,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -139,17 +143,21 @@ class BillingService
 
     public function isRestaurantBillable(Restaurant $restaurant): bool
     {
-        return MerchantSubscription::query()
-            ->where('restaurant_id', $restaurant->id)
-            ->whereIn('status', [
-                MerchantSubscriptionStatus::Active->value,
-                MerchantSubscriptionStatus::Trialing->value,
-            ])
-            ->where(function ($query): void {
-                $query->whereNull('current_period_end')
-                    ->orWhere('current_period_end', '>=', now());
-            })
-            ->exists();
+        return Cache::remember(
+            $this->performanceCache->billingEligibilityKey($restaurant->id),
+            (int) config('performance.cache.ttls.billing_eligibility'),
+            fn (): bool => MerchantSubscription::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->whereIn('status', [
+                    MerchantSubscriptionStatus::Active->value,
+                    MerchantSubscriptionStatus::Trialing->value,
+                ])
+                ->where(function ($query): void {
+                    $query->whereNull('current_period_end')
+                        ->orWhere('current_period_end', '>=', now());
+                })
+                ->exists(),
+        );
     }
 
     protected function recordTransaction(MerchantInvoice $invoice, array $data): MerchantPayment
@@ -192,6 +200,8 @@ class BillingService
                 'gateway_response' => Arr::get($data, 'gateway_response'),
             ],
         ]);
+
+        $this->performanceCache->invalidateBillingEligibility($invoice->restaurant_id);
 
         return $payment->refresh();
     }
@@ -286,8 +296,12 @@ class BillingService
             return;
         }
 
-        MerchantSubscription::query()
+        $subscriptions = MerchantSubscription::query()
             ->where('provider_subscription_code', $subscriptionCode)
+            ->get(['id', 'restaurant_id']);
+
+        MerchantSubscription::query()
+            ->whereKey($subscriptions->pluck('id'))
             ->update([
                 'status' => $status,
                 'cancel_at_period_end' => $cancelAtPeriodEnd,
@@ -295,6 +309,9 @@ class BillingService
                 'canceled_at' => $status === MerchantSubscriptionStatus::Canceled ? now() : null,
                 'raw_provider_payload' => $data,
             ]);
+
+        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->performanceCache
+            ->invalidateBillingEligibility($subscription->restaurant_id));
     }
 
     protected function paymentStatusFrom(string $status): MerchantPaymentStatus

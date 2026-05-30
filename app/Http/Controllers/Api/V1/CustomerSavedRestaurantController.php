@@ -7,6 +7,7 @@ use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\Models\SavedRestaurant;
 use App\RestaurantStatus;
+use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\Http\Request;
 #[Group('Customer Saved Restaurants', weight: 24)]
 class CustomerSavedRestaurantController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * List the authenticated customer's saved restaurants.
      */
@@ -75,6 +78,8 @@ class CustomerSavedRestaurantController extends Controller
             ->where('user_id', $request->user()->id)
             ->where('restaurant_id', $restaurant->id)
             ->delete();
+
+        $this->performanceCache->invalidateRestaurant($restaurant->id);
 
         return response()->json([
             'message' => 'Restaurant removed from saved items successfully.',

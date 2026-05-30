@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 class RestaurantDiscoveryService
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * @var array<string, string>
      */
@@ -46,9 +48,29 @@ class RestaurantDiscoveryService
         $sections = [];
 
         foreach (array_keys(self::SECTION_LABELS) as $section) {
-            $sections[$section] = $this->sectionQuery($section, $filters, $userId)
-                ->limit($limit)
-                ->get();
+            $rows = $this->performanceCache->flexible(
+                $this->performanceCache->versionedKey(
+                    'discovery',
+                    $section,
+                    hash('sha256', json_encode([$filters, $limit, $this->currentTimeOfDay()], JSON_THROW_ON_ERROR)),
+                ),
+                'public_fragments',
+                fn (): array => $this->sectionQuery($section, $filters)
+                    ->limit($limit)
+                    ->get()
+                    ->map(fn (Restaurant $restaurant): array => [
+                        'id' => $restaurant->id,
+                        'bookings_count' => $restaurant->getAttribute('bookings_count'),
+                        'views_count' => $restaurant->getAttribute('views_count'),
+                        'saves_count' => $restaurant->getAttribute('saves_count'),
+                        'list_adds_count' => $restaurant->getAttribute('list_adds_count'),
+                        'reviews_count' => $restaurant->getAttribute('reviews_count'),
+                        'average_rating' => $restaurant->getAttribute('average_rating'),
+                    ])
+                    ->all(),
+            );
+
+            $sections[$section] = $this->hydrateCachedRestaurants($rows, $filters, $userId);
         }
 
         return $sections;
@@ -149,6 +171,33 @@ class RestaurantDiscoveryService
                 'reviews as reviews_count',
             ])
             ->withAvg('reviews as average_rating', 'rating');
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Restaurant>
+     */
+    private function hydrateCachedRestaurants(array $rows, array $filters, ?int $userId): Collection
+    {
+        if ($rows === []) {
+            return collect();
+        }
+
+        $rowsById = collect($rows)->keyBy('id');
+
+        return $this->baseQuery($filters, $userId)
+            ->whereKey($rowsById->keys())
+            ->get()
+            ->each(function (Restaurant $restaurant) use ($rowsById): void {
+                foreach ($rowsById->get($restaurant->id, []) as $key => $value) {
+                    if ($key !== 'id') {
+                        $restaurant->setAttribute($key, $value);
+                    }
+                }
+            })
+            ->sortBy(fn (Restaurant $restaurant): int => $rowsById->keys()->search($restaurant->id))
+            ->values();
     }
 
     /**

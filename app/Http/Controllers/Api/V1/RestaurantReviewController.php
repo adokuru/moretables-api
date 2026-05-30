@@ -40,7 +40,7 @@ class RestaurantReviewController extends Controller
             ->paginate($this->perPage($request, 15, 50))
             ->appends($request->query());
 
-        $summary = $this->reviewSummary->summarize($restaurant->reviews());
+        $summary = $this->reviewSummary->summarize($restaurant->reviews(), $restaurant->id);
 
         return response()->json([
             'data' => PublicRestaurantReviewResource::collection($reviews->getCollection())->resolve($request),

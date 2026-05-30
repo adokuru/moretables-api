@@ -12,6 +12,7 @@ use App\Models\User;
 use App\OnboardingRequestStatus;
 use App\ReservationStatus;
 use App\RestaurantStatus;
+use App\Services\PerformanceCacheService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Dedoc\Scramble\Attributes\Group;
@@ -21,10 +22,24 @@ use Illuminate\Http\Request;
 #[Group('Admin Dashboard', weight: 45)]
 class AdminDashboardController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     public function index(Request $request): JsonResponse
     {
         $this->ensureAdminAccess($request);
 
+        return response()->json($this->performanceCache->flexible(
+            $this->performanceCache->versionedKey('admin-dashboard'),
+            'admin_dashboard',
+            fn (): array => $this->dashboardPayload(),
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dashboardPayload(): array
+    {
         $today = now();
         $startOfToday = $today->copy()->startOfDay();
         $startOfYesterday = $today->copy()->subDay()->startOfDay();
@@ -41,7 +56,10 @@ class AdminDashboardController extends Controller
         $totalRestaurants = Restaurant::query()->count();
         $activeRestaurants = Restaurant::query()->where('status', RestaurantStatus::Active->value)->count();
         $pendingApprovals = OnboardingRequest::query()->where('status', OnboardingRequestStatus::Pending->value)->count();
-        $reservationsToday = Reservation::query()->whereDate('starts_at', $today->toDateString())->count();
+        $reservationsToday = Reservation::query()
+            ->where('starts_at', '>=', $startOfToday)
+            ->where('starts_at', '<', $startOfToday->copy()->addDay())
+            ->count();
         $weeklyReservations = Reservation::query()->whereBetween('starts_at', [$startOfWeek, $today->copy()->endOfDay()])->count();
         $totalDiners = (int) Reservation::query()->sum('party_size');
         $monthlyRevenue = $this->sumReservationRevenue($startOfMonth, $today->copy()->endOfDay());
@@ -54,7 +72,7 @@ class AdminDashboardController extends Controller
 
         $recentActivity = $this->recentActivity($today);
 
-        return response()->json([
+        return [
             'cards' => [
                 'total_restaurants' => $this->metricPayload(
                     value: $totalRestaurants,
@@ -85,7 +103,10 @@ class AdminDashboardController extends Controller
                 ],
                 'reservations_today' => $this->metricPayload(
                     value: $reservationsToday,
-                    previousValue: Reservation::query()->whereDate('starts_at', $startOfYesterday->toDateString())->count(),
+                    previousValue: Reservation::query()
+                        ->where('starts_at', '>=', $startOfYesterday)
+                        ->where('starts_at', '<', $startOfToday)
+                        ->count(),
                     label: 'Reservations Today',
                 ),
                 'weekly_reservations' => $this->metricPayload(
@@ -173,7 +194,7 @@ class AdminDashboardController extends Controller
                     ReservationStatus::NoShow->value => (int) ($reservationStatusCounts[ReservationStatus::NoShow->value] ?? 0),
                 ],
             ],
-        ]);
+        ];
     }
 
     protected function metricPayload(int|float $value, int|float $previousValue, string $label): array
@@ -292,7 +313,8 @@ class AdminDashboardController extends Controller
         }
 
         $reservationsToday = Reservation::query()
-            ->whereDate('created_at', $today->toDateString())
+            ->where('created_at', '>=', $today->copy()->startOfDay())
+            ->where('created_at', '<', $today->copy()->startOfDay()->addDay())
             ->count();
 
         if ($reservationsToday > 0) {

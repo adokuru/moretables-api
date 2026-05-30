@@ -8,17 +8,17 @@ use App\Http\Controllers\Api\V1\SocialAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
-    Route::post('start', [GuestAuthController::class, 'start']);
-    Route::post('verify-otp', [GuestAuthController::class, 'verifyOtp']);
-    Route::post('resend-otp', [GuestAuthController::class, 'resendOtp']);
-    Route::post('google', [SocialAuthController::class, 'google']);
-    Route::post('apple', [SocialAuthController::class, 'apple']);
-    Route::post('staff/login', [AuthController::class, 'staffLogin']);
-    Route::post('staff/verify-2fa', [AuthController::class, 'verifyStaffLogin']);
-    Route::post('password/forgot', [AuthController::class, 'forgotPassword']);
-    Route::post('password/reset', [AuthController::class, 'resetPassword']);
+    Route::post('start', [GuestAuthController::class, 'start'])->middleware('throttle:auth-initiate');
+    Route::post('verify-otp', [GuestAuthController::class, 'verifyOtp'])->middleware('throttle:auth-verify');
+    Route::post('resend-otp', [GuestAuthController::class, 'resendOtp'])->middleware('throttle:auth-initiate');
+    Route::post('google', [SocialAuthController::class, 'google'])->middleware('throttle:public-write');
+    Route::post('apple', [SocialAuthController::class, 'apple'])->middleware('throttle:public-write');
+    Route::post('staff/login', [AuthController::class, 'staffLogin'])->middleware('throttle:auth-initiate');
+    Route::post('staff/verify-2fa', [AuthController::class, 'verifyStaffLogin'])->middleware('throttle:auth-verify');
+    Route::post('password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-initiate');
+    Route::post('password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:public-write');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function (): void {
         Route::post('complete-profile', [GuestAuthController::class, 'completeProfile']);
         Route::post('logout', [GuestAuthController::class, 'logout']);
         Route::get('me', [GuestAuthController::class, 'me']);

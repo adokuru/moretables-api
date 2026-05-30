@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        if (str_starts_with((string) env('CACHE_LIMITER_STORE', env('CACHE_STORE', 'database')), 'redis')) {
+            $middleware->throttleWithRedis();
+        }
+
         $middleware->alias([
             'merchant.billing.active' => EnsureMerchantBillingActive::class,
         ]);

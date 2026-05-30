@@ -11,29 +11,45 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Services\ReservationService;
+use App\Services\RestaurantDateRangeService;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 #[Group('Merchant Reservations', weight: 36)]
 class MerchantReservationController extends Controller
 {
-    public function __construct(protected ReservationService $reservationService) {}
+    public function __construct(
+        protected ReservationService $reservationService,
+        protected RestaurantDateRangeService $dateRanges,
+    ) {}
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
-        $reservations = $restaurant->reservations()
+        $reservationsQuery = $restaurant->reservations()
             ->with(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests'])
-            ->when($request->filled('date'), fn ($query) => $query->whereDate('starts_at', $request->string('date')->toString()))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-            ->orderBy('starts_at')
-            ->paginate(20);
+            ->orderBy('starts_at');
+
+        if ($request->filled('date')) {
+            $range = $this->dateRanges->forDate($restaurant, $request->string('date')->toString());
+            $reservationsQuery
+                ->where('starts_at', '>=', $range['start'])
+                ->where('starts_at', '<', $range['end']);
+        }
+
+        $reservations = $reservationsQuery->paginate(20);
 
         return response()->json(ReservationResource::collection($reservations));
     }
 
+    /**
+     * Create a reservation. A retryable 422 is returned when availability changes while the request is being processed.
+     */
+    #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreMerchantReservationRequest $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
@@ -68,6 +84,10 @@ class MerchantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Assign the requested table after rechecking it inside the reservation lock. A retryable 422 is returned if it is unavailable.
+     */
+    #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function assignTable(AssignReservationTableRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);

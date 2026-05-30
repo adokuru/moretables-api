@@ -16,6 +16,11 @@ use Illuminate\Support\Collection;
 #[Group('Public Restaurants', weight: 2)]
 class PublicRestaurantDiscoveryController extends Controller
 {
+    /**
+     * @var array<string, list<array<string, mixed>>>
+     */
+    protected array $reservationTimes = [];
+
     public function __construct(
         protected RestaurantDiscoveryService $restaurantDiscoveryService,
         protected AvailabilityService $availabilityService,
@@ -81,7 +86,9 @@ class PublicRestaurantDiscoveryController extends Controller
         $limit = (int) ($validated['reservation_times_limit'] ?? 5);
 
         return $restaurants->each(function (Restaurant $restaurant) use ($date, $partySize, $timezone, $limit): void {
-            $restaurant->setAttribute('reservation_times', collect($this->availabilityService->listAvailableSlots(
+            $key = implode(':', [$restaurant->id, $date, $partySize, $timezone ?? $restaurant->timezone]);
+
+            $restaurant->setAttribute('reservation_times', collect($this->reservationTimes[$key] ??= $this->availabilityService->listAvailableSlots(
                 restaurant: $restaurant,
                 date: $date,
                 partySize: $partySize,

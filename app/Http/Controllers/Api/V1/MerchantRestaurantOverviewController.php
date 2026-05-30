@@ -7,6 +7,7 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\Role;
 use App\ReservationStatus;
+use App\Services\PerformanceCacheService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Dedoc\Scramble\Attributes\Group;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
 #[Group('Merchant Overview', weight: 35)]
 class MerchantRestaurantOverviewController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * Restaurant overview dashboard.
      *
@@ -27,6 +30,18 @@ class MerchantRestaurantOverviewController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
+        return response()->json($this->performanceCache->flexible(
+            $this->performanceCache->restaurantKey('merchant-overview', $restaurant->id),
+            'merchant_overview',
+            fn (): array => $this->overviewPayload($restaurant),
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function overviewPayload(Restaurant $restaurant): array
+    {
         $timezone = $restaurant->timezone ?? 'UTC';
         $now = Carbon::now($timezone);
         $startOfMonth = $now->copy()->startOfMonth()->utc();
@@ -146,7 +161,7 @@ class MerchantRestaurantOverviewController extends Controller
                 ];
             })->values()->all();
 
-        return response()->json([
+        return [
             'quick_view' => [
                 'total_reservations' => [
                     'value' => $totalReservations,
@@ -174,7 +189,7 @@ class MerchantRestaurantOverviewController extends Controller
                 'week_end' => $weekStartLocal->copy()->addDays(6)->toDateString(),
                 'days' => $calendarDays,
             ],
-        ]);
+        ];
     }
 
     private function percentageChange(int|float $current, int|float $previous): ?float

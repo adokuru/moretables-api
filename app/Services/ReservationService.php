@@ -28,8 +28,11 @@ use App\UserStatus;
 use App\WaitlistExpiryReason;
 use App\WaitlistStatus;
 use Carbon\Carbon;
+use Closure;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -59,8 +62,7 @@ class ReservationService
         $duplicate = Reservation::query()
             ->where('user_id', $user->id)
             ->where('restaurant_id', $restaurant->id)
-            ->whereDate('starts_at', $startsAt->toDateString())
-            ->whereTime('starts_at', $startsAt->toTimeString())
+            ->where('starts_at', $startsAt)
             ->where('status', '!=', ReservationStatus::Cancelled)
             ->exists();
 
@@ -175,7 +177,7 @@ class ReservationService
      */
     public function updateReservation(Reservation $reservation, User $actor, array $attributes): Reservation
     {
-        return DB::transaction(function () use ($reservation, $actor, $attributes): Reservation {
+        return $this->withRestaurantReservationLock($reservation->restaurant, fn (): Reservation => DB::transaction(function () use ($reservation, $actor, $attributes): Reservation {
             $oldValues = $reservation->only([
                 'starts_at',
                 'ends_at',
@@ -242,7 +244,7 @@ class ReservationService
             }
 
             return $reservation;
-        });
+        }));
     }
 
     /**
@@ -465,40 +467,37 @@ class ReservationService
 
     public function assignTable(Reservation $reservation, RestaurantTable $table, User $actor): Reservation
     {
-        if ($table->max_capacity < $reservation->party_size || ((int) $reservation->party_size > 1 && $table->min_capacity > $reservation->party_size)) {
-            throw ValidationException::withMessages([
-                'restaurant_table_id' => ['Selected table cannot accommodate this party size.'],
-            ]);
-        }
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $table, $actor): Reservation {
+            return DB::transaction(function () use ($reservation, $table, $actor): Reservation {
+                if (! $this->availabilityService->isTableAvailable(
+                    restaurant: $reservation->restaurant,
+                    table: $table,
+                    startsAt: $reservation->starts_at,
+                    partySize: $reservation->party_size,
+                    excludingReservationId: $reservation->id,
+                )) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                    ]);
+                }
 
-        $conflictingTable = $this->availabilityService->findAvailableTable(
-            $reservation->restaurant,
-            $reservation->starts_at,
-            $reservation->party_size,
-            $reservation->id,
-        );
+                $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
+                $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
-        if (! $conflictingTable || $conflictingTable->id !== $table->id) {
-            throw ValidationException::withMessages([
-                'restaurant_table_id' => ['Selected table conflicts with an existing booking.'],
-            ]);
-        }
+                $this->auditLogService->log(
+                    action: 'reservation.table_assigned',
+                    actor: $actor,
+                    auditable: $reservation,
+                    restaurant: $reservation->restaurant,
+                    organization: $reservation->restaurant->organization,
+                    description: 'Reservation table assigned',
+                );
 
-        $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                event(new ReservationUpdated($reservation, 'table_assigned'));
 
-        $this->auditLogService->log(
-            action: 'reservation.table_assigned',
-            actor: $actor,
-            auditable: $reservation,
-            restaurant: $reservation->restaurant,
-            organization: $reservation->restaurant->organization,
-            description: 'Reservation table assigned',
-        );
-
-        event(new ReservationUpdated($reservation, 'table_assigned'));
-
-        return $reservation;
+                return $reservation;
+            });
+        });
     }
 
     public function seatReservation(Reservation $reservation, User $actor): Reservation
@@ -832,64 +831,93 @@ class ReservationService
         ?User $user = null,
         ?GuestContact $guestContact = null,
     ): Reservation {
-        return DB::transaction(function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
-            $startsAt = Carbon::parse($attributes['starts_at']);
-            $table = isset($attributes['restaurant_table_id'])
-                ? RestaurantTable::query()->where('restaurant_id', $restaurant->id)->findOrFail($attributes['restaurant_table_id'])
-                : $this->availabilityService->findAvailableTable($restaurant, $startsAt, (int) $attributes['party_size']);
+        return $this->withRestaurantReservationLock($restaurant, function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
+            return DB::transaction(function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
+                $startsAt = Carbon::parse($attributes['starts_at']);
+                $hasSelectedTable = isset($attributes['restaurant_table_id']);
+                $table = $hasSelectedTable
+                    ? RestaurantTable::query()->where('restaurant_id', $restaurant->id)->findOrFail($attributes['restaurant_table_id'])
+                    : $this->availabilityService->findAvailableTable($restaurant, $startsAt, (int) $attributes['party_size']);
 
-            if (! $table) {
-                throw ValidationException::withMessages([
-                    'starts_at' => ['No table is available for the selected time.'],
+                if (! $table) {
+                    throw ValidationException::withMessages([
+                        'starts_at' => ['No table is available for the selected time.'],
+                    ]);
+                }
+
+                if (! $this->availabilityService->isTableAvailable(
+                    restaurant: $restaurant,
+                    table: $table,
+                    startsAt: $startsAt,
+                    partySize: (int) $attributes['party_size'],
+                )) {
+                    throw ValidationException::withMessages([
+                        $hasSelectedTable ? 'restaurant_table_id' : 'starts_at' => [
+                            $hasSelectedTable
+                                ? 'Selected table is unavailable or conflicts with an existing booking. Please retry.'
+                                : 'No table is available for the selected time. Please retry.',
+                        ],
+                    ]);
+                }
+
+                $reservation = Reservation::query()->create([
+                    'restaurant_id' => $restaurant->id,
+                    'user_id' => $user?->id,
+                    'guest_contact_id' => $guestContact?->id,
+                    'restaurant_table_id' => $table->id,
+                    'reservation_reference' => $this->generateReference(),
+                    'source' => $source,
+                    'status' => ReservationStatus::Booked,
+                    'party_size' => $attributes['party_size'],
+                    'starts_at' => $startsAt,
+                    'ends_at' => $this->availabilityService->calculateEndTime($restaurant, $startsAt),
+                    'notes' => $attributes['notes'] ?? null,
+                    'occasion' => $attributes['occasion'] ?? null,
+                    'accept_points' => (bool) ($attributes['accept_points'] ?? false),
+                    'subscribe_to_promotions' => (bool) ($attributes['subscribe_to_promotions'] ?? false),
+                    'internal_notes' => $attributes['internal_notes'] ?? null,
                 ]);
-            }
 
-            if ($table->max_capacity < (int) $attributes['party_size']) {
-                throw ValidationException::withMessages([
-                    'restaurant_table_id' => ['Selected table cannot accommodate this party size.'],
-                ]);
-            }
+                $reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
-            $reservation = Reservation::query()->create([
-                'restaurant_id' => $restaurant->id,
-                'user_id' => $user?->id,
-                'guest_contact_id' => $guestContact?->id,
-                'restaurant_table_id' => $table->id,
-                'reservation_reference' => $this->generateReference(),
-                'source' => $source,
-                'status' => ReservationStatus::Booked,
-                'party_size' => $attributes['party_size'],
-                'starts_at' => $startsAt,
-                'ends_at' => $this->availabilityService->calculateEndTime($restaurant, $startsAt),
-                'notes' => $attributes['notes'] ?? null,
-                'occasion' => $attributes['occasion'] ?? null,
-                'accept_points' => (bool) ($attributes['accept_points'] ?? false),
-                'subscribe_to_promotions' => (bool) ($attributes['subscribe_to_promotions'] ?? false),
-                'internal_notes' => $attributes['internal_notes'] ?? null,
-            ]);
+                $this->auditLogService->log(
+                    action: 'reservation.created',
+                    actor: $actor,
+                    auditable: $reservation,
+                    restaurant: $restaurant,
+                    organization: $restaurant->organization,
+                    description: 'Reservation created',
+                );
 
-            $reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                event(new ReservationUpdated($reservation, 'created'));
 
-            $this->auditLogService->log(
-                action: 'reservation.created',
-                actor: $actor,
-                auditable: $reservation,
-                restaurant: $restaurant,
-                organization: $restaurant->organization,
-                description: 'Reservation created',
-            );
+                if ($user) {
+                    $user->notify(new ReservationLifecycleNotification($reservation, 'created'));
+                } elseif ($this->guestContactHasEmail($guestContact)) {
+                    Notification::route('mail', $guestContact->email)
+                        ->notify(new GuestReservationLifecycleMailNotification($reservation, $guestContact, 'created'));
+                }
 
-            event(new ReservationUpdated($reservation, 'created'));
-
-            if ($user) {
-                $user->notify(new ReservationLifecycleNotification($reservation, 'created'));
-            } elseif ($this->guestContactHasEmail($guestContact)) {
-                Notification::route('mail', $guestContact->email)
-                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $guestContact, 'created'));
-            }
-
-            return $reservation;
+                return $reservation;
+            });
         });
+    }
+
+    protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed
+    {
+        try {
+            return Cache::lock(
+                "restaurant:{$restaurant->id}:reservations",
+                (int) config('performance.locks.reservation_seconds'),
+            )->block(
+                (int) config('performance.locks.reservation_wait_seconds'),
+                $callback,
+            );
+        } catch (LockTimeoutException) {
+            throw ValidationException::withMessages([
+                'starts_at' => ['Reservation availability changed while processing your request. Please retry.'],
+            ]);
+        }
     }
 
     protected function generateReference(): string

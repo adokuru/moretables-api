@@ -30,12 +30,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('billing/paystack/webhook', PaystackWebhookController::class);
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->group(function (): void {
     Route::get('merchant/restaurants', [MerchantRestaurantController::class, 'index']);
     Route::get('merchant/billing/plans', [MerchantBillingController::class, 'plans']);
 });
 
-Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::prefix('billing')->group(function (): void {
         Route::get('/', [MerchantBillingController::class, 'show']);
         Route::post('checkout', [MerchantBillingController::class, 'checkout']);

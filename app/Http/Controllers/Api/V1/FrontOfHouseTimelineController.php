@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
+use App\Services\RestaurantDateRangeService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Timelines', weight: 37)]
 class FrontOfHouseTimelineController extends Controller
 {
+    public function __construct(private readonly RestaurantDateRangeService $dateRanges) {}
+
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
@@ -37,10 +40,12 @@ class FrontOfHouseTimelineController extends Controller
         $tables = $diningAreasQuery->get()->flatMap(fn ($area) => $area->tables);
 
         $tableIds = $tables->pluck('id');
+        $dateRange = $this->dateRanges->forDate($restaurant, $date);
 
         $reservationsByTable = $restaurant->reservations()
             ->with('guestContact')
-            ->whereDate('starts_at', $date)
+            ->where('starts_at', '>=', $dateRange['start'])
+            ->where('starts_at', '<', $dateRange['end'])
             ->whereIn('restaurant_table_id', $tableIds)
             ->whereNotIn('status', ['canceled', 'no_show'])
             ->orderBy('starts_at')

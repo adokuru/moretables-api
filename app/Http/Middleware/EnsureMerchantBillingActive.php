@@ -4,13 +4,18 @@ namespace App\Http\Middleware;
 
 use App\Models\BillingPlan;
 use App\Services\BillingService;
+use App\Services\PerformanceCacheService;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureMerchantBillingActive
 {
-    public function __construct(protected BillingService $billingService) {}
+    public function __construct(
+        protected BillingService $billingService,
+        protected PerformanceCacheService $performanceCache,
+    ) {}
 
     /**
      * Handle an incoming request.
@@ -39,8 +44,12 @@ class EnsureMerchantBillingActive
 
     protected function hasActiveBillingPlans(): bool
     {
-        return BillingPlan::query()
-            ->where('is_active', true)
-            ->exists();
+        return Cache::remember(
+            $this->performanceCache->versionedKey('billing-plans'),
+            (int) config('performance.cache.ttls.billing_eligibility'),
+            fn (): bool => BillingPlan::query()
+                ->where('is_active', true)
+                ->exists(),
+        );
     }
 }

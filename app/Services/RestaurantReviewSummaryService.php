@@ -9,6 +9,8 @@ use Illuminate\Support\Collection;
 
 class RestaurantReviewSummaryService
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * @param  Builder<RestaurantReview>|Relation<RestaurantReview, *, *>  $reviewsQuery
      * @return array{
@@ -18,7 +20,29 @@ class RestaurantReviewSummaryService
      *     category_breakdown: list<array{key: string, label: string, average_rating: float|null}>
      * }
      */
-    public function summarize(Builder|Relation $reviewsQuery): array
+    public function summarize(Builder|Relation $reviewsQuery, ?int $restaurantId = null): array
+    {
+        if (! $restaurantId) {
+            return $this->summarizeQuery($reviewsQuery);
+        }
+
+        return $this->performanceCache->flexible(
+            $this->performanceCache->restaurantKey('review-summaries', $restaurantId),
+            'review_summaries',
+            fn (): array => $this->summarizeQuery($reviewsQuery),
+        );
+    }
+
+    /**
+     * @param  Builder<RestaurantReview>|Relation<RestaurantReview, *, *>  $reviewsQuery
+     * @return array{
+     *     reviews_count: int,
+     *     average_rating: float|null,
+     *     ratings_breakdown: array<string, int>,
+     *     category_breakdown: list<array{key: string, label: string, average_rating: float|null}>
+     * }
+     */
+    private function summarizeQuery(Builder|Relation $reviewsQuery): array
     {
         $baseQuery = $reviewsQuery instanceof Relation
             ? $reviewsQuery->getQuery()

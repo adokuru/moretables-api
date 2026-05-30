@@ -6,10 +6,11 @@ use App\Models\RestaurantTable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class TableStatusUpdated implements ShouldBroadcast
+class TableStatusUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -28,6 +29,11 @@ class TableStatusUpdated implements ShouldBroadcast
     public function broadcastAs(): string
     {
         return 'table.updated';
+    }
+
+    public function broadcastQueue(): string
+    {
+        return 'realtime';
     }
 
     /**
