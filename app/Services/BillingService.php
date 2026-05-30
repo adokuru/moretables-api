@@ -13,6 +13,7 @@ use App\Models\MerchantPayment;
 use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantSubscription;
 use App\Models\Restaurant;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -139,6 +140,102 @@ class BillingService
         if ($event === 'subscription.disable') {
             $this->syncSubscriptionPayload($data, MerchantSubscriptionStatus::Canceled, cancelAtPeriodEnd: false);
         }
+    }
+
+    /**
+     * Manually assign a billing subscription to a restaurant (admin override, no Paystack checkout).
+     *
+     * @param  array{status?: string, current_period_end?: string|null, notes?: string|null, record_invoice?: bool}  $attributes
+     * @return array{subscription: MerchantSubscription, invoice: ?MerchantInvoice}
+     */
+    public function assignAdminSubscription(
+        Restaurant $restaurant,
+        BillingPlan $plan,
+        User $admin,
+        array $attributes = [],
+    ): array {
+        $periodStart = CarbonImmutable::now();
+        $periodEnd = isset($attributes['current_period_end'])
+            ? CarbonImmutable::parse($attributes['current_period_end'])
+            : $this->defaultPeriodEnd($plan, $periodStart);
+
+        $status = isset($attributes['status'])
+            ? MerchantSubscriptionStatus::from($attributes['status'])
+            : MerchantSubscriptionStatus::Active;
+
+        if (! in_array($status, [MerchantSubscriptionStatus::Active, MerchantSubscriptionStatus::Trialing], true)) {
+            $status = MerchantSubscriptionStatus::Active;
+        }
+
+        $this->cancelActiveSubscriptions($restaurant);
+
+        $subscriptionCode = 'admin_'.strtolower((string) Str::ulid());
+
+        $subscription = MerchantSubscription::query()->create([
+            'restaurant_id' => $restaurant->id,
+            'billing_plan_id' => $plan->id,
+            'provider' => BillingProvider::Paystack,
+            'status' => $status,
+            'provider_subscription_code' => $subscriptionCode,
+            'current_period_start' => $periodStart,
+            'current_period_end' => $periodEnd,
+            'next_payment_at' => $periodEnd,
+            'cancel_at_period_end' => false,
+            'metadata' => array_filter([
+                'assigned_by_admin_id' => $admin->id,
+                'assigned_at' => now()->toIso8601String(),
+                'notes' => $attributes['notes'] ?? null,
+                'source' => 'admin_assignment',
+            ]),
+        ]);
+
+        $invoice = null;
+
+        if ($attributes['record_invoice'] ?? true) {
+            $invoice = MerchantInvoice::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'billing_plan_id' => $plan->id,
+                'merchant_subscription_id' => $subscription->id,
+                'invoice_number' => $this->generateInvoiceNumber(),
+                'provider' => BillingProvider::Paystack,
+                'provider_reference' => 'admin_'.$subscriptionCode,
+                'amount' => $plan->amount,
+                'currency' => $plan->currency,
+                'status' => MerchantInvoiceStatus::Paid,
+                'billing_period_start' => $periodStart,
+                'billing_period_end' => $periodEnd,
+                'due_at' => $periodStart,
+                'paid_at' => $periodStart,
+                'metadata' => [
+                    'source' => 'admin_assignment',
+                    'assigned_by_admin_id' => $admin->id,
+                    'notes' => $attributes['notes'] ?? null,
+                ],
+            ]);
+
+            MerchantPayment::query()->create([
+                'restaurant_id' => $restaurant->id,
+                'merchant_invoice_id' => $invoice->id,
+                'merchant_subscription_id' => $subscription->id,
+                'provider' => BillingProvider::Paystack,
+                'reference' => 'admin_pay_'.$subscriptionCode,
+                'status' => MerchantPaymentStatus::Success,
+                'amount' => $plan->amount,
+                'currency' => $plan->currency,
+                'channel' => 'admin',
+                'paid_at' => $periodStart,
+                'gateway_response' => 'Assigned by admin',
+                'provider_payload' => [
+                    'source' => 'admin_assignment',
+                    'assigned_by_admin_id' => $admin->id,
+                ],
+            ]);
+        }
+
+        return [
+            'subscription' => $subscription->load(['plan', 'restaurant.organization']),
+            'invoice' => $invoice?->load('plan'),
+        ];
     }
 
     public function isRestaurantBillable(Restaurant $restaurant): bool
@@ -321,6 +418,29 @@ class BillingService
             'failed' => MerchantPaymentStatus::Failed,
             'abandoned' => MerchantPaymentStatus::Abandoned,
             default => MerchantPaymentStatus::Pending,
+        };
+    }
+
+    protected function cancelActiveSubscriptions(Restaurant $restaurant): void
+    {
+        MerchantSubscription::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->whereIn('status', [
+                MerchantSubscriptionStatus::Active->value,
+                MerchantSubscriptionStatus::Trialing->value,
+                MerchantSubscriptionStatus::PastDue->value,
+            ])
+            ->update([
+                'status' => MerchantSubscriptionStatus::Canceled,
+                'canceled_at' => now(),
+            ]);
+    }
+
+    protected function defaultPeriodEnd(BillingPlan $plan, CarbonImmutable $start): CarbonImmutable
+    {
+        return match ($plan->interval) {
+            'yearly', 'annual' => $start->addYear(),
+            default => $start->addMonth(),
         };
     }
 

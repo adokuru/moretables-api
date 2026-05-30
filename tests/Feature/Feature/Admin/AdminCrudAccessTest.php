@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\MerchantInvoice;
+use App\Models\MerchantPayment;
+use App\Models\MerchantSubscription;
 use App\Models\OnboardingRequest;
 use App\Models\Organization;
 use App\Models\Reservation;
@@ -410,6 +413,71 @@ it('allows admins to manage reviews and onboarding approvals', function () {
     expect(OnboardingRequest::query()->whereKey($onboardingId)->exists())->toBeFalse();
 });
 
+it('allows admins to view billing subscriptions, invoices, and payments', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create([
+        'name' => 'Paying Group',
+        'billing_email' => 'billing@paying-group.test',
+    ]);
+
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Paying Restaurant',
+    ]);
+
+    $subscription = MerchantSubscription::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'status' => 'active',
+    ]);
+
+    $invoice = MerchantInvoice::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'merchant_subscription_id' => $subscription->id,
+        'status' => 'paid',
+    ]);
+
+    MerchantPayment::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'merchant_invoice_id' => $invoice->id,
+        'merchant_subscription_id' => $subscription->id,
+        'status' => 'success',
+        'amount' => 13500000,
+        'reference' => 'mt_admin_billing_success_001',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $overviewResponse = $this->getJson('/api/v1/admin/billing/overview');
+    $overviewResponse->assertOk()
+        ->assertJsonPath('overview.total_revenue', 13500000)
+        ->assertJsonPath('overview.active_subscriptions', 1)
+        ->assertJsonPath('overview.paying_restaurants', 1);
+
+    $subscriptionsResponse = $this->getJson('/api/v1/admin/billing/subscriptions?search=Paying&status=active&per_page=5');
+    $subscriptionsResponse->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonPath('data.0.id', $subscription->id)
+        ->assertJsonPath('data.0.restaurant.id', $restaurant->id)
+        ->assertJsonPath('data.0.organization.id', $organization->id);
+
+    $invoicesResponse = $this->getJson('/api/v1/admin/billing/invoices?status=paid&organization_id='.$organization->id);
+    $invoicesResponse->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonPath('data.0.id', $invoice->id)
+        ->assertJsonPath('data.0.invoice_number', $invoice->invoice_number);
+
+    $paymentsResponse = $this->getJson('/api/v1/admin/billing/payments?status=success&restaurant_id='.$restaurant->id);
+    $paymentsResponse->assertOk()
+        ->assertJsonStructure(['data', 'links', 'meta'])
+        ->assertJsonPath('data.0.reference', 'mt_admin_billing_success_001')
+        ->assertJsonPath('data.0.organization.id', $organization->id)
+        ->assertJsonPath('data.0.restaurant.id', $restaurant->id);
+});
+
 it('allows admins to delete organizations and restaurants from the admin surface', function () {
     $this->seed(RoleAndPermissionSeeder::class);
 
@@ -465,6 +533,7 @@ it('forbids non admins from the new admin crud endpoints', function () {
     $this->getJson('/api/v1/admin/dashboard')->assertForbidden();
     $this->getJson('/api/v1/admin/users')->assertForbidden();
     $this->getJson('/api/v1/admin/reservations')->assertForbidden();
+    $this->getJson('/api/v1/admin/billing/overview')->assertForbidden();
     $this->getJson('/api/v1/admin/reviews')->assertForbidden();
     $this->getJson('/api/v1/admin/onboarding-requests')->assertForbidden();
 });
