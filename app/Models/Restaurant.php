@@ -141,6 +141,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Reservation::class);
     }
 
+    public function tableCombinations(): HasMany
+    {
+        return $this->hasMany(TableCombination::class);
+    }
+
     public function guestContacts(): HasMany
     {
         return $this->hasMany(GuestContact::class)->orderBy('first_name')->orderBy('last_name');

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
+use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
@@ -158,6 +159,12 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::patch('{guestContact}/preferences', [GuestbookController::class, 'updatePreferences']);
             Route::get('{guestContact}/history', [GuestbookController::class, 'history']);
         });
+
+        // Table Combinations
+        Route::get('table-combinations', [MerchantTableCombinationController::class, 'index']);
+        Route::post('table-combinations', [MerchantTableCombinationController::class, 'store']);
+        Route::patch('table-combinations/{combination}', [MerchantTableCombinationController::class, 'update']);
+        Route::delete('table-combinations/{combination}', [MerchantTableCombinationController::class, 'destroy']);
 
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {
