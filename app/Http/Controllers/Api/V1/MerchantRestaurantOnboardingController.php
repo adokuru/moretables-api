@@ -36,7 +36,10 @@ class MerchantRestaurantOnboardingController extends Controller
     {
         $validated = $request->validated();
 
-        $restaurant->fill(collect($validated)->only(['email', 'phone', 'website', 'average_price_range'])->toArray());
+        $restaurant->fill(collect($validated)->only([
+            'email', 'phone', 'website', 'average_price_range',
+            'address_line_1', 'address_line_2', 'city', 'state', 'country',
+        ])->toArray());
         $restaurant->save();
 
         if (array_key_exists('primary_cuisine_option_id', $validated)) {
@@ -63,6 +66,11 @@ class MerchantRestaurantOnboardingController extends Controller
                 'phone' => $restaurant->phone,
                 'website' => $restaurant->website,
                 'average_price_range' => $restaurant->average_price_range,
+                'address_line_1' => $restaurant->address_line_1,
+                'address_line_2' => $restaurant->address_line_2,
+                'city' => $restaurant->city,
+                'state' => $restaurant->state,
+                'country' => $restaurant->country,
                 'cuisines' => $restaurant->cuisines->map(fn ($c) => [
                     'id' => $c->id,
                     'name' => $c->name,
@@ -285,6 +293,11 @@ class MerchantRestaurantOnboardingController extends Controller
             'phone' => $restaurant->phone,
             'website' => $restaurant->website,
             'average_price_range' => $restaurant->average_price_range,
+            'address_line_1' => $restaurant->address_line_1,
+            'address_line_2' => $restaurant->address_line_2,
+            'city' => $restaurant->city,
+            'state' => $restaurant->state,
+            'country' => $restaurant->country,
             'description' => $restaurant->description,
             'cuisines' => $restaurant->cuisines->map(fn ($c) => [
                 'id' => $c->id,

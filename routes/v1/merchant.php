@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\FrontOfHouseController;
 use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
 use App\Http\Controllers\Api\V1\FrontOfHouseShiftOverviewController;
+use App\Http\Controllers\Api\V1\FrontOfHouseTimelineController;
 use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\MerchantAccessConfigController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
+use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
@@ -158,6 +160,12 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
             Route::get('{guestContact}/history', [GuestbookController::class, 'history']);
         });
 
+        // Table Combinations
+        Route::get('table-combinations', [MerchantTableCombinationController::class, 'index']);
+        Route::post('table-combinations', [MerchantTableCombinationController::class, 'store']);
+        Route::patch('table-combinations/{combination}', [MerchantTableCombinationController::class, 'update']);
+        Route::delete('table-combinations/{combination}', [MerchantTableCombinationController::class, 'destroy']);
+
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {
             Route::get('summary', [FrontOfHouseController::class, 'summary']);
@@ -170,6 +178,8 @@ Route::middleware('auth:sanctum')->prefix('merchant/restaurants/{restaurant}')->
 
             Route::get('floors', [FrontOfHouseFloorPlanController::class, 'index']);
             Route::get('floors/{diningArea}', [FrontOfHouseFloorPlanController::class, 'show']);
+
+            Route::get('timelines', [FrontOfHouseTimelineController::class, 'index']);
 
             // Shift Overview
             Route::get('shift-overview/cover-count', [FrontOfHouseShiftOverviewController::class, 'coverCountReport']);
