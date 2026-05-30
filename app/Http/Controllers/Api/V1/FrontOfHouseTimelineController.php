@@ -16,12 +16,12 @@ class FrontOfHouseTimelineController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $request->validate([
-            'date'           => ['nullable', 'date_format:Y-m-d'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
             'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
         ]);
 
         $timezone = $restaurant->timezone ?? 'UTC';
-        $date     = $request->filled('date')
+        $date = $request->filled('date')
             ? $request->string('date')->toString()
             : now($timezone)->toDateString();
 
@@ -57,18 +57,18 @@ class FrontOfHouseTimelineController extends Controller
                     : 'Guest';
 
                 return [
-                    'id'         => $res->id,
-                    'name'       => $name,
+                    'id' => $res->id,
+                    'name' => $name,
                     'party_size' => $res->party_size,
-                    'starts_at'  => $res->starts_at?->setTimezone($timezone)->toIso8601String(),
-                    'ends_at'    => $endsAt?->setTimezone($timezone)->toIso8601String(),
+                    'starts_at' => $res->starts_at?->setTimezone($timezone)->toIso8601String(),
+                    'ends_at' => $endsAt?->setTimezone($timezone)->toIso8601String(),
                 ];
             })->values();
 
             return [
-                'id'          => $table->id,
+                'id' => $table->id,
                 'table_label' => $table->name,
-                'space'       => $table->max_capacity,
+                'space' => $table->max_capacity,
                 'table_color' => $table->color,
                 'chair_color' => $table->chair_color,
                 'reservations' => $reservations,
