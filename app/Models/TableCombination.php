@@ -22,6 +22,14 @@ class TableCombination extends Model
         ];
     }
 
+    public static function normalizeTableIds(array $tableIds): array
+    {
+        $tableIds = array_values(array_unique(array_map('intval', $tableIds)));
+        sort($tableIds);
+
+        return $tableIds;
+    }
+
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);

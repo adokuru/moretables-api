@@ -114,12 +114,22 @@ class MerchantDiningAreaController extends Controller
 
         $rotationMap = ['r1' => 0, 'r2' => 90, 'r3' => 180, 'r4' => 270];
 
-        $diningArea->tables()->delete();
+        $existingTables = $diningArea->tables()->get()->keyBy('name');
+        $incomingLabels = collect($tables)->pluck('table_label')->all();
+
+        $deletedTableIds = $existingTables
+            ->reject(fn (RestaurantTable $table, string $label) => in_array($label, $incomingLabels, true))
+            ->pluck('id');
+
+        if ($incomingLabels === []) {
+            $diningArea->tables()->delete();
+        } else {
+            $diningArea->tables()->whereNotIn('name', $incomingLabels)->delete();
+        }
 
         foreach ($tables as $index => $table) {
-            $diningArea->tables()->create([
+            $tableData = [
                 'restaurant_id' => $restaurant->id,
-                'name' => $table['table_label'],
                 'layout_type' => $table['layout_type'],
                 'x_position' => $table['x_position'],
                 'y_position' => $table['y_position'],
@@ -131,7 +141,36 @@ class MerchantDiningAreaController extends Controller
                 'min_capacity' => $table['min_party_size'] ?? RestaurantTable::DEFAULT_MIN_CAPACITY,
                 'max_capacity' => $table['max_party_size'] ?? RestaurantTable::DEFAULT_MAX_CAPACITY,
                 'sort_order' => $index,
-            ]);
+            ];
+
+            $existingTable = $existingTables->get($table['table_label']);
+
+            if ($existingTable) {
+                $existingTable->update($tableData);
+            } else {
+                $diningArea->tables()->create([
+                    ...$tableData,
+                    'name' => $table['table_label'],
+                ]);
+            }
+        }
+
+        if ($deletedTableIds->isNotEmpty()) {
+            $deletedTableIdLookup = $deletedTableIds->mapWithKeys(fn ($id) => [(int) $id => true])->all();
+
+            $restaurant->tableCombinations()
+                ->where('dining_area_id', $diningArea->id)
+                ->select(['id', 'table_ids'])
+                ->chunkById(500, function ($combinations) use ($deletedTableIdLookup): void {
+                    foreach ($combinations as $combination) {
+                        foreach ($combination->table_ids as $tableId) {
+                            if (isset($deletedTableIdLookup[(int) $tableId])) {
+                                $combination->delete();
+                                break;
+                            }
+                        }
+                    }
+                });
         }
 
         return response()->json([
