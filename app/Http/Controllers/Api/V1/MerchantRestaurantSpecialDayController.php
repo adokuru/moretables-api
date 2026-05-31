@@ -30,6 +30,9 @@ class MerchantRestaurantSpecialDayController extends Controller
         return RestaurantSpecialDayResource::collection($specialDays);
     }
 
+    /**
+     * Create a date-specific availability override. Open special days require one or more non-overlapping shifts.
+     */
     public function store(StoreRestaurantSpecialDayRequest $request, Restaurant $restaurant): JsonResponse
     {
         $specialDay = $this->specialDayService->create($restaurant, $request->validated());
@@ -47,6 +50,9 @@ class MerchantRestaurantSpecialDayController extends Controller
         return RestaurantSpecialDayResource::make($specialDay->load('shifts'));
     }
 
+    /**
+     * Update a date-specific availability override. Special-day shifts replace recurring hours for their date.
+     */
     public function update(UpdateRestaurantSpecialDayRequest $request, Restaurant $restaurant, RestaurantSpecialDay $specialDay): RestaurantSpecialDayResource
     {
         $this->ensureBelongsToRestaurant($restaurant, $specialDay);

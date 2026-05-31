@@ -3,7 +3,7 @@
     "info": {
         "title": "MoreTables API",
         "version": "1.0.0",
-        "description": "MoreTables restaurant discovery, loyalty rewards, onboarding, reservations, reviews, and merchant operations API."
+        "description": "MoreTables restaurant discovery, loyalty rewards, onboarding, reservations, reviews, and merchant operations API. Public and authenticated traffic is rate limited; clients should retry HTTP 429 responses with backoff. Reservation availability remains live. Reservation writes enforce recurring hours and date-specific special-day overrides, returning HTTP 422 when a requested time is outside effective booking hours or availability changes during processing."
     },
     "servers": [
         {
@@ -60,6 +60,9 @@
             "name": "Merchant Floor Plan"
         },
         {
+            "name": "Merchant Table Combinations"
+        },
+        {
             "name": "Merchant Menu"
         },
         {
@@ -72,6 +75,9 @@
             "name": "Front of House / Dashboard"
         },
         {
+            "name": "Merchant Special Days"
+        },
+        {
             "name": "Merchant Reservations"
         },
         {
@@ -79,6 +85,9 @@
         },
         {
             "name": "Merchant Guests"
+        },
+        {
+            "name": "Front of House / Timelines"
         },
         {
             "name": "Front of House / Shift Overview"
@@ -184,36 +193,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "query": {
-                                            "type": "string"
-                                        },
-                                        "results": {
-                                            "type": "object",
-                                            "properties": {
-                                                "locations": {
-                                                    "type": "string"
-                                                },
-                                                "restaurants": {
-                                                    "type": "array",
-                                                    "items": {}
-                                                },
-                                                "cuisines": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "required": [
-                                                "locations",
-                                                "restaurants",
-                                                "cuisines"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "query",
-                                        "results"
-                                    ]
+                                    "type": "string"
                                 }
                             }
                         }
@@ -253,7 +233,9 @@
                                     "properties": {
                                         "data": {
                                             "type": "array",
-                                            "items": {}
+                                            "items": {
+                                                "$ref": "#/components/schemas/PublicRandomReviewResource"
+                                            }
                                         }
                                     },
                                     "required": [
@@ -352,13 +334,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated set of `RestaurantListResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/RestaurantListResource"
+                                        "type": "object",
+                                        "additionalProperties": {}
                                     }
                                 }
                             }
@@ -503,6 +486,24 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "429": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -527,23 +528,10 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Array of `CuisineOptionResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/CuisineOptionResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
+                                "schema": {}
                             }
                         }
                     }
@@ -956,7 +944,7 @@
         "/restaurants/{restaurant}/views": {
             "post": {
                 "operationId": "publicRestaurantView.store",
-                "summary": "Record a restaurant detail view for discovery ranking",
+                "summary": "Record a restaurant detail view for discovery ranking. Repeated views from the same user, session, or IP within 30 minutes return a deduplicated success response",
                 "tags": [
                     "Public Restaurants"
                 ],
@@ -989,16 +977,41 @@
                                     "type": "object",
                                     "properties": {
                                         "message": {
-                                            "type": "string",
-                                            "const": "Restaurant view recorded successfully."
+                                            "type": "string"
                                         },
                                         "view_id": {
                                             "type": "integer"
+                                        },
+                                        "deduplicated": {
+                                            "type": "boolean"
                                         }
                                     },
                                     "required": [
                                         "message",
-                                        "view_id"
+                                        "view_id",
+                                        "deduplicated"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "deduplicated": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "deduplicated"
                                     ]
                                 }
                             }
@@ -1009,6 +1022,24 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "429": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1123,112 +1154,33 @@
                                                 "ratings_breakdown": {
                                                     "type": "object",
                                                     "additionalProperties": {
-                                                        "type": "string"
+                                                        "type": "integer"
                                                     }
                                                 },
                                                 "category_breakdown": {
                                                     "type": "array",
-                                                    "prefixItems": [
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "key": {
-                                                                    "type": "string",
-                                                                    "const": "food"
-                                                                },
-                                                                "label": {
-                                                                    "type": "string",
-                                                                    "const": "Food"
-                                                                },
-                                                                "average_rating": {
-                                                                    "type": [
-                                                                        "number",
-                                                                        "null"
-                                                                    ]
-                                                                }
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "key": {
+                                                                "type": "string"
                                                             },
-                                                            "required": [
-                                                                "key",
-                                                                "label",
-                                                                "average_rating"
-                                                            ]
+                                                            "label": {
+                                                                "type": "string"
+                                                            },
+                                                            "average_rating": {
+                                                                "type": [
+                                                                    "number",
+                                                                    "null"
+                                                                ]
+                                                            }
                                                         },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "key": {
-                                                                    "type": "string",
-                                                                    "const": "service"
-                                                                },
-                                                                "label": {
-                                                                    "type": "string",
-                                                                    "const": "Service"
-                                                                },
-                                                                "average_rating": {
-                                                                    "type": [
-                                                                        "number",
-                                                                        "null"
-                                                                    ]
-                                                                }
-                                                            },
-                                                            "required": [
-                                                                "key",
-                                                                "label",
-                                                                "average_rating"
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "key": {
-                                                                    "type": "string",
-                                                                    "const": "ambience"
-                                                                },
-                                                                "label": {
-                                                                    "type": "string",
-                                                                    "const": "Ambience"
-                                                                },
-                                                                "average_rating": {
-                                                                    "type": [
-                                                                        "number",
-                                                                        "null"
-                                                                    ]
-                                                                }
-                                                            },
-                                                            "required": [
-                                                                "key",
-                                                                "label",
-                                                                "average_rating"
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "key": {
-                                                                    "type": "string",
-                                                                    "const": "value"
-                                                                },
-                                                                "label": {
-                                                                    "type": "string",
-                                                                    "const": "Value"
-                                                                },
-                                                                "average_rating": {
-                                                                    "type": [
-                                                                        "number",
-                                                                        "null"
-                                                                    ]
-                                                                }
-                                                            },
-                                                            "required": [
-                                                                "key",
-                                                                "label",
-                                                                "average_rating"
-                                                            ]
-                                                        }
-                                                    ],
-                                                    "minItems": 4,
-                                                    "maxItems": 4,
-                                                    "additionalItems": false
+                                                        "required": [
+                                                            "key",
+                                                            "label",
+                                                            "average_rating"
+                                                        ]
+                                                    }
                                                 }
                                             },
                                             "required": [
@@ -2454,6 +2406,7 @@
         "/reservations": {
             "post": {
                 "operationId": "customerReservation.store",
+                "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing",
                 "tags": [
                     "Customer Reservations"
                 ],
@@ -2495,7 +2448,32 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationException"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -6290,6 +6268,351 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/table-combinations": {
+            "get": {
+                "operationId": "merchantTableCombination.index",
+                "tags": [
+                    "Merchant Table Combinations"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "dining_area_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/TableCombinationResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantTableCombination.store",
+                "tags": [
+                    "Merchant Table Combinations"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreTableCombinationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Combination saved."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TableCombinationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "This combination already exists."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TableCombinationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/table-combinations/{combination}": {
+            "patch": {
+                "operationId": "merchantTableCombination.update",
+                "tags": [
+                    "Merchant Table Combinations"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "combination",
+                        "in": "path",
+                        "required": true,
+                        "description": "The combination ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateTableCombinationRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Combination updated."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/TableCombinationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantTableCombination.destroy",
+                "tags": [
+                    "Merchant Table Combinations"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "combination",
+                        "in": "path",
+                        "required": true,
+                        "description": "The combination ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Combination deleted."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/menu-items": {
             "get": {
                 "operationId": "merchantMenuItem.index",
@@ -7945,6 +8268,33 @@
                                                         "null"
                                                     ]
                                                 },
+                                                "address_line_1": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "address_line_2": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "city": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "state": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                },
                                                 "cuisines": {
                                                     "type": "string"
                                                 },
@@ -7957,6 +8307,11 @@
                                                 "phone",
                                                 "website",
                                                 "average_price_range",
+                                                "address_line_1",
+                                                "address_line_2",
+                                                "city",
+                                                "state",
+                                                "country",
                                                 "cuisines",
                                                 "social_handles"
                                             ]
@@ -8949,7 +9304,7 @@
                 }
             }
         },
-        "/merchant/restaurants/{restaurant}/onboarding/meal-types/{mealType}": {
+        "/merchant/restaurants/{restaurant}/onboarding/meal-types/{availabilityPeriod}": {
             "patch": {
                 "operationId": "merchantRestaurantOnboarding.updateMealType",
                 "tags": [
@@ -8966,10 +9321,10 @@
                         }
                     },
                     {
-                        "name": "mealType",
+                        "name": "availabilityPeriod",
                         "in": "path",
                         "required": true,
-                        "description": "The meal type ID",
+                        "description": "The availability period ID",
                         "schema": {
                             "type": "integer"
                         }
@@ -9084,10 +9439,10 @@
                         }
                     },
                     {
-                        "name": "mealType",
+                        "name": "availabilityPeriod",
                         "in": "path",
                         "required": true,
-                        "description": "The meal type ID",
+                        "description": "The availability period ID",
                         "schema": {
                             "type": "integer"
                         }
@@ -9152,7 +9507,7 @@
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "const": "Cannot delete a meal type that has schedules. Remove its schedules first or use PUT business-hours to replace all."
+                                            "const": "Cannot delete a meal type that has schedules or special-day shifts. Remove them first or use PUT business-hours to replace all recurring schedules."
                                         }
                                     },
                                     "required": [
@@ -9411,6 +9766,33 @@
                                                 "null"
                                             ]
                                         },
+                                        "address_line_1": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "address_line_2": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "city": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "state": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "country": {
+                                            "type": "string"
+                                        },
                                         "description": {
                                             "type": [
                                                 "string",
@@ -9451,6 +9833,11 @@
                                         "phone",
                                         "website",
                                         "average_price_range",
+                                        "address_line_1",
+                                        "address_line_2",
+                                        "city",
+                                        "state",
+                                        "country",
                                         "description",
                                         "cuisines",
                                         "social_handles",
@@ -10516,200 +10903,7 @@
                         "description": "",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "quick_view": {
-                                            "type": "object",
-                                            "properties": {
-                                                "total_reservations": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "this_month": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_month": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        },
-                                                        "trend": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "date": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "count": {
-                                                                        "type": "string"
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "date",
-                                                                    "count"
-                                                                ]
-                                                            }
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "value",
-                                                        "this_month",
-                                                        "previous_month",
-                                                        "change_percentage",
-                                                        "trend"
-                                                    ]
-                                                },
-                                                "total_guests": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "value": {
-                                                            "type": "integer"
-                                                        },
-                                                        "this_month": {
-                                                            "type": "integer"
-                                                        },
-                                                        "previous_month": {
-                                                            "type": "integer"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        },
-                                                        "trend": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "date": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "count": {
-                                                                        "type": "integer"
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "date",
-                                                                    "count"
-                                                                ]
-                                                            }
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "value",
-                                                        "this_month",
-                                                        "previous_month",
-                                                        "change_percentage",
-                                                        "trend"
-                                                    ]
-                                                },
-                                                "total_servers": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "value"
-                                                    ]
-                                                },
-                                                "total_users": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "value"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "total_reservations",
-                                                "total_guests",
-                                                "total_servers",
-                                                "total_users"
-                                            ]
-                                        },
-                                        "calendar_overview": {
-                                            "type": "object",
-                                            "properties": {
-                                                "week_start": {
-                                                    "type": "string"
-                                                },
-                                                "week_end": {
-                                                    "type": "string"
-                                                },
-                                                "days": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "date": {
-                                                                "type": "string"
-                                                            },
-                                                            "day_of_week": {
-                                                                "type": "string"
-                                                            },
-                                                            "day_label": {
-                                                                "type": "string"
-                                                            },
-                                                            "is_today": {
-                                                                "type": "string"
-                                                            },
-                                                            "reservations_count": {
-                                                                "type": [
-                                                                    "string",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "total_covers": {
-                                                                "type": [
-                                                                    "integer",
-                                                                    "null"
-                                                                ]
-                                                            },
-                                                            "average_covers_historical": {
-                                                                "type": [
-                                                                    "integer",
-                                                                    "null"
-                                                                ]
-                                                            }
-                                                        },
-                                                        "required": [
-                                                            "date",
-                                                            "day_of_week",
-                                                            "day_label",
-                                                            "is_today",
-                                                            "reservations_count",
-                                                            "total_covers",
-                                                            "average_covers_historical"
-                                                        ]
-                                                    }
-                                                }
-                                            },
-                                            "required": [
-                                                "week_start",
-                                                "week_end",
-                                                "days"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "quick_view",
-                                        "calendar_overview"
-                                    ]
-                                }
+                                "schema": {}
                             }
                         }
                     },
@@ -11046,6 +11240,7 @@
             },
             "post": {
                 "operationId": "merchantReservation.store",
+                "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing",
                 "tags": [
                     "Merchant Reservations"
                 ],
@@ -11121,7 +11316,32 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationException"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -11292,6 +11512,7 @@
         "/merchant/restaurants/{restaurant}/reservations/{reservation}/assign-table": {
             "post": {
                 "operationId": "merchantReservation.assignTable",
+                "summary": "Assign the requested table after rechecking it inside the reservation lock. A retryable 422 is returned if it is unavailable",
                 "tags": [
                     "Merchant Reservations"
                 ],
@@ -11376,7 +11597,32 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     },
                     "422": {
-                        "$ref": "#/components/responses/ValidationException"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -12013,6 +12259,349 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/special-days": {
+            "get": {
+                "operationId": "merchantRestaurantSpecialDay.index",
+                "tags": [
+                    "Merchant Special Days"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `RestaurantSpecialDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RestaurantSpecialDayResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantSpecialDay.store",
+                "summary": "Create a date-specific availability override. Open special days require one or more non-overlapping shifts",
+                "tags": [
+                    "Merchant Special Days"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreRestaurantSpecialDayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`RestaurantSpecialDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantSpecialDayResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/special-days/{specialDay}": {
+            "get": {
+                "operationId": "merchantRestaurantSpecialDay.show",
+                "tags": [
+                    "Merchant Special Days"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "specialDay",
+                        "in": "path",
+                        "required": true,
+                        "description": "The special day ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantSpecialDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantSpecialDayResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "merchantRestaurantSpecialDay.update",
+                "summary": "Update a date-specific availability override. Special-day shifts replace recurring hours for their date",
+                "tags": [
+                    "Merchant Special Days"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "specialDay",
+                        "in": "path",
+                        "required": true,
+                        "description": "The special day ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantSpecialDayRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantSpecialDayResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantSpecialDayResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantSpecialDay.destroy",
+                "tags": [
+                    "Merchant Special Days"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "specialDay",
+                        "in": "path",
+                        "required": true,
+                        "description": "The special day ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Special day deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/front-of-house/shift-overview/cover-count": {
             "get": {
                 "operationId": "frontOfHouseShiftOverview.coverCountReport",
@@ -12575,6 +13164,181 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/front-of-house/timelines/active-floors": {
+            "get": {
+                "operationId": "frontOfHouseTimeline.activeFloors",
+                "tags": [
+                    "Front of House / Timelines"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DiningArea"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/front-of-house/timelines": {
+            "get": {
+                "operationId": "frontOfHouseTimeline.index",
+                "tags": [
+                    "Front of House / Timelines"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "dining_area_id",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "date": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "date",
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
@@ -15383,535 +16147,7 @@
                         "description": "",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "cards": {
-                                            "type": "object",
-                                            "properties": {
-                                                "total_restaurants": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Total Restaurants"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage"
-                                                    ]
-                                                },
-                                                "active": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Active"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage"
-                                                    ]
-                                                },
-                                                "pending": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Pending"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        },
-                                                        "change_today": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage",
-                                                        "change_today"
-                                                    ]
-                                                },
-                                                "reservations_today": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Reservations Today"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage"
-                                                    ]
-                                                },
-                                                "weekly_reservations": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Weekly Reservations"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage"
-                                                    ]
-                                                },
-                                                "total_diners": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Total Diners"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer"
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer"
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage"
-                                                    ]
-                                                },
-                                                "monthly_revenue": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "Monthly Revenue"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer"
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer"
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        },
-                                                        "currency": {
-                                                            "type": "string",
-                                                            "const": "NGN"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage",
-                                                        "currency"
-                                                    ]
-                                                },
-                                                "new_this_month": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "label": {
-                                                            "type": "string",
-                                                            "const": "New This Month"
-                                                        },
-                                                        "value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "previous_value": {
-                                                            "type": "integer",
-                                                            "minimum": 0
-                                                        },
-                                                        "change": {
-                                                            "type": "string"
-                                                        },
-                                                        "change_percentage": {
-                                                            "type": "number"
-                                                        },
-                                                        "change_vs_last_month": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "label",
-                                                        "value",
-                                                        "previous_value",
-                                                        "change",
-                                                        "change_percentage",
-                                                        "change_vs_last_month"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "total_restaurants",
-                                                "active",
-                                                "pending",
-                                                "reservations_today",
-                                                "weekly_reservations",
-                                                "total_diners",
-                                                "monthly_revenue",
-                                                "new_this_month"
-                                            ]
-                                        },
-                                        "reservation_trends": {
-                                            "type": "object",
-                                            "properties": {
-                                                "range": {
-                                                    "type": "string",
-                                                    "const": "7d"
-                                                },
-                                                "ranges": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "7d": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "label": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "date": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "reservations_count": {
-                                                                        "type": "integer"
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "label",
-                                                                    "date",
-                                                                    "reservations_count"
-                                                                ]
-                                                            }
-                                                        },
-                                                        "30d": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "label": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "date": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "reservations_count": {
-                                                                        "type": "integer"
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "label",
-                                                                    "date",
-                                                                    "reservations_count"
-                                                                ]
-                                                            }
-                                                        },
-                                                        "90d": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                    "label": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "date": {
-                                                                        "type": "string"
-                                                                    },
-                                                                    "reservations_count": {
-                                                                        "type": "integer"
-                                                                    }
-                                                                },
-                                                                "required": [
-                                                                    "label",
-                                                                    "date",
-                                                                    "reservations_count"
-                                                                ]
-                                                            }
-                                                        }
-                                                    },
-                                                    "required": [
-                                                        "7d",
-                                                        "30d",
-                                                        "90d"
-                                                    ]
-                                                }
-                                            },
-                                            "required": [
-                                                "range",
-                                                "ranges"
-                                            ]
-                                        },
-                                        "reservation_growth": {
-                                            "type": "object",
-                                            "properties": {
-                                                "range": {
-                                                    "type": "string",
-                                                    "const": "6m"
-                                                },
-                                                "series": {
-                                                    "type": "object",
-                                                    "additionalProperties": {
-                                                        "type": "string"
-                                                    }
-                                                }
-                                            },
-                                            "required": [
-                                                "range",
-                                                "series"
-                                            ]
-                                        },
-                                        "recent_activity": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "recent_restaurants": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "serial_number": {
-                                                        "type": "string"
-                                                    },
-                                                    "id": {
-                                                        "type": "integer"
-                                                    },
-                                                    "name": {
-                                                        "type": "string"
-                                                    },
-                                                    "location": {
-                                                        "type": "string"
-                                                    },
-                                                    "status": {
-                                                        "type": "string"
-                                                    },
-                                                    "display_status": {
-                                                        "type": "string",
-                                                        "enum": [
-                                                            "approved",
-                                                            "suspended",
-                                                            "pending"
-                                                        ]
-                                                    },
-                                                    "created_at": {
-                                                        "type": "string"
-                                                    }
-                                                },
-                                                "required": [
-                                                    "serial_number",
-                                                    "id",
-                                                    "name",
-                                                    "location",
-                                                    "status",
-                                                    "display_status",
-                                                    "created_at"
-                                                ]
-                                            }
-                                        },
-                                        "overview": {
-                                            "type": "object",
-                                            "properties": {
-                                                "organizations_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "restaurants_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "active_restaurants_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "suspended_restaurants_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "users_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "reservations_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "reviews_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "pending_approvals_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                }
-                                            },
-                                            "required": [
-                                                "organizations_count",
-                                                "restaurants_count",
-                                                "active_restaurants_count",
-                                                "suspended_restaurants_count",
-                                                "users_count",
-                                                "reservations_count",
-                                                "reviews_count",
-                                                "pending_approvals_count"
-                                            ]
-                                        },
-                                        "reservations": {
-                                            "type": "object",
-                                            "properties": {
-                                                "upcoming_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "today_count": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "by_status": {
-                                                    "type": "array",
-                                                    "prefixItems": [
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        },
-                                                        {
-                                                            "type": "integer"
-                                                        }
-                                                    ],
-                                                    "minItems": 7,
-                                                    "maxItems": 7,
-                                                    "additionalItems": false
-                                                }
-                                            },
-                                            "required": [
-                                                "upcoming_count",
-                                                "today_count",
-                                                "by_status"
-                                            ]
-                                        }
-                                    },
-                                    "required": [
-                                        "cards",
-                                        "reservation_trends",
-                                        "reservation_growth",
-                                        "recent_activity",
-                                        "recent_restaurants",
-                                        "overview",
-                                        "reservations"
-                                    ]
-                                }
+                                "schema": {}
                             }
                         }
                     },
@@ -22244,26 +22480,6 @@
                 ],
                 "title": "ChangePasswordRequest"
             },
-            "CuisineOptionResource": {
-                "type": "object",
-                "properties": {
-                    "id": {
-                        "type": "integer"
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "slug": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "id",
-                    "name",
-                    "slug"
-                ],
-                "title": "CuisineOptionResource"
-            },
             "CuisineResource": {
                 "type": "object",
                 "properties": {
@@ -22291,6 +22507,79 @@
                     "updated_at"
                 ],
                 "title": "CuisineResource"
+            },
+            "DiningArea": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tags": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {}
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "name",
+                    "description",
+                    "tags",
+                    "is_active",
+                    "sort_order",
+                    "created_at",
+                    "updated_at",
+                    "category",
+                    "floor_type"
+                ],
+                "title": "DiningArea"
             },
             "DiningAreaResource": {
                 "type": "object",
@@ -23254,6 +23543,44 @@
                 ],
                 "title": "OrganizationResource"
             },
+            "PublicRandomReviewResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "rating": {
+                        "type": "string"
+                    },
+                    "notes": {
+                        "type": "string"
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "Anonymous diner"
+                                ]
+                            }
+                        ]
+                    },
+                    "restaurant_name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "rating",
+                    "notes",
+                    "customer_name",
+                    "restaurant_name"
+                ],
+                "title": "PublicRandomReviewResource"
+            },
             "ReorderMediaRequest": {
                 "type": "object",
                 "properties": {
@@ -24201,6 +24528,37 @@
                     "gallery_images"
                 ],
                 "title": "RestaurantMenuItemResource"
+            },
+            "RestaurantSpecialDayResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "date": {
+                        "type": "string"
+                    },
+                    "is_closed": {
+                        "type": "boolean"
+                    },
+                    "shifts": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "name",
+                    "date",
+                    "is_closed"
+                ],
+                "title": "RestaurantSpecialDayResource"
             },
             "RestaurantStaffAssignmentResource": {
                 "type": "object",
@@ -25703,6 +26061,12 @@
                             "null"
                         ]
                     },
+                    "dining_area_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
                     "starts_at": {
                         "type": "string",
                         "format": "date-time"
@@ -26297,6 +26661,45 @@
                 ],
                 "title": "StoreRestaurantReviewRequest"
             },
+            "StoreRestaurantSpecialDayRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "is_closed": {
+                        "type": "boolean"
+                    },
+                    "shifts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "restaurant_meal_type_id": {
+                                    "type": "integer"
+                                },
+                                "opens_at": {
+                                    "type": "string"
+                                },
+                                "closes_at": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": [
+                    "name",
+                    "date"
+                ],
+                "title": "StoreRestaurantSpecialDayRequest"
+            },
             "StoreRestaurantStaffRequest": {
                 "type": "object",
                 "properties": {
@@ -26496,6 +26899,38 @@
                 ],
                 "title": "StoreRewardPointTransactionRequest"
             },
+            "StoreTableCombinationRequest": {
+                "type": "object",
+                "properties": {
+                    "dining_area_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "min_capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "max_capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "table_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minItems": 2
+                    }
+                },
+                "required": [
+                    "min_capacity",
+                    "max_capacity",
+                    "table_ids"
+                ],
+                "title": "StoreTableCombinationRequest"
+            },
             "StoreWaitlistEntryRequest": {
                 "type": "object",
                 "properties": {
@@ -26626,6 +27061,46 @@
                     "tables"
                 ],
                 "title": "SyncDiningAreaLayoutRequest"
+            },
+            "TableCombinationResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "dining_area_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "table_ids": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "min_capacity": {
+                        "type": "integer"
+                    },
+                    "max_capacity": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "dining_area_id",
+                    "table_ids",
+                    "min_capacity",
+                    "max_capacity",
+                    "created_at"
+                ],
+                "title": "TableCombinationResource"
             },
             "TableShape": {
                 "type": "string",
@@ -27804,6 +28279,41 @@
                         ],
                         "maxLength": 100
                     },
+                    "address_line_1": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "address_line_2": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "city": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "state": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "country": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
                     "primary_cuisine_option_id": {
                         "type": [
                             "integer",
@@ -28490,6 +29000,41 @@
                 },
                 "title": "UpdateRestaurantSettingsRequest"
             },
+            "UpdateRestaurantSpecialDayRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "is_closed": {
+                        "type": "boolean"
+                    },
+                    "shifts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "restaurant_meal_type_id": {
+                                    "type": "integer"
+                                },
+                                "opens_at": {
+                                    "type": "string"
+                                },
+                                "closes_at": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "minItems": 1
+                    }
+                },
+                "title": "UpdateRestaurantSpecialDayRequest"
+            },
             "UpdateRestaurantStaffRequest": {
                 "type": "object",
                 "properties": {
@@ -28702,6 +29247,24 @@
                     }
                 },
                 "title": "UpdateRewardProgramRequest"
+            },
+            "UpdateTableCombinationRequest": {
+                "type": "object",
+                "properties": {
+                    "min_capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "max_capacity": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "min_capacity",
+                    "max_capacity"
+                ],
+                "title": "UpdateTableCombinationRequest"
             },
             "UpdateTableStatusRequest": {
                 "type": "object",

@@ -76,3 +76,23 @@ it('falls back to the weekly schedule when no special day exists', function (): 
     $firstHour = (int) Carbon::parse($slots[0]['local_starts_at'])->format('H');
     expect($firstHour)->toBeGreaterThanOrEqual(9)->toBeLessThan(17);
 });
+
+it('resolves a meal type window from special day shifts for front of house views', function (): void {
+    $specialDay = RestaurantSpecialDay::factory()->for($this->restaurant)->create([
+        'date' => $this->date->format('Y-m-d'),
+    ]);
+    $specialDay->shifts()->create([
+        'restaurant_meal_type_id' => $this->availabilityPeriod->id,
+        'opens_at' => '18:00',
+        'closes_at' => '21:00',
+    ]);
+
+    expect($this->service->timeWindowForMealType(
+        $this->restaurant,
+        $this->date->format('Y-m-d'),
+        $this->availabilityPeriod->id,
+    ))->toBe([
+        'starts_at' => '18:00',
+        'ends_at' => '21:00',
+    ]);
+});

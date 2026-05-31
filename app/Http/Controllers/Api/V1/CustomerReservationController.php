@@ -33,7 +33,7 @@ class CustomerReservationController extends Controller
     }
 
     /**
-     * Create a reservation. A retryable 422 is returned when availability changes while the request is being processed.
+     * Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreReservationRequest $request): JsonResponse

@@ -12,12 +12,24 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class AvailabilityService
 {
     public function calculateEndTime(Restaurant $restaurant, CarbonInterface $startsAt): Carbon
     {
         return Carbon::parse($startsAt)->addMinutes($restaurant->policy?->reservation_duration_minutes ?? 120);
+    }
+
+    public function isBookableAt(Restaurant $restaurant, CarbonInterface $startsAt): bool
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $endsAt = $this->calculateEndTime($restaurant, $localStartsAt);
+
+        return collect($this->effectiveTimeWindows($restaurant, $localStartsAt->toDateString()))
+            ->contains(fn (array $window): bool => $localStartsAt->greaterThanOrEqualTo($window[0])
+                && $endsAt->lessThanOrEqualTo($window[1]));
     }
 
     public function findAvailableTable(
@@ -82,16 +94,7 @@ class AvailabilityService
         int $partySize,
         ?string $requesterTimezone = null,
     ): array {
-        $restaurantTz = $restaurant->timezone ?: config('app.timezone');
-        $displayTz = $requesterTimezone ?: $restaurantTz;
-
-        $localDate = Carbon::createFromFormat('Y-m-d', $date, $restaurantTz);
-        $dayOfWeek = (int) $localDate->dayOfWeek;
-        $dateStr = $localDate->format('Y-m-d');
-        $duration = $restaurant->policy?->reservation_duration_minutes ?? 120;
-        $now = Carbon::now();
-
-        $windows = $this->buildTimeWindows($restaurant, $dayOfWeek, $dateStr, $restaurantTz);
+        $windows = $this->effectiveTimeWindows($restaurant, $date);
 
         if (empty($windows)) {
             return [];
@@ -110,6 +113,164 @@ class AvailabilityService
             ->get(['restaurant_table_id', 'starts_at', 'ends_at'])
             ->groupBy('restaurant_table_id');
 
+        return $this->generateSlots(
+            restaurant: $restaurant,
+            windows: $windows,
+            tables: $tables,
+            reservationsByTable: $reservationsByTable,
+            requesterTimezone: $requesterTimezone,
+        );
+    }
+
+    /**
+     * @param  SupportCollection<int, Restaurant>  $restaurants
+     * @return array<int, list<array<string, mixed>>>
+     */
+    public function listAvailableSlotsForRestaurants(
+        SupportCollection $restaurants,
+        string $date,
+        int $partySize,
+        ?string $requesterTimezone = null,
+    ): array {
+        $restaurants = $restaurants->unique('id')->values();
+        $slotsByRestaurant = $restaurants
+            ->mapWithKeys(fn (Restaurant $restaurant): array => [$restaurant->id => []])
+            ->all();
+
+        if ($restaurants->isEmpty()) {
+            return $slotsByRestaurant;
+        }
+
+        $restaurantIds = $restaurants->pluck('id')->all();
+        $specialDaysByRestaurant = RestaurantSpecialDay::query()
+            ->with('shifts')
+            ->whereIn('restaurant_id', $restaurantIds)
+            ->where('date', $date)
+            ->get()
+            ->groupBy('restaurant_id');
+
+        $restaurants->each(function (Restaurant $restaurant) use ($specialDaysByRestaurant): void {
+            $restaurant->setRelation(
+                'specialDays',
+                new Collection($specialDaysByRestaurant->get($restaurant->id, collect())->all()),
+            );
+        });
+
+        $windowsByRestaurant = $restaurants
+            ->mapWithKeys(fn (Restaurant $restaurant): array => [
+                $restaurant->id => $this->effectiveTimeWindows($restaurant, $date),
+            ])
+            ->filter();
+
+        if ($windowsByRestaurant->isEmpty()) {
+            return $slotsByRestaurant;
+        }
+
+        $bookableRestaurantIds = $windowsByRestaurant->keys()->all();
+        $tablesByRestaurant = $this->eligibleTablesForRestaurantsQuery($bookableRestaurantIds, $partySize)
+            ->get()
+            ->groupBy('restaurant_id');
+        $rangeStartsAt = $windowsByRestaurant
+            ->flatten(1)
+            ->min(fn (array $window): Carbon => $window[0])
+            ->copy()
+            ->utc();
+        $rangeEndsAt = $windowsByRestaurant
+            ->flatten(1)
+            ->max(fn (array $window): Carbon => $window[1])
+            ->copy()
+            ->utc();
+        $reservationsByRestaurant = $this->overlappingReservationsForRestaurantsQuery(
+            $bookableRestaurantIds,
+            $rangeStartsAt,
+            $rangeEndsAt,
+        )
+            ->get(['restaurant_id', 'restaurant_table_id', 'starts_at', 'ends_at'])
+            ->groupBy('restaurant_id');
+
+        foreach ($restaurants as $restaurant) {
+            $windows = $windowsByRestaurant->get($restaurant->id, []);
+            $tables = $tablesByRestaurant->get($restaurant->id, collect());
+
+            if (empty($windows) || $tables->isEmpty()) {
+                continue;
+            }
+
+            $slotsByRestaurant[$restaurant->id] = $this->generateSlots(
+                restaurant: $restaurant,
+                windows: $windows,
+                tables: $tables,
+                reservationsByTable: $reservationsByRestaurant->get($restaurant->id, collect())->groupBy('restaurant_table_id'),
+                requesterTimezone: $requesterTimezone,
+            );
+        }
+
+        return $slotsByRestaurant;
+    }
+
+    /**
+     * @return array{starts_at: string, ends_at: string}|null
+     */
+    public function timeWindowForMealType(Restaurant $restaurant, string $date, int $availabilityPeriodId): ?array
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localDate = Carbon::createFromFormat('Y-m-d', $date, $restaurantTimezone);
+        $specialDay = $this->specialDayForDate($restaurant, $localDate->toDateString());
+
+        if ($specialDay !== null) {
+            if ($specialDay->is_closed) {
+                return null;
+            }
+
+            $shift = $specialDay->shifts
+                ->sortBy('opens_at')
+                ->firstWhere('restaurant_meal_type_id', $availabilityPeriodId);
+
+            return $shift ? ['starts_at' => $shift->opens_at, 'ends_at' => $shift->closes_at] : null;
+        }
+
+        $schedule = $restaurant->availabilitySchedules()
+            ->where('restaurant_meal_type_id', $availabilityPeriodId)
+            ->where('day_of_week', $localDate->dayOfWeek)
+            ->orderBy('opens_at')
+            ->first();
+
+        return $schedule ? ['starts_at' => $schedule->opens_at, 'ends_at' => $schedule->closes_at] : null;
+    }
+
+    /**
+     * @return list<array{Carbon, Carbon}>
+     */
+    public function effectiveTimeWindows(Restaurant $restaurant, string $date): array
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localDate = Carbon::createFromFormat('Y-m-d', $date, $restaurantTimezone);
+
+        return $this->buildTimeWindows(
+            restaurant: $restaurant,
+            dayOfWeek: (int) $localDate->dayOfWeek,
+            dateStr: $localDate->toDateString(),
+            timezone: $restaurantTimezone,
+        );
+    }
+
+    /**
+     * @param  list<array{Carbon, Carbon}>  $windows
+     * @param  SupportCollection<int, RestaurantTable>  $tables
+     * @param  SupportCollection<int, SupportCollection<int, Reservation>>  $reservationsByTable
+     * @return list<array<string, mixed>>
+     */
+    private function generateSlots(
+        Restaurant $restaurant,
+        array $windows,
+        SupportCollection $tables,
+        SupportCollection $reservationsByTable,
+        ?string $requesterTimezone = null,
+    ): array {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $displayTimezone = $requesterTimezone ?: $restaurantTimezone;
+        $duration = $restaurant->policy?->reservation_duration_minutes ?? 120;
+        $now = Carbon::now();
         $slots = [];
 
         foreach ($windows as [$opensAt, $closesAt]) {
@@ -132,8 +293,8 @@ class AvailabilityService
                 });
 
                 if ($table) {
-                    $localCursor = $utcCursor->copy()->setTimezone($displayTz);
-                    $slots[] = [
+                    $localCursor = $utcCursor->copy()->setTimezone($displayTimezone);
+                    $slots[$utcCursor->toIso8601String()] = [
                         'starts_at' => $utcCursor->toIso8601String(),
                         'ends_at' => $endsAt->toIso8601String(),
                         'local_starts_at' => $localCursor->toIso8601String(),
@@ -146,7 +307,7 @@ class AvailabilityService
             }
         }
 
-        return $slots;
+        return array_values($slots);
     }
 
     /**
@@ -154,8 +315,17 @@ class AvailabilityService
      */
     private function eligibleTablesQuery(Restaurant $restaurant, int $partySize): Builder
     {
+        return $this->eligibleTablesForRestaurantsQuery([$restaurant->id], $partySize);
+    }
+
+    /**
+     * @param  list<int>  $restaurantIds
+     * @return Builder<RestaurantTable>
+     */
+    private function eligibleTablesForRestaurantsQuery(array $restaurantIds, int $partySize): Builder
+    {
         return RestaurantTable::query()
-            ->where('restaurant_id', $restaurant->id)
+            ->whereIn('restaurant_id', $restaurantIds)
             ->where('is_active', true)
             ->when($partySize > 1, fn (Builder $query) => $query->where('min_capacity', '<=', $partySize))
             ->where('max_capacity', '>=', $partySize)
@@ -173,8 +343,21 @@ class AvailabilityService
         CarbonInterface $endsAt,
         ?int $excludingReservationId = null,
     ): Builder {
+        return $this->overlappingReservationsForRestaurantsQuery([$restaurant->id], $startsAt, $endsAt)
+            ->when($excludingReservationId, fn (Builder $query) => $query->whereKeyNot($excludingReservationId));
+    }
+
+    /**
+     * @param  list<int>  $restaurantIds
+     * @return Builder<Reservation>
+     */
+    private function overlappingReservationsForRestaurantsQuery(
+        array $restaurantIds,
+        CarbonInterface $startsAt,
+        CarbonInterface $endsAt,
+    ): Builder {
         return Reservation::query()
-            ->where('restaurant_id', $restaurant->id)
+            ->whereIn('restaurant_id', $restaurantIds)
             ->whereNotNull('restaurant_table_id')
             ->whereIn('status', [
                 ReservationStatus::Booked->value,
@@ -182,7 +365,6 @@ class AvailabilityService
                 ReservationStatus::Arrived->value,
                 ReservationStatus::Seated->value,
             ])
-            ->when($excludingReservationId, fn (Builder $query) => $query->whereKeyNot($excludingReservationId))
             ->where('starts_at', '<', $endsAt)
             ->where('ends_at', '>', $startsAt);
     }
@@ -250,7 +432,7 @@ class AvailabilityService
 
         return $restaurant->specialDays()
             ->with('shifts')
-            ->whereDate('date', $dateStr)
+            ->where('date', $dateStr)
             ->first();
     }
 }

@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Database\Factories\RestaurantSpecialDayFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class RestaurantSpecialDay extends Model
 {
@@ -26,6 +28,13 @@ class RestaurantSpecialDay extends Model
             'date' => 'date',
             'is_closed' => 'boolean',
         ];
+    }
+
+    protected function date(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value): string => Carbon::parse($value)->toDateString(),
+        );
     }
 
     public function restaurant(): BelongsTo

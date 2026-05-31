@@ -3,6 +3,8 @@
 use App\Events\ReservationUpdated;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
+use App\Models\RestaurantAvailabilityPeriod;
+use App\Models\RestaurantSpecialDay;
 use App\Models\User;
 use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
@@ -36,6 +38,49 @@ it('creates a reservation for an active customer and assigns a table', function 
     expect($reservation->restaurant_table_id)->not->toBeNull();
     Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
     Event::assertDispatched(ReservationUpdated::class);
+});
+
+it('rejects a reservation on a closed special day', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $startsAt = now()->addDays(2)->setTime(18, 0);
+
+    RestaurantSpecialDay::factory()->for($data['restaurant'])->closed()->create([
+        'date' => $startsAt->toDateString(),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => $startsAt->toDateTimeString(),
+        'party_size' => 2,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('starts_at');
+});
+
+it('rejects a reservation outside a special day shift', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $startsAt = now()->addDays(2)->setTime(19, 0);
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->for($data['restaurant'])->create();
+    $specialDay = RestaurantSpecialDay::factory()->for($data['restaurant'])->create([
+        'date' => $startsAt->toDateString(),
+    ]);
+    $specialDay->shifts()->create([
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
+        'opens_at' => '09:00',
+        'closes_at' => '12:00',
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => $startsAt->toDateTimeString(),
+        'party_size' => 2,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('starts_at');
 });
 
 it('lets a customer cancel their reservation before the cutoff window', function () {

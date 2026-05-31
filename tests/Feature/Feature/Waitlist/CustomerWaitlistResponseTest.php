@@ -2,6 +2,7 @@
 
 use App\Events\WaitlistEntryUpdated;
 use App\Models\ExpoPushToken;
+use App\Models\RestaurantSpecialDay;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\ExpoPushChannel;
@@ -60,6 +61,31 @@ it('notifies the customer when they try to accept after the waitlist offer expir
     $response->assertUnprocessable();
 
     Notification::assertSentTo($customer, WaitlistOfferExpiredNotification::class);
+});
+
+it('rejects a waitlist offer when the preferred time is now on a closed special day', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $startsAt = now()->addDay()->setTime(19, 0);
+
+    RestaurantSpecialDay::factory()->for($data['restaurant'])->closed()->create([
+        'date' => $startsAt->toDateString(),
+    ]);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'status' => WaitlistStatus::Notified,
+        'party_size' => 2,
+        'preferred_starts_at' => $startsAt,
+        'expires_at' => now()->addMinutes(20),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/waitlist-entries/'.$entry->id.'/accept')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('starts_at');
 });
 
 it('allows a customer to decline a notified waitlist offer', function () {

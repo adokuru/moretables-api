@@ -28,6 +28,7 @@ use App\UserStatus;
 use App\WaitlistExpiryReason;
 use App\WaitlistStatus;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -193,6 +194,8 @@ class ReservationService
                     ? Carbon::parse($attributes['starts_at'])
                     : $reservation->starts_at;
                 $partySize = $attributes['party_size'] ?? $reservation->party_size;
+
+                $this->ensureBookableTime($reservation->restaurant, $startsAt);
 
                 if (isset($attributes['party_size']) && count($reservation->guestsForApi()) > max(0, (int) $partySize - 1)) {
                     throw ValidationException::withMessages([
@@ -836,6 +839,9 @@ class ReservationService
                 $startsAt = Carbon::parse($attributes['starts_at']);
                 $diningAreaId = isset($attributes['dining_area_id']) ? (int) $attributes['dining_area_id'] : null;
                 $hasSelectedTable = isset($attributes['restaurant_table_id']);
+
+                $this->ensureBookableTime($restaurant, $startsAt);
+
                 $table = $hasSelectedTable
                     ? RestaurantTable::query()->where('restaurant_id', $restaurant->id)->findOrFail($attributes['restaurant_table_id'])
                     : $this->availabilityService->findAvailableTable($restaurant, $startsAt, (int) $attributes['party_size'], null, $diningAreaId);
@@ -902,6 +908,15 @@ class ReservationService
                 return $reservation;
             });
         });
+    }
+
+    private function ensureBookableTime(Restaurant $restaurant, CarbonInterface $startsAt): void
+    {
+        if (! $this->availabilityService->isBookableAt($restaurant, $startsAt)) {
+            throw ValidationException::withMessages([
+                'starts_at' => ['The selected time is outside the restaurant booking hours.'],
+            ]);
+        }
     }
 
     protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed

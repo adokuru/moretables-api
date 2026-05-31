@@ -222,9 +222,9 @@ class MerchantRestaurantOnboardingController extends Controller
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
         abort_unless($this->onboardingService->availabilityPeriodBelongsToRestaurant($availabilityPeriod, $restaurant), 404);
 
-        if ($availabilityPeriod->schedules()->exists()) {
+        if ($availabilityPeriod->schedules()->exists() || $availabilityPeriod->specialDayShifts()->exists()) {
             return response()->json([
-                'message' => 'Cannot delete a meal type that has schedules. Remove its schedules first or use PUT business-hours to replace all.',
+                'message' => 'Cannot delete a meal type that has schedules or special-day shifts. Remove them first or use PUT business-hours to replace all recurring schedules.',
             ], 422);
         }
 

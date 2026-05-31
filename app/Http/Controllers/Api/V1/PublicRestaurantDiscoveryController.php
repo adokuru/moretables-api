@@ -84,20 +84,33 @@ class PublicRestaurantDiscoveryController extends Controller
         $partySize = (int) ($validated['party_size'] ?? 2);
         $timezone = isset($validated['timezone']) ? (string) $validated['timezone'] : null;
         $limit = (int) ($validated['reservation_times_limit'] ?? 5);
+        $uncachedRestaurants = $restaurants
+            ->filter(function (Restaurant $restaurant) use ($date, $partySize, $timezone): bool {
+                return ! array_key_exists($this->reservationTimesKey($restaurant, $date, $partySize, $timezone), $this->reservationTimes);
+            })
+            ->values();
+
+        foreach ($this->availabilityService->listAvailableSlotsForRestaurants($uncachedRestaurants, $date, $partySize, $timezone) as $restaurantId => $slots) {
+            $restaurant = $uncachedRestaurants->firstWhere('id', $restaurantId);
+
+            if ($restaurant) {
+                $this->reservationTimes[$this->reservationTimesKey($restaurant, $date, $partySize, $timezone)] = $slots;
+            }
+        }
 
         return $restaurants->each(function (Restaurant $restaurant) use ($date, $partySize, $timezone, $limit): void {
-            $key = implode(':', [$restaurant->id, $date, $partySize, $timezone ?? $restaurant->timezone]);
-
-            $restaurant->setAttribute('reservation_times', collect($this->reservationTimes[$key] ??= $this->availabilityService->listAvailableSlots(
-                restaurant: $restaurant,
-                date: $date,
-                partySize: $partySize,
-                requesterTimezone: $timezone,
-            ))
+            $restaurant->setAttribute('reservation_times', collect($this->reservationTimes[
+                $this->reservationTimesKey($restaurant, $date, $partySize, $timezone)
+            ] ?? [])
                 ->take($limit)
                 ->values()
                 ->all());
         });
+    }
+
+    private function reservationTimesKey(Restaurant $restaurant, string $date, int $partySize, ?string $timezone): string
+    {
+        return implode(':', [$restaurant->id, $date, $partySize, $timezone ?? $restaurant->timezone]);
     }
 
     /**

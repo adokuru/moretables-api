@@ -7,6 +7,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantSocialHandle;
+use App\Models\RestaurantSpecialDay;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
@@ -401,6 +402,27 @@ it('blocks deleting a meal type that has schedules', function () {
         'day_of_week' => 0,
         'opens_at' => '12:00',
         'closes_at' => '15:00',
+    ]);
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->deleteJson(obUrl($data['restaurant']->id, "/meal-types/{$availabilityPeriod->id}"))
+        ->assertUnprocessable();
+
+    $this->assertDatabaseHas('restaurant_meal_types', ['id' => $availabilityPeriod->id]);
+});
+
+it('blocks deleting a meal type that has special day shifts', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'name' => 'Holiday Dinner',
+    ]);
+    $specialDay = RestaurantSpecialDay::factory()->for($data['restaurant'])->create();
+    $specialDay->shifts()->create([
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
+        'opens_at' => '18:00',
+        'closes_at' => '22:00',
     ]);
     Sanctum::actingAs(marketingActor($data));
 

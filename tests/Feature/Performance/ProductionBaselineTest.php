@@ -51,6 +51,26 @@ it('keeps availability query count stable as the slot count grows', function () 
         ->and($longWindowQueryCount)->toBe($shortWindowQueryCount);
 });
 
+it('batches discovery availability queries as the restaurant count grows', function () {
+    $firstRestaurant = createBookableRestaurant()['restaurant'];
+    $secondRestaurant = createBookableRestaurant()['restaurant'];
+    $date = Carbon::tomorrow($firstRestaurant->timezone)->toDateString();
+
+    $firstRestaurant->load(['hours', 'availabilitySchedules', 'policy']);
+    $secondRestaurant->load(['hours', 'availabilitySchedules', 'policy']);
+
+    DB::enableQueryLog();
+    app(AvailabilityService::class)->listAvailableSlotsForRestaurants(collect([$firstRestaurant]), $date, 2);
+    $singleRestaurantQueryCount = count(DB::getQueryLog());
+
+    DB::flushQueryLog();
+    app(AvailabilityService::class)->listAvailableSlotsForRestaurants(collect([$firstRestaurant, $secondRestaurant]), $date, 2);
+    $multipleRestaurantQueryCount = count(DB::getQueryLog());
+
+    expect($singleRestaurantQueryCount)->toBe(3)
+        ->and($multipleRestaurantQueryCount)->toBe($singleRestaurantQueryCount);
+});
+
 it('assigns the requested available table instead of the first sorted table', function () {
     $data = createBookableRestaurant();
     $actor = User::factory()->create();

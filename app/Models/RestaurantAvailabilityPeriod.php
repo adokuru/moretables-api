@@ -33,4 +33,9 @@ class RestaurantAvailabilityPeriod extends Model
     {
         return $this->hasMany(RestaurantAvailabilitySchedule::class, 'restaurant_meal_type_id');
     }
+
+    public function specialDayShifts(): HasMany
+    {
+        return $this->hasMany(RestaurantSpecialDayShift::class, 'restaurant_meal_type_id');
+    }
 }

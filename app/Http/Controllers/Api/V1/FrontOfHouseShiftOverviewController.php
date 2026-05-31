@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\ReservationSource;
 use App\ReservationStatus;
+use App\Services\AvailabilityService;
 use App\Services\RestaurantDateRangeService;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
@@ -22,7 +23,10 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Shift Overview', weight: 37)]
 class FrontOfHouseShiftOverviewController extends Controller
 {
-    public function __construct(private readonly RestaurantDateRangeService $dateRanges) {}
+    public function __construct(
+        private readonly RestaurantDateRangeService $dateRanges,
+        private readonly AvailabilityService $availabilityService,
+    ) {}
 
     // ------------------------------------------------------------------ //
     //  Shared helpers                                                      //
@@ -45,12 +49,15 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         if ($request->filled('meal_type_id')) {
             $availabilityPeriod = $restaurant->availabilityPeriods()
-                ->with(['schedules' => fn ($q) => $q->where('day_of_week', $date->dayOfWeek)])
                 ->findOrFail($request->integer('meal_type_id'));
 
-            $schedule = $availabilityPeriod->schedules->first();
-            $windowStart = $schedule?->opens_at;
-            $windowEnd = $schedule?->closes_at;
+            $window = $this->availabilityService->timeWindowForMealType(
+                $restaurant,
+                $date->toDateString(),
+                $availabilityPeriod->id,
+            );
+            $windowStart = $window['starts_at'] ?? null;
+            $windowEnd = $window['ends_at'] ?? null;
         } elseif ($request->filled('starts_at') && $request->filled('ends_at')) {
             $windowStart = $request->string('starts_at')->toString();
             $windowEnd = $request->string('ends_at')->toString();

@@ -6,7 +6,10 @@ use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantSpecialDay;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\RestaurantSpecialDayService;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
@@ -55,6 +58,15 @@ it('creates a closed special day without shifts', function (): void {
     $response->assertCreated()
         ->assertJsonPath('data.is_closed', true)
         ->assertJsonCount(0, 'data.shifts');
+});
+
+it('requires shifts when creating an open special day', function (): void {
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/special-days", [
+        'name' => 'Open Holiday',
+        'date' => '2025-12-24',
+        'is_closed' => false,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('shifts');
 });
 
 it('ignores shifts when the special day is closed', function (): void {
@@ -112,6 +124,20 @@ it('rejects closing times before opening times', function (): void {
     $response->assertStatus(422)->assertJsonValidationErrors('shifts.0.closes_at');
 });
 
+it('rejects overlapping special day shifts', function (): void {
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->for($this->restaurant)->create();
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/special-days", [
+        'name' => 'Overlapping Hours',
+        'date' => '2025-11-22',
+        'shifts' => [
+            ['restaurant_meal_type_id' => $availabilityPeriod->id, 'opens_at' => '09:00', 'closes_at' => '13:00'],
+            ['restaurant_meal_type_id' => $availabilityPeriod->id, 'opens_at' => '12:00', 'closes_at' => '16:00'],
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('shifts');
+});
+
 it('lists special days for the restaurant', function (): void {
     RestaurantSpecialDay::factory()->for($this->restaurant)->count(2)->create();
 
@@ -159,6 +185,73 @@ it('clears shifts when a special day is updated to closed', function (): void {
 
     $response->assertSuccessful()->assertJsonPath('data.is_closed', true);
     expect($specialDay->shifts()->count())->toBe(0);
+});
+
+it('preserves shifts when an open special day receives an is_closed false patch', function (): void {
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->for($this->restaurant)->create();
+    $specialDay = RestaurantSpecialDay::factory()->for($this->restaurant)->create();
+    $specialDay->shifts()->create([
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
+        'opens_at' => '07:00',
+        'closes_at' => '11:00',
+    ]);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/special-days/{$specialDay->id}", [
+        'is_closed' => false,
+    ])->assertSuccessful()
+        ->assertJsonCount(1, 'data.shifts');
+});
+
+it('requires shifts when reopening a closed special day', function (): void {
+    $specialDay = RestaurantSpecialDay::factory()->for($this->restaurant)->closed()->create();
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/special-days/{$specialDay->id}", [
+        'is_closed' => false,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('shifts');
+});
+
+it('translates duplicate date database exceptions into validation exceptions', function (): void {
+    RestaurantSpecialDay::factory()->for($this->restaurant)->closed()->create(['date' => '2025-11-23']);
+
+    expect(fn () => app(RestaurantSpecialDayService::class)->create($this->restaurant, [
+        'name' => 'Duplicate',
+        'date' => '2025-11-23',
+        'is_closed' => true,
+    ]))->toThrow(ValidationException::class, 'A special day already exists for this date.');
+});
+
+it('rejects direct open special day creation without shifts', function (): void {
+    expect(fn () => app(RestaurantSpecialDayService::class)->create($this->restaurant, [
+        'name' => 'Missing Shifts',
+        'date' => '2025-11-24',
+        'is_closed' => false,
+    ]))->toThrow(ValidationException::class, 'At least one shift is required when the special day is open.');
+});
+
+it('normalizes legacy duplicate special day dates by keeping the latest override', function (): void {
+    $olderId = DB::table('restaurant_special_days')->insertGetId([
+        'restaurant_id' => $this->restaurant->id,
+        'name' => 'Older Override',
+        'date' => '2025-11-25 00:00:00',
+        'is_closed' => true,
+        'created_at' => now()->subMinute(),
+        'updated_at' => now()->subMinute(),
+    ]);
+    $newerId = DB::table('restaurant_special_days')->insertGetId([
+        'restaurant_id' => $this->restaurant->id,
+        'name' => 'Latest Override',
+        'date' => '2025-11-25',
+        'is_closed' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $migration = require database_path('migrations/2026_05_31_210937_normalize_restaurant_special_day_dates.php');
+    $migration->up();
+
+    expect(DB::table('restaurant_special_days')->where('id', $olderId)->exists())->toBeFalse()
+        ->and(DB::table('restaurant_special_days')->where('id', $newerId)->value('date'))->toBe('2025-11-25');
 });
 
 it('deletes a special day', function (): void {
