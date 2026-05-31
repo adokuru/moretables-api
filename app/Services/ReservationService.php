@@ -834,9 +834,10 @@ class ReservationService
     ): Reservation {
         return DB::transaction(function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
             $startsAt = Carbon::parse($attributes['starts_at']);
+            $diningAreaId = isset($attributes['dining_area_id']) ? (int) $attributes['dining_area_id'] : null;
             $table = isset($attributes['restaurant_table_id'])
                 ? RestaurantTable::query()->where('restaurant_id', $restaurant->id)->findOrFail($attributes['restaurant_table_id'])
-                : $this->availabilityService->findAvailableTable($restaurant, $startsAt, (int) $attributes['party_size']);
+                : $this->availabilityService->findAvailableTable($restaurant, $startsAt, (int) $attributes['party_size'], null, $diningAreaId);
 
             if (! $table) {
                 throw ValidationException::withMessages([
