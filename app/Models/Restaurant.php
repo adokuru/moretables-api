@@ -224,14 +224,19 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantSocialHandle::class)->orderBy('platform');
     }
 
-    public function mealTypes(): HasMany
+    public function availabilityPeriods(): HasMany
     {
-        return $this->hasMany(RestaurantMealType::class)->orderBy('sort_order');
+        return $this->hasMany(RestaurantAvailabilityPeriod::class)->orderBy('sort_order');
     }
 
-    public function mealSchedules(): HasMany
+    public function availabilitySchedules(): HasMany
     {
-        return $this->hasMany(RestaurantMealSchedule::class);
+        return $this->hasMany(RestaurantAvailabilitySchedule::class);
+    }
+
+    public function specialDays(): HasMany
+    {
+        return $this->hasMany(RestaurantSpecialDay::class)->orderBy('date');
     }
 
     public function galleryCategories(): HasMany

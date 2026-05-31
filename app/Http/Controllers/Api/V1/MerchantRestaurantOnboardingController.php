@@ -16,7 +16,7 @@ use App\Http\Requests\Merchant\UploadRestaurantOnboardingPhotoRequest;
 use App\Http\Requests\Merchant\VerifyRestaurantEmailRequest;
 use App\Http\Resources\MediaAssetResource;
 use App\Models\Restaurant;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
 use App\Services\AuthChallengeService;
 use App\Services\MediaLibraryService;
 use App\Services\RestaurantOnboardingService;
@@ -136,12 +136,12 @@ class MerchantRestaurantOnboardingController extends Controller
         $this->onboardingService->replaceMealSchedules($restaurant, $request->validated('schedules'));
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
-        $restaurant->load(['mealTypes.schedules']);
+        $restaurant->load(['availabilityPeriods.schedules']);
 
         return response()->json([
             'message' => 'Business hours updated successfully.',
             'onboarding_status' => $onboardingStatus,
-            'meal_types' => $restaurant->mealTypes->map(fn ($type) => [
+            'meal_types' => $restaurant->availabilityPeriods->map(fn ($type) => [
                 'id' => $type->id,
                 'name' => $type->name,
                 'sort_order' => $type->sort_order,
@@ -159,10 +159,10 @@ class MerchantRestaurantOnboardingController extends Controller
     {
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
-        $restaurant->load(['mealTypes.schedules']);
+        $restaurant->load(['availabilityPeriods.schedules']);
 
         return response()->json([
-            'meal_types' => $restaurant->mealTypes->map(fn ($type) => [
+            'meal_types' => $restaurant->availabilityPeriods->map(fn ($type) => [
                 'id' => $type->id,
                 'name' => $type->name,
                 'sort_order' => $type->sort_order,
@@ -181,54 +181,54 @@ class MerchantRestaurantOnboardingController extends Controller
         $validated = $request->validated();
 
         if (! isset($validated['sort_order'])) {
-            $validated['sort_order'] = (int) $restaurant->mealTypes()->max('sort_order') + 1;
+            $validated['sort_order'] = (int) $restaurant->availabilityPeriods()->max('sort_order') + 1;
         }
 
-        $mealType = $restaurant->mealTypes()->create($validated);
+        $availabilityPeriod = $restaurant->availabilityPeriods()->create($validated);
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Meal type created successfully.',
             'onboarding_status' => $onboardingStatus,
             'meal_type' => [
-                'id' => $mealType->id,
-                'name' => $mealType->name,
-                'sort_order' => $mealType->sort_order,
+                'id' => $availabilityPeriod->id,
+                'name' => $availabilityPeriod->name,
+                'sort_order' => $availabilityPeriod->sort_order,
                 'schedules' => [],
             ],
         ], 201);
     }
 
-    public function updateMealType(UpdateRestaurantOnboardingMealTypeRequest $request, Restaurant $restaurant, RestaurantMealType $mealType): JsonResponse
+    public function updateMealType(UpdateRestaurantOnboardingMealTypeRequest $request, Restaurant $restaurant, RestaurantAvailabilityPeriod $availabilityPeriod): JsonResponse
     {
-        abort_unless($this->onboardingService->mealTypeBelongsToRestaurant($mealType, $restaurant), 404);
+        abort_unless($this->onboardingService->availabilityPeriodBelongsToRestaurant($availabilityPeriod, $restaurant), 404);
 
-        $mealType->update($request->validated());
+        $availabilityPeriod->update($request->validated());
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
             'message' => 'Meal type updated successfully.',
             'onboarding_status' => $onboardingStatus,
             'meal_type' => [
-                'id' => $mealType->id,
-                'name' => $mealType->name,
-                'sort_order' => $mealType->sort_order,
+                'id' => $availabilityPeriod->id,
+                'name' => $availabilityPeriod->name,
+                'sort_order' => $availabilityPeriod->sort_order,
             ],
         ]);
     }
 
-    public function destroyMealType(Restaurant $restaurant, RestaurantMealType $mealType): JsonResponse
+    public function destroyMealType(Restaurant $restaurant, RestaurantAvailabilityPeriod $availabilityPeriod): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
-        abort_unless($this->onboardingService->mealTypeBelongsToRestaurant($mealType, $restaurant), 404);
+        abort_unless($this->onboardingService->availabilityPeriodBelongsToRestaurant($availabilityPeriod, $restaurant), 404);
 
-        if ($mealType->schedules()->exists()) {
+        if ($availabilityPeriod->schedules()->exists()) {
             return response()->json([
                 'message' => 'Cannot delete a meal type that has schedules. Remove its schedules first or use PUT business-hours to replace all.',
             ], 422);
         }
 
-        $mealType->delete();
+        $availabilityPeriod->delete();
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([

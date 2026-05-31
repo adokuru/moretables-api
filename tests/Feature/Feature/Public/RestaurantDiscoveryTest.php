@@ -3,8 +3,8 @@
 use App\Models\Organization;
 use App\Models\Reservation;
 use App\Models\Restaurant;
-use App\Models\RestaurantMealSchedule;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
+use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
 use App\Models\RestaurantTable;
@@ -129,12 +129,12 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
     ]);
 
     $tomorrow = now('Africa/Lagos')->addDay();
-    $dinner = RestaurantMealType::factory()->create([
+    $dinner = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $savedChampion->id,
         'name' => 'Dinner',
     ]);
 
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $savedChampion->id,
         'restaurant_meal_type_id' => $dinner->id,
         'day_of_week' => $tomorrow->dayOfWeek,

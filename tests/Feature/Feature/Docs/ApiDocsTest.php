@@ -56,7 +56,7 @@ it('serves the generated api specification route', function () {
         '/merchant/restaurants/{restaurant}/onboarding/internal-notes',
         '/merchant/restaurants/{restaurant}/onboarding/business-hours',
         '/merchant/restaurants/{restaurant}/onboarding/meal-types',
-        '/merchant/restaurants/{restaurant}/onboarding/meal-types/{mealType}',
+        '/merchant/restaurants/{restaurant}/onboarding/meal-types/{availabilityPeriod}',
         '/merchant/restaurants/{restaurant}/onboarding/status',
         '/cuisine-options'
     );

@@ -5,7 +5,7 @@ namespace App\Http\Requests\Merchant;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class SyncRestaurantMealTypeSchedulesRequest extends FormRequest
+class SyncRestaurantAvailabilitySchedulesRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

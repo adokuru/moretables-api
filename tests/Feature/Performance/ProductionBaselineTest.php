@@ -30,7 +30,7 @@ it('keeps availability query count stable as the slot count grows', function () 
         ->where('day_of_week', $tomorrow->dayOfWeek)
         ->update(['opens_at' => '12:00', 'closes_at' => '16:00', 'is_closed' => false]);
 
-    $restaurant->load(['hours', 'mealSchedules', 'policy']);
+    $restaurant->load(['hours', 'availabilitySchedules', 'policy']);
 
     DB::enableQueryLog();
     app(AvailabilityService::class)->listAvailableSlots($restaurant, $tomorrow->toDateString(), 2);

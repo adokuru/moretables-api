@@ -48,7 +48,7 @@ class RestaurantListResource extends JsonResource
             'description' => $this->description,
             'cuisines' => $this->whenLoaded('cuisines', fn () => $this->cuisines->pluck('name')->values()),
             'hours' => $this->when(
-                $this->relationLoaded('mealSchedules') || $this->relationLoaded('hours'),
+                $this->relationLoaded('availabilitySchedules') || $this->relationLoaded('hours'),
                 fn () => $this->formattedHours(),
             ),
             'reservation_times' => $this->when(
@@ -71,8 +71,8 @@ class RestaurantListResource extends JsonResource
 
     protected function formattedHours(): Collection
     {
-        if ($this->relationLoaded('mealSchedules') && $this->mealSchedules->isNotEmpty()) {
-            $schedulesByDay = $this->mealSchedules->groupBy('day_of_week');
+        if ($this->relationLoaded('availabilitySchedules') && $this->availabilitySchedules->isNotEmpty()) {
+            $schedulesByDay = $this->availabilitySchedules->groupBy('day_of_week');
 
             return collect(range(0, 6))->map(function (int $dayOfWeek) use ($schedulesByDay): array {
                 $schedules = $schedulesByDay->get($dayOfWeek, collect());

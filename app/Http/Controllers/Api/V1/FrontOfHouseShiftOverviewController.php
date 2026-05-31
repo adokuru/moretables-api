@@ -41,14 +41,14 @@ class FrontOfHouseShiftOverviewController extends Controller
     {
         $windowStart = null;
         $windowEnd = null;
-        $mealType = null;
+        $availabilityPeriod = null;
 
         if ($request->filled('meal_type_id')) {
-            $mealType = $restaurant->mealTypes()
+            $availabilityPeriod = $restaurant->availabilityPeriods()
                 ->with(['schedules' => fn ($q) => $q->where('day_of_week', $date->dayOfWeek)])
                 ->findOrFail($request->integer('meal_type_id'));
 
-            $schedule = $mealType->schedules->first();
+            $schedule = $availabilityPeriod->schedules->first();
             $windowStart = $schedule?->opens_at;
             $windowEnd = $schedule?->closes_at;
         } elseif ($request->filled('starts_at') && $request->filled('ends_at')) {
@@ -56,7 +56,7 @@ class FrontOfHouseShiftOverviewController extends Controller
             $windowEnd = $request->string('ends_at')->toString();
         }
 
-        return compact('windowStart', 'windowEnd', 'mealType');
+        return compact('windowStart', 'windowEnd', 'availabilityPeriod');
     }
 
     private function validateCommonParams(Request $request): void
@@ -70,10 +70,10 @@ class FrontOfHouseShiftOverviewController extends Controller
         ]);
     }
 
-    private function periodMeta(?string $windowStart, ?string $windowEnd, $mealType): array
+    private function periodMeta(?string $windowStart, ?string $windowEnd, $availabilityPeriod): array
     {
         return [
-            'meal_type' => $mealType ? ['id' => $mealType->id, 'name' => $mealType->name] : null,
+            'meal_type' => $availabilityPeriod ? ['id' => $availabilityPeriod->id, 'name' => $availabilityPeriod->name] : null,
             'starts_at' => $windowStart,
             'ends_at' => $windowEnd,
         ];
@@ -150,7 +150,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         $date = $this->resolveDate($request, $restaurant);
         $slotMinutes = $request->integer('slot_minutes', 30);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $reservations = $this->baseReservationQuery($restaurant, $date, $windowStart, $windowEnd)
             ->with(['user', 'guestContact'])
@@ -192,7 +192,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             'slot_minutes' => $slotMinutes,
             'slots' => $slots,
         ]);
@@ -212,7 +212,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         $date = $this->resolveDate($request, $restaurant);
         $slotMinutes = $request->integer('slot_minutes', 30);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $reservations = $this->baseReservationQuery($restaurant, $date, $windowStart, $windowEnd)
             ->orderBy('starts_at')
@@ -240,7 +240,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             'slot_minutes' => $slotMinutes,
             'total_covers' => $reservations->sum('party_size'),
             'slots' => $slots,
@@ -266,7 +266,7 @@ class FrontOfHouseShiftOverviewController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $reservations = $this->baseReservationQuery($restaurant, $date, $windowStart, $windowEnd)
             ->get(['source', 'party_size']);
@@ -302,7 +302,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             'total_covers' => $totalCovers,
             'total_parties' => $reservations->count(),
             'by_source' => $breakdown,
@@ -323,7 +323,7 @@ class FrontOfHouseShiftOverviewController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $reservations = $this->baseReservationQuery($restaurant, $date, $windowStart, $windowEnd)
             ->get(['party_size']);
@@ -345,7 +345,7 @@ class FrontOfHouseShiftOverviewController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             'total_covers' => $reservations->sum('party_size'),
             'total_parties' => $reservations->count(),
             'by_party_size' => $distribution,

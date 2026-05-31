@@ -2,23 +2,29 @@
 
 namespace App\Models;
 
-use Database\Factories\RestaurantMealTypeFactory;
+use Database\Factories\RestaurantSpecialDayFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class RestaurantMealType extends Model
+class RestaurantSpecialDay extends Model
 {
-    /** @use HasFactory<RestaurantMealTypeFactory> */
+    /** @use HasFactory<RestaurantSpecialDayFactory> */
     use HasFactory;
 
-    protected $fillable = ['restaurant_id', 'name', 'sort_order'];
+    protected $fillable = [
+        'restaurant_id',
+        'name',
+        'date',
+        'is_closed',
+    ];
 
     protected function casts(): array
     {
         return [
-            'sort_order' => 'integer',
+            'date' => 'date',
+            'is_closed' => 'boolean',
         ];
     }
 
@@ -27,8 +33,8 @@ class RestaurantMealType extends Model
         return $this->belongsTo(Restaurant::class);
     }
 
-    public function schedules(): HasMany
+    public function shifts(): HasMany
     {
-        return $this->hasMany(RestaurantMealSchedule::class);
+        return $this->hasMany(RestaurantSpecialDayShift::class);
     }
 }

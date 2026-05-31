@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\RestaurantAvailabilityPeriod;
+use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantHour;
-use App\Models\RestaurantMealSchedule;
-use App\Models\RestaurantMealType;
 use App\Models\RestaurantTable;
 use App\RestaurantStatus;
 use Carbon\Carbon;
@@ -66,15 +66,15 @@ it('generates slots 15 minutes apart using meal schedules', function () {
     $tomorrow = Carbon::tomorrow('UTC');
     $dayOfWeek = $tomorrow->dayOfWeek;
 
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $restaurant->id,
         'name' => 'Dinner',
     ]);
 
     // 3-hour window with 2-hour duration → slots at 18:00, 18:15, 18:30, 18:45, 19:00
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
-        'restaurant_meal_type_id' => $mealType->id,
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
         'day_of_week' => $dayOfWeek,
         'opens_at' => '18:00',
         'closes_at' => '21:00',
@@ -141,13 +141,13 @@ it('uses meal schedules when both meal schedules and hours exist', function () {
     ]);
 
     // Meal schedule: 18:00–21:00 (slots available)
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $restaurant->id,
         'name' => 'Dinner',
     ]);
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
-        'restaurant_meal_type_id' => $mealType->id,
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
         'day_of_week' => $dayOfWeek,
         'opens_at' => '18:00',
         'closes_at' => '21:00',
@@ -200,17 +200,17 @@ it('exposes multiple meal windows in a single day as separate slot groups', func
     $tomorrow = Carbon::tomorrow('UTC');
     $dayOfWeek = $tomorrow->dayOfWeek;
 
-    $lunch = RestaurantMealType::factory()->create(['restaurant_id' => $restaurant->id, 'name' => 'Lunch']);
-    $dinner = RestaurantMealType::factory()->create(['restaurant_id' => $restaurant->id, 'name' => 'Dinner']);
+    $lunch = RestaurantAvailabilityPeriod::factory()->create(['restaurant_id' => $restaurant->id, 'name' => 'Lunch']);
+    $dinner = RestaurantAvailabilityPeriod::factory()->create(['restaurant_id' => $restaurant->id, 'name' => 'Dinner']);
 
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
         'restaurant_meal_type_id' => $lunch->id,
         'day_of_week' => $dayOfWeek,
         'opens_at' => '12:00',
         'closes_at' => '15:00',
     ]);
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
         'restaurant_meal_type_id' => $dinner->id,
         'day_of_week' => $dayOfWeek,

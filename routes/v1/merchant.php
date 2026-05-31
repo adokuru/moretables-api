@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
 use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
@@ -52,6 +53,12 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
         Route::get('settings', [MerchantRestaurantSettingsController::class, 'show']);
         Route::patch('settings', [MerchantRestaurantSettingsController::class, 'update']);
 
+        Route::get('special-days', [MerchantRestaurantSpecialDayController::class, 'index']);
+        Route::post('special-days', [MerchantRestaurantSpecialDayController::class, 'store']);
+        Route::get('special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'show']);
+        Route::match(['put', 'patch'], 'special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'update']);
+        Route::delete('special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'destroy']);
+
         Route::get('guests', [MerchantRestaurantGuestController::class, 'index']);
 
         Route::get('guest-communication', [MerchantGuestCommunicationController::class, 'show']);
@@ -70,8 +77,8 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
             Route::put('business-hours', [MerchantRestaurantOnboardingController::class, 'updateBusinessHours']);
             Route::get('meal-types', [MerchantRestaurantOnboardingController::class, 'indexMealTypes']);
             Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);
-            Route::patch('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'updateMealType']);
-            Route::delete('meal-types/{mealType}', [MerchantRestaurantOnboardingController::class, 'destroyMealType']);
+            Route::patch('meal-types/{availabilityPeriod}', [MerchantRestaurantOnboardingController::class, 'updateMealType']);
+            Route::delete('meal-types/{availabilityPeriod}', [MerchantRestaurantOnboardingController::class, 'destroyMealType']);
             Route::post('contact-email/send-code', [MerchantRestaurantOnboardingController::class, 'sendEmailVerificationCode']);
             Route::post('contact-email/verify', [MerchantRestaurantOnboardingController::class, 'verifyEmail']);
             Route::get('data', [MerchantRestaurantOnboardingController::class, 'showData']);

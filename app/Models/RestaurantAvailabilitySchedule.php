@@ -5,8 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RestaurantMealSchedule extends Model
+class RestaurantAvailabilitySchedule extends Model
 {
+    protected $table = 'restaurant_meal_schedules';
+
     protected $fillable = ['restaurant_id', 'restaurant_meal_type_id', 'day_of_week', 'opens_at', 'closes_at'];
 
     protected function casts(): array
@@ -21,8 +23,8 @@ class RestaurantMealSchedule extends Model
         return $this->belongsTo(Restaurant::class);
     }
 
-    public function mealType(): BelongsTo
+    public function availabilityPeriod(): BelongsTo
     {
-        return $this->belongsTo(RestaurantMealType::class, 'restaurant_meal_type_id');
+        return $this->belongsTo(RestaurantAvailabilityPeriod::class, 'restaurant_meal_type_id');
     }
 }

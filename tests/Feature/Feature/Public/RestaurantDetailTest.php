@@ -2,9 +2,9 @@
 
 use App\Models\Organization;
 use App\Models\Restaurant;
+use App\Models\RestaurantAvailabilityPeriod;
+use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantHour;
-use App\Models\RestaurantMealSchedule;
-use App\Models\RestaurantMealType;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
@@ -173,25 +173,25 @@ it('uses meal schedules to summarize public restaurant detail hours', function (
         'opens_at' => '09:00',
         'closes_at' => '10:00',
     ]);
-    $breakfast = RestaurantMealType::factory()->create([
+    $breakfast = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $restaurant->id,
         'name' => 'Breakfast',
         'sort_order' => 0,
     ]);
-    $dinner = RestaurantMealType::factory()->create([
+    $dinner = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $restaurant->id,
         'name' => 'Dinner',
         'sort_order' => 1,
     ]);
 
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
         'restaurant_meal_type_id' => $breakfast->id,
         'day_of_week' => 5,
         'opens_at' => '06:00',
         'closes_at' => '09:30',
     ]);
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $restaurant->id,
         'restaurant_meal_type_id' => $dinner->id,
         'day_of_week' => 5,

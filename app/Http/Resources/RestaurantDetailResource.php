@@ -117,10 +117,10 @@ class RestaurantDetailResource extends JsonResource
             'discovery_metrics' => $discoveryMetrics,
             'media' => $this->whenLoaded('media', fn () => MediaAssetResource::collection($this->media->sortBy('order_column')->values())),
             'hours' => $this->when(
-                $this->relationLoaded('mealSchedules') || $this->relationLoaded('hours'),
+                $this->relationLoaded('availabilitySchedules') || $this->relationLoaded('hours'),
                 fn () => $this->formattedHours(),
             ),
-            'meal_types' => $this->whenLoaded('mealTypes', fn () => $this->mealTypes->map(fn ($type) => [
+            'meal_types' => $this->whenLoaded('availabilityPeriods', fn () => $this->availabilityPeriods->map(fn ($type) => [
                 'id' => $type->id,
                 'name' => $type->name,
                 'sort_order' => $type->sort_order,
@@ -131,7 +131,7 @@ class RestaurantDetailResource extends JsonResource
                     'closes_at' => $schedule->closes_at,
                 ])->values() : [],
             ])->values()),
-            'meal_schedules' => $this->whenLoaded('mealSchedules', fn () => $this->mealSchedules->map(fn ($schedule) => [
+            'meal_schedules' => $this->whenLoaded('availabilitySchedules', fn () => $this->availabilitySchedules->map(fn ($schedule) => [
                 'id' => $schedule->id,
                 'restaurant_meal_type_id' => $schedule->restaurant_meal_type_id,
                 'day_of_week' => $schedule->day_of_week,
@@ -176,8 +176,8 @@ class RestaurantDetailResource extends JsonResource
 
     protected function formattedHours(): Collection
     {
-        if ($this->relationLoaded('mealSchedules') && $this->mealSchedules->isNotEmpty()) {
-            $schedulesByDay = $this->mealSchedules->groupBy('day_of_week');
+        if ($this->relationLoaded('availabilitySchedules') && $this->availabilitySchedules->isNotEmpty()) {
+            $schedulesByDay = $this->availabilitySchedules->groupBy('day_of_week');
 
             return collect(range(0, 6))->map(function (int $dayOfWeek) use ($schedulesByDay): array {
                 $schedules = $schedulesByDay->get($dayOfWeek, collect());

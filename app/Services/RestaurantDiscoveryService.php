@@ -212,7 +212,7 @@ class RestaurantDiscoveryService
                 'cuisines',
                 'media',
                 'hours' => fn ($query) => $query->orderBy('day_of_week'),
-                'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+                'availabilitySchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
                 'policy',
             ])
             ->where('status', RestaurantStatus::Active->value)

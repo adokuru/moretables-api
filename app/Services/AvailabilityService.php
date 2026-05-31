@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantSpecialDay;
 use App\Models\RestaurantTable;
 use App\ReservationStatus;
 use App\TableStatus;
@@ -191,12 +192,29 @@ class AvailabilityService
      */
     private function buildTimeWindows(Restaurant $restaurant, int $dayOfWeek, string $dateStr, string $timezone): array
     {
-        $mealSchedules = $restaurant->relationLoaded('mealSchedules')
-            ? $restaurant->mealSchedules->where('day_of_week', $dayOfWeek)->sortBy('opens_at')->values()
-            : collect();
+        $specialDay = $this->specialDayForDate($restaurant, $dateStr);
 
-        if ($mealSchedules->isNotEmpty()) {
-            return $mealSchedules->map(fn ($s) => [
+        if ($specialDay !== null) {
+            if ($specialDay->is_closed) {
+                return [];
+            }
+
+            return $specialDay->shifts
+                ->sortBy('opens_at')
+                ->map(fn ($shift) => [
+                    Carbon::parse($dateStr.' '.$shift->opens_at, $timezone),
+                    Carbon::parse($dateStr.' '.$shift->closes_at, $timezone),
+                ])
+                ->values()
+                ->all();
+        }
+
+        $availabilitySchedules = $restaurant->relationLoaded('availabilitySchedules')
+            ? $restaurant->availabilitySchedules->where('day_of_week', $dayOfWeek)->sortBy('opens_at')->values()
+            : $restaurant->availabilitySchedules()->where('day_of_week', $dayOfWeek)->orderBy('opens_at')->get();
+
+        if ($availabilitySchedules->isNotEmpty()) {
+            return $availabilitySchedules->map(fn ($s) => [
                 Carbon::parse($dateStr.' '.$s->opens_at, $timezone),
                 Carbon::parse($dateStr.' '.$s->closes_at, $timezone),
             ])->all();
@@ -213,5 +231,23 @@ class AvailabilityService
             Carbon::parse($dateStr.' '.$hours->opens_at, $timezone),
             Carbon::parse($dateStr.' '.$hours->closes_at, $timezone),
         ]];
+    }
+
+    /**
+     * Resolve the special day override for the given date, if one exists.
+     */
+    private function specialDayForDate(Restaurant $restaurant, string $dateStr): ?RestaurantSpecialDay
+    {
+        if ($restaurant->relationLoaded('specialDays')) {
+            $specialDay = $restaurant->specialDays
+                ->first(fn (RestaurantSpecialDay $day): bool => $day->date->format('Y-m-d') === $dateStr);
+
+            return $specialDay?->loadMissing('shifts');
+        }
+
+        return $restaurant->specialDays()
+            ->with('shifts')
+            ->whereDate('date', $dateStr)
+            ->first();
     }
 }

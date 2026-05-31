@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Enums\RestaurantOnboardingStep;
 use App\Models\Restaurant;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
 use Illuminate\Support\Collection;
 
 class RestaurantOnboardingService
@@ -59,20 +59,20 @@ class RestaurantOnboardingService
 
     public function replaceMealSchedules(Restaurant $restaurant, array $schedules): void
     {
-        $mealTypeIds = $restaurant->mealTypes()->pluck('id')->all();
+        $availabilityPeriodIds = $restaurant->availabilityPeriods()->pluck('id')->all();
 
         foreach ($schedules as $schedule) {
             abort_unless(
-                in_array((int) $schedule['restaurant_meal_type_id'], $mealTypeIds),
+                in_array((int) $schedule['restaurant_meal_type_id'], $availabilityPeriodIds),
                 422,
                 'Meal type ID '.$schedule['restaurant_meal_type_id'].' does not belong to this restaurant.',
             );
         }
 
-        $restaurant->mealSchedules()->delete();
+        $restaurant->availabilitySchedules()->delete();
 
         foreach ($schedules as $schedule) {
-            $restaurant->mealSchedules()->create([
+            $restaurant->availabilitySchedules()->create([
                 'restaurant_meal_type_id' => $schedule['restaurant_meal_type_id'],
                 'day_of_week' => $schedule['day_of_week'],
                 'opens_at' => $schedule['opens_at'],
@@ -124,16 +124,16 @@ class RestaurantOnboardingService
         return $this->syncStatus($restaurant);
     }
 
-    public function mealTypeBelongsToRestaurant(RestaurantMealType $mealType, Restaurant $restaurant): bool
+    public function availabilityPeriodBelongsToRestaurant(RestaurantAvailabilityPeriod $availabilityPeriod, Restaurant $restaurant): bool
     {
-        return (int) $mealType->restaurant_id === (int) $restaurant->id;
+        return (int) $availabilityPeriod->restaurant_id === (int) $restaurant->id;
     }
 
     private function buildStatus(Restaurant $restaurant): array
     {
         $restaurant->loadMissing([
             'cuisines',
-            'mealTypes.schedules',
+            'availabilityPeriods.schedules',
             'internalNotes',
             'policy',
         ]);
@@ -279,25 +279,25 @@ class RestaurantOnboardingService
 
     private function mealsComplete(Restaurant $restaurant): bool
     {
-        return $restaurant->mealTypes->isNotEmpty();
+        return $restaurant->availabilityPeriods->isNotEmpty();
     }
 
     private function mealsStarted(Restaurant $restaurant): bool
     {
-        return $restaurant->mealTypes->isNotEmpty();
+        return $restaurant->availabilityPeriods->isNotEmpty();
     }
 
     private function hoursComplete(Restaurant $restaurant): bool
     {
-        return $restaurant->mealTypes->contains(
-            fn (RestaurantMealType $mealType): bool => $mealType->schedules->isNotEmpty(),
+        return $restaurant->availabilityPeriods->contains(
+            fn (RestaurantAvailabilityPeriod $availabilityPeriod): bool => $availabilityPeriod->schedules->isNotEmpty(),
         );
     }
 
     private function hoursStarted(Restaurant $restaurant): bool
     {
-        return $restaurant->mealTypes->flatMap(
-            fn (RestaurantMealType $mealType): Collection => $mealType->schedules,
+        return $restaurant->availabilityPeriods->flatMap(
+            fn (RestaurantAvailabilityPeriod $availabilityPeriod): Collection => $availabilityPeriod->schedules,
         )->isNotEmpty();
     }
 

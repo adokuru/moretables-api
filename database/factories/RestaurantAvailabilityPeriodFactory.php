@@ -3,13 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Restaurant;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<RestaurantMealType>
+ * @extends Factory<RestaurantAvailabilityPeriod>
  */
-class RestaurantMealTypeFactory extends Factory
+class RestaurantAvailabilityPeriodFactory extends Factory
 {
     /**
      * Define the model's default state.

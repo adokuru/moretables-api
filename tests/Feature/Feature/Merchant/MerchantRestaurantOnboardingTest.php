@@ -4,8 +4,8 @@ use App\AuthChallengeType;
 use App\Enums\RestaurantOnboardingStep;
 use App\Models\CuisineOption;
 use App\Models\Restaurant;
-use App\Models\RestaurantMealSchedule;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
+use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantSocialHandle;
 use App\Models\Role;
 use App\Models\User;
@@ -333,14 +333,14 @@ it('creates a meal type and auto-assigns sort order', function () {
 it('lists meal types with their schedules', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Dinner',
         'sort_order' => 1,
     ]);
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $data['restaurant']->id,
-        'restaurant_meal_type_id' => $mealType->id,
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
         'day_of_week' => 1,
         'opens_at' => '18:00',
         'closes_at' => '22:00',
@@ -361,13 +361,13 @@ it('lists meal types with their schedules', function () {
 it('updates a meal type name', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Dinner',
     ]);
     Sanctum::actingAs(marketingActor($data));
 
-    $this->patchJson(obUrl($data['restaurant']->id, "/meal-types/{$mealType->id}"), [
+    $this->patchJson(obUrl($data['restaurant']->id, "/meal-types/{$availabilityPeriod->id}"), [
         'name' => 'Late Night',
     ])->assertOk()
         ->assertJsonPath('meal_type.name', 'Late Night');
@@ -376,45 +376,45 @@ it('updates a meal type name', function () {
 it('deletes a meal type that has no schedules', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Brunch',
     ]);
     Sanctum::actingAs(marketingActor($data));
 
-    $this->deleteJson(obUrl($data['restaurant']->id, "/meal-types/{$mealType->id}"))
+    $this->deleteJson(obUrl($data['restaurant']->id, "/meal-types/{$availabilityPeriod->id}"))
         ->assertOk();
 
-    $this->assertDatabaseMissing('restaurant_meal_types', ['id' => $mealType->id]);
+    $this->assertDatabaseMissing('restaurant_meal_types', ['id' => $availabilityPeriod->id]);
 });
 
 it('blocks deleting a meal type that has schedules', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Lunch',
     ]);
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $data['restaurant']->id,
-        'restaurant_meal_type_id' => $mealType->id,
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
         'day_of_week' => 0,
         'opens_at' => '12:00',
         'closes_at' => '15:00',
     ]);
     Sanctum::actingAs(marketingActor($data));
 
-    $this->deleteJson(obUrl($data['restaurant']->id, "/meal-types/{$mealType->id}"))
+    $this->deleteJson(obUrl($data['restaurant']->id, "/meal-types/{$availabilityPeriod->id}"))
         ->assertUnprocessable();
 
-    $this->assertDatabaseHas('restaurant_meal_types', ['id' => $mealType->id]);
+    $this->assertDatabaseHas('restaurant_meal_types', ['id' => $availabilityPeriod->id]);
 });
 
 it('returns 404 when a meal type belongs to a different restaurant', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     $other = createBookableRestaurant();
-    $foreignMealType = RestaurantMealType::factory()->create([
+    $foreignMealType = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $other['restaurant']->id,
         'name' => 'Dinner',
     ]);
@@ -430,17 +430,17 @@ it('returns 404 when a meal type belongs to a different restaurant', function ()
 it('replaces all meal schedules via PUT business-hours', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $lunch = RestaurantMealType::factory()->create([
+    $lunch = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Lunch',
     ]);
-    $dinner = RestaurantMealType::factory()->create([
+    $dinner = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'name' => 'Dinner',
     ]);
 
     // Pre-existing schedule to be replaced
-    RestaurantMealSchedule::create([
+    RestaurantAvailabilitySchedule::create([
         'restaurant_id' => $data['restaurant']->id,
         'restaurant_meal_type_id' => $lunch->id,
         'day_of_week' => 0,
@@ -466,14 +466,14 @@ it('replaces all meal schedules via PUT business-hours', function () {
         'day_of_week' => 0,
     ]);
 
-    expect(RestaurantMealSchedule::where('restaurant_id', $data['restaurant']->id)->count())->toBe(2);
+    expect(RestaurantAvailabilitySchedule::where('restaurant_id', $data['restaurant']->id)->count())->toBe(2);
 });
 
 it('rejects schedules referencing meal types from another restaurant', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     $other = createBookableRestaurant();
-    $foreignMealType = RestaurantMealType::factory()->create([
+    $foreignMealType = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $other['restaurant']->id,
         'name' => 'Dinner',
     ]);
@@ -489,14 +489,14 @@ it('rejects schedules referencing meal types from another restaurant', function 
 it('validates closes_at must be after opens_at in business hours', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
     ]);
     Sanctum::actingAs(marketingActor($data));
 
     $this->putJson(obUrl($data['restaurant']->id, '/business-hours'), [
         'schedules' => [
-            ['restaurant_meal_type_id' => $mealType->id, 'day_of_week' => 1, 'opens_at' => '22:00', 'closes_at' => '18:00'],
+            ['restaurant_meal_type_id' => $availabilityPeriod->id, 'day_of_week' => 1, 'opens_at' => '22:00', 'closes_at' => '18:00'],
         ],
     ])->assertUnprocessable()
         ->assertJsonValidationErrors('schedules.0.closes_at');
@@ -584,7 +584,7 @@ it('publishes the profile when the required onboarding steps are complete', func
     ]);
     $primaryCuisine = CuisineOption::factory()->create();
     $restaurant->cuisines()->attach($primaryCuisine->id, ['is_primary' => true]);
-    $mealType = RestaurantMealType::factory()->create([
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
         'restaurant_id' => $restaurant->id,
         'name' => 'Dinner',
     ]);
@@ -595,7 +595,7 @@ it('publishes the profile when the required onboarding steps are complete', func
 
     $response = $this->putJson(obUrl($restaurant->id, '/business-hours'), [
         'schedules' => [
-            ['restaurant_meal_type_id' => $mealType->id, 'day_of_week' => 1, 'opens_at' => '18:00', 'closes_at' => '22:00'],
+            ['restaurant_meal_type_id' => $availabilityPeriod->id, 'day_of_week' => 1, 'opens_at' => '18:00', 'closes_at' => '22:00'],
         ],
     ]);
 

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ReservationResource;
 use App\Http\Resources\WaitlistEntryResource;
 use App\Models\Restaurant;
-use App\Models\RestaurantMealType;
+use App\Models\RestaurantAvailabilityPeriod;
 use App\ReservationStatus;
 use App\Services\RestaurantDateRangeService;
 use App\WaitlistStatus;
@@ -41,20 +41,20 @@ class FrontOfHouseController extends Controller
     }
 
     /**
-     * @return array{windowStart: ?string, windowEnd: ?string, mealType: ?RestaurantMealType}
+     * @return array{windowStart: ?string, windowEnd: ?string, availabilityPeriod: ?RestaurantAvailabilityPeriod}
      */
     private function resolveWindow(Request $request, Restaurant $restaurant, Carbon $date): array
     {
         $windowStart = null;
         $windowEnd = null;
-        $mealType = null;
+        $availabilityPeriod = null;
 
         if ($request->filled('meal_type_id')) {
-            $mealType = $restaurant->mealTypes()
+            $availabilityPeriod = $restaurant->availabilityPeriods()
                 ->with(['schedules' => fn ($q) => $q->where('day_of_week', $date->dayOfWeek)])
                 ->findOrFail($request->integer('meal_type_id'));
 
-            $schedule = $mealType->schedules->first();
+            $schedule = $availabilityPeriod->schedules->first();
             $windowStart = $schedule?->opens_at;
             $windowEnd = $schedule?->closes_at;
         } elseif ($request->filled('starts_at') && $request->filled('ends_at')) {
@@ -62,7 +62,7 @@ class FrontOfHouseController extends Controller
             $windowEnd = $request->string('ends_at')->toString();
         }
 
-        return compact('windowStart', 'windowEnd', 'mealType');
+        return compact('windowStart', 'windowEnd', 'availabilityPeriod');
     }
 
     private function validateCommonParams(Request $request): void
@@ -75,10 +75,10 @@ class FrontOfHouseController extends Controller
         ]);
     }
 
-    private function periodMeta(?string $windowStart, ?string $windowEnd, ?RestaurantMealType $mealType): array
+    private function periodMeta(?string $windowStart, ?string $windowEnd, ?RestaurantAvailabilityPeriod $availabilityPeriod): array
     {
         return [
-            'meal_type' => $mealType ? ['id' => $mealType->id, 'name' => $mealType->name] : null,
+            'meal_type' => $availabilityPeriod ? ['id' => $availabilityPeriod->id, 'name' => $availabilityPeriod->name] : null,
             'starts_at' => $windowStart,
             'ends_at' => $windowEnd,
         ];
@@ -147,7 +147,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $baseRes = $restaurant->reservations();
         $this->scopeReservations($baseRes, $restaurant, $date, $windowStart, $windowEnd);
@@ -182,7 +182,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             'summary' => [
                 'expected_diners' => (int) $reservationCount->diners + (int) $arrivedCount->diners + (int) $seatedCount->diners,
                 'reservation_count' => (int) $reservationCount->count,
@@ -215,7 +215,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
@@ -227,7 +227,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
         ]);
     }
@@ -246,7 +246,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
@@ -258,7 +258,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
         ]);
     }
@@ -276,7 +276,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->waitlistEntries()
             ->with(['reservation.reservationGuests', 'user', 'guestContact'])
@@ -288,7 +288,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(WaitlistEntryResource::collection($entries)->response()->getData(true)),
         ]);
     }
@@ -306,7 +306,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
@@ -318,7 +318,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
         ]);
     }
@@ -336,7 +336,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
@@ -348,7 +348,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
         ]);
     }
@@ -366,7 +366,7 @@ class FrontOfHouseController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
@@ -378,7 +378,7 @@ class FrontOfHouseController extends Controller
 
         return response()->json([
             'date' => $date->toDateString(),
-            'period' => $this->periodMeta($windowStart, $windowEnd, $mealType),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
             ...(ReservationResource::collection($reservations)->response()->getData(true)),
         ]);
     }

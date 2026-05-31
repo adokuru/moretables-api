@@ -47,14 +47,14 @@ class FrontOfHouseFloorPlanController extends Controller
     {
         $windowStart = null;
         $windowEnd = null;
-        $mealType = null;
+        $availabilityPeriod = null;
 
         if ($request->filled('meal_type_id')) {
-            $mealType = $restaurant->mealTypes()
+            $availabilityPeriod = $restaurant->availabilityPeriods()
                 ->with(['schedules' => fn ($q) => $q->where('day_of_week', $date->dayOfWeek)])
                 ->findOrFail($request->integer('meal_type_id'));
 
-            $schedule = $mealType->schedules->first();
+            $schedule = $availabilityPeriod->schedules->first();
             $windowStart = $schedule?->opens_at;
             $windowEnd = $schedule?->closes_at;
         } elseif ($request->filled('starts_at') && $request->filled('ends_at')) {
@@ -62,7 +62,7 @@ class FrontOfHouseFloorPlanController extends Controller
             $windowEnd = $request->string('ends_at')->toString();
         }
 
-        return compact('windowStart', 'windowEnd', 'mealType');
+        return compact('windowStart', 'windowEnd', 'availabilityPeriod');
     }
 
     /**
@@ -113,7 +113,7 @@ class FrontOfHouseFloorPlanController extends Controller
         $this->validateCommonParams($request);
 
         $date = $this->resolveDate($request, $restaurant);
-        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         // Load tables for this floor
         $tables = $diningArea->tables()
@@ -180,7 +180,7 @@ class FrontOfHouseFloorPlanController extends Controller
         return response()->json([
             'date' => $date->toDateString(),
             'period' => [
-                'meal_type' => $mealType ? ['id' => $mealType->id, 'name' => $mealType->name] : null,
+                'meal_type' => $availabilityPeriod ? ['id' => $availabilityPeriod->id, 'name' => $availabilityPeriod->name] : null,
                 'starts_at' => $windowStart,
                 'ends_at' => $windowEnd,
             ],

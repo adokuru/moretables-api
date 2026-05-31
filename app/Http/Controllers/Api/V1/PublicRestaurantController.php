@@ -122,7 +122,7 @@ class PublicRestaurantController extends Controller
                         'cuisines',
                         'media',
                         'hours' => fn ($query) => $query->orderBy('day_of_week'),
-                        'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+                        'availabilitySchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
                     ])
                     ->withCount('reviews as reviews_count')
                     ->withAvg('reviews as average_rating', 'rating')
@@ -209,8 +209,8 @@ class PublicRestaurantController extends Controller
             'cuisines',
             'media',
             'hours',
-            'mealTypes.schedules',
-            'mealSchedules',
+            'availabilityPeriods.schedules',
+            'availabilitySchedules',
             'policy',
             'menuItems.media',
             'diningAreas.tables',
@@ -222,7 +222,7 @@ class PublicRestaurantController extends Controller
     {
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
 
-        $restaurant->loadMissing(['hours', 'policy', 'mealSchedules']);
+        $restaurant->loadMissing(['hours', 'policy', 'availabilitySchedules']);
 
         $requesterTimezone = $request->string('timezone')->toString() ?: null;
 
