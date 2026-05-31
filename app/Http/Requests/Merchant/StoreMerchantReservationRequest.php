@@ -18,7 +18,8 @@ class StoreMerchantReservationRequest extends FormRequest
         return [
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'restaurant_table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
-            'starts_at' => ['required', 'date'],
+            'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
+            'starts_at' => ['required', 'date', 'after:now'],
             'party_size' => ['required', 'integer', 'min:1'],
             'source' => ['required', Rule::enum(ReservationSource::class)],
             'notes' => ['nullable', 'string', 'max:500'],

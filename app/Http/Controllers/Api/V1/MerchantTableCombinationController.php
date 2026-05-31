@@ -19,13 +19,33 @@ class MerchantTableCombinationController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
+        $validTableIdLookup = $restaurant->tables()
+            ->when(
+                $request->filled('dining_area_id'),
+                fn ($q) => $q->where('dining_area_id', $request->integer('dining_area_id'))
+            )
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->flip()
+            ->all();
+
         $combinations = $restaurant->tableCombinations()
             ->when(
                 $request->filled('dining_area_id'),
                 fn ($q) => $q->where('dining_area_id', $request->integer('dining_area_id'))
             )
             ->orderBy('created_at')
-            ->get();
+            ->get()
+            ->filter(function (TableCombination $combination) use ($validTableIdLookup): bool {
+                foreach ($combination->table_ids as $tableId) {
+                    if (! isset($validTableIdLookup[(int) $tableId])) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values();
 
         return response()->json(['data' => TableCombinationResource::collection($combinations)]);
     }
@@ -36,8 +56,8 @@ class MerchantTableCombinationController extends Controller
 
         $data = $request->validated();
 
-        // Sort table_ids so [5,6] and [6,5] are treated as the same combination
-        sort($data['table_ids']);
+        // Sort table_ids so [5,6] and [6,5] are treated as the same combination.
+        $data['table_ids'] = TableCombination::normalizeTableIds($data['table_ids']);
 
         $existing = $restaurant->tableCombinations()
             ->where('table_ids', json_encode($data['table_ids']))

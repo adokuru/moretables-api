@@ -24,8 +24,9 @@ class AvailabilityService
         CarbonInterface $startsAt,
         int $partySize,
         ?int $excludingReservationId = null,
+        ?int $diningAreaId = null,
     ): ?RestaurantTable {
-        return $this->availableTables($restaurant, $startsAt, $partySize, $excludingReservationId)->first();
+        return $this->availableTables($restaurant, $startsAt, $partySize, $excludingReservationId, $diningAreaId)->first();
     }
 
     public function availableTables(
@@ -33,6 +34,7 @@ class AvailabilityService
         CarbonInterface $startsAt,
         int $partySize,
         ?int $excludingReservationId = null,
+        ?int $diningAreaId = null,
     ): Collection {
         $endsAt = $this->calculateEndTime($restaurant, $startsAt);
 
@@ -40,6 +42,7 @@ class AvailabilityService
             ->pluck('restaurant_table_id');
 
         return $this->eligibleTablesQuery($restaurant, $partySize)
+            ->when($diningAreaId, fn ($query) => $query->where('dining_area_id', $diningAreaId))
             ->whereNotIn('id', $blockedTableIds)
             ->get();
     }
