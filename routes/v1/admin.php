@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminAuditLogController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
+use App\Http\Controllers\Api\V1\AdminBillingController;
 use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminCuisineController;
 use App\Http\Controllers\Api\V1\AdminDashboardController;
@@ -17,10 +18,10 @@ use App\Http\Controllers\Api\V1\AdminUserRoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin/auth')->group(function (): void {
-    Route::post('login', [AdminAuthController::class, 'login']);
-    Route::post('verify-2fa', [AdminAuthController::class, 'verify']);
+    Route::post('login', [AdminAuthController::class, 'login'])->middleware('throttle:auth-initiate');
+    Route::post('verify-2fa', [AdminAuthController::class, 'verify'])->middleware('throttle:auth-verify');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'throttle:admin-api'])->group(function (): void {
         Route::post('logout', [AdminAuthController::class, 'logout']);
         Route::get('me', [AdminAuthController::class, 'me']);
         Route::get('profile', [AdminAuthController::class, 'profile']);
@@ -28,12 +29,18 @@ Route::prefix('admin/auth')->group(function (): void {
     });
 });
 
-Route::middleware('auth:sanctum')->prefix('admin')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:admin-api'])->prefix('admin')->group(function (): void {
     Route::get('dashboard', [AdminDashboardController::class, 'index']);
 
     Route::get('reward-program', [AdminRewardProgramController::class, 'show']);
     Route::patch('reward-program', [AdminRewardProgramController::class, 'update']);
     Route::post('users/{user}/reward-points', [AdminRewardProgramController::class, 'storePoints']);
+    Route::get('billing/plans', [AdminBillingController::class, 'plans']);
+    Route::get('billing/overview', [AdminBillingController::class, 'overview']);
+    Route::get('billing/subscriptions', [AdminBillingController::class, 'subscriptions']);
+    Route::post('billing/subscriptions', [AdminBillingController::class, 'storeSubscription']);
+    Route::get('billing/invoices', [AdminBillingController::class, 'invoices']);
+    Route::get('billing/payments', [AdminBillingController::class, 'payments']);
 
     Route::get('users', [AdminUserController::class, 'index']);
     Route::get('users/inactive', [AdminUserController::class, 'inactive']);

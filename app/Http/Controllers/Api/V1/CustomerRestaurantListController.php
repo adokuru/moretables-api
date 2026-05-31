@@ -11,6 +11,7 @@ use App\Models\Restaurant;
 use App\Models\UserRestaurantList;
 use App\Models\UserRestaurantListItem;
 use App\RestaurantStatus;
+use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\Http\Request;
 #[Group('Customer Restaurant Lists', weight: 26)]
 class CustomerRestaurantListController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     /**
      * List the authenticated customer's restaurant lists.
      */
@@ -74,7 +77,9 @@ class CustomerRestaurantListController extends Controller
     {
         $this->ensureOwnership($request, $restaurantList);
 
+        $restaurantIds = $restaurantList->items()->pluck('restaurant_id');
         $restaurantList->delete();
+        $restaurantIds->each(fn (int $restaurantId) => $this->performanceCache->invalidateRestaurant($restaurantId));
 
         return response()->json([
             'message' => 'Restaurant list deleted successfully.',
@@ -123,6 +128,8 @@ class CustomerRestaurantListController extends Controller
             ->where('user_restaurant_list_id', $restaurantList->id)
             ->where('restaurant_id', $restaurant->id)
             ->delete();
+
+        $this->performanceCache->invalidateRestaurant($restaurant->id);
 
         $restaurantList->loadCount('items');
         $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);

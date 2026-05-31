@@ -36,7 +36,7 @@ Real-time updates use **Laravel Reverb** / broadcasting where configured (e.g. w
 - PHP **8.2+**
 - Composer
 - Database (SQLite for local dev; MySQL/PostgreSQL in production)
-- **Queue worker** recommended (`QUEUE_CONNECTION=database`) — many notifications are queued
+- **Queue worker** required — many notifications are queued
 
 ---
 
@@ -60,6 +60,19 @@ Run a queue worker so mail/push jobs are processed:
 ```bash
 php artisan queue:work
 ```
+
+## Production baseline
+
+Production should use MySQL plus managed Redis with `CACHE_STORE=redis`, `CACHE_LIMITER_STORE=redis-limiter`, `SESSION_DRIVER=redis`, `SESSION_CONNECTION=sessions`, and `QUEUE_CONNECTION=redis`. Set `REVERB_ALLOWED_ORIGINS` to the exact deployed frontend origins and enable Reverb scaling when more than one server handles websocket traffic.
+
+Deploy with:
+
+```bash
+php artisan optimize
+php artisan migrate --force
+```
+
+Run `php artisan horizon`, `php artisan schedule:work`, and `php artisan reverb:start` as managed long-running processes. The committed environment template intentionally contains no Paystack key values; rotate any previously shared test key in Paystack.
 
 ---
 

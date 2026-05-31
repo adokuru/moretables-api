@@ -6,10 +6,11 @@ use App\Models\Reservation;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ReservationUpdated implements ShouldBroadcast
+class ReservationUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -28,6 +29,11 @@ class ReservationUpdated implements ShouldBroadcast
     public function broadcastAs(): string
     {
         return 'reservation.updated';
+    }
+
+    public function broadcastQueue(): string
+    {
+        return 'realtime';
     }
 
     /**

@@ -8,12 +8,15 @@ use App\Http\Resources\UserResource;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
 #[Group('Admin RBAC', weight: 54)]
 class AdminUserRoleController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     public function update(UpdateUserRolesRequest $request, User $user): JsonResponse
     {
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
@@ -38,6 +41,8 @@ class AdminUserRoleController extends Controller
                 'assigned_by' => $request->user()->id,
             ]);
         }
+
+        $this->performanceCache->invalidateAuthorization($user->id);
 
         return response()->json([
             'message' => 'User roles updated successfully.',

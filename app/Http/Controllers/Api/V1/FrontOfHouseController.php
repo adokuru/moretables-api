@@ -8,11 +8,15 @@ use App\Http\Resources\WaitlistEntryResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantMealType;
 use App\ReservationStatus;
+use App\Services\RestaurantDateRangeService;
 use App\WaitlistStatus;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 /**
  * Front of House endpoints give restaurant staff a real-time operational view
@@ -21,6 +25,8 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Dashboard', weight: 35)]
 class FrontOfHouseController extends Controller
 {
+    public function __construct(private readonly RestaurantDateRangeService $dateRanges) {}
+
     // ------------------------------------------------------------------ //
     //  Shared helpers                                                      //
     // ------------------------------------------------------------------ //
@@ -78,6 +84,51 @@ class FrontOfHouseController extends Controller
         ];
     }
 
+    private function scopeReservations(Builder|Relation $query, Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): void
+    {
+        $range = $windowStart && $windowEnd
+            ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
+            : $this->dateRanges->forDate($restaurant, $date->toDateString());
+
+        $query->where('starts_at', '>=', $range['start'])
+            ->where('starts_at', '<', $range['end']);
+    }
+
+    private function scopeWaitlist(Builder|Relation $query, Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): void
+    {
+        $dateRange = $this->dateRanges->forDate($restaurant, $date->toDateString());
+
+        $query->where('created_at', '>=', $dateRange['start'])
+            ->where('created_at', '<', $dateRange['end']);
+
+        if ($windowStart && $windowEnd) {
+            $window = $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd);
+
+            $query->where(fn ($q) => $q
+                ->whereNull('preferred_starts_at')
+                ->orWhere(fn ($inner) => $inner
+                    ->where('preferred_starts_at', '>=', $window['start'])
+                    ->where('preferred_starts_at', '<', $window['end'])
+                )
+            );
+        }
+    }
+
+    /**
+     * @param  Collection<string, object>  $counts
+     * @param  list<ReservationStatus>  $statuses
+     * @return object{count: int, diners: int}
+     */
+    private function countStatuses(Collection $counts, array $statuses): object
+    {
+        $rows = collect($statuses)->map(fn (ReservationStatus $status) => $counts->get($status->value));
+
+        return (object) [
+            'count' => (int) $rows->sum('count'),
+            'diners' => (int) $rows->sum('diners'),
+        ];
+    }
+
     // ------------------------------------------------------------------ //
     //  Endpoints                                                           //
     // ------------------------------------------------------------------ //
@@ -98,51 +149,32 @@ class FrontOfHouseController extends Controller
         $date = $this->resolveDate($request, $restaurant);
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'mealType' => $mealType] = $this->resolveWindow($request, $restaurant, $date);
 
-        $baseRes = $restaurant->reservations()->whereDate('starts_at', $date->toDateString());
+        $baseRes = $restaurant->reservations();
+        $this->scopeReservations($baseRes, $restaurant, $date, $windowStart, $windowEnd);
 
-        if ($windowStart && $windowEnd) {
-            $baseRes->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $counts = (clone $baseRes)
+            ->whereIn('status', [
+                ReservationStatus::Booked,
+                ReservationStatus::Confirmed,
+                ReservationStatus::Arrived,
+                ReservationStatus::Seated,
+                ReservationStatus::Completed,
+                ReservationStatus::NoShow,
+            ])
+            ->selectRaw('status, COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
+            ->groupBy('status')
+            ->get()
+            ->keyBy(fn ($row): string => $row->status->value);
 
-        $reservationCount = (clone $baseRes)
-            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed])
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
-            ->first();
-
-        $arrivedCount = (clone $baseRes)
-            ->where('status', ReservationStatus::Arrived)
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
-            ->first();
-
-        $seatedCount = (clone $baseRes)
-            ->where('status', ReservationStatus::Seated)
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
-            ->first();
-
-        $finishedCount = (clone $baseRes)
-            ->where('status', ReservationStatus::Completed)
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
-            ->first();
-
-        $noShowCount = (clone $baseRes)
-            ->where('status', ReservationStatus::NoShow)
-            ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
-            ->first();
+        $reservationCount = $this->countStatuses($counts, [ReservationStatus::Booked, ReservationStatus::Confirmed]);
+        $arrivedCount = $this->countStatuses($counts, [ReservationStatus::Arrived]);
+        $seatedCount = $this->countStatuses($counts, [ReservationStatus::Seated]);
+        $finishedCount = $this->countStatuses($counts, [ReservationStatus::Completed]);
+        $noShowCount = $this->countStatuses($counts, [ReservationStatus::NoShow]);
 
         $waitlistQuery = $restaurant->waitlistEntries()
-            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Accepted])
-            ->whereDate('created_at', $date->toDateString());
-
-        if ($windowStart && $windowEnd) {
-            $waitlistQuery->where(fn ($q) => $q
-                ->whereNull('preferred_starts_at')
-                ->orWhere(fn ($inner) => $inner
-                    ->whereTime('preferred_starts_at', '>=', $windowStart)
-                    ->whereTime('preferred_starts_at', '<=', $windowEnd)
-                )
-            );
-        }
+            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Accepted]);
+        $this->scopeWaitlist($waitlistQuery, $restaurant, $date, $windowStart, $windowEnd);
 
         $waitlistCount = $waitlistQuery
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(party_size), 0) as diners')
@@ -187,14 +219,9 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereDate('starts_at', $date->toDateString())
             ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed])
             ->orderBy('starts_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 
@@ -223,14 +250,9 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereDate('starts_at', $date->toDateString())
             ->where('status', ReservationStatus::Arrived)
             ->orderBy('starts_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 
@@ -259,18 +281,8 @@ class FrontOfHouseController extends Controller
         $query = $restaurant->waitlistEntries()
             ->with(['reservation.reservationGuests', 'user', 'guestContact'])
             ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Accepted])
-            ->whereDate('created_at', $date->toDateString())
             ->orderBy('created_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->where(fn ($q) => $q
-                ->whereNull('preferred_starts_at')
-                ->orWhere(fn ($inner) => $inner
-                    ->whereTime('preferred_starts_at', '>=', $windowStart)
-                    ->whereTime('preferred_starts_at', '<=', $windowEnd)
-                )
-            );
-        }
+        $this->scopeWaitlist($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $entries = $query->paginate(20);
 
@@ -298,14 +310,9 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereDate('starts_at', $date->toDateString())
             ->where('status', ReservationStatus::Seated)
             ->orderBy('seated_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 
@@ -333,14 +340,9 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereDate('starts_at', $date->toDateString())
             ->where('status', ReservationStatus::Completed)
             ->orderBy('completed_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 
@@ -368,14 +370,9 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereDate('starts_at', $date->toDateString())
             ->where('status', ReservationStatus::NoShow)
             ->orderBy('starts_at');
-
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 

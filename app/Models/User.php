@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PerformanceCacheService;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Database\Factories\UserFactory;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -181,44 +183,55 @@ class User extends Authenticatable implements HasMedia
         ?Organization $organization = null,
     ): bool {
         $organization ??= $restaurant?->organization;
+        $cache = app(PerformanceCacheService::class);
+        $cacheKey = $cache->authorizationKey(
+            $this->id,
+            "permission:{$permissionName}:organization:".($organization?->id ?? 'global'),
+            $restaurant?->id,
+        );
 
-        $scopeFilter = function ($query) use ($restaurant, $organization): void {
-            $query->where(function ($scopeQuery): void {
-                $scopeQuery
-                    ->whereNull('organization_id')
-                    ->whereNull('restaurant_id');
-            });
+        return Cache::remember(
+            $cacheKey,
+            (int) config('performance.cache.ttls.restaurant_authorization'),
+            function () use ($restaurant, $organization, $permissionName): bool {
+                $scopeFilter = function ($query) use ($restaurant, $organization): void {
+                    $query
+                        ->where(function ($scopeQuery): void {
+                            $scopeQuery
+                                ->whereNull('organization_id')
+                                ->whereNull('restaurant_id');
+                        });
 
-            if ($restaurant) {
-                $query->orWhere('restaurant_id', $restaurant->getKey());
-            }
+                    if ($restaurant) {
+                        $query->orWhere('restaurant_id', $restaurant->getKey());
+                    }
 
-            if ($organization) {
-                $query->orWhere(function ($scopeQuery) use ($organization): void {
-                    $scopeQuery
-                        ->where('organization_id', $organization->getKey())
-                        ->whereNull('restaurant_id');
-                });
-            }
-        };
+                    if ($organization) {
+                        $query->orWhere(function ($scopeQuery) use ($organization): void {
+                            $scopeQuery
+                                ->where('organization_id', $organization->getKey())
+                                ->whereNull('restaurant_id');
+                        });
+                    }
+                };
 
-        // Check via restaurant access config (per-restaurant role)
-        $viaAccessConfig = $this->roleAssignments()
-            ->whereNotNull('access_config_id')
-            ->whereHas('accessConfig', fn ($q) => $q->whereJsonContains('permissions', $permissionName))
-            ->where($scopeFilter)
-            ->exists();
+                $viaAccessConfig = $this->roleAssignments()
+                    ->whereNotNull('access_config_id')
+                    ->whereHas('accessConfig', fn ($q) => $q->whereJsonContains('permissions', $permissionName))
+                    ->where($scopeFilter)
+                    ->exists();
 
-        if ($viaAccessConfig) {
-            return true;
-        }
+                if ($viaAccessConfig) {
+                    return true;
+                }
 
-        // Fall back to global role permissions (org owner, admin roles, etc.)
-        return $this->roleAssignments()
-            ->whereNull('access_config_id')
-            ->whereHas('role.permissions', fn ($query) => $query->where('name', $permissionName))
-            ->where($scopeFilter)
-            ->exists();
+                return $this->roleAssignments()
+                    ->whereNull('access_config_id')
+                    ->whereHas('role.permissions', fn ($query) => $query->where('name', $permissionName))
+                    ->where($scopeFilter)
+                    ->exists();
+            },
+        );
     }
 
     public function hasRestaurantPermission(string $permissionName, Restaurant $restaurant): bool
@@ -232,22 +245,28 @@ class User extends Authenticatable implements HasMedia
 
     public function canAccessRestaurant(Restaurant $restaurant): bool
     {
-        return $this->roleAssignments()
-            ->whereHas('role', fn ($query) => $query->whereIn('name', Role::restaurantAccessRoles()))
-            ->where(function ($query) use ($restaurant): void {
-                $query->where(function ($scopeQuery): void {
-                    $scopeQuery
-                        ->whereNull('organization_id')
-                        ->whereNull('restaurant_id');
-                })
-                    ->orWhere('restaurant_id', $restaurant->getKey())
-                    ->orWhere(function ($scopeQuery) use ($restaurant): void {
+        $cache = app(PerformanceCacheService::class);
+
+        return Cache::remember(
+            $cache->authorizationKey($this->id, 'restaurant-access', $restaurant->id),
+            (int) config('performance.cache.ttls.restaurant_authorization'),
+            fn (): bool => $this->roleAssignments()
+                ->whereHas('role', fn ($query) => $query->whereIn('name', Role::restaurantAccessRoles()))
+                ->where(function ($query) use ($restaurant): void {
+                    $query->where(function ($scopeQuery): void {
                         $scopeQuery
-                            ->where('organization_id', $restaurant->organization_id)
+                            ->whereNull('organization_id')
                             ->whereNull('restaurant_id');
-                    });
-            })
-            ->exists();
+                    })
+                        ->orWhere('restaurant_id', $restaurant->getKey())
+                        ->orWhere(function ($scopeQuery) use ($restaurant): void {
+                            $scopeQuery
+                                ->where('organization_id', $restaurant->organization_id)
+                                ->whereNull('restaurant_id');
+                        });
+                })
+                ->exists(),
+        );
     }
 
     public function canManageRestaurant(Restaurant $restaurant): bool

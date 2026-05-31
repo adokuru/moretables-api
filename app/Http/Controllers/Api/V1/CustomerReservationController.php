@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Services\ReservationService;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
 #[Group('Customer Reservations', weight: 20)]
@@ -31,6 +32,10 @@ class CustomerReservationController extends Controller
         return response()->json(ReservationResource::collection($reservations));
     }
 
+    /**
+     * Create a reservation. A retryable 422 is returned when availability changes while the request is being processed.
+     */
+    #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreReservationRequest $request): JsonResponse
     {
         $user = $request->user();

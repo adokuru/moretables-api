@@ -11,12 +11,15 @@ use App\Http\Resources\RestaurantDetailResource;
 use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantReview;
+use App\Models\SavedRestaurant;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
+use App\Services\PerformanceCacheService;
 use App\Services\RestaurantReviewSummaryService;
 use App\Services\RestaurantSearchService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,27 +31,39 @@ class PublicRestaurantController extends Controller
         protected AvailabilityService $availabilityService,
         protected RestaurantSearchService $restaurantSearchService,
         protected RestaurantReviewSummaryService $reviewSummary,
+        protected PerformanceCacheService $performanceCache,
     ) {}
 
     public function search(RestaurantSearchRequest $request): JsonResponse
     {
         $validated = $request->validated();
         $user = $this->authenticatedUserFromToken($request);
+        $query = (string) ($validated['q'] ?? '');
+        $limit = (int) ($validated['limit'] ?? 5);
 
-        $results = $this->restaurantSearchService->search(
-            query: (string) ($validated['q'] ?? ''),
-            limit: (int) ($validated['limit'] ?? 5),
-            userId: $user?->id,
+        $payload = $this->performanceCache->flexible(
+            $this->performanceCache->versionedKey('public-fragments', 'typeahead', hash('sha256', "{$query}:{$limit}")),
+            'public_fragments',
+            function () use ($limit, $query): array {
+                $results = $this->restaurantSearchService->search(
+                    query: $query,
+                    limit: $limit,
+                );
+
+                return [
+                    'query' => $query,
+                    'results' => [
+                        'locations' => $results['locations']->values()->all(),
+                        'restaurants' => RestaurantListResource::collection($results['restaurants'])->resolve(),
+                        'cuisines' => $results['cuisines']->values()->all(),
+                    ],
+                ];
+            },
         );
 
-        return response()->json([
-            'query' => (string) ($validated['q'] ?? ''),
-            'results' => [
-                'locations' => $results['locations']->values()->all(),
-                'restaurants' => RestaurantListResource::collection($results['restaurants'])->resolve(),
-                'cuisines' => $results['cuisines']->values()->all(),
-            ],
-        ]);
+        $payload['results']['restaurants'] = $this->withSavedRestaurants($payload['results']['restaurants'], $user?->id);
+
+        return response()->json($payload);
     }
 
     /**
@@ -58,24 +73,33 @@ class PublicRestaurantController extends Controller
      * Within the same rating, order is random.
      */
     #[QueryParameter('limit', type: 'integer', default: 10, example: 6)]
+    #[Response(200, type: 'array{data: list<PublicRandomReviewResource>}')]
     public function randomReviews(Request $request): JsonResponse
     {
         $limit = max(1, min($request->integer('limit', 10), 50));
 
-        $reviews = RestaurantReview::query()
-            ->with([
-                'user:id,name,first_name,last_name',
-                'restaurant:id,name,status',
-            ])
-            ->whereHas('restaurant', fn ($query) => $query->where('status', RestaurantStatus::Active->value))
-            ->orderByDesc('rating')
-            ->inRandomOrder()
-            ->limit($limit)
-            ->get();
+        $payload = $this->performanceCache->flexible(
+            $this->performanceCache->versionedKey('random-reviews', (string) $limit),
+            'public_fragments',
+            function () use ($limit, $request): array {
+                $reviews = RestaurantReview::query()
+                    ->with([
+                        'user:id,name,first_name,last_name',
+                        'restaurant:id,name,status',
+                    ])
+                    ->whereHas('restaurant', fn ($query) => $query->where('status', RestaurantStatus::Active->value))
+                    ->orderByDesc('rating')
+                    ->inRandomOrder()
+                    ->limit($limit)
+                    ->get();
 
-        return response()->json([
-            'data' => PublicRandomReviewResource::collection($reviews)->resolve($request),
-        ]);
+                return [
+                    'data' => PublicRandomReviewResource::collection($reviews)->resolve($request),
+                ];
+            },
+        );
+
+        return response()->json($payload);
     }
 
     public function index(RestaurantIndexRequest $request): JsonResponse
@@ -84,60 +108,70 @@ class PublicRestaurantController extends Controller
         $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
         $user = $this->authenticatedUserFromToken($request);
 
-        $restaurants = Restaurant::query()
-            ->with([
-                'cuisines',
-                'media',
-                'hours' => fn ($query) => $query->orderBy('day_of_week'),
-                'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
-            ])
-            ->withCount('reviews as reviews_count')
-            ->withAvg('reviews as average_rating', 'rating')
-            ->where('status', RestaurantStatus::Active->value)
-            ->when($user, function ($query, $user): void {
-                $query->withExists([
-                    'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $user->id),
-                ]);
-            })
-            ->when($request->filled('q'), function ($query) use ($validated) {
-                $query->where(function ($subQuery) use ($validated): void {
-                    $subQuery->where('name', 'like', '%'.$validated['q'].'%')
-                        ->orWhere('description', 'like', '%'.$validated['q'].'%');
-                });
-            })
-            ->when($request->filled('city'), function ($query) use ($validated) {
-                $query->where('city', $validated['city']);
-            })
-            ->when($request->filled('cuisine'), function ($query) use ($validated) {
-                $query->whereHas('cuisines', function ($subQuery) use ($validated): void {
-                    $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
-                });
-            })
-            ->when($hasCoordinates, function ($query) use ($validated): void {
-                $lat = (float) $validated['latitude'];
-                $lng = (float) $validated['longitude'];
-                $radiusKm = (float) ($validated['radius_km'] ?? 25);
-                $bounds = $this->coordinateBounds(
-                    latitude: $lat,
-                    longitude: $lng,
-                    radiusKm: $radiusKm,
-                );
+        $payload = $this->performanceCache->flexible(
+            $this->performanceCache->versionedKey(
+                'public-fragments',
+                'restaurants',
+                (string) $request->integer('page', 1),
+                hash('sha256', json_encode($validated, JSON_THROW_ON_ERROR)),
+            ),
+            'public_fragments',
+            function () use ($hasCoordinates, $request, $validated): array {
+                $restaurants = Restaurant::query()
+                    ->with([
+                        'cuisines',
+                        'media',
+                        'hours' => fn ($query) => $query->orderBy('day_of_week'),
+                        'mealSchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
+                    ])
+                    ->withCount('reviews as reviews_count')
+                    ->withAvg('reviews as average_rating', 'rating')
+                    ->where('status', RestaurantStatus::Active->value)
+                    ->when($request->filled('q'), function ($query) use ($validated) {
+                        $query->where(function ($subQuery) use ($validated): void {
+                            $subQuery->where('name', 'like', '%'.$validated['q'].'%')
+                                ->orWhere('description', 'like', '%'.$validated['q'].'%');
+                        });
+                    })
+                    ->when($request->filled('city'), function ($query) use ($validated) {
+                        $query->where('city', $validated['city']);
+                    })
+                    ->when($request->filled('cuisine'), function ($query) use ($validated) {
+                        $query->whereHas('cuisines', function ($subQuery) use ($validated): void {
+                            $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
+                        });
+                    })
+                    ->when($hasCoordinates, function ($query) use ($validated): void {
+                        $lat = (float) $validated['latitude'];
+                        $lng = (float) $validated['longitude'];
+                        $radiusKm = (float) ($validated['radius_km'] ?? 25);
+                        $bounds = $this->coordinateBounds(
+                            latitude: $lat,
+                            longitude: $lng,
+                            radiusKm: $radiusKm,
+                        );
 
-                $query->addSelect(DB::raw(
-                    "(6371 * acos(cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude)))) AS distance_km"
-                ))
-                    ->whereNotNull('latitude')
-                    ->whereNotNull('longitude')
-                    ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
-                    ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']])
-                    ->orderByRaw(
-                        'ABS(latitude - ?) + ABS(longitude - ?) asc',
-                        [$lat, $lng],
-                    );
-            })
-            ->paginate($validated['per_page'] ?? 15);
+                        $query->addSelect(DB::raw(
+                            "(6371 * acos(cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude)))) AS distance_km"
+                        ))
+                            ->whereNotNull('latitude')
+                            ->whereNotNull('longitude')
+                            ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
+                            ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']])
+                            ->orderByRaw(
+                                'ABS(latitude - ?) + ABS(longitude - ?) asc',
+                                [$lat, $lng],
+                            );
+                    })
+                    ->paginate($validated['per_page'] ?? 15);
 
-        return response()->json(RestaurantListResource::collection($restaurants));
+                return RestaurantListResource::collection($restaurants)->resolve($request);
+            },
+        );
+
+        $payload = $this->withSavedRestaurants($payload, $user?->id);
+
+        return response()->json($payload);
     }
 
     public function show(Request $request, Restaurant $restaurant): RestaurantDetailResource
@@ -166,7 +200,7 @@ class PublicRestaurantController extends Controller
             ->whereKey($restaurant->getKey())
             ->firstOrFail();
 
-        $reviewSummary = $this->reviewSummary->summarize($restaurant->reviews());
+        $reviewSummary = $this->reviewSummary->summarize($restaurant->reviews(), $restaurant->id);
 
         $restaurant->setAttribute('ratings_breakdown', (object) $reviewSummary['ratings_breakdown']);
         $restaurant->setAttribute('category_breakdown', $reviewSummary['category_breakdown']);
@@ -183,6 +217,7 @@ class PublicRestaurantController extends Controller
         ]));
     }
 
+    #[Response(429, type: 'array{message: string}')]
     public function availability(RestaurantAvailabilityRequest $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($restaurant->status === RestaurantStatus::Active, 404);
@@ -227,5 +262,30 @@ class PublicRestaurantController extends Controller
             'min_longitude' => $longitude - $longitudeDelta,
             'max_longitude' => $longitude + $longitudeDelta,
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $restaurants
+     * @return list<array<string, mixed>>
+     */
+    private function withSavedRestaurants(array $restaurants, ?int $userId): array
+    {
+        if (! $userId || $restaurants === []) {
+            return $restaurants;
+        }
+
+        $savedRestaurantIds = SavedRestaurant::query()
+            ->where('user_id', $userId)
+            ->whereIn('restaurant_id', collect($restaurants)->pluck('id'))
+            ->pluck('restaurant_id')
+            ->flip();
+
+        return collect($restaurants)
+            ->map(function (array $restaurant) use ($savedRestaurantIds): array {
+                $restaurant['has_saved'] = $savedRestaurantIds->has($restaurant['id']);
+
+                return $restaurant;
+            })
+            ->all();
     }
 }

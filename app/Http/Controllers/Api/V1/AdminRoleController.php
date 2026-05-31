@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateAdminRoleRequest;
 use App\Http\Resources\RoleResource;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
@@ -17,6 +18,8 @@ use Illuminate\Http\Request;
 #[Group('Admin RBAC', weight: 54)]
 class AdminRoleController extends Controller
 {
+    public function __construct(private readonly PerformanceCacheService $performanceCache) {}
+
     #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
     #[QueryParameter('per_page', type: 'integer', default: 20, example: 20)]
     #[Response(200, type: 'array{data: list<RoleResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, path: string, per_page: int, to: int|null, total: int}}')]
@@ -78,6 +81,7 @@ class AdminRoleController extends Controller
             ->all();
 
         $role->permissions()->sync($permissionIds);
+        $this->performanceCache->invalidateAuthorization();
 
         return response()->json([
             'message' => 'Role created successfully.',
@@ -116,6 +120,7 @@ class AdminRoleController extends Controller
                 ->all();
 
             $role->permissions()->sync($permissionIds);
+            $this->performanceCache->invalidateAuthorization();
         }
 
         return response()->json([
@@ -131,6 +136,7 @@ class AdminRoleController extends Controller
         abort_if($role->userRoles()->exists(), 422, 'This role is currently assigned to one or more users.');
 
         $role->delete();
+        $this->performanceCache->invalidateAuthorization();
 
         return response()->json([
             'message' => 'Role deleted successfully.',

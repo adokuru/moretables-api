@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "MoreTables API",
-    "description": "Full v1 API. Variables: baseUrl; token (guest or staff Bearer); challenge_token (guest OTP flow / staff 2FA); admin_challenge_token + admin_token (admin flow). Mailgun: mailgun_api_key, mailgun_domain, mailgun_endpoint for folder 00. IDs are placeholders.",
+    "description": "Full v1 API. Variables: baseUrl; token (guest or staff Bearer); challenge_token (guest OTP flow / staff 2FA); admin_challenge_token + admin_token (admin flow). Mailgun: mailgun_api_key, mailgun_domain, mailgun_endpoint for folder 00. IDs are placeholders. Public and authenticated endpoints may return HTTP 429 when rate limits are exceeded; retry with backoff. Reservation availability is live and reservation contention returns retryable HTTP 422 validation errors.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -1199,7 +1199,7 @@
               "mode": "raw",
               "raw": "{\n  \"platform\": \"ios\",\n  \"session_id\": \"session-123\"\n}"
             },
-            "description": "Tracks restaurant detail views used for Top Viewed discovery ranking."
+            "description": "Tracks restaurant detail views used for Top Viewed discovery ranking. Repeated views from the same user, session ID, or IP within 30 minutes return HTTP 200 with deduplicated=true and do not create another row. This endpoint may return HTTP 429."
           }
         },
         {
@@ -1939,7 +1939,8 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"optional\"\n}"
-            }
+            },
+            "description": "Availability is checked live inside a restaurant-scoped lock. Retry HTTP 422 validation responses when availability changes during processing."
           }
         },
         {
@@ -3827,7 +3828,8 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"source\": \"walk_in\",\n  \"guest_contact\": {\n    \"first_name\": \"Walk-in\",\n    \"phone\": \"+15551234567\"\n  }\n}"
-            }
+            },
+            "description": "Availability is checked live inside a restaurant-scoped lock. Retry HTTP 422 validation responses when availability changes during processing."
           }
         },
         {
@@ -3955,7 +3957,8 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"restaurant_table_id\": 1\n}"
-            }
+            },
+            "description": "The requested table is rechecked directly inside the restaurant reservation lock. Retry HTTP 422 validation responses when availability changes during processing."
           }
         },
         {

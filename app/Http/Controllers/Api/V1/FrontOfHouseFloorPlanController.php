@@ -8,6 +8,7 @@ use App\Http\Resources\RestaurantTableResource;
 use App\Models\DiningArea;
 use App\Models\Restaurant;
 use App\ReservationStatus;
+use App\Services\RestaurantDateRangeService;
 use App\TableStatus;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
@@ -21,6 +22,8 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Floor Plan', weight: 36)]
 class FrontOfHouseFloorPlanController extends Controller
 {
+    public function __construct(private readonly RestaurantDateRangeService $dateRanges) {}
+
     private function resolveDate(Request $request, Restaurant $restaurant): Carbon
     {
         $timezone = $restaurant->timezone ?? 'UTC';
@@ -120,23 +123,21 @@ class FrontOfHouseFloorPlanController extends Controller
 
         // Fetch all active reservations for these tables on the requested date in one query
         $tableIds = $tables->pluck('id');
+        $dateRange = $windowStart && $windowEnd
+            ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
+            : $this->dateRanges->forDate($restaurant, $date->toDateString());
 
         $reservationQuery = $restaurant->reservations()
             ->with(['user', 'guestContact'])
             ->whereIn('restaurant_table_id', $tableIds)
-            ->whereDate('starts_at', $date->toDateString())
+            ->where('starts_at', '>=', $dateRange['start'])
+            ->where('starts_at', '<', $dateRange['end'])
             ->whereIn('status', [
                 ReservationStatus::Booked,
                 ReservationStatus::Confirmed,
                 ReservationStatus::Arrived,
                 ReservationStatus::Seated,
             ]);
-
-        if ($windowStart && $windowEnd) {
-            $reservationQuery
-                ->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
 
         // Key reservations by table id — one active reservation per table
         $reservationsByTable = $reservationQuery

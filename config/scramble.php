@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'MoreTables restaurant discovery, loyalty rewards, onboarding, reservations, reviews, and merchant operations API.',
+        'description' => 'MoreTables restaurant discovery, loyalty rewards, onboarding, reservations, reviews, and merchant operations API. Public and authenticated traffic is rate limited; clients should retry HTTP 429 responses with backoff. Reservation availability remains live and reservation contention returns a retryable HTTP 422 validation response.',
     ],
 
     /*

@@ -14,22 +14,22 @@ use App\Http\Controllers\Api\V1\PublicRestaurantViewController;
 use App\Http\Controllers\Api\V1\RestaurantReviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('onboarding-requests', [OnboardingRequestController::class, 'store']);
+Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
 
-Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index']);
+Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index'])->middleware('throttle:public-read');
 
-Route::get('search', [PublicRestaurantController::class, 'search']);
-Route::get('reviews/random', [PublicRestaurantController::class, 'randomReviews']);
-Route::get('restaurants/discovery', [PublicRestaurantDiscoveryController::class, 'index']);
-Route::get('restaurants/discovery/{section}', [PublicRestaurantDiscoveryController::class, 'show']);
+Route::get('search', [PublicRestaurantController::class, 'search'])->middleware('throttle:public-expensive');
+Route::get('reviews/random', [PublicRestaurantController::class, 'randomReviews'])->middleware('throttle:public-read');
+Route::get('restaurants/discovery', [PublicRestaurantDiscoveryController::class, 'index'])->middleware('throttle:public-expensive');
+Route::get('restaurants/discovery/{section}', [PublicRestaurantDiscoveryController::class, 'show'])->middleware('throttle:public-expensive');
 
-Route::get('restaurants', [PublicRestaurantController::class, 'index']);
-Route::get('restaurants/{restaurant:slug}', [PublicRestaurantController::class, 'show']);
-Route::get('restaurants/{restaurant:slug}/availability', [PublicRestaurantController::class, 'availability']);
-Route::post('restaurants/{restaurant:slug}/views', [PublicRestaurantViewController::class, 'store']);
-Route::get('restaurants/{restaurant:slug}/reviews', [RestaurantReviewController::class, 'index']);
+Route::get('restaurants', [PublicRestaurantController::class, 'index'])->middleware('throttle:public-read');
+Route::get('restaurants/{restaurant:slug}', [PublicRestaurantController::class, 'show'])->middleware('throttle:public-read');
+Route::get('restaurants/{restaurant:slug}/availability', [PublicRestaurantController::class, 'availability'])->middleware('throttle:public-expensive');
+Route::post('restaurants/{restaurant:slug}/views', [PublicRestaurantViewController::class, 'store'])->middleware('throttle:public-write');
+Route::get('restaurants/{restaurant:slug}/reviews', [RestaurantReviewController::class, 'index'])->middleware('throttle:public-read');
 
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function (): void {
     Route::post('me/expo-push-tokens', [ExpoPushTokenController::class, 'store']);
     Route::delete('me/expo-push-tokens', [ExpoPushTokenController::class, 'destroy']);
 

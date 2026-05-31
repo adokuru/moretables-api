@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\ReservationSource;
 use App\ReservationStatus;
+use App\Services\RestaurantDateRangeService;
 use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,6 +22,8 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Shift Overview', weight: 37)]
 class FrontOfHouseShiftOverviewController extends Controller
 {
+    public function __construct(private readonly RestaurantDateRangeService $dateRanges) {}
+
     // ------------------------------------------------------------------ //
     //  Shared helpers                                                      //
     // ------------------------------------------------------------------ //
@@ -79,16 +83,16 @@ class FrontOfHouseShiftOverviewController extends Controller
      * Build a base reservations query scoped to the date + window.
      * Only active statuses are included (excludes cancelled).
      */
-    private function baseReservationQuery(Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd)
+    private function baseReservationQuery(Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): HasMany
     {
-        $query = $restaurant->reservations()
-            ->whereDate('starts_at', $date->toDateString())
-            ->whereNotIn('status', [ReservationStatus::Cancelled]);
+        $range = $windowStart && $windowEnd
+            ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
+            : $this->dateRanges->forDate($restaurant, $date->toDateString());
 
-        if ($windowStart && $windowEnd) {
-            $query->whereTime('starts_at', '>=', $windowStart)
-                ->whereTime('starts_at', '<=', $windowEnd);
-        }
+        $query = $restaurant->reservations()
+            ->where('starts_at', '>=', $range['start'])
+            ->where('starts_at', '<', $range['end'])
+            ->whereNotIn('status', [ReservationStatus::Cancelled]);
 
         return $query;
     }
