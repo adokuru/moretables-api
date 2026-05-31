@@ -3,8 +3,9 @@
 namespace App\Http\Requests\Merchant;
 
 use App\Http\Requests\Merchant\Concerns\AuthorizesRestaurantManageOnboarding;
+use App\Models\RestaurantSpecialDay;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateRestaurantSpecialDayRequest extends FormRequest
 {
@@ -28,9 +29,15 @@ class UpdateRestaurantSpecialDayRequest extends FormRequest
             'date' => [
                 'sometimes',
                 'date_format:Y-m-d',
-                Rule::unique('restaurant_special_days', 'date')
-                    ->where('restaurant_id', $restaurantId)
-                    ->ignore($specialDayId),
+                function (string $attribute, mixed $value, Closure $fail) use ($restaurantId, $specialDayId): void {
+                    if (RestaurantSpecialDay::query()
+                        ->where('restaurant_id', $restaurantId)
+                        ->whereDate('date', $value)
+                        ->whereKeyNot($specialDayId)
+                        ->exists()) {
+                        $fail('A special day already exists for this date.');
+                    }
+                },
             ],
             'is_closed' => ['sometimes', 'boolean'],
             'shifts' => ['exclude_if:is_closed,true', 'sometimes', 'array'],

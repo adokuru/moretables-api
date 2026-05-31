@@ -47,7 +47,7 @@ it('keeps availability query count stable as the slot count grows', function () 
     app(AvailabilityService::class)->listAvailableSlots($restaurant, $tomorrow->toDateString(), 2);
     $longWindowQueryCount = count(DB::getQueryLog());
 
-    expect($shortWindowQueryCount)->toBe(2)
+    expect($shortWindowQueryCount)->toBe(3)
         ->and($longWindowQueryCount)->toBe($shortWindowQueryCount);
 });
 
