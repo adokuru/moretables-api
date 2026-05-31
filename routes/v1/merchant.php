@@ -186,6 +186,7 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
             Route::get('floors', [FrontOfHouseFloorPlanController::class, 'index']);
             Route::get('floors/{diningArea}', [FrontOfHouseFloorPlanController::class, 'show']);
 
+            Route::get('timelines/active-floors', [FrontOfHouseTimelineController::class, 'activeFloors']);
             Route::get('timelines', [FrontOfHouseTimelineController::class, 'index']);
 
             // Shift Overview
