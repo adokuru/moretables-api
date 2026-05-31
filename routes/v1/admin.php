@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminAuditLogController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
+use App\Http\Controllers\Api\V1\AdminBillingController;
 use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminCuisineController;
 use App\Http\Controllers\Api\V1\AdminDashboardController;
@@ -34,6 +35,12 @@ Route::middleware(['auth:sanctum', 'throttle:admin-api'])->prefix('admin')->grou
     Route::get('reward-program', [AdminRewardProgramController::class, 'show']);
     Route::patch('reward-program', [AdminRewardProgramController::class, 'update']);
     Route::post('users/{user}/reward-points', [AdminRewardProgramController::class, 'storePoints']);
+    Route::get('billing/plans', [AdminBillingController::class, 'plans']);
+    Route::get('billing/overview', [AdminBillingController::class, 'overview']);
+    Route::get('billing/subscriptions', [AdminBillingController::class, 'subscriptions']);
+    Route::post('billing/subscriptions', [AdminBillingController::class, 'storeSubscription']);
+    Route::get('billing/invoices', [AdminBillingController::class, 'invoices']);
+    Route::get('billing/payments', [AdminBillingController::class, 'payments']);
 
     Route::get('users', [AdminUserController::class, 'index']);
     Route::get('users/inactive', [AdminUserController::class, 'inactive']);
