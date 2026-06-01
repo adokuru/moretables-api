@@ -259,6 +259,24 @@ return [
             ],
         ],
 
+        'development' => [
+            'supervisor-default' => [
+                'maxProcesses' => (int) env('HORIZON_DEFAULT_MAX_PROCESSES', 10),
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => (int) env('HORIZON_NOTIFICATIONS_MAX_PROCESSES', 6),
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-realtime' => [
+                'maxProcesses' => (int) env('HORIZON_REALTIME_MAX_PROCESSES', 4),
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+        ],
+
         'local' => [
             'supervisor-default' => [
                 'maxProcesses' => 3,
