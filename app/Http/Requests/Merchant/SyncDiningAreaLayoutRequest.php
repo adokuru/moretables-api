@@ -28,6 +28,7 @@ class SyncDiningAreaLayoutRequest extends FormRequest
             'tables.*.height' => ['nullable', 'integer', 'min:1'],
             'tables.*.min_party_size' => ['nullable', 'integer', 'min:1'],
             'tables.*.max_party_size' => ['nullable', 'integer', 'min:'.RestaurantTable::DEFAULT_MAX_CAPACITY],
+            'tables.*.dining_spot_id' => ['nullable', 'integer', 'exists:dining_spots,id'],
         ];
     }
 }

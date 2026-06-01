@@ -15,6 +15,7 @@ class RestaurantTableResource extends JsonResource
             'id' => $this->id,
             'restaurant_id' => $this->restaurant_id,
             'dining_area_id' => $this->dining_area_id,
+            'dining_spot_id' => $this->dining_spot_id,
             'name' => $this->name,
             'table_label' => $this->name,
             'layout_type' => $this->layout_type,
