@@ -23,7 +23,6 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
-use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
 use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
