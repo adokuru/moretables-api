@@ -13,6 +13,11 @@ class MoretableLineupResource extends JsonResource
     public function toArray(Request $request): array
     {
         $cover = $this->relationLoaded('media') ? $this->getFirstMedia('cover') : null;
+        $distanceKm = $this->resource->getAttribute('distance_km');
+
+        if ($distanceKm !== null && $this->relationLoaded('restaurant') && $this->restaurant !== null) {
+            $this->restaurant->setAttribute('distance_km', $distanceKm);
+        }
 
         return [
             'id' => $this->id,
@@ -25,8 +30,8 @@ class MoretableLineupResource extends JsonResource
             'is_featured' => (bool) $this->is_featured,
             'published_at' => $this->published_at?->toIso8601String(),
             'distance_km' => $this->when(
-                $this->resource->getAttribute('distance_km') !== null,
-                fn () => round((float) $this->resource->getAttribute('distance_km'), 2),
+                $distanceKm !== null,
+                fn () => round((float) $distanceKm, 2),
             ),
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'created_at' => $this->created_at?->toIso8601String(),

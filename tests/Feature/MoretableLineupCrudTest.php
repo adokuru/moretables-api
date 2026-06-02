@@ -168,7 +168,9 @@ it('returns lineups near the given coordinates ordered by distance', function ()
         ->and($slugs)->not->toContain('far-lineup')
         ->and($slugs[0])->toBe('closer-lineup');
 
-    expect($response->json('data.0.distance_km'))->not->toBeNull();
+    expect($response->json('data.0.distance_km'))->not->toBeNull()
+        ->and($response->json('data.0.restaurant.distance_km'))->not->toBeNull()
+        ->and($response->json('data.0.restaurant.distance_km'))->toBe($response->json('data.0.distance_km'));
 });
 
 it('validates latitude and longitude pairing', function (): void {
