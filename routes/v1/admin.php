@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AdminBillingController;
 use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminCuisineController;
 use App\Http\Controllers\Api\V1\AdminDashboardController;
+use App\Http\Controllers\Api\V1\AdminMoretableLineupController;
 use App\Http\Controllers\Api\V1\AdminOnboardingRequestController;
 use App\Http\Controllers\Api\V1\AdminOrganizationController;
 use App\Http\Controllers\Api\V1\AdminReservationController;
@@ -50,6 +51,14 @@ Route::middleware(['auth:sanctum', 'throttle:admin-api'])->prefix('admin')->grou
     Route::get('cuisines/{cuisineOption}', [AdminCuisineController::class, 'show']);
     Route::patch('cuisines/{cuisineOption}', [AdminCuisineController::class, 'update']);
     Route::delete('cuisines/{cuisineOption}', [AdminCuisineController::class, 'destroy']);
+
+    Route::get('moretable-lineups', [AdminMoretableLineupController::class, 'index']);
+    Route::post('moretable-lineups', [AdminMoretableLineupController::class, 'store']);
+    Route::get('moretable-lineups/{moretableLineup}', [AdminMoretableLineupController::class, 'show']);
+    Route::patch('moretable-lineups/{moretableLineup}', [AdminMoretableLineupController::class, 'update']);
+    Route::post('moretable-lineups/{moretableLineup}/cover', [AdminMoretableLineupController::class, 'uploadCover']);
+    Route::delete('moretable-lineups/{moretableLineup}/cover', [AdminMoretableLineupController::class, 'deleteCover']);
+    Route::delete('moretable-lineups/{moretableLineup}', [AdminMoretableLineupController::class, 'destroy']);
 
     Route::get('roles', [AdminRoleController::class, 'index']);
     Route::post('roles', [AdminRoleController::class, 'store']);

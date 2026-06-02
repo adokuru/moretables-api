@@ -1237,6 +1237,55 @@
       },
       "description": "Public review feed with pagination links, summary (reviews_count, average_rating, ratings_breakdown, category_breakdown for food/service/ambience/value), and presentation-ready reviewer details."
      }
+    },
+    {
+     "name": "List Moretable lineups",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/moretable-lineups",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "moretable-lineups"
+       ]
+      },
+      "description": "Public list of published Moretable Lineup blog posts, each with its featured restaurant."
+     }
+    },
+    {
+     "name": "Show Moretable lineup",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/moretable-lineups/best-brunch-spots-in-lagos",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "moretable-lineups",
+        "best-brunch-spots-in-lagos"
+       ]
+      },
+      "description": "Public detail of a published Moretable Lineup blog post by slug."
+     }
     }
    ]
   },
@@ -5191,6 +5240,160 @@
        }
       }
      ]
+    },
+    {
+     "name": "List reward rules",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reward-rules",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reward-rules"
+       ]
+      },
+      "description": "List the restaurant's custom reward-point rules."
+     }
+    },
+    {
+     "name": "Create reward rule",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reward-rules",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reward-rules"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"points\": 300,\n  \"days\": [\n    1,\n    2\n  ],\n  \"times\": [\n    \"09:00\",\n    \"09:15\"\n  ],\n  \"is_active\": true\n}"
+      },
+      "description": "Create a custom reward-point rule. Omit or empty `times` to award the points all day on the selected days. `days` are 0=Sunday..6=Saturday."
+     }
+    },
+    {
+     "name": "Show reward rule",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reward-rules/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reward-rules",
+        "1"
+       ]
+      },
+      "description": "Show a single reward-point rule."
+     }
+    },
+    {
+     "name": "Update reward rule",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reward-rules/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reward-rules",
+        "1"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"points\": 250\n}"
+      },
+      "description": "Update a reward-point rule."
+     }
+    },
+    {
+     "name": "Delete reward rule",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reward-rules/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reward-rules",
+        "1"
+       ]
+      },
+      "description": "Delete a reward-point rule."
+     }
     }
    ]
   },
@@ -6869,6 +7072,305 @@
        "raw": "{\n  \"points\": 1200,\n  \"type\": \"earn\",\n  \"description\": \"Opening bonus\",\n  \"metadata\": {\n    \"source\": \"manual_adjustment\"\n  }\n}"
       },
       "description": "Creates a reward point transaction for a user and recalculates their current tier."
+     }
+    },
+    {
+     "name": "List Moretable lineups",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups?per_page=20",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups"
+       ],
+       "query": [
+        {
+         "key": "per_page",
+         "value": "20"
+        },
+        {
+         "key": "search",
+         "value": "",
+         "disabled": true
+        },
+        {
+         "key": "status",
+         "value": "",
+         "disabled": true
+        }
+       ]
+      },
+      "description": "Admin paginated list of Moretable Lineup blog posts. Supports search and status filters."
+     }
+    },
+    {
+     "name": "Create Moretable lineup",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"restaurant_id\": \"{{restaurant_id}}\",\n  \"title\": \"Best Brunch Spots in Lagos\",\n  \"slug\": \"best-brunch-spots-in-lagos\",\n  \"excerpt\": \"Our curated lineup of standout brunch destinations.\",\n  \"body\": \"Full blog content goes here...\",\n  \"status\": \"published\",\n  \"is_featured\": true,\n  \"published_at\": \"2026-06-02T10:00:00Z\"\n}"
+      },
+      "description": "Create a Moretable Lineup blog post for a restaurant. Upload the cover image separately via the cover endpoint."
+     }
+    },
+    {
+     "name": "Show Moretable lineup",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups",
+        "1"
+       ]
+      },
+      "description": "Admin detail of a Moretable Lineup blog post by id."
+     }
+    },
+    {
+     "name": "Update Moretable lineup",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups",
+        "1"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"title\": \"Best Brunch Spots in Lagos (Updated)\",\n  \"status\": \"published\"\n}"
+      },
+      "description": "Update a Moretable Lineup blog post."
+     }
+    },
+    {
+     "name": "Upload Moretable lineup cover",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups/1/cover",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups",
+        "1",
+        "cover"
+       ]
+      },
+      "body": {
+       "mode": "formdata",
+       "formdata": [
+        {
+         "key": "cover",
+         "type": "file",
+         "src": []
+        },
+        {
+         "key": "alt_text",
+         "value": "Brunch table spread",
+         "type": "text"
+        }
+       ]
+      },
+      "description": "Upload (or replace) the cover image for a Moretable Lineup. Multipart form-data; single image file, max 10MB. Stored via MediaLibrary with thumb/card conversions."
+     }
+    },
+    {
+     "name": "Delete Moretable lineup cover",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups/1/cover",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups",
+        "1",
+        "cover"
+       ]
+      },
+      "description": "Remove the cover image from a Moretable Lineup."
+     }
+    },
+    {
+     "name": "Delete Moretable lineup",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/moretable-lineups/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "moretable-lineups",
+        "1"
+       ]
+      },
+      "description": "Delete a Moretable Lineup blog post."
      }
     }
    ]

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
+use App\Http\Controllers\Api\V1\MerchantRewardRuleController;
 use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
 use App\Http\Controllers\Api\V1\MerchantWaitlistController;
@@ -58,6 +59,12 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
         Route::get('special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'show']);
         Route::match(['put', 'patch'], 'special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'update']);
         Route::delete('special-days/{specialDay}', [MerchantRestaurantSpecialDayController::class, 'destroy']);
+
+        Route::get('reward-rules', [MerchantRewardRuleController::class, 'index']);
+        Route::post('reward-rules', [MerchantRewardRuleController::class, 'store']);
+        Route::get('reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'show']);
+        Route::match(['put', 'patch'], 'reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'update']);
+        Route::delete('reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'destroy']);
 
         Route::get('guests', [MerchantRestaurantGuestController::class, 'index']);
 

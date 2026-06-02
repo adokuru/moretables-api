@@ -45,6 +45,7 @@ class ReservationService
         protected AvailabilityService $availabilityService,
         protected AuditLogService $auditLogService,
         protected RewardProgramService $rewardProgramService,
+        protected RestaurantRewardRuleService $rewardRuleService,
     ) {}
 
     /**
@@ -561,7 +562,7 @@ class ReservationService
             return;
         }
 
-        $points = $reservation->restaurant->reservation_reward_points ?? 100;
+        $points = $this->rewardRuleService->resolvePoints($reservation->restaurant, $reservation->starts_at);
 
         $this->rewardProgramService->awardPoints(
             user: $reservation->user,
