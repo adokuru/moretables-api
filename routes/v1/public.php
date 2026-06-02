@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\CustomerWaitlistController;
 use App\Http\Controllers\Api\V1\ExpoPushTokenController;
 use App\Http\Controllers\Api\V1\OnboardingRequestController;
 use App\Http\Controllers\Api\V1\PublicCuisineOptionController;
+use App\Http\Controllers\Api\V1\PublicMoretableLineupController;
 use App\Http\Controllers\Api\V1\PublicRestaurantController;
 use App\Http\Controllers\Api\V1\PublicRestaurantDiscoveryController;
 use App\Http\Controllers\Api\V1\PublicRestaurantViewController;
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
 
 Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index'])->middleware('throttle:public-read');
+
+Route::get('moretable-lineups', [PublicMoretableLineupController::class, 'index'])->middleware('throttle:public-read');
+Route::get('moretable-lineups/{slug}', [PublicMoretableLineupController::class, 'show'])->middleware('throttle:public-read');
 
 Route::get('search', [PublicRestaurantController::class, 'search'])->middleware('throttle:public-expensive');
 Route::get('reviews/random', [PublicRestaurantController::class, 'randomReviews'])->middleware('throttle:public-read');

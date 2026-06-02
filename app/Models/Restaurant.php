@@ -141,6 +141,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(Reservation::class);
     }
 
+    public function rewardRules(): HasMany
+    {
+        return $this->hasMany(RestaurantRewardRule::class);
+    }
+
     public function tableCombinations(): HasMany
     {
         return $this->hasMany(TableCombination::class);
