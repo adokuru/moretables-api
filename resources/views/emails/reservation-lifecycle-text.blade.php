@@ -16,9 +16,21 @@ Confirmation #: {!! $confirmationNumber !!}
 {!! $restaurantPhone !!}
 @endif
 @endif
+@if(! $showNewReservationButton)
 @if(filled($menuUrl))
 See Menu: {!! $menuUrl !!}
 @endif
 @if(filled($directionsUrl))
 Get Directions: {!! $directionsUrl !!}
+@endif
+@endif
+@if($showReservationActions)
+
+Add to calendar: {!! $calendarUrl !!}
+Modify: {!! $modifyUrl !!}
+Cancel: {!! $cancelUrl !!}
+@endif
+@if($showNewReservationButton)
+
+Make a new reservation: {!! $newReservationUrl !!}
 @endif
