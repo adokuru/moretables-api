@@ -9,7 +9,7 @@ body *:not(html):not(style):not(br):not(tr):not(code) {
 
 body {
     -webkit-text-size-adjust: none;
-    background-color: #ffffff;
+    background-color: #EEF0F2;
     color: #333333;
     height: 100%;
     line-height: 1.5;
@@ -23,11 +23,11 @@ ul,
 ol,
 blockquote {
     line-height: 1.625;
-    text-align: left;
+    text-align: center;
 }
 
 a {
-    color: #333333;
+    color: #A8442A;
     text-decoration: underline;
 }
 
@@ -40,12 +40,12 @@ a img {
 h1 {
     color: #1a1a1a;
     font-family: 'Nantes', 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
     line-height: 1.2;
     margin-top: 0;
-    margin-bottom: 20px;
-    text-align: left;
+    margin-bottom: 12px;
+    text-align: center;
 }
 
 h2 {
@@ -56,7 +56,7 @@ h2 {
     line-height: 1.25;
     margin-top: 0;
     margin-bottom: 16px;
-    text-align: left;
+    text-align: center;
 }
 
 h3 {
@@ -65,7 +65,7 @@ h3 {
     font-weight: 700;
     margin-top: 0;
     margin-bottom: 12px;
-    text-align: left;
+    text-align: center;
 }
 
 p {
@@ -73,7 +73,7 @@ p {
     line-height: 1.625;
     margin-top: 0;
     margin-bottom: 16px;
-    text-align: left;
+    text-align: center;
     color: #333333;
 }
 
@@ -92,7 +92,7 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #ffffff;
+    background-color: #EEF0F2;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -107,11 +107,11 @@ img {
     width: 100%;
 }
 
-/* Header */
+/* Header (logo on gray canvas, above the card) */
 
 .header {
-    padding: 40px 50px 0 50px;
-    text-align: left;
+    padding: 32px 50px 24px 50px;
+    text-align: center;
 }
 
 .header a {
@@ -122,22 +122,27 @@ img {
     display: inline-block;
 }
 
+.header-frame {
+    -premailer-width: 600px;
+    width: 600px;
+}
+
 /* Logo */
 
 .logo {
     height: auto;
     max-width: 142px;
     width: 142px;
-    display: block;
+    display: inline-block;
 }
 
-/* Body */
+/* Body (white card) */
 
 .body {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #ffffff;
+    background-color: #EEF0F2;
     margin: 0;
     padding: 0;
     width: 100%;
@@ -168,33 +173,34 @@ img {
 .subcopy p {
     font-size: 14px;
     color: #888A8C;
+    text-align: center;
 }
 
-/* Footer */
+/* Footer (on gray canvas, below the card) */
 
 .footer {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 600px;
     margin: 0 auto;
-    padding: 0 50px 40px 50px;
-    text-align: left;
+    padding: 28px 50px 40px 50px;
+    text-align: center;
     width: 600px;
 }
 
 .footer p,
 .footer p * {
     color: #888A8C;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.5;
-    text-align: left;
+    text-align: center;
     margin-bottom: 6px;
 }
 
 .footer a {
     color: #888A8C;
     text-decoration: underline;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .footer-divider {
@@ -231,7 +237,7 @@ img {
 
 .content-cell {
     max-width: 100vw;
-    padding: 32px 50px;
+    padding: 48px 50px;
 }
 
 /* Buttons */
@@ -240,20 +246,22 @@ img {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    margin: 24px 0;
+    margin: 28px 0 8px 0;
     padding: 0;
-    text-align: left;
+    text-align: center;
     width: 100%;
 }
 
 .button {
     -webkit-text-size-adjust: none;
-    color: #333333;
+    border-radius: 4px;
+    color: #ffffff;
     display: inline-block;
-    text-decoration: underline;
+    text-decoration: none;
     font-size: 16px;
-    font-weight: 400;
-    line-height: 1.625;
+    font-weight: 700;
+    line-height: 1.5;
+    padding: 16px 40px;
 }
 
 .button-blue,
@@ -262,16 +270,16 @@ img {
 .button-success,
 .button-red,
 .button-error {
-    background-color: transparent;
+    background-color: #A8442A;
     border: none;
-    color: #333333;
-    text-decoration: underline;
+    color: #ffffff;
+    text-decoration: none;
 }
 
 /* Panels */
 
 .panel {
-    border-left: #1a1a1a solid 3px;
+    border-left: #A8442A solid 3px;
     margin: 20px 0;
 }
 
@@ -311,15 +319,17 @@ img {
         padding-left: 24px !important;
         padding-right: 24px !important;
     }
-    .header {
+    .header,
+    .header-frame {
+        width: 100% !important;
         padding-left: 24px !important;
         padding-right: 24px !important;
     }
     .content-cell {
-        padding-left: 24px !important;
-        padding-right: 24px !important;
+        padding-left: 28px !important;
+        padding-right: 28px !important;
     }
     h1 {
-        font-size: 26px !important;
+        font-size: 28px !important;
     }
 }

@@ -19,12 +19,12 @@ class FrontOfHouseTimelineController extends Controller
         $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
 
         $timezone = $restaurant->timezone ?? 'UTC';
-        $date     = $request->filled('date')
+        $date = $request->filled('date')
             ? $request->string('date')->toString()
             : now($timezone)->toDateString();
 
         $dayStart = Carbon::parse($date, $timezone)->startOfDay()->utc();
-        $dayEnd   = Carbon::parse($date, $timezone)->endOfDay()->utc();
+        $dayEnd = Carbon::parse($date, $timezone)->endOfDay()->utc();
 
         $activeAreaIds = $restaurant->reservations()
             ->join('restaurant_tables', 'reservations.restaurant_table_id', '=', 'restaurant_tables.id')
@@ -48,12 +48,12 @@ class FrontOfHouseTimelineController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $request->validate([
-            'date'           => ['nullable', 'date_format:Y-m-d'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
             'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
         ]);
 
         $timezone = $restaurant->timezone ?? 'UTC';
-        $date     = $request->filled('date')
+        $date = $request->filled('date')
             ? $request->string('date')->toString()
             : now($timezone)->toDateString();
 
@@ -66,11 +66,11 @@ class FrontOfHouseTimelineController extends Controller
             $diningAreasQuery->where('id', $diningAreaId);
         }
 
-        $tables   = $diningAreasQuery->get()->flatMap(fn ($area) => $area->tables);
+        $tables = $diningAreasQuery->get()->flatMap(fn ($area) => $area->tables);
         $tableIds = $tables->pluck('id');
 
         $dayStart = Carbon::parse($date, $timezone)->startOfDay()->utc();
-        $dayEnd   = Carbon::parse($date, $timezone)->endOfDay()->utc();
+        $dayEnd = Carbon::parse($date, $timezone)->endOfDay()->utc();
 
         $reservationsByTable = $restaurant->reservations()
             ->with('guestContact')
@@ -86,25 +86,25 @@ class FrontOfHouseTimelineController extends Controller
                 $endsAt = $res->ends_at ?? $res->starts_at?->copy()->addMinutes(60);
 
                 $contact = $res->guestContact;
-                $name    = $contact
+                $name = $contact
                     ? trim("{$contact->first_name} {$contact->last_name}")
                     : 'Guest';
 
                 return [
-                    'id'         => $res->id,
-                    'name'       => $name,
+                    'id' => $res->id,
+                    'name' => $name,
                     'party_size' => $res->party_size,
-                    'starts_at'  => $res->starts_at?->setTimezone($timezone)->toIso8601String(),
-                    'ends_at'    => $endsAt?->setTimezone($timezone)->toIso8601String(),
+                    'starts_at' => $res->starts_at?->setTimezone($timezone)->toIso8601String(),
+                    'ends_at' => $endsAt?->setTimezone($timezone)->toIso8601String(),
                 ];
             })->values();
 
             return [
-                'id'           => $table->id,
-                'table_label'  => $table->name,
-                'space'        => $table->max_capacity,
-                'table_color'  => $table->color,
-                'chair_color'  => $table->chair_color,
+                'id' => $table->id,
+                'table_label' => $table->name,
+                'space' => $table->max_capacity,
+                'table_color' => $table->color,
+                'chair_color' => $table->chair_color,
                 'reservations' => $reservations,
             ];
         })->values();
