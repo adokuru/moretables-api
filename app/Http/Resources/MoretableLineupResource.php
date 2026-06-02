@@ -24,6 +24,10 @@ class MoretableLineupResource extends JsonResource
             'status' => $this->status?->value,
             'is_featured' => (bool) $this->is_featured,
             'published_at' => $this->published_at?->toIso8601String(),
+            'distance_km' => $this->when(
+                $this->resource->getAttribute('distance_km') !== null,
+                fn () => round((float) $this->resource->getAttribute('distance_km'), 2),
+            ),
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

@@ -541,6 +541,34 @@
                             "default": 20
                         },
                         "example": 20
+                    },
+                    {
+                        "name": "latitude",
+                        "in": "query",
+                        "schema": {
+                            "type": "object"
+                        },
+                        "example": 6.4281,
+                        "x-deepObject-style": "qs"
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "query",
+                        "schema": {
+                            "type": "object"
+                        },
+                        "example": 3.4219,
+                        "x-deepObject-style": "qs"
+                    },
+                    {
+                        "name": "radius_km",
+                        "in": "query",
+                        "schema": {
+                            "type": "object",
+                            "default": 25
+                        },
+                        "example": 25,
+                        "x-deepObject-style": "qs"
                     }
                 ],
                 "responses": {
@@ -642,6 +670,9 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -6037,6 +6068,347 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/dining-areas/{diningArea}/spots": {
+            "get": {
+                "operationId": "merchantDiningSpot.index",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "diningArea",
+                        "in": "path",
+                        "required": true,
+                        "description": "The dining area ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `DiningSpotResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DiningSpotResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantDiningSpot.store",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "diningArea",
+                        "in": "path",
+                        "required": true,
+                        "description": "The dining area ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreDiningSpotRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Dining spot created successfully."
+                                        },
+                                        "spot": {
+                                            "$ref": "#/components/schemas/DiningSpotResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "spot"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/dining-areas/{diningArea}/spots/{spot}": {
+            "patch": {
+                "operationId": "merchantDiningSpot.update",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "diningArea",
+                        "in": "path",
+                        "required": true,
+                        "description": "The dining area ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDiningSpotRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Dining spot updated successfully."
+                                        },
+                                        "spot": {
+                                            "$ref": "#/components/schemas/DiningSpotResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "spot"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantDiningSpot.destroy",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "diningArea",
+                        "in": "path",
+                        "required": true,
+                        "description": "The dining area ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "spot",
+                        "in": "path",
+                        "required": true,
+                        "description": "The spot ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Dining spot deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
@@ -23625,6 +23997,46 @@
                 ],
                 "title": "DiningAreaResource"
             },
+            "DiningSpotResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "dining_area_id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "sort_order": {
+                        "type": "string"
+                    },
+                    "is_active": {
+                        "type": "string"
+                    },
+                    "tables_count": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "table_ids": {
+                        "type": "array",
+                        "items": {}
+                    }
+                },
+                "required": [
+                    "id",
+                    "dining_area_id",
+                    "name",
+                    "description",
+                    "sort_order",
+                    "is_active"
+                ],
+                "title": "DiningSpotResource"
+            },
             "ForgotPasswordRequest": {
                 "type": "object",
                 "properties": {
@@ -24254,6 +24666,9 @@
                     },
                     "published_at": {
                         "type": "string"
+                    },
+                    "distance_km": {
+                        "type": "number"
                     },
                     "restaurant": {
                         "$ref": "#/components/schemas/RestaurantListResource"
@@ -25741,6 +26156,9 @@
                             "null"
                         ]
                     },
+                    "dining_spot_id": {
+                        "type": "string"
+                    },
                     "name": {
                         "type": "string"
                     },
@@ -25782,13 +26200,13 @@
                     },
                     "x_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ]
                     },
                     "y_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ]
                     },
@@ -25843,6 +26261,7 @@
                     "id",
                     "restaurant_id",
                     "dining_area_id",
+                    "dining_spot_id",
                     "name",
                     "table_label",
                     "layout_type",
@@ -27088,6 +27507,39 @@
                 ],
                 "title": "StoreDiningAreaRequest"
             },
+            "StoreDiningSpotRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 500
+                    },
+                    "sort_order": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "StoreDiningSpotRequest"
+            },
             "StoreExpoPushTokenRequest": {
                 "type": "object",
                 "properties": {
@@ -27975,14 +28427,14 @@
                     },
                     "x_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ],
                         "minimum": 0
                     },
                     "y_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ],
                         "minimum": 0
@@ -28169,11 +28621,11 @@
                                     "maxLength": 50
                                 },
                                 "x_position": {
-                                    "type": "integer",
+                                    "type": "number",
                                     "minimum": 0
                                 },
                                 "y_position": {
-                                    "type": "integer",
+                                    "type": "number",
                                     "minimum": 0
                                 },
                                 "table_label": {
@@ -28235,6 +28687,12 @@
                                         "null"
                                     ],
                                     "minimum": 10
+                                },
+                                "dining_spot_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
                                 }
                             },
                             "required": [
@@ -28935,6 +29393,36 @@
                     }
                 },
                 "title": "UpdateDiningAreaRequest"
+            },
+            "UpdateDiningSpotRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 500
+                    },
+                    "sort_order": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    },
+                    "is_active": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    }
+                },
+                "title": "UpdateDiningSpotRequest"
             },
             "UpdateGalleryCategoryRequest": {
                 "type": "object",
@@ -30373,14 +30861,14 @@
                     },
                     "x_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ],
                         "minimum": 0
                     },
                     "y_position": {
                         "type": [
-                            "integer",
+                            "number",
                             "null"
                         ],
                         "minimum": 0

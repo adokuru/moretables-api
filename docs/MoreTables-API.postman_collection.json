@@ -1249,7 +1249,7 @@
        }
       ],
       "url": {
-       "raw": "{{baseUrl}}/api/v1/moretable-lineups",
+       "raw": "{{baseUrl}}/api/v1/moretable-lineups?latitude=6.4281&longitude=3.4219&radius_km=25",
        "host": [
         "{{baseUrl}}"
        ],
@@ -1257,9 +1257,29 @@
         "api",
         "v1",
         "moretable-lineups"
+       ],
+       "query": [
+        {
+         "key": "latitude",
+         "value": "6.4281",
+         "description": "Diner latitude (for experiences near me)",
+         "disabled": true
+        },
+        {
+         "key": "longitude",
+         "value": "3.4219",
+         "description": "Diner longitude",
+         "disabled": true
+        },
+        {
+         "key": "radius_km",
+         "value": "25",
+         "description": "Search radius in km (default 25)",
+         "disabled": true
+        }
        ]
       },
-      "description": "Public list of published Moretable Lineup blog posts, each with its featured restaurant."
+      "description": "Public list of published Moretable Lineup blog posts. Pass latitude & longitude to show experiences near the diner, ordered nearest first; each item then includes distance_km. radius_km defaults to 25."
      }
     },
     {

@@ -148,3 +148,31 @@ it('exposes only published lineups publicly', function (): void {
 
     $this->getJson('/api/v1/moretable-lineups/draft-lineup')->assertNotFound();
 });
+
+it('returns lineups near the given coordinates ordered by distance', function (): void {
+    $near = Restaurant::factory()->create(['latitude' => 6.4300, 'longitude' => 3.4220]);
+    $closer = Restaurant::factory()->create(['latitude' => 6.4285, 'longitude' => 3.4219]);
+    $far = Restaurant::factory()->create(['latitude' => 9.0570, 'longitude' => 7.4951]);
+
+    MoretableLineup::factory()->published()->for($near)->create(['slug' => 'near-lineup']);
+    MoretableLineup::factory()->published()->for($closer)->create(['slug' => 'closer-lineup']);
+    MoretableLineup::factory()->published()->for($far)->create(['slug' => 'far-lineup']);
+
+    $response = $this->getJson('/api/v1/moretable-lineups?latitude=6.4281&longitude=3.4219&radius_km=25');
+
+    $response->assertOk();
+
+    $slugs = collect($response->json('data'))->pluck('slug')->all();
+
+    expect($slugs)->toContain('near-lineup', 'closer-lineup')
+        ->and($slugs)->not->toContain('far-lineup')
+        ->and($slugs[0])->toBe('closer-lineup');
+
+    expect($response->json('data.0.distance_km'))->not->toBeNull();
+});
+
+it('validates latitude and longitude pairing', function (): void {
+    $this->getJson('/api/v1/moretable-lineups?latitude=6.4281')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['longitude']);
+});
