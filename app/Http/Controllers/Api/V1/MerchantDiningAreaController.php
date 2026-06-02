@@ -138,6 +138,7 @@ class MerchantDiningAreaController extends Controller
                 'color' => $table['table_color'] ?? null,
                 'chair_color' => $table['chair_color'] ?? null,
                 'rotation' => $rotationMap[$table['rotate'] ?? 'r1'],
+                'dining_spot_id' => $table['dining_spot_id'] ?? null,
                 'min_capacity' => $table['min_party_size'] ?? RestaurantTable::DEFAULT_MIN_CAPACITY,
                 'max_capacity' => $table['max_party_size'] ?? RestaurantTable::DEFAULT_MAX_CAPACITY,
                 'sort_order' => $index,

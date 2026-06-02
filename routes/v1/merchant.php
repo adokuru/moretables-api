@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\MerchantAccessConfigController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
+use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
@@ -120,6 +121,11 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
         Route::patch('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'update']);
         Route::delete('dining-areas/{diningArea}', [MerchantDiningAreaController::class, 'destroy']);
         Route::put('dining-areas/{diningArea}/layout', [MerchantDiningAreaController::class, 'syncLayout']);
+
+        Route::get('dining-areas/{diningArea}/spots', [MerchantDiningSpotController::class, 'index']);
+        Route::post('dining-areas/{diningArea}/spots', [MerchantDiningSpotController::class, 'store']);
+        Route::patch('dining-areas/{diningArea}/spots/{spot}', [MerchantDiningSpotController::class, 'update']);
+        Route::delete('dining-areas/{diningArea}/spots/{spot}', [MerchantDiningSpotController::class, 'destroy']);
 
         Route::get('tables', [MerchantTableController::class, 'index']);
         Route::post('tables', [MerchantTableController::class, 'store']);

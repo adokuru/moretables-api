@@ -28,6 +28,7 @@ class RestaurantTable extends Model
     protected $fillable = [
         'restaurant_id',
         'dining_area_id',
+        'dining_spot_id',
         'name',
         'min_capacity',
         'max_capacity',
@@ -53,8 +54,8 @@ class RestaurantTable extends Model
             'shape' => TableShape::class,
             'status' => TableStatus::class,
             'is_active' => 'boolean',
-            'x_position' => 'integer',
-            'y_position' => 'integer',
+            'x_position' => 'float',
+            'y_position' => 'float',
             'width' => 'integer',
             'height' => 'integer',
             'rotation' => 'integer',
@@ -69,6 +70,11 @@ class RestaurantTable extends Model
     public function diningArea(): BelongsTo
     {
         return $this->belongsTo(DiningArea::class);
+    }
+
+    public function diningSpot(): BelongsTo
+    {
+        return $this->belongsTo(DiningSpot::class);
     }
 
     public function reservations(): HasMany
