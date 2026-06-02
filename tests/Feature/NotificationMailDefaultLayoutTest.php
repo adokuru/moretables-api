@@ -15,7 +15,7 @@ it('renders notification html with moretables tabular layout', function (): void
         ->line('Outro line.')
         ->render();
 
-    expect($html)->toContain('#FA0F00')
+    expect($html)->toContain('#A8442A')
         ->and($html)->toContain('Nantes')
         ->and($html)->toContain('Avenir')
         ->and($html)->toContain('logo.png')

@@ -1,9 +1,11 @@
 {{--
     Reservation lifecycle email (confirmed / changed / cancelled / reminder / guest added).
-    Fonts: Nantes (greeting); Avenir (body/details/footer).
+    Centered card layout. Fonts: Nantes (heading); Avenir (body/details/footer).
 --}}
 @php
     $logoUrl = asset('logo.png');
+    $brandColor = '#A8442A';
+    $restaurantImageUrl = $restaurantImageUrl ?? null;
     $footerLink1Url = $footerLink1Url ?? config('app.url');
     $footerLink1Label = $footerLink1Label ?? 'Earn rewards';
     $footerLink2Url = $footerLink2Url ?? config('app.url');
@@ -26,7 +28,7 @@ table td { border-collapse: collapse }
 .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100% }
 body, a, li, p, h1, h2, h3 { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
 html { -webkit-text-size-adjust: none !important }
-body { min-width: 100%; Margin: 0px; padding: 0px; background-color: #FFFFFF; }
+body { min-width: 100%; Margin: 0px; padding: 0px; background-color: #EEF0F2; }
 body, #innerTable { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale }
 img { Margin: 0; padding: 0; -ms-interpolation-mode: bicubic }
 h1, h2, h3, p, a { overflow-wrap: normal; white-space: normal; word-break: break-word }
@@ -40,160 +42,158 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
     font-display: swap;
 }
 @media (max-width: 480px) {
-.t-outer { padding-left: 24px !important; padding-right: 24px !important; }
-.t-greeting { font-size: 26px !important; }
+.t-card { padding-left: 28px !important; padding-right: 28px !important; }
+.t-heading { font-size: 28px !important; }
 }
 </style>
 </head>
-<body id="body" style="min-width:100%;Margin:0px;padding:0px;background-color:#FFFFFF;">
-<div style="background-color:#FFFFFF;">
+<body id="body" style="min-width:100%;Margin:0px;padding:0px;background-color:#EEF0F2;">
+<div style="background-color:#EEF0F2;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
-<tr><td style="background-color:#FFFFFF;" valign="top" align="center">
+<tr><td style="background-color:#EEF0F2;" valign="top" align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" id="innerTable">
 <tr><td align="center">
 <table role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
 <tr><td width="600" style="width:600px;">
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-<tr><td class="t-outer" style="background-color:#FFFFFF;padding:40px 50px 35px 50px;">
+
+{{-- Logo (on gray, centered) --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;">
+<tr><td align="center" style="padding:32px 0 24px 0;">
+<img style="display:inline-block;border:0;height:auto;width:142px;max-width:142px;Margin:0;" width="142" alt="MoreTables" src="{{ $logoUrl }}" />
+</td></tr>
+</table>
+
+{{-- White card --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;background-color:#FFFFFF;">
+<tr><td class="t-card" style="background-color:#FFFFFF;padding:48px 50px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;">
 
-{{-- Logo --}}
-<tr><td align="left">
-<table role="presentation" cellpadding="0" cellspacing="0" style="Margin-right:auto;"><tr><td width="142" style="width:142px;">
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td>
-<div style="font-size:0px;"><img style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="142" alt="MoreTables" src="{{ $logoUrl }}" /></div>
-</td></tr></table>
-</td></tr></table>
+{{-- Heading --}}
+<tr><td align="center">
+<p class="t-heading" style="margin:0;Margin:0;font-family:'Nantes','Iowan Old Style','Palatino Linotype','Book Antiqua',Georgia,serif;line-height:42px;font-weight:700;font-size:34px;color:#1a1a1a;text-align:center;mso-line-height-rule:exactly;">{{ $title }}</p>
 </td></tr>
-
-{{-- Spacer --}}
-<tr><td><div style="mso-line-height-rule:exactly;line-height:32px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-
-{{-- Greeting --}}
-<tr><td align="left">
-<p class="t-greeting" style="margin:0;Margin:0;font-family:'Nantes','Iowan Old Style','Palatino Linotype','Book Antiqua',Georgia,serif;line-height:38px;font-weight:700;font-size:32px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">Hi {{ $guestName }},</p>
-</td></tr>
-
-{{-- Spacer --}}
-<tr><td><div style="mso-line-height-rule:exactly;line-height:20px;font-size:1px;display:block;">&nbsp;</div></td></tr>
 
 {{-- Subtitle --}}
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">{{ $title }}</p>
-</td></tr>
-<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $subtitle }}</p>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:12px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#555555;text-align:center;mso-line-height-rule:exactly;">{{ $subtitle }}</p>
 </td></tr>
 
-{{-- Spacer --}}
-<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+{{-- Restaurant image (circular) --}}
+@if(filled($restaurantImageUrl))
+<tr><td><div style="mso-line-height-rule:exactly;line-height:32px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<img src="{{ $restaurantImageUrl }}" width="150" height="150" alt="{{ $restaurantName }}" style="display:inline-block;border:0;width:150px;height:150px;max-width:150px;border-radius:50%;object-fit:cover;Margin:0;" />
+</td></tr>
+@endif
 
-{{-- Reservation details --}}
-<tr><td align="left">
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;">
-<tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;"><strong>{{ $restaurantName }}</strong></p>
+{{-- Restaurant name (brand) --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:28px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:28px;font-weight:700;font-size:20px;color:{{ $brandColor }};text-align:center;mso-line-height-rule:exactly;">{{ $restaurantName }}</p>
 </td></tr>
-<tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $tableInfo }}</p>
+
+{{-- Table / datetime --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:14px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:17px;color:#1a1a1a;text-align:center;mso-line-height-rule:exactly;">{{ $tableInfo }}</p>
 </td></tr>
-<tr><td style="padding-bottom:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Name: <strong>{{ $guestName }}</strong></p>
+
+{{-- Name + confirmation --}}
+<tr><td><div style="mso-line-height-rule:exactly;line-height:16px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:15px;color:#333333;text-align:center;mso-line-height-rule:exactly;">Name: {{ $guestName }}</p>
 </td></tr>
-<tr><td>
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">Confirmation #: <strong>{{ $confirmationNumber }}</strong></p>
-</td></tr>
-@if($showRestaurantContactDetails)
-@if(filled($addressLineOne))
-<tr><td style="padding-top:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $addressLineOne }}</p>
-</td></tr>
-@endif
-@if(filled($addressLineTwo))
-<tr><td style="padding-top:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $addressLineTwo }}</p>
-</td></tr>
-@endif
-@if(filled($restaurantPhone))
-<tr><td style="padding-top:6px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $restaurantPhone }}</p>
-</td></tr>
-@endif
-@endif
-</table>
+<tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:15px;color:#333333;text-align:center;mso-line-height-rule:exactly;">Confirmation #: {{ $confirmationNumber }}</p>
 </td></tr>
 
 {{-- Extra body lines (optional) --}}
 @if(filled($extraBody ?? ''))
-<tr><td><div style="mso-line-height-rule:exactly;line-height:20px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{!! nl2br(e($extraBody)) !!}</p>
-</td></tr>
-@endif
-
-{{-- Spacer --}}
 <tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-
-{{-- CTA link --}}
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:700;font-size:16px;color:#1a1a1a;text-align:left;mso-line-height-rule:exactly;">Need to make changes?</p>
-</td></tr>
-<tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td align="left">
-<a href="{{ $ctaUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">{{ $ctaLabel }}</a>
-</td></tr>
-@if(filled($menuUrl))
-<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td align="left">
-<a href="{{ $menuUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">See Menu</a>
-</td></tr>
-@endif
-@if(filled($directionsUrl))
-<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td align="left">
-<a href="{{ $directionsUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">Get Directions</a>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:15px;color:#333333;text-align:center;mso-line-height-rule:exactly;">{!! nl2br(e($extraBody)) !!}</p>
 </td></tr>
 @endif
 
-{{-- Spacer --}}
-<tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-
-{{-- Closing message --}}
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">If you ever need help, we're always here for you.</p>
-</td></tr>
-
-{{-- Spacer --}}
+{{-- See menu | Get directions --}}
+@if((filled($menuUrl) || filled($directionsUrl)) && ! $showNewReservationButton)
 <tr><td><div style="mso-line-height-rule:exactly;line-height:28px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-
-{{-- Sign-off --}}
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">{{ $signOff }}</p>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-weight:700;font-size:15px;text-align:center;mso-line-height-rule:exactly;">
+@if(filled($menuUrl))<a href="{{ $menuUrl }}" style="color:{{ $brandColor }};text-decoration:none;" target="_blank">See menu</a>@endif
+@if(filled($menuUrl) && filled($directionsUrl))<span style="color:{{ $brandColor }};">&nbsp;|&nbsp;</span>@endif
+@if(filled($directionsUrl))<a href="{{ $directionsUrl }}" style="color:{{ $brandColor }};text-decoration:none;" target="_blank">Get directions</a>@endif
+</p>
 </td></tr>
-<tr><td align="left">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:26px;font-weight:400;font-size:16px;color:#333333;text-align:left;mso-line-height-rule:exactly;">The MoreTables Team</p>
-</td></tr>
+@endif
 
-{{-- Spacer --}}
+{{-- Address / phone --}}
+@if($showRestaurantContactDetails)
+@if(filled($addressLineOne))
 <tr><td><div style="mso-line-height-rule:exactly;line-height:24px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-
-{{-- Footer --}}
-<tr><td align="left">
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-top:1px solid #E0E0E0;padding-top:20px;">
-<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;color:#888A8C;text-align:left;mso-line-height-rule:exactly;">Sent from MoreTables</p></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:14px;color:#555555;text-align:center;mso-line-height-rule:exactly;">{{ $addressLineOne }}</p>
+</td></tr>
+@endif
+@if(filled($addressLineTwo))
 <tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;color:#888A8C;text-align:left;mso-line-height-rule:exactly;">MoreTables Ltd., Lagos Nigeria</p></td></tr>
-<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;text-align:left;mso-line-height-rule:exactly;"><a href="{{ $footerLink1Url }}" style="font-size:14px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink1Label }}</a></p></td></tr>
-<tr><td><div style="mso-line-height-rule:exactly;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr>
-<tr><td><p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-weight:400;font-size:14px;text-align:left;mso-line-height-rule:exactly;"><a href="{{ $footerLink2Url }}" style="font-size:14px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink2Label }}</a></p></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:14px;color:#555555;text-align:center;mso-line-height-rule:exactly;">{{ $addressLineTwo }}</p>
+</td></tr>
+@endif
+@if(filled($restaurantPhone))
+<tr><td><div style="mso-line-height-rule:exactly;line-height:4px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-size:14px;color:#555555;text-align:center;mso-line-height-rule:exactly;">{{ $restaurantPhone }}</p>
+</td></tr>
+@endif
+@endif
+
+{{-- Calendar / Modify / Cancel actions (confirmed & changed) --}}
+@if($showReservationActions)
+<tr><td><div style="mso-line-height-rule:exactly;line-height:32px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:24px;font-weight:700;font-size:15px;text-align:center;mso-line-height-rule:exactly;">
+<a href="{{ $calendarUrl }}" style="color:{{ $brandColor }};text-decoration:none;" target="_blank">Add to calendar</a>
+<span style="color:#CCCCCC;">&nbsp;&nbsp;&middot;&nbsp;&nbsp;</span>
+<a href="{{ $modifyUrl }}" style="color:{{ $brandColor }};text-decoration:none;" target="_blank">Modify</a>
+<span style="color:#CCCCCC;">&nbsp;&nbsp;&middot;&nbsp;&nbsp;</span>
+<a href="{{ $cancelUrl }}" style="color:{{ $brandColor }};text-decoration:none;" target="_blank">Cancel</a>
+</p>
+</td></tr>
+@endif
+
+{{-- Make a new reservation (cancelled) --}}
+@if($showNewReservationButton)
+<tr><td><div style="mso-line-height-rule:exactly;line-height:36px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr><td align="center" style="background-color:{{ $brandColor }};border-radius:4px;">
+<a href="{{ $newReservationUrl }}" style="display:inline-block;padding:16px 40px;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;" target="_blank">Make a new reservation</a>
+</td></tr>
 </table>
 </td></tr>
+@endif
 
 </table>
 </td></tr>
 </table>
+
+{{-- Footer (on gray, centered) --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;">
+<tr><td align="center" style="padding:28px 50px 40px 50px;">
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-size:13px;color:#888A8C;text-align:center;mso-line-height-rule:exactly;">Sent from MoreTables &middot; MoreTables Ltd., Lagos Nigeria</p>
+<div style="mso-line-height-rule:exactly;line-height:10px;font-size:1px;display:block;">&nbsp;</div>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-size:13px;text-align:center;mso-line-height-rule:exactly;">
+<a href="{{ $footerLink1Url }}" style="font-size:13px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink1Label }}</a>
+<span style="color:#888A8C;">&nbsp;&middot;&nbsp;</span>
+<a href="{{ $footerLink2Url }}" style="font-size:13px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink2Label }}</a>
+</p>
+</td></tr>
+</table>
+
 </td></tr>
 </table>
 </td></tr>

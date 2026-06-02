@@ -46,6 +46,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'subtitle' => $this->subtitle($restaurant->name),
                 'guestName' => $this->guestName(),
                 'restaurantName' => $restaurant->name,
+                'restaurantImageUrl' => $this->restaurantImageUrl(),
                 'formattedDate' => $this->formattedDate(),
                 'formattedTime' => $this->formattedTime(),
                 'partySize' => $this->reservation->party_size,
@@ -58,12 +59,15 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'menuUrl' => $restaurant->menu_link,
                 'directionsUrl' => $this->directionsUrl(),
                 'extraBody' => $this->extraBody(),
-                'ctaUrl' => config('app.url').'/reservations/'.$this->reservation->reservation_reference,
-                'ctaLabel' => 'Manage reservation',
-                'signOff' => $this->signOff(),
-                'footerLink1Url' => config('app.url'),
+                'showReservationActions' => $this->showReservationActions(),
+                'showNewReservationButton' => $this->showNewReservationButton(),
+                'calendarUrl' => $this->reservationActionUrl('calendar'),
+                'modifyUrl' => $this->reservationActionUrl('modify'),
+                'cancelUrl' => $this->reservationActionUrl('cancel'),
+                'newReservationUrl' => $this->newReservationUrl(),
+                'footerLink1Url' => $this->frontendBaseUrl(),
                 'footerLink1Label' => 'Earn rewards',
-                'footerLink2Url' => config('app.url').'/unsubscribe',
+                'footerLink2Url' => $this->frontendBaseUrl().'/unsubscribe',
                 'footerLink2Label' => 'Unsubscribe',
             ],
         );
@@ -101,15 +105,6 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             'guest_added', 'upcoming_reminder' => 'Here are the details',
             'cancelled' => "You've successfully canceled your reservation at {$restaurantName}.",
             default => 'There is an update to your reservation.',
-        };
-    }
-
-    protected function signOff(): string
-    {
-        return match ($this->action) {
-            'created' => 'Enjoy your meal,',
-            'upcoming_reminder' => 'See you soon!',
-            default => 'Thanks,',
         };
     }
 
@@ -185,6 +180,42 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             $startsAt->format('l, F j, Y'),
             $startsAt->format('g:i a'),
         );
+    }
+
+    protected function restaurantImageUrl(): ?string
+    {
+        $url = $this->reservation->restaurant->getFirstMediaUrl('featured', 'thumb');
+
+        return $url !== '' ? $url : null;
+    }
+
+    protected function showReservationActions(): bool
+    {
+        return in_array($this->action, ['created', 'updated'], true);
+    }
+
+    protected function showNewReservationButton(): bool
+    {
+        return $this->action === 'cancelled';
+    }
+
+    protected function frontendBaseUrl(): string
+    {
+        return rtrim(config('app.frontend_urls.main') ?: config('app.url'), '/');
+    }
+
+    protected function reservationActionUrl(string $action): string
+    {
+        return $this->frontendBaseUrl().'/reservations/'.$this->reservation->reservation_reference.'/'.$action;
+    }
+
+    protected function newReservationUrl(): string
+    {
+        $slug = $this->reservation->restaurant->slug;
+
+        return $slug !== null && $slug !== ''
+            ? $this->frontendBaseUrl().'/restaurants/'.$slug
+            : $this->frontendBaseUrl();
     }
 
     protected function showRestaurantContactDetails(): bool

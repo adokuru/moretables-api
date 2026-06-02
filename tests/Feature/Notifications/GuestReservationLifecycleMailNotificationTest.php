@@ -8,6 +8,7 @@ use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -64,11 +65,16 @@ it('renders the reservation confirmed email with restaurant details and actions'
         ->and($html)->toContain('Urenna Anyadike')
         ->and($html)->toContain('Confirmation #:')
         ->and($html)->toContain('378493')
-        ->and($html)->toContain('See Menu')
-        ->and($html)->toContain('Get Directions')
+        ->and($html)->toContain('border-radius:50%')
+        ->and($mailMessage->data()['restaurantImageUrl'])->not->toBeNull()
+        ->and($html)->toContain('See menu')
+        ->and($html)->toContain('Get directions')
+        ->and($html)->toContain('Add to calendar')
+        ->and($html)->not->toContain('Make a new reservation')
         ->and($html)->toContain('1501 Vine Street')
         ->and($html)->toContain('(513) 419-1820')
         ->and($text)->toContain('Reservation confirmed')
+        ->and($text)->toContain('Add to calendar:')
         ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
         ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000');
 });
@@ -119,16 +125,19 @@ it('renders the reservation canceled email with the canceled copy and trimmed de
         ->and($html)->toContain('successfully canceled your reservation at')
         ->and($html)->toContain('Pepp &amp; Dolores')
         ->and($html)->toContain('Table for 2 on Wednesday, April 15, 2026 at 8:45 pm')
-        ->and($html)->toContain('See Menu')
-        ->and($html)->toContain('Get Directions')
+        ->and($html)->toContain('Make a new reservation')
+        ->and($html)->not->toContain('See menu')
+        ->and($html)->not->toContain('Get directions')
+        ->and($html)->not->toContain('Add to calendar')
         ->and($html)->not->toContain('1501 Vine Street')
         ->and($html)->not->toContain('(513) 419-1820')
         ->and($text)->toContain('Reservation canceled')
         ->and($text)->toContain("You've successfully canceled your reservation at")
+        ->and($text)->toContain('Make a new reservation:')
         ->and($text)->not->toContain('1501 Vine Street')
         ->and($text)->not->toContain('(513) 419-1820')
-        ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
-        ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000');
+        ->and($text)->not->toContain('See Menu: https://pepp.example.com/menu')
+        ->and($text)->not->toContain('Get Directions:');
 });
 
 it('renders the reservation changed email with the updated copy and full details', function (): void {
@@ -179,14 +188,23 @@ it('renders the reservation changed email with the updated copy and full details
         ->and($html)->toContain('Table for 2 on Wednesday, April 15, 2026 at 8:45 pm')
         ->and($html)->toContain('1501 Vine Street')
         ->and($html)->toContain('(513) 419-1820')
-        ->and($html)->toContain('See Menu')
-        ->and($html)->toContain('Get Directions')
+        ->and($html)->toContain('See menu')
+        ->and($html)->toContain('Get directions')
+        ->and($html)->toContain('Add to calendar')
+        ->and($html)->toContain('Modify')
+        ->and($html)->toContain('Cancel')
+        ->and($mailMessage->data()['modifyUrl'])->toContain('/reservations/378493/modify')
+        ->and($mailMessage->data()['cancelUrl'])->toContain('/reservations/378493/cancel')
+        ->and($html)->not->toContain('Make a new reservation')
         ->and($text)->toContain('Reservation changed')
         ->and($text)->toContain('Here are the new details:')
         ->and($text)->toContain('1501 Vine Street')
         ->and($text)->toContain('(513) 419-1820')
         ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
-        ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000');
+        ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000')
+        ->and($text)->toContain('Add to calendar:')
+        ->and($text)->toContain('Modify:')
+        ->and($text)->toContain('Cancel:');
 });
 
 it('renders the added diner email with the guest-added copy and trimmed details', function (): void {
@@ -240,10 +258,12 @@ it('renders the added diner email with the guest-added copy and trimmed details'
         ->and($html)->toContain('Urenna Anyadike')
         ->and($html)->toContain('Confirmation #:')
         ->and($html)->toContain('378493')
-        ->and($html)->toContain('See Menu')
-        ->and($html)->toContain('Get Directions')
+        ->and($html)->toContain('See menu')
+        ->and($html)->toContain('Get directions')
         ->and($html)->not->toContain('1501 Vine Street')
         ->and($html)->not->toContain('(513) 419-1820')
+        ->and($html)->not->toContain('Add to calendar')
+        ->and($html)->not->toContain('Make a new reservation')
         ->and($text)->toContain('You have been added to the below reservation')
         ->and($text)->toContain('Here are the details')
         ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
@@ -298,14 +318,57 @@ it('renders the upcoming reservation reminder email with the reminder copy and t
         ->and($html)->toContain('Here are the details')
         ->and($html)->toContain('Table for 2 on Wednesday, April 15, 2026 at 8:45 pm')
         ->and($html)->toContain('Urenna Anyadike')
-        ->and($html)->toContain('See Menu')
-        ->and($html)->toContain('Get Directions')
+        ->and($html)->toContain('See menu')
+        ->and($html)->toContain('Get directions')
         ->and($html)->not->toContain('1501 Vine Street')
         ->and($html)->not->toContain('(513) 419-1820')
+        ->and($html)->not->toContain('Add to calendar')
+        ->and($html)->not->toContain('Make a new reservation')
         ->and($text)->toContain('Your reservation is coming up at Pepp & Dolores in 3 days')
         ->and($text)->toContain('Here are the details')
         ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
         ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000')
         ->and($text)->not->toContain('1501 Vine Street')
         ->and($text)->not->toContain('(513) 419-1820');
+});
+
+it('renders the registered user reservation email with the branded centered template', function (): void {
+    Storage::fake('public');
+
+    config(['app.url' => 'https://moretables.test']);
+
+    $restaurant = Restaurant::factory()->create([
+        'name' => 'Pepp & Dolores',
+        'timezone' => 'America/New_York',
+        'menu_link' => 'https://pepp.example.com/menu',
+        'latitude' => 39.1080000,
+        'longitude' => -84.5150000,
+    ]);
+
+    $restaurant
+        ->addMedia(UploadedFile::fake()->image('restaurant-user.png'))
+        ->toMediaCollection('featured');
+
+    $user = User::factory()->create([
+        'first_name' => 'Urenna',
+        'last_name' => 'Anyadike',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'user_id' => $user->id,
+        'starts_at' => Carbon::parse('2026-04-14 00:00:00', 'UTC'),
+        'party_size' => 2,
+        'reservation_reference' => '378493',
+    ]);
+
+    $mailMessage = (new ReservationLifecycleNotification($reservation, 'created'))->toMail($user);
+    $html = (string) $mailMessage->render();
+
+    expect($html)->toContain('Reservation confirmed')
+        ->and($html)->toContain('Pepp &amp; Dolores')
+        ->and($html)->toContain('Urenna Anyadike')
+        ->and($html)->toContain('border-radius:50%')
+        ->and($html)->toContain('Add to calendar')
+        ->and($html)->not->toContain('was created.');
 });

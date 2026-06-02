@@ -1,8 +1,14 @@
 @props(['url'])
 <tr>
-<td class="header">
+<td align="center">
+<table class="header-frame" align="center" width="600" cellpadding="0" cellspacing="0" role="presentation">
+<tr>
+<td class="header" align="center">
 <a href="{{ $url }}" style="display:inline-block;">
-<img src="{{ asset('logo.png') }}" class="logo" width="142" alt="{{ trim($slot) !== '' ? trim($slot) : config('app.name') }}" style="display:block;width:142px;height:auto;max-width:142px;">
+<img src="{{ asset('logo.png') }}" class="logo" width="142" alt="{{ trim($slot) !== '' ? trim($slot) : config('app.name') }}" style="display:inline-block;width:142px;height:auto;max-width:142px;">
 </a>
+</td>
+</tr>
+</table>
 </td>
 </tr>
