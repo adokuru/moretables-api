@@ -8,6 +8,7 @@ use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -329,4 +330,45 @@ it('renders the upcoming reservation reminder email with the reminder copy and t
         ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000')
         ->and($text)->not->toContain('1501 Vine Street')
         ->and($text)->not->toContain('(513) 419-1820');
+});
+
+it('renders the registered user reservation email with the branded centered template', function (): void {
+    Storage::fake('public');
+
+    config(['app.url' => 'https://moretables.test']);
+
+    $restaurant = Restaurant::factory()->create([
+        'name' => 'Pepp & Dolores',
+        'timezone' => 'America/New_York',
+        'menu_link' => 'https://pepp.example.com/menu',
+        'latitude' => 39.1080000,
+        'longitude' => -84.5150000,
+    ]);
+
+    $restaurant
+        ->addMedia(UploadedFile::fake()->image('restaurant-user.png'))
+        ->toMediaCollection('featured');
+
+    $user = User::factory()->create([
+        'first_name' => 'Urenna',
+        'last_name' => 'Anyadike',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'user_id' => $user->id,
+        'starts_at' => Carbon::parse('2026-04-14 00:00:00', 'UTC'),
+        'party_size' => 2,
+        'reservation_reference' => '378493',
+    ]);
+
+    $mailMessage = (new ReservationLifecycleNotification($reservation, 'created'))->toMail($user);
+    $html = (string) $mailMessage->render();
+
+    expect($html)->toContain('Reservation confirmed')
+        ->and($html)->toContain('Pepp &amp; Dolores')
+        ->and($html)->toContain('Urenna Anyadike')
+        ->and($html)->toContain('border-radius:50%')
+        ->and($html)->toContain('Add to calendar')
+        ->and($html)->not->toContain('was created.');
 });

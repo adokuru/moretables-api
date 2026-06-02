@@ -31,15 +31,11 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $restaurantName = $this->reservation->restaurant->name;
-
-        return (new MailMessage)
-            ->subject("Your reservation was {$this->action}")
-            ->greeting('Hello!')
-            ->line("Your reservation at {$restaurantName} was {$this->action}.")
-            ->line('Reference: '.$this->reservation->reservation_reference)
-            ->line('Time: '.$this->reservation->starts_at?->toDayDateTimeString())
-            ->line('Party size: '.$this->reservation->party_size);
+        return (new GuestReservationLifecycleMailNotification(
+            $this->reservation,
+            $notifiable,
+            $this->action,
+        ))->toMail($notifiable);
     }
 
     public function toExpoPush(object $notifiable): ExpoPushMessage
