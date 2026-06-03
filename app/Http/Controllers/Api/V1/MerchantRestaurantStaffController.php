@@ -45,6 +45,12 @@ class MerchantRestaurantStaffController extends Controller
 
     public function update(UpdateRestaurantStaffRequest $request, Restaurant $restaurant, User $user): JsonResponse
     {
+        abort_if(
+            $request->user()->id === $user->id && $request->has('status'),
+            403,
+            'You cannot change your own account status.',
+        );
+
         $assignment = $this->restaurantStaffManagementService->update(
             restaurant: $restaurant,
             staffMember: $user,
@@ -61,6 +67,7 @@ class MerchantRestaurantStaffController extends Controller
     public function destroy(Request $request, Restaurant $restaurant, User $user): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
+        abort_if($request->user()->id === $user->id, 403, 'You cannot remove yourself from the restaurant.');
 
         $this->restaurantStaffManagementService->remove($restaurant, $user);
 

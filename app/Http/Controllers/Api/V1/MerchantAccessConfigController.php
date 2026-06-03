@@ -32,7 +32,17 @@ class MerchantAccessConfigController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
 
-        $configs = $restaurant->accessConfigs()->orderBy('is_default', 'desc')->orderBy('name')->get();
+        $configs = $restaurant->accessConfigs()
+            ->orderByRaw("CASE slug
+                WHEN 'principal_admin'     THEN 0
+                WHEN 'operations'          THEN 1
+                WHEN 'analytics_reporting' THEN 2
+                WHEN 'marketing_growth'    THEN 3
+                WHEN 'guest_relations'     THEN 4
+                ELSE 5
+            END")
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'access_configs' => RestaurantAccessConfigResource::collection($configs),
@@ -49,6 +59,7 @@ class MerchantAccessConfigController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
 
         $availablePermissions = [
+            // system permissions (used for backend auth checks)
             'restaurants.view',
             'restaurants.manage',
             'reservations.view',
@@ -57,6 +68,14 @@ class MerchantAccessConfigController extends Controller
             'tables.manage',
             'staff.manage',
             'audit_logs.view',
+            // ui permissions (matching Figma access config labels)
+            'reporting.export',
+            'integrations.manage',
+            'marketing.manage',
+            'billing.manage',
+            'communications.manage',
+            'messaging.manage',
+            'policies.manage',
         ];
 
         $validated = $request->validate([
@@ -121,6 +140,13 @@ class MerchantAccessConfigController extends Controller
             'tables.manage',
             'staff.manage',
             'audit_logs.view',
+            'reporting.export',
+            'integrations.manage',
+            'marketing.manage',
+            'billing.manage',
+            'communications.manage',
+            'messaging.manage',
+            'policies.manage',
         ];
 
         $validated = $request->validate([
