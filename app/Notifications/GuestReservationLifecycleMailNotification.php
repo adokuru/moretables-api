@@ -111,7 +111,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
     protected function extraBody(): ?string
     {
         return match ($this->action) {
-            'created' => "You're all set for a great experience.\n\nYou can manage or update your reservation anytime",
+            'created' => "You can manage or update your reservation anytime",
             default => null,
         };
     }
