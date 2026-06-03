@@ -20,6 +20,9 @@ it('serves the generated api specification route', function () {
         '/auth/staff/profile',
         '/admin/auth/login',
         '/admin/auth/profile',
+        '/admin/notifications',
+        '/admin/notifications/read-all',
+        '/admin/notifications/{notification}/read',
         '/admin/organizations/onboard',
         '/admin/roles',
         '/admin/roles/{role}',
@@ -68,6 +71,9 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/auth/notifications']['get']['tags'][0])->toBe('Customer Notifications');
     expect($specification['paths']['/auth/notifications/read-all']['patch']['tags'][0])->toBe('Customer Notifications');
     expect($specification['paths']['/auth/notifications/{notification}/read']['patch']['tags'][0])->toBe('Customer Notifications');
+    expect($specification['paths']['/admin/notifications']['get']['tags'][0])->toBe('Admin Notifications');
+    expect($specification['paths']['/admin/notifications/read-all']['patch']['tags'][0])->toBe('Admin Notifications');
+    expect($specification['paths']['/admin/notifications/{notification}/read']['patch']['tags'][0])->toBe('Admin Notifications');
     expect($specification['paths']['/auth/staff/login']['post']['tags'][0])->toBe('Merchant Staff Auth');
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
     expect($specification['paths']['/search']['get']['tags'][0])->toBe('Public Restaurants');

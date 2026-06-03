@@ -156,6 +156,9 @@
             "name": "Admin Reviews"
         },
         {
+            "name": "Admin Notifications"
+        },
+        {
             "name": "Admin Rewards"
         }
     ],
@@ -18491,14 +18494,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "`RestaurantDetailResource`",
+                        "description": "`AdminRestaurantDetailResource`",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/components/schemas/RestaurantDetailResource"
+                                            "$ref": "#/components/schemas/AdminRestaurantDetailResource"
                                         }
                                     },
                                     "required": [
@@ -20600,7 +20603,28 @@
                         }
                     },
                     {
+                        "name": "actor_user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
                         "name": "action",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 120
+                        }
+                    },
+                    {
+                        "name": "search",
                         "in": "query",
                         "schema": {
                             "type": [
@@ -22257,6 +22281,171 @@
                 }
             }
         },
+        "/admin/notifications": {
+            "get": {
+                "operationId": "adminNotification.index",
+                "tags": [
+                    "Admin Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "notifications": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NotificationResource"
+                                            }
+                                        },
+                                        "unread_count": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "notifications",
+                                        "unread_count",
+                                        "meta"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/notifications/read-all": {
+            "patch": {
+                "operationId": "adminNotification.markAllAsRead",
+                "tags": [
+                    "Admin Notifications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "All notifications marked as read."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/notifications/{notification}/read": {
+            "patch": {
+                "operationId": "adminNotification.markAsRead",
+                "tags": [
+                    "Admin Notifications"
+                ],
+                "parameters": [
+                    {
+                        "name": "notification",
+                        "in": "path",
+                        "required": true,
+                        "description": "The notification ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Notification marked as read."
+                                        },
+                                        "notification": {
+                                            "$ref": "#/components/schemas/NotificationResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "notification"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/admin/reviews": {
             "get": {
                 "operationId": "adminRestaurantReview.index",
@@ -23610,6 +23799,864 @@
             }
         },
         "schemas": {
+            "AdminRestaurantDetailResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "organization_id": {
+                        "type": "string"
+                    },
+                    "organization": {
+                        "$ref": "#/components/schemas/OrganizationResource"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "is_featured": {
+                        "type": "boolean"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "type": "string"
+                    },
+                    "address_line_1": {
+                        "type": "string"
+                    },
+                    "address_line_2": {
+                        "type": "string"
+                    },
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "internal_notes": {
+                        "type": "string"
+                    },
+                    "website": {
+                        "type": "string"
+                    },
+                    "instagram_handle": {
+                        "type": "string"
+                    },
+                    "has_saved": {
+                        "type": "boolean"
+                    },
+                    "average_price_range": {
+                        "type": "string"
+                    },
+                    "dining_style": {
+                        "type": "string"
+                    },
+                    "dress_code": {
+                        "type": "string"
+                    },
+                    "total_seating_capacity": {
+                        "type": "string"
+                    },
+                    "number_of_tables": {
+                        "type": "string"
+                    },
+                    "menu_source": {
+                        "type": "string"
+                    },
+                    "menu_link": {
+                        "type": "string"
+                    },
+                    "executive_chef": {
+                        "type": "string"
+                    },
+                    "dietary_options": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "beverage_options": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "amenities": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "smoking_policy": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "delivery_options": {
+                        "type": "string"
+                    },
+                    "safety_policies": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "parking_info": {
+                        "type": "string"
+                    },
+                    "closest_landmark": {
+                        "type": "string"
+                    },
+                    "private_events_info": {
+                        "type": "string"
+                    },
+                    "catering_info": {
+                        "type": "string"
+                    },
+                    "payment_options": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "accessibility_features": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
+                    },
+                    "cuisine_type": {
+                        "type": "string"
+                    },
+                    "cuisines": {
+                        "type": "string"
+                    },
+                    "featured_image": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MediaAssetResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "gallery_images": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MediaAssetResource"
+                        }
+                    },
+                    "gallery_categories": {
+                        "type": "string"
+                    },
+                    "menu_documents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MediaAssetResource"
+                        }
+                    },
+                    "summary": {
+                        "type": "object",
+                        "properties": {
+                            "reviews_count": {
+                                "type": "integer"
+                            },
+                            "average_rating": {
+                                "anyOf": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "reviews_count",
+                            "average_rating",
+                            "ratings_breakdown",
+                            "category_breakdown"
+                        ]
+                    },
+                    "discovery_metrics": {
+                        "type": "object",
+                        "properties": {
+                            "bookings_count": {
+                                "type": "integer"
+                            },
+                            "views_count": {
+                                "type": "integer"
+                            },
+                            "saves_count": {
+                                "type": "integer"
+                            },
+                            "list_adds_count": {
+                                "type": "integer"
+                            },
+                            "reviews_count": {
+                                "type": "integer"
+                            },
+                            "average_rating": {
+                                "anyOf": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            0
+                                        ]
+                                    }
+                                ]
+                            },
+                            "ratings_breakdown": {
+                                "type": "string"
+                            },
+                            "category_breakdown": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "bookings_count",
+                            "views_count",
+                            "saves_count",
+                            "list_adds_count",
+                            "reviews_count",
+                            "average_rating",
+                            "ratings_breakdown",
+                            "category_breakdown"
+                        ]
+                    },
+                    "media": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MediaAssetResource"
+                        }
+                    },
+                    "hours": {
+                        "type": "object"
+                    },
+                    "meal_types": {
+                        "type": "string"
+                    },
+                    "meal_schedules": {
+                        "type": "string"
+                    },
+                    "policy": {
+                        "type": "object",
+                        "properties": {
+                            "reservation_duration_minutes": {
+                                "type": "string"
+                            },
+                            "booking_window_days": {
+                                "type": "string"
+                            },
+                            "cancellation_cutoff_hours": {
+                                "type": "string"
+                            },
+                            "min_party_size": {
+                                "type": "string"
+                            },
+                            "max_party_size": {
+                                "type": "string"
+                            },
+                            "large_party_threshold": {
+                                "type": "string"
+                            },
+                            "deposit_required": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "reservation_duration_minutes",
+                            "booking_window_days",
+                            "cancellation_cutoff_hours",
+                            "min_party_size",
+                            "max_party_size",
+                            "large_party_threshold",
+                            "deposit_required"
+                        ]
+                    },
+                    "menus": {
+                        "type": "string"
+                    },
+                    "dining_areas": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DiningAreaResource"
+                        }
+                    },
+                    "onboarding": {
+                        "type": "object",
+                        "properties": {
+                            "current_step": {
+                                "type": "string"
+                            },
+                            "is_profile_published": {
+                                "type": "boolean"
+                            },
+                            "progress": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "current_step",
+                            "is_profile_published",
+                            "progress"
+                        ]
+                    },
+                    "is_subscribed": {
+                        "type": "boolean"
+                    },
+                    "subscription_type": {
+                        "type": "string"
+                    },
+                    "rewards_enabled": {
+                        "type": "boolean"
+                    },
+                    "reservation_reward_points": {
+                        "type": "string"
+                    },
+                    "contact_email_verified_at": {
+                        "type": "string"
+                    },
+                    "contact_phone_verified_at": {
+                        "type": "string"
+                    },
+                    "onboarding_last_step": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    },
+                    "cuisine_options": {
+                        "type": "string"
+                    },
+                    "social_handles": {
+                        "type": "string"
+                    },
+                    "special_days": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantSpecialDayResource"
+                        }
+                    },
+                    "table_combinations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TableCombinationResource"
+                        }
+                    },
+                    "guest_communication_setting": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/GuestCommunicationSettingResource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "reward_rules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantRewardRuleResource"
+                        }
+                    },
+                    "access_configs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantAccessConfigResource"
+                        }
+                    },
+                    "staff": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantStaffAssignmentResource"
+                        }
+                    },
+                    "active_billing_subscription": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "provider": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "provider_subscription_code": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "current_period_start": {
+                                "type": "string"
+                            },
+                            "current_period_end": {
+                                "type": "string"
+                            },
+                            "next_payment_at": {
+                                "type": "string"
+                            },
+                            "cancel_at_period_end": {
+                                "type": "boolean"
+                            },
+                            "canceled_at": {
+                                "type": "string"
+                            },
+                            "metadata": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {}
+                            },
+                            "plan": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "integer"
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    },
+                                    "interval": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "name",
+                                    "slug",
+                                    "amount",
+                                    "currency",
+                                    "interval"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "provider",
+                            "status",
+                            "provider_subscription_code",
+                            "current_period_start",
+                            "current_period_end",
+                            "next_payment_at",
+                            "cancel_at_period_end",
+                            "canceled_at",
+                            "metadata",
+                            "plan",
+                            "created_at"
+                        ]
+                    },
+                    "latest_billing_subscription": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "provider": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "provider_subscription_code": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "current_period_start": {
+                                "type": "string"
+                            },
+                            "current_period_end": {
+                                "type": "string"
+                            },
+                            "next_payment_at": {
+                                "type": "string"
+                            },
+                            "cancel_at_period_end": {
+                                "type": "boolean"
+                            },
+                            "canceled_at": {
+                                "type": "string"
+                            },
+                            "metadata": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {}
+                            },
+                            "plan": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "amount": {
+                                        "type": "integer"
+                                    },
+                                    "currency": {
+                                        "type": "string"
+                                    },
+                                    "interval": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "name",
+                                    "slug",
+                                    "amount",
+                                    "currency",
+                                    "interval"
+                                ]
+                            },
+                            "created_at": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "provider",
+                            "status",
+                            "provider_subscription_code",
+                            "current_period_start",
+                            "current_period_end",
+                            "next_payment_at",
+                            "cancel_at_period_end",
+                            "canceled_at",
+                            "metadata",
+                            "plan",
+                            "created_at"
+                        ]
+                    },
+                    "default_payment_method": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "provider": {
+                                "type": "string"
+                            },
+                            "brand": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "card_type": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "last4": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "exp_month": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "exp_year": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "bank": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "channel": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "email": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "is_default": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "provider",
+                            "brand",
+                            "card_type",
+                            "last4",
+                            "exp_month",
+                            "exp_year",
+                            "bank",
+                            "channel",
+                            "email",
+                            "is_default"
+                        ]
+                    },
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "waitlist_entries_count": {
+                                "type": "integer"
+                            },
+                            "guest_contacts_count": {
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "waitlist_entries_count",
+                            "guest_contacts_count"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "organization_id",
+                    "name",
+                    "slug",
+                    "status",
+                    "is_featured",
+                    "email",
+                    "phone",
+                    "city",
+                    "state",
+                    "country",
+                    "timezone",
+                    "address_line_1",
+                    "address_line_2",
+                    "latitude",
+                    "longitude",
+                    "description",
+                    "website",
+                    "instagram_handle",
+                    "average_price_range",
+                    "dining_style",
+                    "dress_code",
+                    "total_seating_capacity",
+                    "number_of_tables",
+                    "menu_source",
+                    "menu_link",
+                    "executive_chef",
+                    "dietary_options",
+                    "beverage_options",
+                    "amenities",
+                    "smoking_policy",
+                    "delivery_options",
+                    "safety_policies",
+                    "parking_info",
+                    "closest_landmark",
+                    "private_events_info",
+                    "catering_info",
+                    "payment_options",
+                    "accessibility_features",
+                    "featured_image",
+                    "gallery_images",
+                    "menu_documents",
+                    "summary",
+                    "discovery_metrics",
+                    "internal_notes",
+                    "rewards_enabled",
+                    "reservation_reward_points",
+                    "contact_email_verified_at",
+                    "contact_phone_verified_at",
+                    "onboarding_last_step",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "AdminRestaurantDetailResource"
+            },
             "AssignReservationTableRequest": {
                 "type": "object",
                 "properties": {
@@ -23649,10 +24696,54 @@
                             "null"
                         ]
                     },
+                    "organization": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "slug": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "slug"
+                        ]
+                    },
                     "restaurant_id": {
                         "type": [
                             "integer",
                             "null"
+                        ]
+                    },
+                    "restaurant": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "slug": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "slug"
                         ]
                     },
                     "auditable_type": {
@@ -23860,6 +24951,18 @@
                     "name": {
                         "type": "string"
                     },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -23892,32 +24995,20 @@
                             "null"
                         ],
                         "format": "date-time"
-                    },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
+                    "category",
+                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at",
-                    "category",
-                    "floor_type"
+                    "updated_at"
                 ],
                 "title": "DiningArea"
             },
@@ -24001,22 +25092,25 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "dining_area_id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
                     },
                     "description": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "sort_order": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "is_active": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "tables_count": {
                         "type": "integer",
@@ -26157,7 +27251,10 @@
                         ]
                     },
                     "dining_spot_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "name": {
                         "type": "string"

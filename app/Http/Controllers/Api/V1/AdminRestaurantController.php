@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\InviteRestaurantOwnerRequest;
 use App\Http\Requests\Admin\StoreAdminRestaurantRequest;
 use App\Http\Requests\Admin\UpdateAdminRestaurantRequest;
 use App\Http\Requests\Admin\UpdateRestaurantStatusRequest;
+use App\Http\Resources\AdminRestaurantDetailResource;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Http\Resources\UserResource;
 use App\Models\Restaurant;
@@ -15,6 +16,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
+use App\Services\RestaurantReviewSummaryService;
 use App\Services\ScopedRoleAssignmentService;
 use App\UserAuthMethod;
 use App\UserStatus;
@@ -31,6 +33,7 @@ class AdminRestaurantController extends Controller
         protected MediaLibraryService $mediaLibraryService,
         protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
         protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
+        protected RestaurantReviewSummaryService $restaurantReviewSummaryService,
     ) {}
 
     #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
@@ -114,6 +117,13 @@ class AdminRestaurantController extends Controller
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
         $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
 
+        $this->logAdminAudit(
+            $request,
+            'restaurant.created',
+            $restaurant,
+            newValues: ['name' => $restaurant->name, 'slug' => $restaurant->slug],
+        );
+
         return response()->json([
             'message' => 'Restaurant created successfully.',
             'restaurant' => RestaurantDetailResource::make($restaurant->load([
@@ -129,20 +139,11 @@ class AdminRestaurantController extends Controller
         ], 201);
     }
 
-    public function show(Restaurant $restaurant): RestaurantDetailResource
+    public function show(Request $request, Restaurant $restaurant): AdminRestaurantDetailResource
     {
-        abort_unless(request()->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
+        abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
-        return RestaurantDetailResource::make($restaurant->load([
-            'organization',
-            'policy',
-            'cuisines',
-            'media',
-            'hours',
-            'diningAreas.tables',
-            'menuItems.media',
-            'galleryCategories',
-        ]));
+        return AdminRestaurantDetailResource::make($this->prepareRestaurantForAdminDetail($restaurant));
     }
 
     public function update(UpdateAdminRestaurantRequest $request, Restaurant $restaurant): JsonResponse
@@ -154,6 +155,7 @@ class AdminRestaurantController extends Controller
             $validated['slug'] = str($validated['name'])->slug()->toString();
         }
 
+        $oldValues = $restaurant->only(['name', 'slug', 'status', 'is_featured']);
         $restaurant->update(
             collect($validated)->except([
                 'featured_image',
@@ -170,6 +172,14 @@ class AdminRestaurantController extends Controller
         $this->syncRestaurantFeatures($restaurant, $validated);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
         $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
+
+        $this->logAdminAudit(
+            $request,
+            'restaurant.updated',
+            $restaurant,
+            oldValues: $oldValues,
+            newValues: $restaurant->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'Restaurant updated successfully.',
@@ -208,6 +218,13 @@ class AdminRestaurantController extends Controller
         $this->scopedRoleAssignmentService->assignOrganizationOwner($owner, $restaurant->organization, $request->user()->id);
         $this->scopedRoleAssignmentService->assignRestaurantPrincipalAdmin($owner, $restaurant, $request->user()->id);
 
+        $this->logAdminAudit(
+            $request,
+            'restaurant.owner_invited',
+            $restaurant,
+            newValues: ['owner_email' => $owner->email],
+        );
+
         return response()->json([
             'message' => 'Restaurant owner invited successfully.',
             'user' => UserResource::make($owner->load('roles')),
@@ -218,7 +235,16 @@ class AdminRestaurantController extends Controller
     {
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
+        $oldStatus = $restaurant->status?->value;
         $restaurant->update(['status' => $request->validated('status')]);
+
+        $this->logAdminAudit(
+            $request,
+            'restaurant.status_updated',
+            $restaurant,
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $restaurant->status?->value],
+        );
 
         return response()->json([
             'message' => 'Restaurant status updated successfully.',
@@ -226,14 +252,64 @@ class AdminRestaurantController extends Controller
         ]);
     }
 
-    public function destroy(Restaurant $restaurant): JsonResponse
+    public function destroy(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless(request()->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
+        abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
+        $oldValues = $restaurant->only(['id', 'name', 'slug']);
         $restaurant->delete();
+
+        $this->logAdminAudit($request, 'restaurant.deleted', $restaurant, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Restaurant deleted successfully.',
+        ]);
+    }
+
+    private function prepareRestaurantForAdminDetail(Restaurant $restaurant): Restaurant
+    {
+        $restaurant = Restaurant::query()
+            ->withCount([
+                'reservations as bookings_count',
+                'views as views_count',
+                'savedEntries as saves_count',
+                'listItems as list_adds_count',
+                'reviews as reviews_count',
+                'waitlistEntries as waitlist_entries_count',
+                'guestContacts as guest_contacts_count',
+            ])
+            ->withAvg('reviews as average_rating', 'rating')
+            ->whereKey($restaurant->getKey())
+            ->firstOrFail();
+
+        $reviewSummary = $this->restaurantReviewSummaryService->summarize($restaurant->reviews(), $restaurant->id);
+
+        $restaurant->setAttribute('ratings_breakdown', (object) $reviewSummary['ratings_breakdown']);
+        $restaurant->setAttribute('category_breakdown', $reviewSummary['category_breakdown']);
+
+        return $restaurant->load([
+            'organization',
+            'policy',
+            'cuisines',
+            'media',
+            'hours',
+            'availabilityPeriods.schedules',
+            'availabilitySchedules',
+            'specialDays.shifts',
+            'menuItems.media',
+            'diningAreas.tables',
+            'galleryCategories',
+            'tableCombinations',
+            'socialHandles',
+            'guestCommunicationSetting',
+            'rewardRules',
+            'accessConfigs',
+            'activeBillingSubscription.plan',
+            'latestBillingSubscription.plan',
+            'defaultPaymentMethod',
+            'userRoles' => fn ($query) => $query
+                ->with(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy'])
+                ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', Role::allRestaurantStaffRoles())),
         ]);
     }
 

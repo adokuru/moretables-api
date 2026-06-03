@@ -75,6 +75,13 @@ class AdminRestaurantReviewController extends Controller
         $review = RestaurantReview::query()->create($request->validated());
         $review->load(['restaurant.organization', 'user.roles']);
 
+        $this->logAdminAudit(
+            $request,
+            'review.created',
+            $review,
+            newValues: ['rating' => $review->rating, 'restaurant_id' => $review->restaurant_id],
+        );
+
         return response()->json([
             'message' => 'Review created successfully.',
             'review' => $this->serializeReview($review),
@@ -94,8 +101,17 @@ class AdminRestaurantReviewController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $review->only(['rating', 'title', 'body']);
         $review->update($request->validated());
         $review->load(['restaurant.organization', 'user.roles']);
+
+        $this->logAdminAudit(
+            $request,
+            'review.updated',
+            $review,
+            oldValues: $oldValues,
+            newValues: $review->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'Review updated successfully.',
@@ -107,7 +123,10 @@ class AdminRestaurantReviewController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $review->only(['id', 'rating', 'restaurant_id']);
         $review->delete();
+
+        $this->logAdminAudit($request, 'review.deleted', $review, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Review deleted successfully.',

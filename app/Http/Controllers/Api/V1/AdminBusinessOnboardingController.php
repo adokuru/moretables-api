@@ -26,6 +26,17 @@ class AdminBusinessOnboardingController extends Controller
             admin: $request->user(),
         );
 
+        $this->logAdminAudit(
+            $request,
+            'business.onboarded',
+            $result['organization'],
+            newValues: [
+                'organization_id' => $result['organization']->id,
+                'owner_email' => $result['owner']->email,
+                'restaurant_count' => count($result['restaurants']),
+            ],
+        );
+
         return response()->json([
             'message' => 'Business onboarding completed successfully.',
             'organization' => OrganizationResource::make($result['organization']),

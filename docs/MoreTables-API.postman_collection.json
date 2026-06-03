@@ -6937,8 +6937,57 @@
         "value": "application/json"
        }
       ],
+       "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/audit-logs?search=Tola&per_page=20&page=1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "query": [
+        {
+         "key": "search",
+         "value": "Tola",
+         "description": "Matches action, description, or actor name/email"
+        },
+        {
+         "key": "per_page",
+         "value": "20"
+        },
+        {
+         "key": "page",
+         "value": "1"
+        }
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "audit-logs"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Notifications list",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
       "url": {
-       "raw": "{{baseUrl}}/api/v1/admin/audit-logs?per_page=20&page=1",
+       "raw": "{{baseUrl}}/api/v1/admin/notifications?per_page=20&page=1",
        "host": [
         "{{baseUrl}}"
        ],
@@ -6956,7 +7005,79 @@
         "api",
         "v1",
         "admin",
-        "audit-logs"
+        "notifications"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Returns paginated in-app notifications for the authenticated admin, plus unread_count."
+     }
+    },
+    {
+     "name": "Notification mark read",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/notifications/{{notification_id}}/read",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "notifications",
+        "{{notification_id}}",
+        "read"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Notifications mark all read",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/notifications/read-all",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "notifications",
+        "read-all"
        ]
       },
       "auth": {

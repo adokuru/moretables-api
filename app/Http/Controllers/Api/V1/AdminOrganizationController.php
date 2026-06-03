@@ -80,6 +80,13 @@ class AdminOrganizationController extends Controller
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
         ]);
 
+        $this->logAdminAudit(
+            $request,
+            'organization.created',
+            $organization,
+            newValues: ['name' => $organization->name, 'slug' => $organization->slug],
+        );
+
         return response()->json([
             'message' => 'Organization created successfully.',
             'organization' => OrganizationResource::make($organization->load(['restaurants.cuisines', 'restaurants.media'])),
@@ -102,7 +109,16 @@ class AdminOrganizationController extends Controller
             $validated['slug'] = str($validated['name'])->slug()->toString();
         }
 
+        $oldValues = $organization->only(['name', 'slug', 'status']);
         $organization->update($validated);
+
+        $this->logAdminAudit(
+            $request,
+            'organization.updated',
+            $organization,
+            oldValues: $oldValues,
+            newValues: $organization->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'Organization updated successfully.',
@@ -112,11 +128,14 @@ class AdminOrganizationController extends Controller
         ]);
     }
 
-    public function destroy(Organization $organization): JsonResponse
+    public function destroy(Request $request, Organization $organization): JsonResponse
     {
         $this->authorize('delete', $organization);
 
+        $oldValues = $organization->only(['id', 'name', 'slug']);
         $organization->delete();
+
+        $this->logAdminAudit($request, 'organization.deleted', $organization, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Organization deleted successfully.',
@@ -169,6 +188,13 @@ class AdminOrganizationController extends Controller
 
         $anySent = collect($recipients)->contains(
             fn (array $recipient) => $recipient['status'] === Password::RESET_LINK_SENT,
+        );
+
+        $this->logAdminAudit(
+            $request,
+            'organization.owner_password_reset_resent',
+            $organization,
+            newValues: ['recipients' => collect($recipients)->pluck('email')->all()],
         );
 
         return response()->json([

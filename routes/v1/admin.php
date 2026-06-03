@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AdminBusinessOnboardingController;
 use App\Http\Controllers\Api\V1\AdminCuisineController;
 use App\Http\Controllers\Api\V1\AdminDashboardController;
 use App\Http\Controllers\Api\V1\AdminMoretableLineupController;
+use App\Http\Controllers\Api\V1\AdminNotificationController;
 use App\Http\Controllers\Api\V1\AdminOnboardingRequestController;
 use App\Http\Controllers\Api\V1\AdminOrganizationController;
 use App\Http\Controllers\Api\V1\AdminReservationController;
@@ -106,4 +107,8 @@ Route::middleware(['auth:sanctum', 'throttle:admin-api'])->prefix('admin')->grou
     Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
 
     Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
+
+    Route::get('notifications', [AdminNotificationController::class, 'index']);
+    Route::patch('notifications/read-all', [AdminNotificationController::class, 'markAllAsRead']);
+    Route::patch('notifications/{notification}/read', [AdminNotificationController::class, 'markAsRead']);
 });

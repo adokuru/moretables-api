@@ -24,10 +24,26 @@ class AdminAuditLogController extends Controller
         $validated = $request->validated();
 
         $logs = AuditLog::query()
-            ->with('actorUser.roles')
+            ->with(['actorUser.roles', 'organization', 'restaurant'])
             ->when(isset($validated['organization_id']), fn ($query) => $query->where('organization_id', $validated['organization_id']))
             ->when(isset($validated['restaurant_id']), fn ($query) => $query->where('restaurant_id', $validated['restaurant_id']))
+            ->when(isset($validated['actor_user_id']), fn ($query) => $query->where('actor_user_id', $validated['actor_user_id']))
             ->when(isset($validated['action']), fn ($query) => $query->where('action', 'like', '%'.$validated['action'].'%'))
+            ->when(isset($validated['search']), function ($query) use ($validated): void {
+                $search = $validated['search'];
+
+                $query->where(function ($logQuery) use ($search): void {
+                    $logQuery
+                        ->where('action', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%')
+                        ->orWhereHas('actorUser', function ($userQuery) use ($search): void {
+                            $userQuery->where('name', 'like', '%'.$search.'%')
+                                ->orWhere('first_name', 'like', '%'.$search.'%')
+                                ->orWhere('last_name', 'like', '%'.$search.'%')
+                                ->orWhere('email', 'like', '%'.$search.'%');
+                        });
+                });
+            })
             ->latest()
             ->paginate($validated['per_page'] ?? 25)
             ->appends($request->query());

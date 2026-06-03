@@ -125,6 +125,8 @@ class AdminAuthController extends Controller
 
         $user->save();
 
+        $this->logAdminAudit($request, 'profile.updated', $user);
+
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user' => UserResource::make($user->refresh()->load('roles')),

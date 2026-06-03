@@ -44,6 +44,17 @@ class AdminUserRoleController extends Controller
 
         $this->performanceCache->invalidateAuthorization($user->id);
 
+        $this->logAdminAudit(
+            $request,
+            'user.roles_updated',
+            $user,
+            newValues: [
+                'roles' => $validated['roles'],
+                'organization_id' => $validated['organization_id'] ?? null,
+                'restaurant_id' => $validated['restaurant_id'] ?? null,
+            ],
+        );
+
         return response()->json([
             'message' => 'User roles updated successfully.',
             'user' => UserResource::make($user->refresh()->load('roles')),
