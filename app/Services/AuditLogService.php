@@ -48,4 +48,34 @@ class AuditLogService
             'new_values' => $newValues,
         ]);
     }
+
+    /**
+     * @param  array<string, mixed>|null  $oldValues
+     * @param  array<string, mixed>|null  $newValues
+     */
+    public function logAdmin(
+        string $action,
+        User $actor,
+        ?Model $auditable = null,
+        ?array $oldValues = null,
+        ?array $newValues = null,
+        ?Restaurant $restaurant = null,
+        ?Organization $organization = null,
+        ?string $description = null,
+    ): AuditLog {
+        if (! str_starts_with($action, 'admin.')) {
+            $action = 'admin.'.$action;
+        }
+
+        return $this->log(
+            action: $action,
+            actor: $actor,
+            auditable: $auditable,
+            oldValues: $oldValues,
+            newValues: $newValues,
+            restaurant: $restaurant,
+            organization: $organization,
+            description: $description,
+        );
+    }
 }

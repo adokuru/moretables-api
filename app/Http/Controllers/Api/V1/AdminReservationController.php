@@ -97,6 +97,13 @@ class AdminReservationController extends Controller
         $validated = $request->validated();
         $reservation = Reservation::query()->create($this->reservationPayload($validated, $request));
 
+        $this->logAdminAudit(
+            $request,
+            'reservation.created',
+            $reservation,
+            newValues: ['reference' => $reservation->reservation_reference, 'status' => $reservation->status?->value],
+        );
+
         return response()->json([
             'message' => 'Reservation created successfully.',
             'reservation' => ReservationResource::make($reservation->load(['restaurant.organization', 'table', 'user.roles', 'guestContact', 'reservationGuests'])),
@@ -114,7 +121,16 @@ class AdminReservationController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $reservation->only(['status', 'party_size', 'starts_at', 'ends_at']);
         $reservation->update($this->reservationPayload($request->validated(), $request, $reservation));
+
+        $this->logAdminAudit(
+            $request,
+            'reservation.updated',
+            $reservation,
+            oldValues: $oldValues,
+            newValues: $reservation->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'Reservation updated successfully.',
@@ -126,7 +142,10 @@ class AdminReservationController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $reservation->only(['id', 'reservation_reference', 'status']);
         $reservation->delete();
+
+        $this->logAdminAudit($request, 'reservation.deleted', $reservation, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Reservation deleted successfully.',

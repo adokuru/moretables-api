@@ -150,6 +150,13 @@ class AdminUserController extends Controller
             return $user;
         });
 
+        $this->logAdminAudit(
+            $request,
+            'user.created',
+            $user,
+            newValues: ['email' => $user->email, 'account_type' => $user->accountType()],
+        );
+
         return response()->json([
             'message' => $this->shouldSendAdminInvite($validated, $user)
                 ? 'Admin user invited successfully.'
@@ -170,6 +177,7 @@ class AdminUserController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
+        $oldValues = $user->only(['first_name', 'last_name', 'email', 'phone', 'status']);
         $user->fill($this->extractUserAttributes($validated));
 
         if (array_key_exists('first_name', $validated) || array_key_exists('last_name', $validated)) {
@@ -181,6 +189,14 @@ class AdminUserController extends Controller
 
         $user->save();
         $this->syncUserAssignments($user, $validated, $request->user());
+
+        $this->logAdminAudit(
+            $request,
+            'user.updated',
+            $user,
+            oldValues: $oldValues,
+            newValues: $user->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'User updated successfully.',
@@ -194,7 +210,10 @@ class AdminUserController extends Controller
 
         abort_if($request->user()->is($user), 422, 'You cannot delete the authenticated admin account.');
 
+        $oldValues = $user->only(['id', 'email', 'name']);
         $user->delete();
+
+        $this->logAdminAudit($request, 'user.deleted', $user, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'User deleted successfully.',

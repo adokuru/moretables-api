@@ -84,6 +84,8 @@ class AdminMoretableLineupController extends Controller
 
         $lineup = MoretableLineup::query()->create($validated);
 
+        $this->logAdminAudit($request, 'moretable_lineup.created', $lineup, newValues: ['title' => $lineup->title, 'slug' => $lineup->slug]);
+
         return response()->json([
             'message' => 'Moretable lineup created successfully.',
             'lineup' => MoretableLineupResource::make($lineup->load(['media', 'restaurant', 'restaurant.cuisines', 'restaurant.media'])),
@@ -104,6 +106,7 @@ class AdminMoretableLineupController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
+        $oldValues = $moretableLineup->only(['title', 'slug', 'status']);
 
         if (array_key_exists('title', $validated) && ! array_key_exists('slug', $validated)) {
             $validated['slug'] = $this->uniqueSlugForTitle($validated['title'], $moretableLineup->id);
@@ -118,6 +121,14 @@ class AdminMoretableLineupController extends Controller
         }
 
         $moretableLineup->fill($validated)->save();
+
+        $this->logAdminAudit(
+            $request,
+            'moretable_lineup.updated',
+            $moretableLineup,
+            oldValues: $oldValues,
+            newValues: $moretableLineup->only(array_keys($oldValues)),
+        );
 
         return response()->json([
             'message' => 'Moretable lineup updated successfully.',
@@ -138,6 +149,8 @@ class AdminMoretableLineupController extends Controller
             ['alt_text' => $request->validated('alt_text')],
         );
 
+        $this->logAdminAudit($request, 'moretable_lineup.cover_uploaded', $moretableLineup);
+
         return response()->json([
             'message' => 'Cover image uploaded successfully.',
             'lineup' => MoretableLineupResource::make(
@@ -152,6 +165,8 @@ class AdminMoretableLineupController extends Controller
 
         $moretableLineup->clearMediaCollection('cover');
 
+        $this->logAdminAudit($request, 'moretable_lineup.cover_deleted', $moretableLineup);
+
         return response()->json([
             'message' => 'Cover image removed successfully.',
         ]);
@@ -161,7 +176,10 @@ class AdminMoretableLineupController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $moretableLineup->only(['id', 'title', 'slug']);
         $moretableLineup->delete();
+
+        $this->logAdminAudit($request, 'moretable_lineup.deleted', $moretableLineup, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Moretable lineup deleted successfully.',

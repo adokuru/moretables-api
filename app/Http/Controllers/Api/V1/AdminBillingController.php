@@ -154,6 +154,20 @@ class AdminBillingController extends Controller
             ],
         );
 
+        $this->logAdminAudit(
+            $request,
+            'billing.subscription.assigned',
+            $result['subscription'],
+            newValues: [
+                'restaurant_id' => $restaurant->id,
+                'plan' => $plan->slug?->value ?? $validated['plan'],
+                'status' => $result['subscription']->status?->value,
+            ],
+            description: $validated['notes'] ?? null,
+            restaurant: $restaurant,
+            organization: $restaurant->organization,
+        );
+
         return response()->json([
             'message' => 'Subscription assigned successfully.',
             'subscription' => $this->subscriptionPayload($result['subscription']),

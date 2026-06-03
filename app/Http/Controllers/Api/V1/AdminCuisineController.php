@@ -73,6 +73,8 @@ class AdminCuisineController extends Controller
             'slug' => $slug,
         ]);
 
+        $this->logAdminAudit($request, 'cuisine.created', $cuisine, newValues: ['name' => $cuisine->name, 'slug' => $cuisine->slug]);
+
         return response()->json([
             'message' => 'Cuisine created successfully.',
             'cuisine' => CuisineResource::make($cuisine),
@@ -91,6 +93,7 @@ class AdminCuisineController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
+        $oldValues = $cuisineOption->only(['name', 'slug']);
 
         if (array_key_exists('name', $validated)) {
             $cuisineOption->name = $validated['name'];
@@ -104,6 +107,14 @@ class AdminCuisineController extends Controller
 
         $cuisineOption->save();
 
+        $this->logAdminAudit(
+            $request,
+            'cuisine.updated',
+            $cuisineOption,
+            oldValues: $oldValues,
+            newValues: $cuisineOption->only(array_keys($oldValues)),
+        );
+
         return response()->json([
             'message' => 'Cuisine updated successfully.',
             'cuisine' => CuisineResource::make($cuisineOption->refresh()),
@@ -114,7 +125,10 @@ class AdminCuisineController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $cuisineOption->only(['id', 'name', 'slug']);
         $cuisineOption->delete();
+
+        $this->logAdminAudit($request, 'cuisine.deleted', $cuisineOption, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Cuisine deleted successfully.',

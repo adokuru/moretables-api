@@ -38,6 +38,13 @@ class AdminRewardProgramController extends Controller
     {
         $program = $this->rewardProgramService->updateProgram($request->validated());
 
+        $this->logAdminAudit(
+            $request,
+            'reward_program.updated',
+            $program,
+            newValues: ['name' => $program->name],
+        );
+
         return response()->json([
             'message' => 'Reward program updated successfully.',
             'reward_program' => $this->rewardProgramService->programPayload($program),
@@ -53,6 +60,14 @@ class AdminRewardProgramController extends Controller
             user: $user,
             attributes: $request->validated(),
             actor: $request->user(),
+        );
+
+        $this->logAdminAudit(
+            $request,
+            'reward_points.awarded',
+            $user,
+            newValues: $request->validated(),
+            description: 'Manual reward points adjustment',
         );
 
         return response()->json([

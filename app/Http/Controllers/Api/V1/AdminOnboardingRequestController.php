@@ -80,6 +80,13 @@ class AdminOnboardingRequestController extends Controller
 
         $notifications->notifyAdmins($onboardingRequest);
 
+        $this->logAdminAudit(
+            $request,
+            'onboarding_request.created',
+            $onboardingRequest,
+            newValues: ['restaurant_name' => $onboardingRequest->restaurant_name, 'status' => $onboardingRequest->status?->value],
+        );
+
         return response()->json([
             'message' => 'Onboarding request created successfully.',
             'onboarding_request' => OnboardingRequestResource::make($onboardingRequest),
@@ -98,6 +105,7 @@ class AdminOnboardingRequestController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
+        $oldValues = $onboardingRequest->only(['status', 'restaurant_name']);
 
         if (array_key_exists('status', $validated)) {
             $status = OnboardingRequestStatus::from($validated['status']);
@@ -113,6 +121,14 @@ class AdminOnboardingRequestController extends Controller
 
         $onboardingRequest->update($validated);
 
+        $this->logAdminAudit(
+            $request,
+            'onboarding_request.updated',
+            $onboardingRequest,
+            oldValues: $oldValues,
+            newValues: $onboardingRequest->only(array_keys($oldValues)),
+        );
+
         return response()->json([
             'message' => 'Onboarding request updated successfully.',
             'onboarding_request' => OnboardingRequestResource::make($onboardingRequest->refresh()->load('reviewedBy.roles')),
@@ -123,7 +139,10 @@ class AdminOnboardingRequestController extends Controller
     {
         $this->ensureAdminAccess($request);
 
+        $oldValues = $onboardingRequest->only(['id', 'restaurant_name', 'status']);
         $onboardingRequest->delete();
+
+        $this->logAdminAudit($request, 'onboarding_request.deleted', $onboardingRequest, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Onboarding request deleted successfully.',

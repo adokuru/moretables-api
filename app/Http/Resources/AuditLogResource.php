@@ -16,7 +16,17 @@ class AuditLogResource extends JsonResource
             'actor_type' => $this->actor_type?->value,
             'actor' => UserResource::make($this->whenLoaded('actorUser')),
             'organization_id' => $this->organization_id,
+            'organization' => $this->whenLoaded('organization', fn () => $this->organization ? [
+                'id' => $this->organization->id,
+                'name' => $this->organization->name,
+                'slug' => $this->organization->slug,
+            ] : null),
             'restaurant_id' => $this->restaurant_id,
+            'restaurant' => $this->whenLoaded('restaurant', fn () => $this->restaurant ? [
+                'id' => $this->restaurant->id,
+                'name' => $this->restaurant->name,
+                'slug' => $this->restaurant->slug,
+            ] : null),
             'auditable_type' => $this->auditable_type,
             'auditable_id' => $this->auditable_id,
             'old_values' => $this->old_values,

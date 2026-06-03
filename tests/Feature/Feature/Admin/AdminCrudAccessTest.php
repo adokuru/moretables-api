@@ -536,4 +536,5 @@ it('forbids non admins from the new admin crud endpoints', function () {
     $this->getJson('/api/v1/admin/billing/overview')->assertForbidden();
     $this->getJson('/api/v1/admin/reviews')->assertForbidden();
     $this->getJson('/api/v1/admin/onboarding-requests')->assertForbidden();
+    $this->getJson('/api/v1/admin/notifications')->assertForbidden();
 });

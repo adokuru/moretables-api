@@ -83,6 +83,8 @@ class AdminRoleController extends Controller
         $role->permissions()->sync($permissionIds);
         $this->performanceCache->invalidateAuthorization();
 
+        $this->logAdminAudit($request, 'role.created', $role, newValues: ['name' => $role->name]);
+
         return response()->json([
             'message' => 'Role created successfully.',
             'role' => RoleResource::make($role->load('permissions')),
@@ -101,6 +103,7 @@ class AdminRoleController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
+        $oldValues = $role->only(['name', 'description']);
 
         if (array_key_exists('name', $validated)) {
             $role->name = $validated['name'];
@@ -123,6 +126,14 @@ class AdminRoleController extends Controller
             $this->performanceCache->invalidateAuthorization();
         }
 
+        $this->logAdminAudit(
+            $request,
+            'role.updated',
+            $role,
+            oldValues: $oldValues,
+            newValues: $role->only(array_keys($oldValues)),
+        );
+
         return response()->json([
             'message' => 'Role updated successfully.',
             'role' => RoleResource::make($role->refresh()->load('permissions')),
@@ -135,8 +146,11 @@ class AdminRoleController extends Controller
 
         abort_if($role->userRoles()->exists(), 422, 'This role is currently assigned to one or more users.');
 
+        $oldValues = $role->only(['id', 'name']);
         $role->delete();
         $this->performanceCache->invalidateAuthorization();
+
+        $this->logAdminAudit($request, 'role.deleted', $role, oldValues: $oldValues);
 
         return response()->json([
             'message' => 'Role deleted successfully.',
