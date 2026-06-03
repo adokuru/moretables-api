@@ -79,14 +79,6 @@ class MerchantDiningAreaController extends Controller
         ]);
     }
 
-    public function spots(Restaurant $restaurant, DiningArea $diningArea): JsonResponse
-    {
-        abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
-        abort_unless($diningArea->restaurant_id === $restaurant->id, 404);
-
-        return response()->json([]);
-    }
-
     public function syncLayout(SyncDiningAreaLayoutRequest $request, Restaurant $restaurant, DiningArea $diningArea): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
