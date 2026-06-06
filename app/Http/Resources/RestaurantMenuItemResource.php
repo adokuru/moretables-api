@@ -29,6 +29,7 @@ class RestaurantMenuItemResource extends JsonResource
             'price' => (float) $this->price,
             'currency' => $this->currency,
             'sort_order' => $this->sort_order,
+            'is_featured' => (bool) $this->is_featured,
             'featured_image' => $featuredImage ? MediaAssetResource::make($featuredImage) : null,
             'gallery_images' => MediaAssetResource::collection($galleryImages),
         ];

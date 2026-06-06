@@ -9,7 +9,6 @@ use App\Http\Resources\RestaurantMenuItemResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenuItem;
 use App\Services\AuditLogService;
-use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
@@ -18,16 +17,45 @@ class MerchantMenuItemController extends Controller
 {
     public function __construct(
         protected AuditLogService $auditLogService,
-        protected MediaLibraryService $mediaLibraryService,
     ) {}
 
     public function index(Restaurant $restaurant): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
-        $menuItems = $restaurant->menuItems()->with('media')->orderBy('section_name')->orderBy('sort_order')->get();
+        $query = $restaurant->menuItems()->with('media')->orderBy('section_name')->orderBy('sort_order');
 
-        return response()->json(RestaurantMenuItemResource::collection($menuItems));
+        if ($sectionName = request()->query('section_name')) {
+            $query->where('section_name', $sectionName);
+        }
+
+        return response()->json(RestaurantMenuItemResource::collection($query->get()));
+    }
+
+    public function grouped(Restaurant $restaurant): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+
+        $items = $restaurant->menuItems()->with('media')->orderBy('section_name')->orderBy('sort_order')->get();
+
+        $grouped = $items->groupBy('section_name')->map(function ($categoryItems, string $category) {
+            return [
+                'category' => $category,
+                'data' => RestaurantMenuItemResource::collection($categoryItems)->resolve(),
+            ];
+        })->values();
+
+        return response()->json($grouped);
+    }
+
+    public function show(Restaurant $restaurant, RestaurantMenuItem $menuItem): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless((int) $menuItem->restaurant_id === (int) $restaurant->id, 404);
+
+        return response()->json([
+            'menu_item' => RestaurantMenuItemResource::make($menuItem->load('media')),
+        ]);
     }
 
     public function store(StoreRestaurantMenuItemRequest $request, Restaurant $restaurant): JsonResponse
@@ -42,9 +70,8 @@ class MerchantMenuItemController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'] ?? 'NGN',
             'sort_order' => $validated['sort_order'] ?? ((int) $restaurant->menuItems()->max('sort_order') + 1),
+            'is_featured' => $validated['is_featured'] ?? false,
         ]);
-
-        $this->mediaLibraryService->syncUploadedMedia($menuItem, $validated);
 
         $this->auditLogService->log(
             action: 'menu_item.created',
@@ -69,16 +96,9 @@ class MerchantMenuItemController extends Controller
         $validated = $request->validated();
 
         $menuItem->update([
-            ...collect($validated)->except([
-                'featured_image',
-                'featured_image_alt_text',
-                'gallery_images',
-                'gallery_image_alt_texts',
-            ])->toArray(),
+            ...$validated,
             'item_name' => $validated['item_name'] ?? $menuItem->item_name,
         ]);
-
-        $this->mediaLibraryService->syncUploadedMedia($menuItem, $validated);
 
         return response()->json([
             'message' => 'Menu item updated successfully.',

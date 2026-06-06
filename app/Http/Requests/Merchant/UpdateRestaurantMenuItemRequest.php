@@ -2,13 +2,10 @@
 
 namespace App\Http\Requests\Merchant;
 
-use App\Http\Requests\HasMediaUploadFields;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateRestaurantMenuItemRequest extends FormRequest
 {
-    use HasMediaUploadFields;
-
     public function authorize(): bool
     {
         return true;
@@ -23,7 +20,7 @@ class UpdateRestaurantMenuItemRequest extends FormRequest
             'price' => ['sometimes', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'size:3'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
-            ...$this->mediaUploadRules(),
+            'is_featured' => ['sometimes', 'boolean'],
         ];
     }
 }
