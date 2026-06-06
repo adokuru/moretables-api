@@ -7,6 +7,7 @@ use App\Http\Requests\Merchant\StartBillingCheckoutRequest;
 use App\Http\Resources\BillingPlanResource;
 use App\Http\Resources\MerchantBillingResource;
 use App\Http\Resources\MerchantInvoiceResource;
+use App\MerchantInvoiceStatus;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
 use App\Models\MerchantPaymentMethod;
@@ -80,6 +81,35 @@ class MerchantBillingController extends Controller
         ], 201);
     }
 
+    public function upgrade(StartBillingCheckoutRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+
+        $plan = BillingPlan::query()
+            ->where('slug', $request->validated('plan'))
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $checkout = $this->billingService->initializeCheckout($restaurant, $plan);
+
+        $email = $restaurant->organization?->billing_email
+            ?? $restaurant->organization?->business_email
+            ?? $restaurant->email
+            ?? 'billing@moretables.local';
+
+        return response()->json([
+            'message' => 'Billing upgrade initialized successfully.',
+            'checkout' => [
+                'reference' => $checkout['reference'],
+                'email' => $email,
+                'plan_code' => $plan->provider_plan_code,
+                'authorization_url' => data_get($checkout, 'provider_response.data.authorization_url'),
+                'access_code' => data_get($checkout, 'provider_response.data.access_code'),
+            ],
+            'invoice' => MerchantInvoiceResource::make($checkout['invoice']->load('plan')),
+        ], 201);
+    }
+
     public function verify(Request $request, Restaurant $restaurant, string $reference): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
@@ -99,6 +129,7 @@ class MerchantBillingController extends Controller
 
         $invoices = $restaurant->invoices()
             ->with(['plan', 'restaurant.organization', 'payments'])
+            ->where('status', MerchantInvoiceStatus::Paid)
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -143,7 +174,7 @@ class MerchantBillingController extends Controller
             'is_active' => $this->billingService->isRestaurantBillable($restaurant),
             'subscription' => $subscription,
             'payment_method' => $restaurant->paymentMethods()->where('is_default', true)->latest()->first(),
-            'upcoming_invoice' => $restaurant->invoices()->with('plan')->where('status', 'pending')->latest()->first(),
+            'upcoming_invoice' => $restaurant->invoices()->with(['plan', 'restaurant.organization'])->where('status', 'pending')->latest()->first(),
         ];
     }
 }

@@ -42,6 +42,7 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
     Route::prefix('billing')->group(function (): void {
         Route::get('/', [MerchantBillingController::class, 'show']);
         Route::post('checkout', [MerchantBillingController::class, 'checkout']);
+        Route::post('upgrade', [MerchantBillingController::class, 'upgrade']);
         Route::get('verify/{reference}', [MerchantBillingController::class, 'verify']);
         Route::get('invoices', [MerchantBillingController::class, 'invoices']);
         Route::get('invoices/{invoice}/download', [MerchantBillingController::class, 'downloadInvoice']);
