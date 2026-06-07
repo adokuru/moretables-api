@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
+use App\Http\Controllers\Api\V1\MerchantMenuCategoryController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantMenuDocumentController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
@@ -42,6 +44,7 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
     Route::prefix('billing')->group(function (): void {
         Route::get('/', [MerchantBillingController::class, 'show']);
         Route::post('checkout', [MerchantBillingController::class, 'checkout']);
+        Route::post('upgrade', [MerchantBillingController::class, 'upgrade']);
         Route::get('verify/{reference}', [MerchantBillingController::class, 'verify']);
         Route::get('invoices', [MerchantBillingController::class, 'invoices']);
         Route::get('invoices/{invoice}/download', [MerchantBillingController::class, 'downloadInvoice']);
@@ -51,6 +54,7 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
         Route::get('/', [MerchantRestaurantController::class, 'show']);
         Route::get('overview', [MerchantRestaurantOverviewController::class, 'show']);
         Route::patch('/', [MerchantRestaurantController::class, 'update']);
+        Route::post('menu-document', [MerchantRestaurantMenuDocumentController::class, 'store']);
 
         Route::get('settings', [MerchantRestaurantSettingsController::class, 'show']);
         Route::patch('settings', [MerchantRestaurantSettingsController::class, 'update']);
@@ -133,8 +137,15 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/r
         Route::patch('tables/{table}/status', [MerchantTableController::class, 'updateStatus']);
         Route::delete('tables/{table}', [MerchantTableController::class, 'destroy']);
 
+        Route::get('menu-categories', [MerchantMenuCategoryController::class, 'index']);
+        Route::post('menu-categories', [MerchantMenuCategoryController::class, 'store']);
+        Route::patch('menu-categories/{menuCategory}', [MerchantMenuCategoryController::class, 'update']);
+        Route::delete('menu-categories/{menuCategory}', [MerchantMenuCategoryController::class, 'destroy']);
+
         Route::get('menu-items', [MerchantMenuItemController::class, 'index']);
         Route::post('menu-items', [MerchantMenuItemController::class, 'store']);
+        Route::get('menu-items/grouped', [MerchantMenuItemController::class, 'grouped']);
+        Route::get('menu-items/{menuItem}', [MerchantMenuItemController::class, 'show']);
         Route::patch('menu-items/{menuItem}', [MerchantMenuItemController::class, 'update']);
         Route::delete('menu-items/{menuItem}', [MerchantMenuItemController::class, 'destroy']);
 
