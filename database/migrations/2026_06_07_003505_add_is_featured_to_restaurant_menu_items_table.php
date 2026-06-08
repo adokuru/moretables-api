@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('restaurant_menu_items', 'is_featured')) {
+            return;
+        }
+
         Schema::table('restaurant_menu_items', function (Blueprint $table): void {
             $table->boolean('is_featured')->default(false)->after('sort_order');
         });
@@ -15,6 +19,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('restaurant_menu_items', 'is_featured')) {
+            return;
+        }
+
         Schema::table('restaurant_menu_items', function (Blueprint $table): void {
             $table->dropColumn('is_featured');
         });
