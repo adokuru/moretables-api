@@ -20,7 +20,6 @@ class StoreRestaurantMenuItemRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'size:3'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
-            'is_featured' => ['sometimes', 'boolean'],
         ];
     }
 }
