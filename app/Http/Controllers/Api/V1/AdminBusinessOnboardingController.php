@@ -22,7 +22,7 @@ class AdminBusinessOnboardingController extends Controller
     public function store(StoreAdminBusinessOnboardingRequest $request): JsonResponse
     {
         $result = $this->adminBusinessOnboardingService->onboard(
-            payload: $request->validated(),
+            payload: $request->onboardingPayload(),
             admin: $request->user(),
         );
 

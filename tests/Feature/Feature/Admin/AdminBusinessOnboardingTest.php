@@ -11,6 +11,90 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
+it('onboards a business with nested categorized manual menu items', function (): void {
+    Storage::fake('public');
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->post('/api/v1/admin/organizations/onboard', [
+        'business_name' => 'Category Menu Group',
+        'business_phone' => '+2348000000500',
+        'owner_name' => 'Category Owner',
+        'owner_phone' => '+2348000000501',
+        'owner_email' => 'category-owner@example.com',
+        'business_email' => 'category@example.com',
+        'business_website' => 'https://category.example.com',
+        'restaurants_count' => 1,
+        'restaurants' => [
+            [
+                'name' => 'Category Bistro',
+                'email' => 'hello@category-bistro.example.com',
+                'phone' => '+2348000000502',
+                'cuisine_type' => 'Nigerian',
+                'average_price_range' => '$$',
+                'dining_style' => 'Casual Dining',
+                'dress_code' => 'Casual',
+                'address_line_1' => '12 Marina Road, Lagos',
+                'latitude' => 6.4541,
+                'longitude' => 3.3947,
+                'menu' => [
+                    'mode' => 'manual',
+                    'currency' => 'ngn',
+                    'categories' => [
+                        [
+                            'name' => 'Breakfast',
+                            'items' => [
+                                [
+                                    'name' => 'Smokey Jollof',
+                                    'description' => 'Smokey Jollof is a banger',
+                                    'price' => '25000',
+                                    'is_featured' => '1',
+                                    'image' => UploadedFile::fake()->image('jollof.jpg'),
+                                ],
+                            ],
+                        ],
+                        [
+                            'name' => 'Lunch',
+                            'items' => [
+                                [
+                                    'name' => 'Grilled Chicken',
+                                    'description' => 'Charcoal grilled',
+                                    'price' => '12000',
+                                    'is_featured' => '0',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ], ['Accept' => 'application/json']);
+
+    $response->assertCreated()
+        ->assertJsonPath('restaurants.0.menu_source', 'manual');
+
+    $restaurant = Restaurant::query()->where('name', 'Category Bistro')->firstOrFail();
+
+    expect($restaurant->menuItems()->count())->toBe(2);
+
+    $breakfastItem = $restaurant->menuItems()->where('item_name', 'Smokey Jollof')->firstOrFail();
+    $lunchItem = $restaurant->menuItems()->where('item_name', 'Grilled Chicken')->firstOrFail();
+
+    expect($breakfastItem->section_name)->toBe('Breakfast')
+        ->and($breakfastItem->description)->toBe('Smokey Jollof is a banger')
+        ->and((float) $breakfastItem->price)->toBe(25000.0)
+        ->and($breakfastItem->currency)->toBe('NGN')
+        ->and($breakfastItem->is_featured)->toBeTrue()
+        ->and($breakfastItem->getMedia('featured'))->toHaveCount(1)
+        ->and($lunchItem->section_name)->toBe('Lunch')
+        ->and($lunchItem->is_featured)->toBeFalse();
+});
+
 it('allows business admins to onboard a business with multiple restaurants', function () {
     Storage::fake('public');
     Notification::fake();
@@ -220,6 +304,60 @@ it('validates onboarding request counts and menu payloads', function (Closure $m
             $payload['restaurants'][1]['menu']['items'] = [];
         }),
         'restaurants.1.menu.items',
+    ],
+    'missing categorized manual menu categories' => [
+        fn (array $payload): array => tap($payload, function (array &$payload): void {
+            $payload['restaurants'][1]['menu'] = [
+                'mode' => 'manual',
+                'currency' => 'ngn',
+                'categories' => [],
+            ];
+        }),
+        'restaurants.1.menu.categories',
+    ],
+    'manual menu description too long' => [
+        fn (array $payload): array => tap($payload, function (array &$payload): void {
+            $payload['restaurants'][1]['menu'] = [
+                'mode' => 'manual',
+                'currency' => 'ngn',
+                'categories' => [
+                    [
+                        'name' => 'Breakfast',
+                        'items' => [
+                            [
+                                'name' => 'Long Description Dish',
+                                'description' => str_repeat('a', 201),
+                                'price' => '5000',
+                                'is_featured' => '0',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+        }),
+        'restaurants.1.menu.categories.0.items.0.description',
+    ],
+    'invalid manual menu image type' => [
+        fn (array $payload): array => tap($payload, function (array &$payload): void {
+            $payload['restaurants'][1]['menu'] = [
+                'mode' => 'manual',
+                'currency' => 'ngn',
+                'categories' => [
+                    [
+                        'name' => 'Breakfast',
+                        'items' => [
+                            [
+                                'name' => 'Bad Image Dish',
+                                'price' => '5000',
+                                'is_featured' => '0',
+                                'image' => UploadedFile::fake()->create('menu-item.pdf', 100, 'application/pdf'),
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+        }),
+        'restaurants.1.menu.categories.0.items.0.image',
     ],
     'missing pdf file' => [
         fn (array $payload): array => tap($payload, function (array &$payload): void {

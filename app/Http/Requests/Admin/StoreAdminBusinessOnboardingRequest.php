@@ -79,12 +79,54 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'restaurants.*.menu.link' => ['nullable', 'url', 'max:2048'],
             'restaurants.*.menu.pdf' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:20480'],
             'restaurants.*.menu.name' => ['nullable', 'string', 'max:100'],
-            'restaurants.*.menu.currency' => ['nullable', 'string', 'size:3'],
+            'restaurants.*.menu.currency' => ['nullable', 'string', 'max:10'],
             'restaurants.*.menu.items' => ['nullable', 'array', 'min:1'],
             'restaurants.*.menu.items.*.name' => ['required_with:restaurants.*.menu.items', 'string', 'max:255'],
             'restaurants.*.menu.items.*.description' => ['nullable', 'string'],
             'restaurants.*.menu.items.*.price' => ['required_with:restaurants.*.menu.items', 'numeric', 'min:0'],
+            'restaurants.*.menu.categories' => ['nullable', 'array', 'min:1'],
+            'restaurants.*.menu.categories.*.name' => ['required_with:restaurants.*.menu.categories', 'string', 'max:100'],
+            'restaurants.*.menu.categories.*.items' => ['required_with:restaurants.*.menu.categories', 'array', 'min:1'],
+            'restaurants.*.menu.categories.*.items.*.name' => ['required', 'string', 'max:255'],
+            'restaurants.*.menu.categories.*.items.*.description' => ['nullable', 'string', 'max:200'],
+            'restaurants.*.menu.categories.*.items.*.price' => ['required', 'numeric', 'min:0'],
+            'restaurants.*.menu.categories.*.items.*.is_featured' => ['required', Rule::in(['0', '1', 0, 1, true, false])],
+            'restaurants.*.menu.categories.*.items.*.image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function onboardingPayload(): array
+    {
+        $payload = $this->validated();
+
+        foreach ($payload['restaurants'] as $index => &$restaurant) {
+            if (data_get($restaurant, 'menu.mode') !== 'manual') {
+                continue;
+            }
+
+            $categories = data_get($restaurant, 'menu.categories');
+
+            if (! is_array($categories)) {
+                continue;
+            }
+
+            foreach ($categories as $categoryIndex => &$category) {
+                foreach ($category['items'] ?? [] as $itemIndex => &$item) {
+                    $image = $this->file("restaurants.$index.menu.categories.$categoryIndex.items.$itemIndex.image");
+
+                    if ($image !== null) {
+                        $item['image'] = $image;
+                    }
+                }
+            }
+
+            $restaurant['menu']['categories'] = $categories;
+        }
+
+        return $payload;
     }
 
     public function after(): array
@@ -201,6 +243,24 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
         }
 
         if ($menuMode !== 'manual') {
+            return;
+        }
+
+        $hasCategories = filled(data_get($restaurant, 'menu.categories'));
+
+        if ($hasCategories) {
+            $categories = data_get($restaurant, 'menu.categories', []);
+
+            if (! is_array($categories) || $categories === []) {
+                $validator->errors()->add("restaurants.$index.menu.categories", 'At least one menu category is required for manual menu entry.');
+
+                return;
+            }
+
+            if (blank(data_get($restaurant, 'menu.currency'))) {
+                $validator->errors()->add("restaurants.$index.menu.currency", 'A menu currency is required for manual menu entry.');
+            }
+
             return;
         }
 
