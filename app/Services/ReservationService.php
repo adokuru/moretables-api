@@ -624,8 +624,16 @@ class ReservationService
         return $reservation;
     }
 
-    public function noShowReservation(Reservation $reservation, User $actor): Reservation
+    public function noShowReservation(Reservation $reservation, User $actor, bool $automated = false): Reservation
     {
+        if ($automated) {
+            $eligibleStatuses = config('reservations.no_show_eligible_statuses', []);
+
+            if (! in_array($reservation->status->value, $eligibleStatuses, true)) {
+                return $reservation;
+            }
+        }
+
         $reservation->forceFill([
             'status' => ReservationStatus::NoShow,
         ])->save();
@@ -636,7 +644,7 @@ class ReservationService
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'no_show'));
+        event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show'));
 
         return $reservation;
     }
