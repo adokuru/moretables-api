@@ -8,6 +8,7 @@ use App\Models\User;
 use App\RestaurantStatus;
 use App\UserAuthMethod;
 use App\UserStatus;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -263,16 +264,77 @@ class AdminBusinessOnboardingService
             return;
         }
 
+        $currency = strtoupper((string) data_get($restaurantPayload, 'menu.currency', 'NGN'));
+
+        if (filled(data_get($restaurantPayload, 'menu.categories'))) {
+            $this->createCategorizedManualMenu($restaurant, $restaurantPayload, $currency);
+
+            return;
+        }
+
+        $this->createLegacyManualMenu($restaurant, $restaurantPayload, $currency);
+    }
+
+    /**
+     * @param  array<string, mixed>  $restaurantPayload
+     */
+    protected function createCategorizedManualMenu(Restaurant $restaurant, array $restaurantPayload, string $currency): void
+    {
+        $sortOrder = 0;
+
+        foreach (data_get($restaurantPayload, 'menu.categories', []) as $category) {
+            $sectionName = (string) ($category['name'] ?? '');
+
+            foreach ($category['items'] ?? [] as $item) {
+                $menuItem = $restaurant->menuItems()->create([
+                    'section_name' => $sectionName,
+                    'item_name' => $item['name'],
+                    'description' => $item['description'] ?? null,
+                    'price' => $this->normalizeMenuPrice($item['price']),
+                    'currency' => $currency,
+                    'sort_order' => $sortOrder,
+                    'is_featured' => $this->normalizeBooleanFlag($item['is_featured'] ?? false),
+                ]);
+
+                $sortOrder++;
+
+                $image = $item['image'] ?? null;
+
+                if ($image instanceof UploadedFile) {
+                    $this->mediaLibraryService->syncUploadedMedia($menuItem, [
+                        'featured_image' => $image,
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $restaurantPayload
+     */
+    protected function createLegacyManualMenu(Restaurant $restaurant, array $restaurantPayload, string $currency): void
+    {
         foreach (data_get($restaurantPayload, 'menu.items', []) as $index => $item) {
             $restaurant->menuItems()->create([
                 'section_name' => data_get($restaurantPayload, 'menu.name'),
                 'item_name' => $item['name'],
                 'description' => $item['description'] ?? null,
-                'price' => $item['price'],
-                'currency' => strtoupper((string) data_get($restaurantPayload, 'menu.currency', 'NGN')),
+                'price' => $this->normalizeMenuPrice($item['price']),
+                'currency' => $currency,
                 'sort_order' => $index,
+                'is_featured' => false,
             ]);
         }
+    }
+
+    protected function normalizeMenuPrice(mixed $price): float
+    {
+        return (float) $price;
+    }
+
+    protected function normalizeBooleanFlag(mixed $value): bool
+    {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
