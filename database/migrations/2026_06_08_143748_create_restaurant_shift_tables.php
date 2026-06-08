@@ -35,7 +35,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('duration_minutes');
             $table->timestamps();
 
-            $table->unique(['restaurant_shift_id', 'party_size']);
+            $table->unique(['restaurant_shift_id', 'party_size'], 'rs_shift_turn_times_party_unique');
         });
 
         Schema::create('restaurant_shift_table_availability', function (Blueprint $table) {
@@ -65,7 +65,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('max_covers');
             $table->timestamps();
 
-            $table->unique(['restaurant_shift_id', 'starts_at']);
+            $table->unique(['restaurant_shift_id', 'starts_at'], 'rs_shift_flow_int_starts_unique');
         });
     }
 
