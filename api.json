@@ -4377,7 +4377,14 @@
                                                 "waitlist.manage",
                                                 "tables.manage",
                                                 "staff.manage",
-                                                "audit_logs.view"
+                                                "audit_logs.view",
+                                                "reporting.export",
+                                                "integrations.manage",
+                                                "marketing.manage",
+                                                "billing.manage",
+                                                "communications.manage",
+                                                "messaging.manage",
+                                                "policies.manage"
                                             ]
                                         },
                                         "minItems": 1
@@ -4785,7 +4792,14 @@
                                                 "waitlist.manage",
                                                 "tables.manage",
                                                 "staff.manage",
-                                                "audit_logs.view"
+                                                "audit_logs.view",
+                                                "reporting.export",
+                                                "integrations.manage",
+                                                "marketing.manage",
+                                                "billing.manage",
+                                                "communications.manage",
+                                                "messaging.manage",
+                                                "policies.manage"
                                             ]
                                         },
                                         "minItems": 1
@@ -5596,6 +5610,9 @@
                             }
                         }
                     },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
@@ -5604,9 +5621,6 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             },
@@ -5656,20 +5670,37 @@
                         }
                     },
                     "403": {
-                        "description": "An error",
+                        "description": "An error\n\nAn error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": ""
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": "You cannot remove yourself from the restaurant."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
                                         }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }
@@ -26391,6 +26422,10 @@
                             }
                         ]
                     },
+                    "access_sections": {
+                        "type": "array",
+                        "items": {}
+                    },
                     "is_default": {
                         "type": "boolean"
                     },
@@ -26407,6 +26442,7 @@
                     "slug",
                     "description",
                     "permissions",
+                    "access_sections",
                     "is_default",
                     "created_at",
                     "updated_at"
@@ -27049,6 +27085,9 @@
                     "sort_order": {
                         "type": "integer"
                     },
+                    "is_featured": {
+                        "type": "boolean"
+                    },
                     "featured_image": {
                         "anyOf": [
                             {
@@ -27075,6 +27114,7 @@
                     "price",
                     "currency",
                     "sort_order",
+                    "is_featured",
                     "featured_image",
                     "gallery_images"
                 ],
@@ -27885,8 +27925,7 @@
                                                 "string",
                                                 "null"
                                             ],
-                                            "minLength": 3,
-                                            "maxLength": 3
+                                            "maxLength": 10
                                         },
                                         "items": {
                                             "type": [
@@ -27909,6 +27948,71 @@
                                                     "price": {
                                                         "type": "number",
                                                         "minimum": 0
+                                                    }
+                                                }
+                                            },
+                                            "minItems": 1
+                                        },
+                                        "categories": {
+                                            "type": [
+                                                "array",
+                                                "null"
+                                            ],
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string",
+                                                        "maxLength": 100
+                                                    },
+                                                    "items": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "maxLength": 255
+                                                                },
+                                                                "description": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ],
+                                                                    "maxLength": 200
+                                                                },
+                                                                "price": {
+                                                                    "type": "number",
+                                                                    "minimum": 0
+                                                                },
+                                                                "is_featured": {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "0",
+                                                                        "1",
+                                                                        "0",
+                                                                        "1",
+                                                                        "1",
+                                                                        ""
+                                                                    ]
+                                                                },
+                                                                "image": {
+                                                                    "type": [
+                                                                        "string",
+                                                                        "null"
+                                                                    ],
+                                                                    "format": "binary",
+                                                                    "contentMediaType": "application/octet-stream",
+                                                                    "maxLength": 2048
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "name",
+                                                                "price",
+                                                                "is_featured"
+                                                            ]
+                                                        },
+                                                        "minItems": 1
                                                     }
                                                 }
                                             },
