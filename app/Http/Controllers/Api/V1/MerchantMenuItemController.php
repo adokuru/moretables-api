@@ -70,7 +70,6 @@ class MerchantMenuItemController extends Controller
             'price' => $validated['price'],
             'currency' => $validated['currency'] ?? 'NGN',
             'sort_order' => $validated['sort_order'] ?? ((int) $restaurant->menuItems()->max('sort_order') + 1),
-            'is_featured' => $validated['is_featured'] ?? false,
         ]);
 
         $this->auditLogService->log(
