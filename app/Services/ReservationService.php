@@ -219,7 +219,7 @@ class ReservationService
 
                 $attributes['restaurant_table_id'] = $table->id;
                 $attributes['ends_at'] = $this->availabilityService
-                    ->calculateEndTime($reservation->restaurant, $startsAt)
+                    ->calculateEndTime($reservation->restaurant, $startsAt, $partySize)
                     ->toDateTimeString();
             }
 
@@ -718,6 +718,7 @@ class ReservationService
 
             $this->ensureWaitlistEntryBelongsToCustomer($entry, $customer);
             $this->ensureWaitlistEntryCanBeRespondedTo($entry);
+            $this->ensureBookableTime($entry->restaurant, $entry->preferred_starts_at);
 
             $table = $this->availabilityService->findAvailableTable(
                 $entry->restaurant,
@@ -878,7 +879,7 @@ class ReservationService
                     'status' => ReservationStatus::Booked,
                     'party_size' => $attributes['party_size'],
                     'starts_at' => $startsAt,
-                    'ends_at' => $this->availabilityService->calculateEndTime($restaurant, $startsAt),
+                    'ends_at' => $this->availabilityService->calculateEndTime($restaurant, $startsAt, $attributes['party_size']),
                     'notes' => $attributes['notes'] ?? null,
                     'occasion' => $attributes['occasion'] ?? null,
                     'accept_points' => (bool) ($attributes['accept_points'] ?? false),

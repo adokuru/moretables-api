@@ -2,6 +2,7 @@
 
 use App\Events\WaitlistEntryUpdated;
 use App\Models\ExpoPushToken;
+use App\Models\RestaurantShift;
 use App\Models\RestaurantSpecialDay;
 use App\Models\User;
 use App\Models\WaitlistEntry;
@@ -9,6 +10,7 @@ use App\Notifications\ExpoPushChannel;
 use App\Notifications\WaitlistAvailabilityNotification;
 use App\Notifications\WaitlistOfferExpiredNotification;
 use App\WaitlistStatus;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -70,6 +72,35 @@ it('rejects a waitlist offer when the preferred time is now on a closed special 
 
     RestaurantSpecialDay::factory()->for($data['restaurant'])->closed()->create([
         'date' => $startsAt->toDateString(),
+    ]);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'status' => WaitlistStatus::Notified,
+        'party_size' => 2,
+        'preferred_starts_at' => $startsAt,
+        'expires_at' => now()->addMinutes(20),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/waitlist-entries/'.$entry->id.'/accept')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('starts_at');
+});
+
+it('rejects a waitlist offer when the preferred time is outside weekly shift windows', function () {
+    $data = createBookableRestaurant();
+    $data['restaurant']->update(['timezone' => 'UTC']);
+    $customer = User::factory()->create();
+    $startsAt = Carbon::tomorrow('UTC')->setTime(19, 0);
+
+    RestaurantShift::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'day_of_week' => $startsAt->dayOfWeek,
+        'starts_at' => '20:00',
+        'ends_at' => '22:00',
     ]);
 
     $entry = WaitlistEntry::factory()->create([

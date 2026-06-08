@@ -20,6 +20,7 @@ use App\Models\RestaurantAvailabilityPeriod;
 use App\Services\AuthChallengeService;
 use App\Services\MediaLibraryService;
 use App\Services\RestaurantOnboardingService;
+use App\Services\RestaurantShiftService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
@@ -28,6 +29,7 @@ class MerchantRestaurantOnboardingController extends Controller
 {
     public function __construct(
         protected RestaurantOnboardingService $onboardingService,
+        protected RestaurantShiftService $shiftService,
         protected MediaLibraryService $mediaLibraryService,
         protected AuthChallengeService $authChallengeService,
     ) {}
@@ -134,6 +136,7 @@ class MerchantRestaurantOnboardingController extends Controller
     public function updateBusinessHours(UpdateRestaurantOnboardingHoursRequest $request, Restaurant $restaurant): JsonResponse
     {
         $this->onboardingService->replaceMealSchedules($restaurant, $request->validated('schedules'));
+        $this->shiftService->seedFromSchedules($restaurant);
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         $restaurant->load(['availabilityPeriods.schedules']);

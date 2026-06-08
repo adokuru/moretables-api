@@ -244,6 +244,14 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantSpecialDay::class)->orderBy('date');
     }
 
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(RestaurantShift::class)
+            ->orderBy('day_of_week')
+            ->orderBy('sort_order')
+            ->orderBy('starts_at');
+    }
+
     public function galleryCategories(): HasMany
     {
         return $this->hasMany(RestaurantGalleryCategory::class)->orderBy('sort_order')->orderBy('name');
