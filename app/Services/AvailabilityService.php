@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\RestaurantShift;
 use App\Models\RestaurantSpecialDay;
 use App\Models\RestaurantTable;
 use App\ReservationStatus;
@@ -16,20 +17,32 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class AvailabilityService
 {
-    public function calculateEndTime(Restaurant $restaurant, CarbonInterface $startsAt): Carbon
-    {
-        return Carbon::parse($startsAt)->addMinutes($restaurant->policy?->reservation_duration_minutes ?? 120);
-    }
+    public function __construct(protected RestaurantShiftService $restaurantShiftService) {}
 
-    public function isBookableAt(Restaurant $restaurant, CarbonInterface $startsAt): bool
+    public function calculateEndTime(Restaurant $restaurant, CarbonInterface $startsAt, ?int $partySize = null): Carbon
     {
         $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
         $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
-        $endsAt = $this->calculateEndTime($restaurant, $localStartsAt);
+        $fallbackDuration = $restaurant->policy?->reservation_duration_minutes ?? 120;
+        $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
+        $duration = $fallbackDuration;
+
+        if ($shift !== null && $partySize !== null) {
+            $duration = $this->restaurantShiftService->turnDurationForPartySize($shift, $partySize, $fallbackDuration);
+        }
+
+        return $localStartsAt->copy()->addMinutes($duration);
+    }
+
+    public function isBookableAt(Restaurant $restaurant, CarbonInterface $startsAt, ?int $partySize = null): bool
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $endsAt = $this->calculateEndTime($restaurant, $localStartsAt, $partySize);
 
         return collect($this->effectiveTimeWindows($restaurant, $localStartsAt->toDateString()))
-            ->contains(fn (array $window): bool => $localStartsAt->greaterThanOrEqualTo($window[0])
-                && $endsAt->lessThanOrEqualTo($window[1]));
+            ->contains(fn (array $window): bool => $localStartsAt->greaterThanOrEqualTo($this->windowOpens($window))
+                && $endsAt->lessThanOrEqualTo($this->windowCloses($window)));
     }
 
     public function findAvailableTable(
@@ -49,15 +62,36 @@ class AvailabilityService
         ?int $excludingReservationId = null,
         ?int $diningAreaId = null,
     ): Collection {
-        $endsAt = $this->calculateEndTime($restaurant, $startsAt);
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $endsAt = $this->calculateEndTime($restaurant, $localStartsAt, $partySize);
+        $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
 
         $blockedTableIds = $this->overlappingReservationsQuery($restaurant, $startsAt, $endsAt, $excludingReservationId)
             ->pluck('restaurant_table_id');
 
-        return $this->eligibleTablesQuery($restaurant, $partySize)
+        $tables = $this->eligibleTablesQuery($restaurant, $partySize)
             ->when($diningAreaId, fn ($query) => $query->where('dining_area_id', $diningAreaId))
             ->whereNotIn('id', $blockedTableIds)
             ->get();
+
+        if ($shift !== null) {
+            if (! $this->restaurantShiftService->isPartySizeReleased($shift, $localStartsAt, $partySize)) {
+                return new Collection;
+            }
+
+            $tables = $this->restaurantShiftService
+                ->filterTablesByShiftAvailability($shift, $tables, $partySize);
+
+            $tables = $tables->filter(
+                fn (RestaurantTable $table): bool => $this->restaurantShiftService
+                    ->isTableReleased($shift, $table, $localStartsAt),
+            )->values();
+        } elseif ($this->restaurantUsesWeeklyShifts($restaurant)) {
+            return new Collection;
+        }
+
+        return new Collection($tables->all());
     }
 
     public function isTableAvailable(
@@ -75,10 +109,33 @@ class AvailabilityService
             return false;
         }
 
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
+
+        if ($shift !== null) {
+            if (! $this->restaurantShiftService->isPartySizeReleased($shift, $localStartsAt, $partySize)) {
+                return false;
+            }
+
+            $filtered = $this->restaurantShiftService
+                ->filterTablesByShiftAvailability($shift, collect([$table]), $partySize);
+
+            if ($filtered->isEmpty()) {
+                return false;
+            }
+
+            if (! $this->restaurantShiftService->isTableReleased($shift, $table, $localStartsAt)) {
+                return false;
+            }
+        } elseif ($this->restaurantUsesWeeklyShifts($restaurant)) {
+            return false;
+        }
+
         return ! $this->overlappingReservationsQuery(
             restaurant: $restaurant,
             startsAt: $startsAt,
-            endsAt: $this->calculateEndTime($restaurant, $startsAt),
+            endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
             excludingReservationId: $excludingReservationId,
         )
             ->where('restaurant_table_id', $table->id)
@@ -106,18 +163,19 @@ class AvailabilityService
             return [];
         }
 
-        $rangeStartsAt = collect($windows)->min(fn (array $window): Carbon => $window[0])->copy()->utc();
-        $rangeEndsAt = collect($windows)->max(fn (array $window): Carbon => $window[1])->copy()->utc();
+        $rangeStartsAt = collect($windows)->min(fn (array $window): Carbon => $this->windowOpens($window))->copy()->utc();
+        $rangeEndsAt = collect($windows)->max(fn (array $window): Carbon => $this->windowCloses($window))->copy()->utc();
 
-        $reservationsByTable = $this->overlappingReservationsQuery($restaurant, $rangeStartsAt, $rangeEndsAt)
-            ->get(['restaurant_table_id', 'starts_at', 'ends_at'])
-            ->groupBy('restaurant_table_id');
+        $reservations = $this->overlappingReservationsQuery($restaurant, $rangeStartsAt, $rangeEndsAt)
+            ->get(['restaurant_table_id', 'starts_at', 'ends_at', 'party_size']);
 
         return $this->generateSlots(
             restaurant: $restaurant,
             windows: $windows,
             tables: $tables,
-            reservationsByTable: $reservationsByTable,
+            reservationsByTable: $reservations->groupBy('restaurant_table_id'),
+            allReservations: $reservations,
+            partySize: $partySize,
             requesterTimezone: $requesterTimezone,
         );
     }
@@ -149,6 +207,12 @@ class AvailabilityService
             ->get()
             ->groupBy('restaurant_id');
 
+        $restaurants->load([
+            'shifts' => fn ($query) => $query
+                ->where('is_active', true)
+                ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals']),
+        ]);
+
         $restaurants->each(function (Restaurant $restaurant) use ($specialDaysByRestaurant): void {
             $restaurant->setRelation(
                 'specialDays',
@@ -172,12 +236,12 @@ class AvailabilityService
             ->groupBy('restaurant_id');
         $rangeStartsAt = $windowsByRestaurant
             ->flatten(1)
-            ->min(fn (array $window): Carbon => $window[0])
+            ->min(fn (array $window): Carbon => $this->windowOpens($window))
             ->copy()
             ->utc();
         $rangeEndsAt = $windowsByRestaurant
             ->flatten(1)
-            ->max(fn (array $window): Carbon => $window[1])
+            ->max(fn (array $window): Carbon => $this->windowCloses($window))
             ->copy()
             ->utc();
         $reservationsByRestaurant = $this->overlappingReservationsForRestaurantsQuery(
@@ -185,7 +249,7 @@ class AvailabilityService
             $rangeStartsAt,
             $rangeEndsAt,
         )
-            ->get(['restaurant_id', 'restaurant_table_id', 'starts_at', 'ends_at'])
+            ->get(['restaurant_id', 'restaurant_table_id', 'starts_at', 'ends_at', 'party_size'])
             ->groupBy('restaurant_id');
 
         foreach ($restaurants as $restaurant) {
@@ -196,11 +260,15 @@ class AvailabilityService
                 continue;
             }
 
+            $restaurantReservations = $reservationsByRestaurant->get($restaurant->id, collect());
+
             $slotsByRestaurant[$restaurant->id] = $this->generateSlots(
                 restaurant: $restaurant,
                 windows: $windows,
                 tables: $tables,
-                reservationsByTable: $reservationsByRestaurant->get($restaurant->id, collect())->groupBy('restaurant_table_id'),
+                reservationsByTable: $restaurantReservations->groupBy('restaurant_table_id'),
+                allReservations: $restaurantReservations,
+                partySize: $partySize,
                 requesterTimezone: $requesterTimezone,
             );
         }
@@ -229,6 +297,19 @@ class AvailabilityService
             return $shift ? ['starts_at' => $shift->opens_at, 'ends_at' => $shift->closes_at] : null;
         }
 
+        if ($restaurant->shifts()->exists()) {
+            $weeklyShift = $restaurant->shifts()
+                ->where('restaurant_meal_type_id', $availabilityPeriodId)
+                ->where('day_of_week', $localDate->dayOfWeek)
+                ->where('is_active', true)
+                ->orderBy('starts_at')
+                ->first();
+
+            return $weeklyShift
+                ? ['starts_at' => $weeklyShift->starts_at, 'ends_at' => $weeklyShift->ends_at]
+                : null;
+        }
+
         $schedule = $restaurant->availabilitySchedules()
             ->where('restaurant_meal_type_id', $availabilityPeriodId)
             ->where('day_of_week', $localDate->dayOfWeek)
@@ -239,7 +320,7 @@ class AvailabilityService
     }
 
     /**
-     * @return list<array{Carbon, Carbon}>
+     * @return list<array{opens: Carbon, closes: Carbon, shift: ?RestaurantShift}>
      */
     public function effectiveTimeWindows(Restaurant $restaurant, string $date): array
     {
@@ -255,9 +336,10 @@ class AvailabilityService
     }
 
     /**
-     * @param  list<array{Carbon, Carbon}>  $windows
+     * @param  list<array{opens: Carbon, closes: Carbon, shift: ?RestaurantShift}>  $windows
      * @param  SupportCollection<int, RestaurantTable>  $tables
      * @param  SupportCollection<int, SupportCollection<int, Reservation>>  $reservationsByTable
+     * @param  SupportCollection<int, Reservation>  $allReservations
      * @return list<array<string, mixed>>
      */
     private function generateSlots(
@@ -265,15 +347,41 @@ class AvailabilityService
         array $windows,
         SupportCollection $tables,
         SupportCollection $reservationsByTable,
+        SupportCollection $allReservations,
+        int $partySize,
         ?string $requesterTimezone = null,
     ): array {
         $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
         $displayTimezone = $requesterTimezone ?: $restaurantTimezone;
-        $duration = $restaurant->policy?->reservation_duration_minutes ?? 120;
+        $fallbackDuration = $restaurant->policy?->reservation_duration_minutes ?? 120;
         $now = Carbon::now();
         $slots = [];
 
-        foreach ($windows as [$opensAt, $closesAt]) {
+        foreach ($windows as $window) {
+            $opensAt = $this->windowOpens($window);
+            $closesAt = $this->windowCloses($window);
+            /** @var ?RestaurantShift $shift */
+            $shift = $window['shift'] ?? null;
+
+            if ($shift !== null) {
+                if (! $this->restaurantShiftService->isPartySizeReleased($shift, $opensAt, $partySize)) {
+                    continue;
+                }
+
+                $tablesForWindow = $this->restaurantShiftService
+                    ->filterTablesByShiftAvailability($shift, $tables, $partySize);
+            } else {
+                $tablesForWindow = $tables;
+            }
+
+            if ($tablesForWindow->isEmpty()) {
+                continue;
+            }
+
+            $duration = $shift !== null
+                ? $this->restaurantShiftService->turnDurationForPartySize($shift, $partySize, $fallbackDuration)
+                : $fallbackDuration;
+
             $cursor = $opensAt->copy();
 
             while ($cursor->copy()->addMinutes($duration)->lessThanOrEqualTo($closesAt)) {
@@ -283,9 +391,34 @@ class AvailabilityService
                     continue;
                 }
 
+                if ($shift !== null) {
+                    $intervalMinutes = $shift->flow_interval_minutes;
+                    $coversInInterval = $this->coversStartingInInterval(
+                        $allReservations,
+                        $cursor,
+                        $intervalMinutes,
+                    );
+
+                    if ($coversInInterval + $partySize > $this->restaurantShiftService->maxCoversForInterval($shift, $cursor)) {
+                        $cursor->addMinutes(15);
+
+                        continue;
+                    }
+                }
+
                 $utcCursor = $cursor->copy()->utc();
                 $endsAt = $utcCursor->copy()->addMinutes($duration);
-                $table = $tables->first(function (RestaurantTable $table) use ($endsAt, $reservationsByTable, $utcCursor): bool {
+                $table = $tablesForWindow->first(function (RestaurantTable $table) use (
+                    $endsAt,
+                    $reservationsByTable,
+                    $utcCursor,
+                    $shift,
+                    $cursor,
+                ): bool {
+                    if ($shift !== null && ! $this->restaurantShiftService->isTableReleased($shift, $table, $cursor)) {
+                        return false;
+                    }
+
                     return $reservationsByTable
                         ->get($table->id, collect())
                         ->doesntContain(fn (Reservation $reservation): bool => $reservation->starts_at->lt($endsAt)
@@ -308,6 +441,36 @@ class AvailabilityService
         }
 
         return array_values($slots);
+    }
+
+    /**
+     * @param  SupportCollection<int, Reservation>  $reservations
+     */
+    private function coversStartingInInterval(
+        SupportCollection $reservations,
+        CarbonInterface $intervalStart,
+        int $intervalMinutes,
+    ): int {
+        $intervalEnd = $intervalStart->copy()->addMinutes($intervalMinutes);
+
+        return (int) $reservations
+            ->filter(fn (Reservation $reservation): bool => Carbon::parse($reservation->starts_at)
+                ->setTimezone($intervalStart->getTimezone())
+                ->greaterThanOrEqualTo($intervalStart)
+                && Carbon::parse($reservation->starts_at)
+                    ->setTimezone($intervalStart->getTimezone())
+                    ->lessThan($intervalEnd))
+            ->sum('party_size');
+    }
+
+    private function windowOpens(array $window): Carbon
+    {
+        return $window['opens'] ?? $window[0];
+    }
+
+    private function windowCloses(array $window): Carbon
+    {
+        return $window['closes'] ?? $window[1];
     }
 
     /**
@@ -370,10 +533,10 @@ class AvailabilityService
     }
 
     /**
-     * Build [(opensAt, closesAt), ...] windows for the day.
-     * Uses meal schedules when configured, otherwise falls back to legacy restaurant_hours.
+     * Build booking windows for the day.
+     * Priority: special day → weekly shifts (when any exist) → meal schedules → restaurant_hours.
      *
-     * @return list<array{Carbon, Carbon}>
+     * @return list<array{opens: Carbon, closes: Carbon, shift: ?RestaurantShift}>
      */
     private function buildTimeWindows(Restaurant $restaurant, int $dayOfWeek, string $dateStr, string $timezone): array
     {
@@ -387,10 +550,40 @@ class AvailabilityService
             return $specialDay->shifts
                 ->sortBy('opens_at')
                 ->map(fn ($shift) => [
-                    Carbon::parse($dateStr.' '.$shift->opens_at, $timezone),
-                    Carbon::parse($dateStr.' '.$shift->closes_at, $timezone),
+                    'opens' => Carbon::parse($dateStr.' '.$shift->opens_at, $timezone),
+                    'closes' => Carbon::parse($dateStr.' '.$shift->closes_at, $timezone),
+                    'shift' => null,
                 ])
                 ->values()
+                ->all();
+        }
+
+        $hasWeeklyShifts = $restaurant->relationLoaded('shifts')
+            ? $restaurant->shifts->isNotEmpty()
+            : $restaurant->shifts()->exists();
+
+        if ($hasWeeklyShifts) {
+            $weeklyShifts = $restaurant->relationLoaded('shifts')
+                ? $restaurant->shifts
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->sortBy('sort_order')
+                    ->sortBy('starts_at')
+                    ->values()
+                : $restaurant->shifts()
+                    ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals'])
+                    ->where('day_of_week', $dayOfWeek)
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('starts_at')
+                    ->get();
+
+            return $weeklyShifts
+                ->map(fn (RestaurantShift $shift) => [
+                    'opens' => Carbon::parse($dateStr.' '.$shift->starts_at, $timezone),
+                    'closes' => Carbon::parse($dateStr.' '.$shift->ends_at, $timezone),
+                    'shift' => $shift,
+                ])
                 ->all();
         }
 
@@ -399,13 +592,13 @@ class AvailabilityService
             : $restaurant->availabilitySchedules()->where('day_of_week', $dayOfWeek)->orderBy('opens_at')->get();
 
         if ($availabilitySchedules->isNotEmpty()) {
-            return $availabilitySchedules->map(fn ($s) => [
-                Carbon::parse($dateStr.' '.$s->opens_at, $timezone),
-                Carbon::parse($dateStr.' '.$s->closes_at, $timezone),
+            return $availabilitySchedules->map(fn ($schedule) => [
+                'opens' => Carbon::parse($dateStr.' '.$schedule->opens_at, $timezone),
+                'closes' => Carbon::parse($dateStr.' '.$schedule->closes_at, $timezone),
+                'shift' => null,
             ])->all();
         }
 
-        // Fall back to legacy single-window restaurant_hours
         $hours = $restaurant->hours->firstWhere('day_of_week', $dayOfWeek);
 
         if (! $hours || $hours->is_closed || ! $hours->opens_at || ! $hours->closes_at) {
@@ -413,9 +606,17 @@ class AvailabilityService
         }
 
         return [[
-            Carbon::parse($dateStr.' '.$hours->opens_at, $timezone),
-            Carbon::parse($dateStr.' '.$hours->closes_at, $timezone),
+            'opens' => Carbon::parse($dateStr.' '.$hours->opens_at, $timezone),
+            'closes' => Carbon::parse($dateStr.' '.$hours->closes_at, $timezone),
+            'shift' => null,
         ]];
+    }
+
+    private function restaurantUsesWeeklyShifts(Restaurant $restaurant): bool
+    {
+        return $restaurant->relationLoaded('shifts')
+            ? $restaurant->shifts->isNotEmpty()
+            : $restaurant->shifts()->exists();
     }
 
     /**

@@ -5262,6 +5262,225 @@
      ]
     },
     {
+     "name": "Weekly Shifts",
+     "description": "Weekly recurring shifts define booking windows, turn times, table availability, turn controls, and flow settings for each day of the week. Shifts are seeded once from onboarding business hours when a restaurant has no shifts yet.",
+     "item": [
+      {
+       "name": "Shifts list",
+       "request": {
+        "method": "GET",
+        "header": [
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/:restaurant/shifts",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          ":restaurant",
+          "shifts"
+         ],
+         "variable": [
+          {
+           "key": "restaurant",
+           "value": "<string>"
+          }
+         ]
+        }
+       }
+      },
+      {
+       "name": "Shift create",
+       "request": {
+        "method": "POST",
+        "header": [
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"name\": \"Friday Dinner\",\n  \"day_of_week\": 5,\n  \"starts_at\": \"17:00\",\n  \"ends_at\": \"22:00\",\n  \"max_party_size\": 8,\n  \"turn_times\": [\n    {\"party_size\": 2, \"duration_minutes\": 90},\n    {\"party_size\": 4, \"duration_minutes\": 120}\n  ],\n  \"turn_controls\": [\n    {\"rule_type\": \"party_size\", \"party_size\": 6, \"min_turns\": 2}\n  ],\n  \"flow_controls\": {\n    \"interval_minutes\": 15,\n    \"default_max_covers\": 40,\n    \"intervals\": [\n      {\"starts_at\": \"17:00\", \"ends_at\": \"19:00\", \"max_covers\": 30}\n    ]\n  }\n}",
+         "options": {
+          "raw": {
+           "language": "json"
+          }
+         }
+        },
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/:restaurant/shifts",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          ":restaurant",
+          "shifts"
+         ],
+         "variable": [
+          {
+           "key": "restaurant",
+           "value": "<string>"
+          }
+         ]
+        }
+       }
+      },
+      {
+       "name": "Shift show",
+       "request": {
+        "method": "GET",
+        "header": [
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/:restaurant/shifts/:shift",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          ":restaurant",
+          "shifts",
+          ":shift"
+         ],
+         "variable": [
+          {
+           "key": "restaurant",
+           "value": "<string>"
+          },
+          {
+           "key": "shift",
+           "value": "<string>"
+          }
+         ]
+        }
+       }
+      },
+      {
+       "name": "Shift update",
+       "request": {
+        "method": "PATCH",
+        "header": [
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"name\": \"Late Dinner\",\n  \"turn_times\": [\n    {\"party_size\": 2, \"duration_minutes\": 90}\n  ]\n}",
+         "options": {
+          "raw": {
+           "language": "json"
+          }
+         }
+        },
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/:restaurant/shifts/:shift",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          ":restaurant",
+          "shifts",
+          ":shift"
+         ],
+         "variable": [
+          {
+           "key": "restaurant",
+           "value": "<string>"
+          },
+          {
+           "key": "shift",
+           "value": "<string>"
+          }
+         ]
+        }
+       }
+      },
+      {
+       "name": "Shift delete",
+       "request": {
+        "method": "DELETE",
+        "header": [
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         },
+         {
+          "key": "Accept",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/:restaurant/shifts/:shift",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          ":restaurant",
+          "shifts",
+          ":shift"
+         ],
+         "variable": [
+          {
+           "key": "restaurant",
+           "value": "<string>"
+          },
+          {
+           "key": "shift",
+           "value": "<string>"
+          }
+         ]
+        }
+       }
+      }
+     ]
+    },
+    {
      "name": "List reward rules",
      "request": {
       "method": "GET",

@@ -66,9 +66,6 @@
             "name": "Merchant Table Combinations"
         },
         {
-            "name": "Merchant Menu"
-        },
-        {
             "name": "Merchant Overview"
         },
         {
@@ -81,10 +78,16 @@
             "name": "Merchant Special Days"
         },
         {
+            "name": "Merchant Menu"
+        },
+        {
             "name": "Merchant Reservations"
         },
         {
             "name": "Front of House / Floor Plan"
+        },
+        {
+            "name": "Merchant Shifts"
         },
         {
             "name": "Merchant Reward Rules"
@@ -5136,6 +5139,89 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/menu-document": {
+            "post": {
+                "operationId": "merchantRestaurantMenuDocument.store",
+                "tags": [
+                    "Merchant Restaurant Profile"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreRestaurantMenuDocumentRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Menu document uploaded successfully."
+                                        },
+                                        "restaurant": {
+                                            "$ref": "#/components/schemas/RestaurantDetailResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "restaurant"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/settings": {
             "get": {
                 "operationId": "merchantRestaurantSettings.show",
@@ -7273,7 +7359,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/StoreRestaurantMenuItemRequest"
                             }
@@ -7336,7 +7422,136 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/menu-items/grouped": {
+            "get": {
+                "operationId": "merchantMenuItem.grouped",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/menu-items/{menuItem}": {
+            "get": {
+                "operationId": "merchantMenuItem.show",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "menuItem",
+                        "in": "path",
+                        "required": true,
+                        "description": "The menu item ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "menu_item": {
+                                            "$ref": "#/components/schemas/RestaurantMenuItemResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "menu_item"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
             "patch": {
                 "operationId": "merchantMenuItem.update",
                 "tags": [
@@ -7364,7 +7579,7 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/UpdateRestaurantMenuItemRequest"
                             }
@@ -11761,6 +11976,348 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/menu-categories": {
+            "get": {
+                "operationId": "merchantMenuCategory.index",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "categories": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "categories"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantMenuCategory.store",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreMenuCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Menu category created successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/menu-categories/{menuCategory}": {
+            "patch": {
+                "operationId": "merchantMenuCategory.update",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "menuCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The menu category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMenuCategoryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Menu category updated successfully."
+                                        },
+                                        "category": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "sort_order": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "sort_order"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "category"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantMenuCategory.destroy",
+                "tags": [
+                    "Merchant Menu"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "menuCategory",
+                        "in": "path",
+                        "required": true,
+                        "description": "The menu category ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Menu category deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/reservations": {
             "get": {
                 "operationId": "merchantReservation.index",
@@ -14333,6 +14890,349 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/shifts": {
+            "get": {
+                "operationId": "merchantRestaurantShift.index",
+                "tags": [
+                    "Merchant Shifts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `RestaurantShiftResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RestaurantShiftResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantShift.store",
+                "summary": "Create a weekly shift with optional table availability, turn times, turn controls, and flow settings",
+                "tags": [
+                    "Merchant Shifts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreRestaurantShiftRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`RestaurantShiftResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantShiftResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/shifts/{shift}": {
+            "get": {
+                "operationId": "merchantRestaurantShift.show",
+                "tags": [
+                    "Merchant Shifts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "shift",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shift ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantShiftResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantShiftResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "merchantRestaurantShift.update",
+                "summary": "Update a weekly shift and its nested availability settings",
+                "tags": [
+                    "Merchant Shifts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "shift",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shift ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantShiftRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantShiftResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantShiftResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantShift.destroy",
+                "tags": [
+                    "Merchant Shifts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "shift",
+                        "in": "path",
+                        "required": true,
+                        "description": "The shift ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Shift deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/guest-communication": {
             "get": {
                 "operationId": "merchantGuestCommunication.show",
@@ -15109,6 +16009,132 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/billing/upgrade": {
+            "post": {
+                "operationId": "merchantBilling.upgrade",
+                "tags": [
+                    "Merchant Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartBillingCheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Billing upgrade initialized successfully."
+                                        },
+                                        "checkout": {
+                                            "type": "object",
+                                            "properties": {
+                                                "reference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "email": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string"
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "billing@moretables.local"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "plan_code": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "authorization_url": {},
+                                                "access_code": {}
+                                            },
+                                            "required": [
+                                                "reference",
+                                                "email",
+                                                "plan_code",
+                                                "authorization_url",
+                                                "access_code"
+                                            ]
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "checkout",
+                                        "invoice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -24982,18 +26008,6 @@
                     "name": {
                         "type": "string"
                     },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
                     "description": {
                         "type": [
                             "string",
@@ -25026,20 +26040,32 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
-                    "category",
-                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
+                    "category",
+                    "floor_type"
                 ],
                 "title": "DiningArea"
             },
@@ -25123,25 +26149,22 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "integer"
+                        "type": "string"
                     },
                     "dining_area_id": {
-                        "type": "integer"
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"
                     },
                     "description": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "sort_order": {
-                        "type": "integer"
+                        "type": "string"
                     },
                     "is_active": {
-                        "type": "boolean"
+                        "type": "string"
                     },
                     "tables_count": {
                         "type": "integer",
@@ -27182,6 +28205,121 @@
                 ],
                 "title": "RestaurantRewardRuleResource"
             },
+            "RestaurantShiftResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "restaurant_id": {
+                        "type": "string"
+                    },
+                    "restaurant_meal_type_id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "day_of_week": {
+                        "type": "string"
+                    },
+                    "starts_at": {
+                        "type": "string"
+                    },
+                    "ends_at": {
+                        "type": "string"
+                    },
+                    "color": {
+                        "type": "string"
+                    },
+                    "is_active": {
+                        "type": "string"
+                    },
+                    "sort_order": {
+                        "type": "string"
+                    },
+                    "turn_times": {
+                        "type": "string"
+                    },
+                    "table_availability": {
+                        "type": "string"
+                    },
+                    "turn_controls": {
+                        "type": "string"
+                    },
+                    "flow_controls": {
+                        "type": "object",
+                        "properties": {
+                            "interval_minutes": {
+                                "type": "string"
+                            },
+                            "default_max_covers": {
+                                "type": "string"
+                            },
+                            "release_policy": {
+                                "type": "string"
+                            },
+                            "release_hours_before": {
+                                "type": "string"
+                            },
+                            "intervals": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
+                            }
+                        },
+                        "required": [
+                            "interval_minutes",
+                            "default_max_covers",
+                            "release_policy",
+                            "release_hours_before",
+                            "intervals"
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "restaurant_meal_type_id",
+                    "name",
+                    "day_of_week",
+                    "starts_at",
+                    "ends_at",
+                    "color",
+                    "is_active",
+                    "sort_order",
+                    "flow_controls"
+                ],
+                "title": "RestaurantShiftResource"
+            },
+            "RestaurantShiftTurnControlReleasePolicy": {
+                "type": "string",
+                "enum": [
+                    "dont_release",
+                    "at_shift_start",
+                    "hours_before_shift"
+                ],
+                "title": "RestaurantShiftTurnControlReleasePolicy"
+            },
+            "RestaurantShiftTurnControlRuleType": {
+                "type": "string",
+                "enum": [
+                    "party_size",
+                    "table"
+                ],
+                "title": "RestaurantShiftTurnControlRuleType"
+            },
             "RestaurantSpecialDayResource": {
                 "type": "object",
                 "properties": {
@@ -27291,10 +28429,7 @@
                         ]
                     },
                     "dining_spot_id": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"
@@ -28803,6 +29938,26 @@
                 ],
                 "title": "StoreGalleryCategoryRequest"
             },
+            "StoreMenuCategoryRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "sort_order": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 0
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "StoreMenuCategoryRequest"
+            },
             "StoreMerchantReservationRequest": {
                 "type": "object",
                 "properties": {
@@ -29281,6 +30436,21 @@
                 ],
                 "title": "StoreRestaurantListRequest"
             },
+            "StoreRestaurantMenuDocumentRequest": {
+                "type": "object",
+                "properties": {
+                    "menu_document": {
+                        "type": "string",
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "maxLength": 20480
+                    }
+                },
+                "required": [
+                    "menu_document"
+                ],
+                "title": "StoreRestaurantMenuDocumentRequest"
+            },
             "StoreRestaurantMenuItemRequest": {
                 "type": "object",
                 "properties": {
@@ -29317,58 +30487,8 @@
                         ],
                         "minimum": 0
                     },
-                    "featured_image": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "binary",
-                        "contentMediaType": "application/octet-stream",
-                        "maxLength": 10240
-                    },
-                    "featured_image_alt_text": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "gallery_images": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": "string",
-                            "format": "binary",
-                            "contentMediaType": "application/octet-stream",
-                            "maxLength": 10240
-                        }
-                    },
-                    "gallery_image_alt_texts": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": [
-                                "string",
-                                "null"
-                            ],
-                            "maxLength": 255
-                        }
-                    },
-                    "gallery_category_ids": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": [
-                                "integer",
-                                "null"
-                            ]
-                        }
+                    "is_featured": {
+                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -29502,6 +30622,161 @@
                     "days"
                 ],
                 "title": "StoreRestaurantRewardRuleRequest"
+            },
+            "StoreRestaurantShiftRequest": {
+                "type": "object",
+                "properties": {
+                    "restaurant_meal_type_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "day_of_week": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                    },
+                    "starts_at": {
+                        "type": "string"
+                    },
+                    "ends_at": {
+                        "type": "string"
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 7
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "flow_controls": {
+                        "type": "object",
+                        "properties": {
+                            "interval_minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                            },
+                            "default_max_covers": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "release_policy": {
+                                "$ref": "#/components/schemas/RestaurantShiftTurnControlReleasePolicy"
+                            },
+                            "release_hours_before": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 0,
+                                "maximum": 168
+                            },
+                            "intervals": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "starts_at": {
+                                            "type": "string"
+                                        },
+                                        "max_covers": {
+                                            "type": "integer",
+                                            "minimum": 1
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "turn_times": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "party_size": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "duration_minutes": {
+                                    "type": "integer",
+                                    "minimum": 15,
+                                    "maximum": 480
+                                }
+                            }
+                        }
+                    },
+                    "table_availability": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dining_area_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "table_type": {
+                                    "$ref": "#/components/schemas/TableType"
+                                },
+                                "include_combinations": {
+                                    "type": "boolean"
+                                },
+                                "is_reservable": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "turn_controls": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "rule_type": {
+                                    "$ref": "#/components/schemas/RestaurantShiftTurnControlRuleType"
+                                },
+                                "party_size": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "restaurant_table_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "min_turns": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "name",
+                    "day_of_week",
+                    "starts_at",
+                    "ends_at"
+                ],
+                "title": "StoreRestaurantShiftRequest"
             },
             "StoreRestaurantSpecialDayRequest": {
                 "type": "object",
@@ -30670,6 +31945,20 @@
                 },
                 "title": "UpdateMediaAssetRequest"
             },
+            "UpdateMenuCategoryRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                },
+                "title": "UpdateMenuCategoryRequest"
+            },
             "UpdateMerchantReservationRequest": {
                 "type": "object",
                 "properties": {
@@ -31109,58 +32398,8 @@
                         ],
                         "minimum": 0
                     },
-                    "featured_image": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "binary",
-                        "contentMediaType": "application/octet-stream",
-                        "maxLength": 10240
-                    },
-                    "featured_image_alt_text": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "gallery_images": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": "string",
-                            "format": "binary",
-                            "contentMediaType": "application/octet-stream",
-                            "maxLength": 10240
-                        }
-                    },
-                    "gallery_image_alt_texts": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": [
-                                "string",
-                                "null"
-                            ],
-                            "maxLength": 255
-                        }
-                    },
-                    "gallery_category_ids": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
-                        "items": {
-                            "type": [
-                                "integer",
-                                "null"
-                            ]
-                        }
+                    "is_featured": {
+                        "type": "boolean"
                     }
                 },
                 "title": "UpdateRestaurantMenuItemRequest"
@@ -31950,6 +33189,155 @@
                     }
                 },
                 "title": "UpdateRestaurantSettingsRequest"
+            },
+            "UpdateRestaurantShiftRequest": {
+                "type": "object",
+                "properties": {
+                    "restaurant_meal_type_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "day_of_week": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 6
+                    },
+                    "starts_at": {
+                        "type": "string"
+                    },
+                    "ends_at": {
+                        "type": "string"
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 7
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "flow_controls": {
+                        "type": "object",
+                        "properties": {
+                            "interval_minutes": {
+                                "type": "integer",
+                                "minimum": 5,
+                                "maximum": 120
+                            },
+                            "default_max_covers": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "release_policy": {
+                                "$ref": "#/components/schemas/RestaurantShiftTurnControlReleasePolicy"
+                            },
+                            "release_hours_before": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "minimum": 0,
+                                "maximum": 168
+                            },
+                            "intervals": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "starts_at": {
+                                            "type": "string"
+                                        },
+                                        "max_covers": {
+                                            "type": "integer",
+                                            "minimum": 1
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "turn_times": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "party_size": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                },
+                                "duration_minutes": {
+                                    "type": "integer",
+                                    "minimum": 15,
+                                    "maximum": 480
+                                }
+                            }
+                        }
+                    },
+                    "table_availability": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dining_area_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "table_type": {
+                                    "$ref": "#/components/schemas/TableType"
+                                },
+                                "include_combinations": {
+                                    "type": "boolean"
+                                },
+                                "is_reservable": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "turn_controls": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "rule_type": {
+                                    "$ref": "#/components/schemas/RestaurantShiftTurnControlRuleType"
+                                },
+                                "party_size": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ],
+                                    "minimum": 1
+                                },
+                                "restaurant_table_id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
+                                "min_turns": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "title": "UpdateRestaurantShiftRequest"
             },
             "UpdateRestaurantSpecialDayRequest": {
                 "type": "object",
