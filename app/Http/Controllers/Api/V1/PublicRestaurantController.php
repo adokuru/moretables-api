@@ -12,7 +12,6 @@ use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantReview;
 use App\Models\SavedRestaurant;
-use App\RestaurantStatus;
 use App\Services\AvailabilityService;
 use App\Services\PerformanceCacheService;
 use App\Services\RestaurantReviewSummaryService;
@@ -34,6 +33,12 @@ class PublicRestaurantController extends Controller
         protected PerformanceCacheService $performanceCache,
     ) {}
 
+    /**
+     * Typeahead search for locations, restaurants, and cuisines.
+     *
+     * Only includes restaurants that are publicly listed: status active and an active or trialing
+     * merchant subscription whose current billing period has not expired.
+     */
     public function search(RestaurantSearchRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -69,8 +74,8 @@ class PublicRestaurantController extends Controller
     /**
      * Get public reviews ordered by highest rating first.
      *
-     * Returns reviews from active restaurants ordered by highest rating first.
-     * Within the same rating, order is random.
+     * Returns reviews from publicly listed restaurants (active status with active or trialing
+     * merchant subscription) ordered by highest rating first. Within the same rating, order is random.
      */
     #[QueryParameter('limit', type: 'integer', default: 10, example: 6)]
     #[Response(200, type: 'array{data: list<PublicRandomReviewResource>}')]
@@ -87,7 +92,7 @@ class PublicRestaurantController extends Controller
                         'user:id,name,first_name,last_name',
                         'restaurant:id,name,status',
                     ])
-                    ->whereHas('restaurant', fn ($query) => $query->where('status', RestaurantStatus::Active->value))
+                    ->whereHas('restaurant', fn ($query) => $query->publiclyListed())
                     ->orderByDesc('rating')
                     ->inRandomOrder()
                     ->limit($limit)
@@ -102,6 +107,13 @@ class PublicRestaurantController extends Controller
         return response()->json($payload);
     }
 
+    /**
+     * Paginated public restaurant listing.
+     *
+     * Only restaurants that are publicly listed are returned: status active and an active or trialing
+     * merchant subscription whose current billing period has not expired.
+     */
+    #[Response(200, description: 'Paginated list of publicly listed restaurants (active with active or trialing merchant subscription).')]
     public function index(RestaurantIndexRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -126,7 +138,7 @@ class PublicRestaurantController extends Controller
                     ])
                     ->withCount('reviews as reviews_count')
                     ->withAvg('reviews as average_rating', 'rating')
-                    ->where('status', RestaurantStatus::Active->value)
+                    ->publiclyListed()
                     ->when($request->filled('q'), function ($query) use ($validated) {
                         $query->where(function ($subQuery) use ($validated): void {
                             $subQuery->where('name', 'like', '%'.$validated['q'].'%')
@@ -174,9 +186,17 @@ class PublicRestaurantController extends Controller
         return response()->json($payload);
     }
 
+    /**
+     * Public restaurant detail.
+     *
+     * Returns 404 when the restaurant is not publicly listed (inactive or without an active or
+     * trialing merchant subscription whose current billing period has not expired).
+     */
+    #[Response(200, type: RestaurantDetailResource::class)]
+    #[Response(404, description: 'Restaurant is inactive or does not have an active or trialing merchant subscription.')]
     public function show(Request $request, Restaurant $restaurant): RestaurantDetailResource
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
         $user = $this->authenticatedUserFromToken($request);
 
         if ($user) {
@@ -217,10 +237,16 @@ class PublicRestaurantController extends Controller
         ]));
     }
 
+    /**
+     * Live reservation availability for a publicly listed restaurant.
+     *
+     * Returns 404 when the restaurant is not publicly listed (inactive or without an active or
+     * trialing merchant subscription whose current billing period has not expired).
+     */
     #[Response(429, type: 'array{message: string}')]
     public function availability(RestaurantAvailabilityRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         $restaurant->loadMissing(['hours', 'policy', 'availabilitySchedules']);
 

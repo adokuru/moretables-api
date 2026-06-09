@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Restaurant;
 use App\ReservationStatus;
-use App\RestaurantStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -215,7 +214,7 @@ class RestaurantDiscoveryService
                 'availabilitySchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
                 'policy',
             ])
-            ->where('status', RestaurantStatus::Active->value)
+            ->publiclyListed()
             ->when($userId !== null, function (Builder $query) use ($userId): void {
                 $query->withExists([
                     'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $userId),

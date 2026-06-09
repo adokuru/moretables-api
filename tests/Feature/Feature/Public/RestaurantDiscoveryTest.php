@@ -72,6 +72,10 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         'updated_at' => now(),
     ]);
 
+    foreach ([$bookedChampion, $viewedChampion, $savedChampion, $ratedChampion, $featuredChampion, $newChampion] as $listedRestaurant) {
+        activateMerchantBilling($listedRestaurant);
+    }
+
     Reservation::factory()->count(5)->create([
         'restaurant_id' => $bookedChampion->id,
         'restaurant_table_id' => null,
@@ -203,11 +207,11 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
 });
 
 it('returns distance_km in discovery section when coordinates are provided', function () {
-    Restaurant::factory()->create([
+    activateMerchantBilling(Restaurant::factory()->create([
         'status' => RestaurantStatus::Active,
         'latitude' => 6.5244,
         'longitude' => 3.3792,
-    ]);
+    ]));
 
     $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables?latitude=6.5244&longitude=3.3792');
 
@@ -219,7 +223,7 @@ it('returns distance_km in discovery section when coordinates are provided', fun
 });
 
 it('omits distance_km in discovery section when no coordinates are provided', function () {
-    Restaurant::factory()->create(['status' => RestaurantStatus::Active]);
+    activateMerchantBilling(Restaurant::factory()->create(['status' => RestaurantStatus::Active]));
 
     $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables');
 
@@ -229,7 +233,7 @@ it('omits distance_km in discovery section when no coordinates are provided', fu
 });
 
 it('records restaurant views for discovery metrics', function () {
-    $restaurant = Restaurant::factory()->create();
+    $restaurant = createListedRestaurant();
 
     $response = $this->postJson('/api/v1/restaurants/'.$restaurant->slug.'/views', [
         'platform' => 'ios',
@@ -248,12 +252,12 @@ it('records restaurant views for discovery metrics', function () {
 
 it('returns random public reviews with rating customer name restaurant name and notes ordered by highest rating first', function () {
     $organization = Organization::factory()->create();
-    $activeRestaurant = Restaurant::factory()->create([
+    $activeRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Ocean Basket',
         'status' => RestaurantStatus::Active,
     ]);
-    $anotherActiveRestaurant = Restaurant::factory()->create([
+    $anotherActiveRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'The Grill House',
         'status' => RestaurantStatus::Active,
@@ -302,7 +306,7 @@ it('returns random public reviews with rating customer name restaurant name and 
 
 it('lets authenticated users save restaurants and manage custom restaurant lists', function () {
     $customer = User::factory()->create();
-    $restaurant = Restaurant::factory()->create();
+    $restaurant = createListedRestaurant();
 
     Sanctum::actingAs($customer);
 
@@ -368,7 +372,7 @@ it('lets authenticated users create update and list restaurant reviews', functio
         'first_name' => 'Ada',
         'last_name' => 'Okafor',
     ]);
-    $restaurant = Restaurant::factory()->create();
+    $restaurant = createListedRestaurant();
 
     Sanctum::actingAs($customer);
 

@@ -11,7 +11,7 @@ use App\Models\User;
 it('filters restaurants by coordinates using latitude and longitude', function () {
     $organization = Organization::factory()->create();
 
-    $nearRestaurant = Restaurant::factory()->create([
+    $nearRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Near Restaurant',
         'slug' => 'near-restaurant',
@@ -42,14 +42,14 @@ it('includes has_saved for authenticated users on restaurant listings', function
     $organization = Organization::factory()->create();
     $user = User::factory()->create();
 
-    $savedRestaurant = Restaurant::factory()->create([
+    $savedRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Saved Restaurant',
         'slug' => 'saved-restaurant',
         'city' => 'Lagos',
     ]);
 
-    $unsavedRestaurant = Restaurant::factory()->create([
+    $unsavedRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Unsaved Restaurant',
         'slug' => 'unsaved-restaurant',
@@ -76,7 +76,7 @@ it('includes has_saved for authenticated users on restaurant listings', function
 });
 
 it('uses meal schedules to summarize hours on restaurant listings', function () {
-    $restaurant = Restaurant::factory()->create([
+    $restaurant = createListedRestaurant([
         'slug' => 'scheduled-restaurant',
         'city' => 'Lagos',
     ]);
@@ -119,4 +119,28 @@ it('uses meal schedules to summarize hours on restaurant listings', function () 
         ->assertJsonPath('0.hours.4.opens_at', '06:00')
         ->assertJsonPath('0.hours.4.closes_at', '22:00')
         ->assertJsonPath('0.hours.4.is_closed', false);
+});
+
+it('excludes active restaurants without an active merchant subscription from public listings', function () {
+    $organization = Organization::factory()->create();
+
+    $paidRestaurant = createListedRestaurant([
+        'organization_id' => $organization->id,
+        'name' => 'Paid Restaurant',
+        'slug' => 'paid-restaurant',
+        'city' => 'Lagos',
+    ]);
+
+    Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Unpaid Restaurant',
+        'slug' => 'unpaid-restaurant',
+        'city' => 'Lagos',
+    ]);
+
+    $response = $this->getJson('/api/v1/restaurants?city=Lagos');
+
+    $response->assertOk()
+        ->assertJsonCount(1)
+        ->assertJsonPath('0.id', $paidRestaurant->id);
 });

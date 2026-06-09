@@ -28,6 +28,9 @@ class PublicRestaurantDiscoveryController extends Controller
 
     /**
      * Return the homepage discovery rail sections for mobile and web.
+     *
+     * Only includes restaurants that are publicly listed: status active and an active or trialing
+     * merchant subscription whose current billing period has not expired.
      */
     public function index(RestaurantDiscoveryRequest $request): JsonResponse
     {
@@ -51,6 +54,9 @@ class PublicRestaurantDiscoveryController extends Controller
 
     /**
      * Return one discovery section with pagination.
+     *
+     * Only includes restaurants that are publicly listed: status active and an active or trialing
+     * merchant subscription whose current billing period has not expired.
      *
      * Supported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured, timeofday, moretable_lineup.
      */

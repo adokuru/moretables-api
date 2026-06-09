@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\Models\SavedRestaurant;
-use App\RestaurantStatus;
 use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +49,7 @@ class CustomerSavedRestaurantController extends Controller
      */
     public function store(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         $savedRestaurant = SavedRestaurant::query()->firstOrCreate([
             'user_id' => $request->user()->id,

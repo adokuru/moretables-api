@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\RestaurantStatus;
 use Database\Factories\RestaurantFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -275,6 +276,30 @@ class Restaurant extends Model implements HasMedia
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);
+    }
+
+    /**
+     * @param  Builder<Restaurant>  $query
+     * @return Builder<Restaurant>
+     */
+    public function scopePubliclyListed(Builder $query): Builder
+    {
+        return $query
+            ->where('status', RestaurantStatus::Active->value)
+            ->whereHas('activeBillingSubscription');
+    }
+
+    public function isPubliclyListed(): bool
+    {
+        if ($this->status !== RestaurantStatus::Active) {
+            return false;
+        }
+
+        if ($this->relationLoaded('activeBillingSubscription')) {
+            return $this->activeBillingSubscription !== null;
+        }
+
+        return $this->activeBillingSubscription()->exists();
     }
 
     public function registerMediaCollections(): void

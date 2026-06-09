@@ -28,7 +28,7 @@ function availabilityAlertWindow(string $timezone = 'Africa/Lagos'): array
 }
 
 it('lets a customer create a table availability alert', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $customer = User::factory()->create();
     Sanctum::actingAs($customer);
 
@@ -57,7 +57,7 @@ it('lets a customer create a table availability alert', function () {
 });
 
 it('validates availability alert input', function (array $payload, string $field) {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $customer = User::factory()->create();
     Sanctum::actingAs($customer);
 
@@ -71,7 +71,7 @@ it('validates availability alert input', function (array $payload, string $field
 ]);
 
 it('returns an existing active alert instead of duplicating it', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $customer = User::factory()->create();
     Sanctum::actingAs($customer);
 

@@ -108,12 +108,40 @@ function createBookableRestaurant(): array
     return compact('organization', 'restaurant', 'table');
 }
 
+/**
+ * @return array{organization: Organization, restaurant: Restaurant, table: RestaurantTable}
+ */
+function createListedBookableRestaurant(): array
+{
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+
+    return $data;
+}
+
 function activateMerchantBilling(Restaurant $restaurant): void
 {
+    $planId = BillingPlan::query()->where('slug', 'foundation')->value('id');
+
+    if (! $planId) {
+        $planId = BillingPlan::factory()->create([
+            'slug' => 'foundation',
+            'name' => 'Foundation',
+        ])->id;
+    }
+
     MerchantSubscription::factory()->create([
         'restaurant_id' => $restaurant->id,
-        'billing_plan_id' => BillingPlan::query()->where('slug', 'foundation')->value('id'),
+        'billing_plan_id' => $planId,
         'status' => MerchantSubscriptionStatus::Active,
         'current_period_end' => now()->addMonth(),
     ]);
+}
+
+function createListedRestaurant(array $attributes = []): Restaurant
+{
+    $restaurant = Restaurant::factory()->create($attributes);
+    activateMerchantBilling($restaurant);
+
+    return $restaurant;
 }

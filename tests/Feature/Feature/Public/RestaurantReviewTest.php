@@ -12,7 +12,7 @@ function customerRestaurantReviewUrl(string $restaurantSlug, ?int $reviewId = nu
 }
 
 it('stores category ratings when a customer submits a review', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $customer = User::factory()->create();
     Sanctum::actingAs($customer);
 
@@ -42,7 +42,7 @@ it('stores category ratings when a customer submits a review', function () {
 });
 
 it('updates category ratings on a customer review', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $customer = User::factory()->create();
     $review = RestaurantReview::factory()->create([
         'restaurant_id' => $data['restaurant']->id,

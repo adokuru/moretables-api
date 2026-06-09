@@ -10,7 +10,7 @@ use App\Services\CuisineOptionRestaurantSyncService;
 it('returns grouped location restaurant and cuisine suggestions', function () {
     $organization = Organization::factory()->create();
 
-    $matchingRestaurant = Restaurant::factory()->create([
+    $matchingRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'London Bistro',
         'slug' => 'london-bistro',
@@ -22,7 +22,7 @@ it('returns grouped location restaurant and cuisine suggestions', function () {
 
     app(CuisineOptionRestaurantSyncService::class)->syncFromNames($matchingRestaurant, ['London Grill']);
 
-    Restaurant::factory()->create([
+    createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Another London Spot',
         'slug' => 'another-london-spot',
@@ -57,7 +57,7 @@ it('returns grouped location restaurant and cuisine suggestions', function () {
 it('returns unique locations and cuisines while excluding inactive restaurants', function () {
     $organization = Organization::factory()->create();
 
-    $activeRestaurant = Restaurant::factory()->create([
+    $activeRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Sushi One',
         'slug' => 'sushi-one',
@@ -68,7 +68,7 @@ it('returns unique locations and cuisines while excluding inactive restaurants',
 
     app(CuisineOptionRestaurantSyncService::class)->syncFromNames($activeRestaurant, ['Sushi']);
 
-    $secondActiveRestaurant = Restaurant::factory()->create([
+    $secondActiveRestaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'name' => 'Sushi Two',
         'slug' => 'sushi-two',
@@ -108,7 +108,7 @@ it('returns unique locations and cuisines while excluding inactive restaurants',
 });
 
 it('returns restaurant list resource fields in search results', function () {
-    $restaurant = Restaurant::factory()->create([
+    $restaurant = createListedRestaurant([
         'name' => 'The Garden',
         'slug' => 'the-garden',
         'city' => 'Abuja',

@@ -23,7 +23,7 @@ function availUrl(string $slug, string $date, int $partySize = 2, ?string $time 
 // ── Slot interval ─────────────────────────────────────────────────────────────
 
 it('generates slots 15 minutes apart using legacy restaurant_hours', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -59,7 +59,7 @@ it('generates slots 15 minutes apart using legacy restaurant_hours', function ()
 });
 
 it('generates slots 15 minutes apart using meal schedules', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -91,7 +91,7 @@ it('generates slots 15 minutes apart using meal schedules', function () {
 });
 
 it('returns slots for solo diners when the smallest table has a minimum capacity of two', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -123,7 +123,7 @@ it('returns slots for solo diners when the smallest table has a minimum capacity
 // ── Meal schedules preferred over legacy hours ────────────────────────────────
 
 it('uses meal schedules when both meal schedules and hours exist', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -166,7 +166,7 @@ it('uses meal schedules when both meal schedules and hours exist', function () {
 });
 
 it('falls back to legacy restaurant_hours when no meal schedules exist', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -193,7 +193,7 @@ it('falls back to legacy restaurant_hours when no meal schedules exist', functio
 });
 
 it('exposes multiple meal windows in a single day as separate slot groups', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -236,7 +236,7 @@ it('exposes multiple meal windows in a single day as separate slot groups', func
 // ── Past-time filtering ───────────────────────────────────────────────────────
 
 it('does not return slots in the past when querying today', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -264,7 +264,7 @@ it('does not return slots in the past when querying today', function () {
 });
 
 it('returns all slots for a future date regardless of current time', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -290,7 +290,7 @@ it('returns all slots for a future date regardless of current time', function ()
 // ── Closed / no-hours days ─────────────────────────────────────────────────────
 
 it('returns empty slots for a closed day', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
 
@@ -312,7 +312,7 @@ it('returns empty slots for a closed day', function () {
 // ── Requester timezone ────────────────────────────────────────────────────────
 
 it('returns local times in the requester timezone when timezone param is provided', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     // Restaurant is in Lagos (UTC+1)
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'Africa/Lagos']);
@@ -347,7 +347,7 @@ it('returns local times in the requester timezone when timezone param is provide
 });
 
 it('falls back to restaurant timezone in local times when no timezone param given', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'Africa/Lagos']);
 
@@ -375,7 +375,7 @@ it('falls back to restaurant timezone in local times when no timezone param give
 });
 
 it('rejects an invalid timezone string', function () {
-    $data = createBookableRestaurant();
+    $data = createListedBookableRestaurant();
     $restaurant = $data['restaurant'];
     $restaurant->update(['status' => RestaurantStatus::Active]);
 

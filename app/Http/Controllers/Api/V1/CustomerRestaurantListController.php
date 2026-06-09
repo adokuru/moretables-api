@@ -10,7 +10,6 @@ use App\Http\Resources\RestaurantListResource;
 use App\Models\Restaurant;
 use App\Models\UserRestaurantList;
 use App\Models\UserRestaurantListItem;
-use App\RestaurantStatus;
 use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -94,7 +93,7 @@ class CustomerRestaurantListController extends Controller
         $this->ensureOwnership($request, $restaurantList);
 
         $restaurant = Restaurant::query()->findOrFail($request->integer('restaurant_id'));
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         $listItem = UserRestaurantListItem::query()->firstOrCreate(
             [
@@ -158,7 +157,7 @@ class CustomerRestaurantListController extends Controller
             'restaurants_count' => (int) ($restaurantList->items_count ?? $restaurantList->items()->count()),
             'restaurants' => RestaurantListResource::collection(
                 $restaurantList->restaurants
-                    ->filter(fn (Restaurant $restaurant): bool => $restaurant->status === RestaurantStatus::Active)
+                    ->filter(fn (Restaurant $restaurant): bool => $restaurant->isPubliclyListed())
                     ->values(),
             )->resolve($request),
             'created_at' => $restaurantList->created_at?->toIso8601String(),

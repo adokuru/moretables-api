@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\CuisineOption;
 use App\Models\Restaurant;
-use App\RestaurantStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -46,7 +45,7 @@ class RestaurantSearchService
 
         return Restaurant::query()
             ->select(['city', 'state', 'country'])
-            ->where('status', RestaurantStatus::Active->value)
+            ->publiclyListed()
             ->whereNotNull('city')
             ->where('city', '!=', '')
             ->whereNotNull('country')
@@ -90,7 +89,7 @@ class RestaurantSearchService
 
         return Restaurant::query()
             ->with(['cuisines', 'media'])
-            ->where('status', RestaurantStatus::Active->value)
+            ->publiclyListed()
             ->when($userId !== null, function (Builder $query) use ($userId): void {
                 $query->withExists([
                     'savedEntries as has_saved' => fn ($subQuery) => $subQuery->where('user_id', $userId),
@@ -127,7 +126,7 @@ class RestaurantSearchService
             ->selectRaw('COUNT(DISTINCT cuisine_option_restaurant.restaurant_id) as restaurant_count')
             ->join('cuisine_option_restaurant', 'cuisine_option_restaurant.cuisine_option_id', '=', 'cuisine_options.id')
             ->join('restaurants', 'restaurants.id', '=', 'cuisine_option_restaurant.restaurant_id')
-            ->where('restaurants.status', RestaurantStatus::Active->value)
+            ->whereIn('restaurants.id', Restaurant::query()->publiclyListed()->select('id'))
             ->where('cuisine_options.name', 'like', $likePattern)
             ->groupBy('cuisine_options.id', 'cuisine_options.name')
             ->orderByRaw('case when cuisine_options.name like ? then 0 else 1 end', [$startsWithPattern])

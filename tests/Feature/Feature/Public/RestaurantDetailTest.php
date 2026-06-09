@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Organization;
-use App\Models\Restaurant;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantHour;
@@ -18,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 it('includes grouped menu items in the public restaurant detail response', function () {
     Storage::fake('public');
     $organization = Organization::factory()->create();
-    $restaurant = Restaurant::factory()->create([
+    $restaurant = createListedRestaurant([
         'organization_id' => $organization->id,
     ]);
 
@@ -149,7 +148,7 @@ it('includes grouped menu items in the public restaurant detail response', funct
 });
 
 it('includes has_saved in the public restaurant detail response for authenticated users', function () {
-    $restaurant = Restaurant::factory()->create();
+    $restaurant = createListedRestaurant();
     $user = User::factory()->create();
 
     SavedRestaurant::factory()->create([
@@ -166,7 +165,7 @@ it('includes has_saved in the public restaurant detail response for authenticate
 });
 
 it('uses meal schedules to summarize public restaurant detail hours', function () {
-    $restaurant = Restaurant::factory()->create();
+    $restaurant = createListedRestaurant();
     RestaurantHour::factory()->create([
         'restaurant_id' => $restaurant->id,
         'day_of_week' => 5,
@@ -218,7 +217,7 @@ it('uses meal schedules to summarize public restaurant detail hours', function (
 it('only includes internal notes for users who can access the restaurant', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $organization = Organization::factory()->create();
-    $restaurant = Restaurant::factory()->create([
+    $restaurant = createListedRestaurant([
         'organization_id' => $organization->id,
         'internal_notes' => trim(str_repeat('Only restaurant staff should see this operational note. ', 3)),
     ]);

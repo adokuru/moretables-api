@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\StoreRestaurantViewRequest;
 use App\Models\Restaurant;
 use App\Models\RestaurantView;
-use App\RestaurantStatus;
 use App\Services\PerformanceCacheService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
@@ -26,7 +25,7 @@ class PublicRestaurantViewController extends Controller
     #[Response(429, type: 'array{message: string}')]
     public function store(StoreRestaurantViewRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         $userId = $request->user('sanctum')?->id;
         $fingerprint = $userId

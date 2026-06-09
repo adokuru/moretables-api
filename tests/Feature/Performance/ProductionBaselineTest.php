@@ -2,7 +2,6 @@
 
 use App\Models\CuisineOption;
 use App\Models\Reservation;
-use App\Models\Restaurant;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantTable;
 use App\Models\RestaurantView;
@@ -47,7 +46,7 @@ it('keeps availability query count stable as the slot count grows', function () 
     app(AvailabilityService::class)->listAvailableSlots($restaurant, $tomorrow->toDateString(), 2);
     $longWindowQueryCount = count(DB::getQueryLog());
 
-    expect($shortWindowQueryCount)->toBe(3)
+    expect($shortWindowQueryCount)->toBe(4)
         ->and($longWindowQueryCount)->toBe($shortWindowQueryCount);
 });
 
@@ -67,7 +66,7 @@ it('batches discovery availability queries as the restaurant count grows', funct
     app(AvailabilityService::class)->listAvailableSlotsForRestaurants(collect([$firstRestaurant, $secondRestaurant]), $date, 2);
     $multipleRestaurantQueryCount = count(DB::getQueryLog());
 
-    expect($singleRestaurantQueryCount)->toBe(3)
+    expect($singleRestaurantQueryCount)->toBe(4)
         ->and($multipleRestaurantQueryCount)->toBe($singleRestaurantQueryCount);
 });
 
@@ -142,7 +141,7 @@ it('returns retryable validation when reservation lock contention persists', fun
 });
 
 it('deduplicates restaurant views for the same fingerprint for thirty minutes', function () {
-    $restaurant = createBookableRestaurant()['restaurant'];
+    $restaurant = createListedBookableRestaurant()['restaurant'];
     $url = "/api/v1/restaurants/{$restaurant->slug}/views";
 
     $this->postJson($url, ['session_id' => 'same-session'])->assertCreated()
@@ -172,7 +171,7 @@ it('serves cached cuisine arrays and invalidates them after catalog changes', fu
 });
 
 it('overlays saved state per user without caching personalized or internal fields', function () {
-    $restaurant = createBookableRestaurant()['restaurant'];
+    $restaurant = createListedRestaurant();
     $restaurant->update(['internal_notes' => 'merchant only']);
     $savedBy = User::factory()->create();
     $notSavedBy = User::factory()->create();
@@ -196,7 +195,8 @@ it('overlays saved state per user without caching personalized or internal field
 });
 
 it('keeps cached public restaurant pages isolated', function () {
-    Restaurant::factory()->count(2)->create();
+    createListedRestaurant();
+    createListedRestaurant();
 
     $firstPageId = $this->getJson('/api/v1/restaurants?per_page=1&page=1')
         ->assertOk()
@@ -212,7 +212,7 @@ it('keeps cached public restaurant pages isolated', function () {
 it('applies the public write rate limit', function () {
     config()->set('performance.rate_limits.public_writes', 1);
 
-    $restaurant = createBookableRestaurant()['restaurant'];
+    $restaurant = createListedBookableRestaurant()['restaurant'];
     $url = "/api/v1/restaurants/{$restaurant->slug}/views";
 
     $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])

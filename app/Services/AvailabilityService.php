@@ -207,11 +207,21 @@ class AvailabilityService
             ->get()
             ->groupBy('restaurant_id');
 
-        $restaurants->load([
-            'shifts' => fn ($query) => $query
-                ->where('is_active', true)
-                ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals']),
-        ]);
+        $shiftsByRestaurant = RestaurantShift::query()
+            ->whereIn('restaurant_id', $restaurantIds)
+            ->where('is_active', true)
+            ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals'])
+            ->get()
+            ->groupBy('restaurant_id');
+
+        $restaurants = $restaurants->map(function (Restaurant $restaurant) use ($shiftsByRestaurant): Restaurant {
+            $restaurant->setRelation(
+                'shifts',
+                new Collection($shiftsByRestaurant->get($restaurant->id, collect())->all()),
+            );
+
+            return $restaurant;
+        });
 
         $restaurants->each(function (Restaurant $restaurant) use ($specialDaysByRestaurant): void {
             $restaurant->setRelation(

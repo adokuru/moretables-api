@@ -8,7 +8,6 @@ use App\Http\Requests\Customer\UpdateRestaurantReviewRequest;
 use App\Http\Resources\PublicRestaurantReviewResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantReview;
-use App\RestaurantStatus;
 use App\Services\RestaurantReviewSummaryService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
@@ -32,7 +31,7 @@ class RestaurantReviewController extends Controller
     #[QueryParameter('per_page', type: 'integer', default: 15, example: 15)]
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         $reviews = $restaurant->reviews()
             ->with('user:id,name,first_name,last_name')
@@ -68,7 +67,7 @@ class RestaurantReviewController extends Controller
      */
     public function store(StoreRestaurantReviewRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
 
         if ($restaurant->reviews()->where('user_id', $request->user()->id)->exists()) {
             throw ValidationException::withMessages([
@@ -98,7 +97,7 @@ class RestaurantReviewController extends Controller
      */
     public function update(UpdateRestaurantReviewRequest $request, Restaurant $restaurant, RestaurantReview $review): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
         abort_unless($review->restaurant_id === $restaurant->id && $review->user_id === $request->user()->id, 404);
 
         $payload = $request->safe()->except('review_images');
@@ -131,7 +130,7 @@ class RestaurantReviewController extends Controller
      */
     public function destroy(Request $request, Restaurant $restaurant, RestaurantReview $review): JsonResponse
     {
-        abort_unless($restaurant->status === RestaurantStatus::Active, 404);
+        abort_unless($restaurant->isPubliclyListed(), 404);
         abort_unless($review->restaurant_id === $restaurant->id && $review->user_id === $request->user()->id, 404);
 
         $this->deleteReviewImages($review->review_images ?? []);
