@@ -39,6 +39,9 @@
             "name": "Customer Waitlist"
         },
         {
+            "name": "Customer Availability Alerts"
+        },
+        {
             "name": "Customer Saved Restaurants"
         },
         {
@@ -3213,6 +3216,164 @@
                 }
             }
         },
+        "/me/availability-alerts": {
+            "get": {
+                "operationId": "customerAvailabilityAlert.index",
+                "tags": [
+                    "Customer Availability Alerts"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated set of `AvailabilityAlertResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AvailabilityAlertResource"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/restaurants/{restaurant}/availability-alerts": {
+            "post": {
+                "operationId": "customerAvailabilityAlert.store",
+                "tags": [
+                    "Customer Availability Alerts"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreAvailabilityAlertRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Availability alert created successfully."
+                                        },
+                                        "availability_alert": {
+                                            "$ref": "#/components/schemas/AvailabilityAlertResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "availability_alert"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "You already have an active alert for this time."
+                                        },
+                                        "availability_alert": {
+                                            "$ref": "#/components/schemas/AvailabilityAlertResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "availability_alert"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/availability-alerts/{availabilityAlert}": {
+            "delete": {
+                "operationId": "customerAvailabilityAlert.destroy",
+                "tags": [
+                    "Customer Availability Alerts"
+                ],
+                "parameters": [
+                    {
+                        "name": "availabilityAlert",
+                        "in": "path",
+                        "required": true,
+                        "description": "The availability alert ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Availability alert cancelled successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/me/saved-restaurants": {
             "get": {
                 "operationId": "customerSavedRestaurant.index",
@@ -4117,6 +4278,13 @@
                                                     "type": {
                                                         "type": "string"
                                                     },
+                                                    "direction": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "credit",
+                                                            "debit"
+                                                        ]
+                                                    },
                                                     "points": {
                                                         "type": "integer"
                                                     },
@@ -4159,6 +4327,230 @@
                                                                 "maxItems": 0,
                                                                 "additionalItems": false
                                                             }
+                                                        ]
+                                                    },
+                                                    "expires_at": {
+                                                        "type": "string"
+                                                    },
+                                                    "points_remaining": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "source": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "type": {
+                                                                        "type": "string",
+                                                                        "const": "reservation"
+                                                                    },
+                                                                    "reservation": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "id": {
+                                                                                "type": [
+                                                                                    "integer",
+                                                                                    "null"
+                                                                                ]
+                                                                            },
+                                                                            "reference": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            },
+                                                                            "starts_at": {
+                                                                                "type": [
+                                                                                    "string",
+                                                                                    "null"
+                                                                                ]
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "id",
+                                                                            "reference",
+                                                                            "starts_at"
+                                                                        ]
+                                                                    },
+                                                                    "restaurant": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "id": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "id",
+                                                                            "name"
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "type",
+                                                                    "reservation",
+                                                                    "restaurant"
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "null"
+                                                            },
+                                                            {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "type": {
+                                                                        "type": "string",
+                                                                        "const": "reservation"
+                                                                    },
+                                                                    "reservation": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "id": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "reference": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "starts_at": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "id",
+                                                                            "reference",
+                                                                            "starts_at"
+                                                                        ]
+                                                                    },
+                                                                    "restaurant": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "id": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        },
+                                                                        "required": [
+                                                                            "id",
+                                                                            "name"
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "type",
+                                                                    "reservation",
+                                                                    "restaurant"
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "credit": {
+                                                        "type": [
+                                                            "object",
+                                                            "null"
+                                                        ],
+                                                        "properties": {
+                                                            "value": {
+                                                                "type": [
+                                                                    "integer",
+                                                                    "null"
+                                                                ]
+                                                            },
+                                                            "currency": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "null"
+                                                                    },
+                                                                    {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "NGN"
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "value",
+                                                            "currency"
+                                                        ]
+                                                    },
+                                                    "redemption": {
+                                                        "type": [
+                                                            "object",
+                                                            "null"
+                                                        ],
+                                                        "properties": {
+                                                            "points_redeemed": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    {
+                                                                        "type": "number"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "credit_value": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    {
+                                                                        "type": "null"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "credit_currency": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "null"
+                                                                    },
+                                                                    {
+                                                                        "type": "string",
+                                                                        "enum": [
+                                                                            "NGN"
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "consumed_from": {
+                                                                "anyOf": [
+                                                                    {
+                                                                        "type": "string"
+                                                                    },
+                                                                    {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "minItems": 0,
+                                                                        "maxItems": 0,
+                                                                        "additionalItems": false
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "points_redeemed",
+                                                            "credit_value",
+                                                            "credit_currency",
+                                                            "consumed_from"
                                                         ]
                                                     },
                                                     "created_at": {
@@ -4212,12 +4604,18 @@
                                                 "required": [
                                                     "id",
                                                     "type",
+                                                    "direction",
                                                     "points",
                                                     "balance_after",
                                                     "description",
                                                     "reference_type",
                                                     "reference_id",
                                                     "metadata",
+                                                    "expires_at",
+                                                    "points_remaining",
+                                                    "source",
+                                                    "credit",
+                                                    "redemption",
                                                     "created_at",
                                                     "created_by",
                                                     "level_after"
@@ -4259,6 +4657,549 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/me/rewards/redeem": {
+            "post": {
+                "operationId": "customerReward.redeem",
+                "summary": "Redeem loyalty points for restaurant credit at a configured tier",
+                "tags": [
+                    "Customer Rewards"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RedeemRewardPointsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "transaction": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "direction": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "credit",
+                                                        "debit"
+                                                    ]
+                                                },
+                                                "points": {
+                                                    "type": "integer"
+                                                },
+                                                "balance_after": {
+                                                    "type": "integer"
+                                                },
+                                                "description": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "reference_type": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "reference_id": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "metadata": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "minItems": 0,
+                                                            "maxItems": 0,
+                                                            "additionalItems": false
+                                                        }
+                                                    ]
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "points_remaining": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "source": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "reservation"
+                                                                },
+                                                                "reservation": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": [
+                                                                                "integer",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "reference": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "starts_at": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "reference",
+                                                                        "starts_at"
+                                                                    ]
+                                                                },
+                                                                "restaurant": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "name"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "reservation",
+                                                                "restaurant"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "reservation"
+                                                                },
+                                                                "reservation": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "reference": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "starts_at": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "reference",
+                                                                        "starts_at"
+                                                                    ]
+                                                                },
+                                                                "restaurant": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "name"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "reservation",
+                                                                "restaurant"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "credit": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "currency": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "NGN"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "currency"
+                                                    ]
+                                                },
+                                                "redemption": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "points_redeemed": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "integer"
+                                                                },
+                                                                {
+                                                                    "type": "number"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "credit_value": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "integer"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "credit_currency": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "NGN"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "consumed_from": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "minItems": 0,
+                                                                    "maxItems": 0,
+                                                                    "additionalItems": false
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "points_redeemed",
+                                                        "credit_value",
+                                                        "credit_currency",
+                                                        "consumed_from"
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                },
+                                                "created_by": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name"
+                                                    ]
+                                                },
+                                                "level_after": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "start_points": {
+                                                            "type": "string"
+                                                        },
+                                                        "end_points": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "slug",
+                                                        "start_points",
+                                                        "end_points"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "type",
+                                                "direction",
+                                                "points",
+                                                "balance_after",
+                                                "description",
+                                                "reference_type",
+                                                "reference_id",
+                                                "metadata",
+                                                "expires_at",
+                                                "points_remaining",
+                                                "source",
+                                                "credit",
+                                                "redemption",
+                                                "created_at",
+                                                "created_by",
+                                                "level_after"
+                                            ]
+                                        },
+                                        "rewards": {
+                                            "type": "object",
+                                            "properties": {
+                                                "program": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "description": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "period_type": {
+                                                            "type": "string"
+                                                        },
+                                                        "period_value": {
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "resets_points": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "tier_locked_until_period_end": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "is_active": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "levels": {
+                                                            "type": "string"
+                                                        },
+                                                        "redemption_tiers": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name",
+                                                        "slug",
+                                                        "description",
+                                                        "period_type",
+                                                        "period_value",
+                                                        "resets_points",
+                                                        "tier_locked_until_period_end",
+                                                        "is_active",
+                                                        "levels",
+                                                        "redemption_tiers"
+                                                    ]
+                                                },
+                                                "points": {
+                                                    "type": "integer"
+                                                },
+                                                "current_level": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "start_points": {
+                                                            "type": "string"
+                                                        },
+                                                        "end_points": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "slug",
+                                                        "start_points",
+                                                        "end_points"
+                                                    ]
+                                                },
+                                                "next_level": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "start_points": {
+                                                            "type": "string"
+                                                        },
+                                                        "end_points": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "name",
+                                                        "slug",
+                                                        "start_points",
+                                                        "end_points"
+                                                    ]
+                                                },
+                                                "points_to_next_level": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "object"
+                                                        },
+                                                        {
+                                                            "type": "integer",
+                                                            "enum": [
+                                                                0
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "progress_percentage": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "program",
+                                                "points",
+                                                "current_level",
+                                                "next_level",
+                                                "points_to_next_level",
+                                                "progress_percentage"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "transaction",
+                                        "rewards"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
                     }
                 }
             }
@@ -12082,13 +13023,13 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
                                                 "sort_order": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
@@ -12189,13 +13130,13 @@
                                             "type": "object",
                                             "properties": {
                                                 "id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "name": {
                                                     "type": "string"
                                                 },
                                                 "sort_order": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 }
                                             },
                                             "required": [
@@ -24505,6 +25446,13 @@
                                                 "type": {
                                                     "type": "string"
                                                 },
+                                                "direction": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "credit",
+                                                        "debit"
+                                                    ]
+                                                },
                                                 "points": {
                                                     "type": "integer"
                                                 },
@@ -24547,6 +25495,230 @@
                                                             "maxItems": 0,
                                                             "additionalItems": false
                                                         }
+                                                    ]
+                                                },
+                                                "expires_at": {
+                                                    "type": "string"
+                                                },
+                                                "points_remaining": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "source": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "reservation"
+                                                                },
+                                                                "reservation": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": [
+                                                                                "integer",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "reference": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        },
+                                                                        "starts_at": {
+                                                                            "type": [
+                                                                                "string",
+                                                                                "null"
+                                                                            ]
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "reference",
+                                                                        "starts_at"
+                                                                    ]
+                                                                },
+                                                                "restaurant": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "name"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "reservation",
+                                                                "restaurant"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        },
+                                                        {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "const": "reservation"
+                                                                },
+                                                                "reservation": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "reference": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "starts_at": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "reference",
+                                                                        "starts_at"
+                                                                    ]
+                                                                },
+                                                                "restaurant": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "name": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "id",
+                                                                        "name"
+                                                                    ]
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "type",
+                                                                "reservation",
+                                                                "restaurant"
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                "credit": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": [
+                                                                "integer",
+                                                                "null"
+                                                            ]
+                                                        },
+                                                        "currency": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "NGN"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "value",
+                                                        "currency"
+                                                    ]
+                                                },
+                                                "redemption": {
+                                                    "type": [
+                                                        "object",
+                                                        "null"
+                                                    ],
+                                                    "properties": {
+                                                        "points_redeemed": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "integer"
+                                                                },
+                                                                {
+                                                                    "type": "number"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "credit_value": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "integer"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                }
+                                                            ]
+                                                        },
+                                                        "credit_currency": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "null"
+                                                                },
+                                                                {
+                                                                    "type": "string",
+                                                                    "enum": [
+                                                                        "NGN"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        },
+                                                        "consumed_from": {
+                                                            "anyOf": [
+                                                                {
+                                                                    "type": "string"
+                                                                },
+                                                                {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "minItems": 0,
+                                                                    "maxItems": 0,
+                                                                    "additionalItems": false
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "points_redeemed",
+                                                        "credit_value",
+                                                        "credit_currency",
+                                                        "consumed_from"
                                                     ]
                                                 },
                                                 "created_at": {
@@ -24600,12 +25772,18 @@
                                             "required": [
                                                 "id",
                                                 "type",
+                                                "direction",
                                                 "points",
                                                 "balance_after",
                                                 "description",
                                                 "reference_type",
                                                 "reference_id",
                                                 "metadata",
+                                                "expires_at",
+                                                "points_remaining",
+                                                "source",
+                                                "credit",
+                                                "redemption",
                                                 "created_at",
                                                 "created_by",
                                                 "level_after"
@@ -25855,6 +27033,57 @@
                 ],
                 "title": "AuditLogResource"
             },
+            "AvailabilityAlertResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "party_size": {
+                        "type": "integer"
+                    },
+                    "window_start": {
+                        "type": "string"
+                    },
+                    "window_end": {
+                        "type": "string"
+                    },
+                    "whatsapp_updates": {
+                        "type": "boolean"
+                    },
+                    "notified_at": {
+                        "type": "string"
+                    },
+                    "expires_at": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "restaurant": {
+                        "$ref": "#/components/schemas/RestaurantListResource"
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "status",
+                    "party_size",
+                    "window_start",
+                    "window_end",
+                    "whatsapp_updates",
+                    "notified_at",
+                    "expires_at",
+                    "created_at"
+                ],
+                "title": "AvailabilityAlertResource"
+            },
             "BillingPlanResource": {
                 "type": "object",
                 "properties": {
@@ -26149,22 +27378,25 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "dining_area_id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "name": {
                         "type": "string"
                     },
                     "description": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "sort_order": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "is_active": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "tables_count": {
                         "type": "integer",
@@ -27185,6 +28417,19 @@
                     "restaurant_name"
                 ],
                 "title": "PublicRandomReviewResource"
+            },
+            "RedeemRewardPointsRequest": {
+                "type": "object",
+                "properties": {
+                    "points": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "points"
+                ],
+                "title": "RedeemRewardPointsRequest"
             },
             "ReorderMediaRequest": {
                 "type": "object",
@@ -28209,19 +29454,22 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "restaurant_id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "restaurant_meal_type_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "name": {
                         "type": "string"
                     },
                     "day_of_week": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "starts_at": {
                         "type": "string"
@@ -28230,16 +29478,71 @@
                         "type": "string"
                     },
                     "color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "is_active": {
-                        "type": "string"
+                        "type": "boolean"
                     },
                     "sort_order": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "turn_times": {
                         "type": "string"
+                    },
+                    "": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "all_floors": {
+                                        "type": "boolean"
+                                    },
+                                    "dining_area_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "all_floors",
+                                    "dining_area_ids"
+                                ]
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "all_floors": {
+                                        "type": "boolean"
+                                    },
+                                    "dining_area_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                },
+                                "required": [
+                                    "all_floors",
+                                    "dining_area_ids"
+                                ]
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 0,
+                                "maxItems": 0,
+                                "additionalItems": false
+                            }
+                        ]
                     },
                     "table_availability": {
                         "type": "string"
@@ -28251,16 +29554,19 @@
                         "type": "object",
                         "properties": {
                             "interval_minutes": {
-                                "type": "string"
+                                "type": "integer"
                             },
                             "default_max_covers": {
-                                "type": "string"
+                                "type": "integer"
                             },
                             "release_policy": {
                                 "type": "string"
                             },
                             "release_hours_before": {
-                                "type": "string"
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
                             },
                             "intervals": {
                                 "anyOf": [
@@ -28299,6 +29605,7 @@
                     "color",
                     "is_active",
                     "sort_order",
+                    null,
                     "flow_controls"
                 ],
                 "title": "RestaurantShiftResource"
@@ -28429,7 +29736,10 @@
                         ]
                     },
                     "dining_spot_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "name": {
                         "type": "string"
@@ -29801,6 +31111,36 @@
                 ],
                 "title": "StoreAdminUserRequest"
             },
+            "StoreAvailabilityAlertRequest": {
+                "type": "object",
+                "properties": {
+                    "party_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "window_start": {
+                        "type": "string"
+                    },
+                    "window_end": {
+                        "type": "string"
+                    },
+                    "whatsapp_updates": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "party_size",
+                    "date",
+                    "window_start",
+                    "window_end"
+                ],
+                "title": "StoreAvailabilityAlertRequest"
+            },
             "StoreDiningAreaRequest": {
                 "type": "object",
                 "properties": {
@@ -30486,9 +31826,6 @@
                             "null"
                         ],
                         "minimum": 0
-                    },
-                    "is_featured": {
-                        "type": "boolean"
                     }
                 },
                 "required": [
@@ -30660,6 +31997,15 @@
                     "sort_order": {
                         "type": "integer",
                         "minimum": 0
+                    },
+                    "all_floors": {
+                        "type": "boolean"
+                    },
+                    "dining_area_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
                     },
                     "flow_controls": {
                         "type": "object",
@@ -32397,9 +33743,6 @@
                             "null"
                         ],
                         "minimum": 0
-                    },
-                    "is_featured": {
-                        "type": "boolean"
                     }
                 },
                 "title": "UpdateRestaurantMenuItemRequest"
@@ -33227,6 +34570,15 @@
                     "sort_order": {
                         "type": "integer",
                         "minimum": 0
+                    },
+                    "all_floors": {
+                        "type": "boolean"
+                    },
+                    "dining_area_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
                     },
                     "flow_controls": {
                         "type": "object",
