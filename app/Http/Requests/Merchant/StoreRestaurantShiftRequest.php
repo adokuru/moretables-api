@@ -58,6 +58,12 @@ class StoreRestaurantShiftRequest extends FormRequest
             'turn_times' => ['sometimes', 'array'],
             'turn_times.*.party_size' => ['required_with:turn_times', 'integer', 'min:1'],
             'turn_times.*.duration_minutes' => ['required_with:turn_times', 'integer', 'min:15', 'max:480'],
+            'all_floors' => ['sometimes', 'boolean'],
+            'dining_area_ids' => ['sometimes', 'array'],
+            'dining_area_ids.*' => [
+                'integer',
+                Rule::exists('dining_areas', 'id')->where('restaurant_id', $restaurantId),
+            ],
             'table_availability' => ['sometimes', 'array'],
             'table_availability.*.dining_area_id' => [
                 'nullable',

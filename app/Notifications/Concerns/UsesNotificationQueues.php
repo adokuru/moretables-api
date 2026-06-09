@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Concerns;
 
+use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\ExpoPushChannel;
 
 trait UsesNotificationQueues
@@ -15,6 +16,7 @@ trait UsesNotificationQueues
             'mail' => 'notifications',
             'database' => 'notifications',
             ExpoPushChannel::class => 'notifications',
+            WhatsAppChannel::class => 'notifications',
         ];
     }
 }

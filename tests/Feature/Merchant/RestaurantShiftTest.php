@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\DiningArea;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantShift;
+use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\BillingPlanSeeder;
@@ -147,6 +149,78 @@ it('forbids viewers from creating shifts', function (): void {
         'starts_at' => '12:00',
         'ends_at' => '15:00',
     ])->assertForbidden();
+});
+
+it('creates a shift assigned to all floors via shortcut', function (): void {
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [
+        'name' => 'All Floors Lunch',
+        'day_of_week' => 2,
+        'starts_at' => '12:00',
+        'ends_at' => '15:00',
+        'all_floors' => true,
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.all_floors', true)
+        ->assertJsonPath('data.dining_area_ids', []);
+
+    $shift = RestaurantShift::query()->find($response->json('data.id'));
+    expect($shift?->tableAvailability)->toHaveCount(1);
+    expect($shift?->tableAvailability->first()?->dining_area_id)->toBeNull();
+    expect($shift?->tableAvailability->first()?->table_type)->toBeNull();
+});
+
+it('creates a shift assigned to specific dining areas via shortcut', function (): void {
+    $mainFloor = DiningArea::factory()->for($this->restaurant)->create(['name' => 'Main']);
+    $patio = DiningArea::factory()->for($this->restaurant)->create(['name' => 'Patio']);
+
+    RestaurantTable::factory()->for($this->restaurant)->create([
+        'dining_area_id' => $mainFloor->id,
+        'max_capacity' => 4,
+    ]);
+    RestaurantTable::factory()->for($this->restaurant)->create([
+        'dining_area_id' => $patio->id,
+        'max_capacity' => 6,
+    ]);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [
+        'name' => 'Main Only',
+        'day_of_week' => 3,
+        'starts_at' => '18:00',
+        'ends_at' => '22:00',
+        'dining_area_ids' => [$mainFloor->id],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.all_floors', false)
+        ->assertJsonPath('data.dining_area_ids', [$mainFloor->id]);
+
+    $shift = RestaurantShift::query()->find($response->json('data.id'));
+    expect($shift?->tableAvailability)->not->toBeEmpty();
+    expect(
+        $shift?->tableAvailability->pluck('dining_area_id')->unique()->values()->all()
+    )->toBe([$mainFloor->id]);
+});
+
+it('updates floor assignment via shortcut', function (): void {
+    $mainFloor = DiningArea::factory()->for($this->restaurant)->create(['name' => 'Main']);
+    $patio = DiningArea::factory()->for($this->restaurant)->create(['name' => 'Patio']);
+
+    $shift = RestaurantShift::factory()->for($this->restaurant)->create();
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts/{$shift->id}", [
+        'dining_area_ids' => [$mainFloor->id, $patio->id],
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.all_floors', false)
+        ->assertJsonCount(2, 'data.dining_area_ids');
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts/{$shift->id}", [
+        'all_floors' => true,
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.all_floors', true)
+        ->assertJsonPath('data.dining_area_ids', []);
 });
 
 it('rejects turn controls that reference a table from another restaurant', function (): void {

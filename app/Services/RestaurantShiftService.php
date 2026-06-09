@@ -244,7 +244,9 @@ class RestaurantShiftService
             $this->syncDefaultTurnTimes($shift, $maxPartySize, $defaultDuration);
         }
 
-        if (array_key_exists('table_availability', $data)) {
+        if ($this->hasFloorAssignmentShortcut($data)) {
+            $this->syncFloorAssignmentFromShortcut($restaurant, $shift, $data);
+        } elseif (array_key_exists('table_availability', $data)) {
             $this->syncTableAvailability($shift, $data['table_availability'] ?? []);
         } elseif (! $partial) {
             $this->syncDefaultTableAvailability($restaurant, $shift);
@@ -331,6 +333,80 @@ class RestaurantShiftService
     /**
      * @param  list<array{dining_area_id?: int|null, table_type?: string|null, include_combinations?: bool, is_reservable?: bool}>  $rows
      */
+    private function hasFloorAssignmentShortcut(array $data): bool
+    {
+        return array_key_exists('all_floors', $data) || array_key_exists('dining_area_ids', $data);
+    }
+
+    private function syncFloorAssignmentFromShortcut(Restaurant $restaurant, RestaurantShift $shift, array $data): void
+    {
+        if ($data['all_floors'] ?? false) {
+            $this->syncTableAvailability($shift, [[
+                'dining_area_id' => null,
+                'table_type' => null,
+                'include_combinations' => true,
+                'is_reservable' => true,
+            ]]);
+
+            return;
+        }
+
+        $diningAreaIds = collect($data['dining_area_ids'] ?? [])
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($diningAreaIds === []) {
+            return;
+        }
+
+        $tables = $restaurant->tables()
+            ->where('is_active', true)
+            ->whereIn('dining_area_id', $diningAreaIds)
+            ->get();
+
+        if ($tables->isEmpty()) {
+            $rows = collect($diningAreaIds)
+                ->map(fn (int $diningAreaId): array => [
+                    'dining_area_id' => $diningAreaId,
+                    'table_type' => null,
+                    'include_combinations' => true,
+                    'is_reservable' => true,
+                ])
+                ->all();
+            $this->syncTableAvailability($shift, $rows);
+
+            return;
+        }
+
+        $combinationAreaIds = $restaurant->tableCombinations()
+            ->whereIn('dining_area_id', $diningAreaIds)
+            ->pluck('dining_area_id')
+            ->filter()
+            ->unique();
+
+        $groups = $tables->groupBy(
+            fn ($table): string => (string) $table->dining_area_id.'|'.$table->table_type->value
+        );
+
+        $rows = $groups
+            ->map(function ($group, string $key) use ($combinationAreaIds): array {
+                [$diningAreaId] = explode('|', $key, 2);
+
+                return [
+                    'dining_area_id' => (int) $diningAreaId,
+                    'table_type' => $group->first()->table_type,
+                    'include_combinations' => $combinationAreaIds->contains((int) $diningAreaId),
+                    'is_reservable' => true,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $this->syncTableAvailability($shift, $rows);
+    }
+
     private function syncTableAvailability(RestaurantShift $shift, array $rows): void
     {
         $shift->tableAvailability()->delete();

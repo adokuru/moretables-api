@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\WaitlistStatus;
+use App\WaitlistType;
 use Database\Factories\WaitlistEntryFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,10 +21,12 @@ class WaitlistEntry extends Model
         'guest_contact_id',
         'reservation_id',
         'status',
+        'type',
         'party_size',
         'preferred_starts_at',
         'preferred_ends_at',
         'notes',
+        'whatsapp_updates',
         'notified_at',
         'expires_at',
         'seated_at',
@@ -33,6 +37,8 @@ class WaitlistEntry extends Model
     {
         return [
             'status' => WaitlistStatus::class,
+            'type' => WaitlistType::class,
+            'whatsapp_updates' => 'boolean',
             'preferred_starts_at' => 'datetime',
             'preferred_ends_at' => 'datetime',
             'notified_at' => 'datetime',
@@ -60,5 +66,28 @@ class WaitlistEntry extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    /**
+     * @param  Builder<WaitlistEntry>  $query
+     * @return Builder<WaitlistEntry>
+     */
+    public function scopeSeating(Builder $query): Builder
+    {
+        return $query->where('type', WaitlistType::Seating->value);
+    }
+
+    /**
+     * @param  Builder<WaitlistEntry>  $query
+     * @return Builder<WaitlistEntry>
+     */
+    public function scopeAvailabilityAlerts(Builder $query): Builder
+    {
+        return $query->where('type', WaitlistType::AvailabilityAlert->value);
+    }
+
+    public function isAvailabilityAlert(): bool
+    {
+        return $this->type === WaitlistType::AvailabilityAlert;
     }
 }

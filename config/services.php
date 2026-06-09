@@ -67,4 +67,13 @@ return [
         'access_token' => env('EXPO_ACCESS_TOKEN'),
     ],
 
+    'whatsapp' => [
+        'base_url' => env('WHATSAPP_BASE_URL', 'https://graph.facebook.com'),
+        'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'availability_alert_template' => env('WHATSAPP_AVAILABILITY_ALERT_TEMPLATE', 'table_availability_alert'),
+        'template_language' => env('WHATSAPP_TEMPLATE_LANGUAGE', 'en'),
+    ],
+
 ];

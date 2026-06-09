@@ -128,6 +128,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(ExpoPushToken::class);
     }
 
+    public function routeNotificationForWhatsapp(): ?string
+    {
+        return $this->phone;
+    }
+
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);

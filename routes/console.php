@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:send-upcoming-reservation-reminders')->hourly()->onOneServer()->withoutOverlapping();
+Schedule::command('app:process-availability-alerts')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('app:mark-no-show-reservations')->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('billing:expire-subscriptions')->daily()->onOneServer()->withoutOverlapping();
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();

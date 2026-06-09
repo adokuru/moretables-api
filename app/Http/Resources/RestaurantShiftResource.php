@@ -28,6 +28,7 @@ class RestaurantShiftResource extends JsonResource
                 'party_size' => $turnTime->party_size,
                 'duration_minutes' => $turnTime->duration_minutes,
             ])->values()),
+            ...$this->floorAssignmentFields(),
             'table_availability' => $this->whenLoaded('tableAvailability', fn () => $this->tableAvailability->map(fn ($row): array => [
                 'id' => $row->id,
                 'dining_area_id' => $row->dining_area_id,
@@ -53,6 +54,42 @@ class RestaurantShiftResource extends JsonResource
                     'max_covers' => $interval->max_covers,
                 ])->values(), []),
             ],
+        ];
+    }
+
+    /**
+     * @return array{all_floors?: bool, dining_area_ids?: array<int, int>}
+     */
+    private function floorAssignmentFields(): array
+    {
+        if (! $this->relationLoaded('tableAvailability')) {
+            return [];
+        }
+
+        $rules = $this->tableAvailability;
+
+        $hasCatchAll = $rules->contains(
+            fn ($rule): bool => $rule->dining_area_id === null && $rule->table_type === null
+        );
+
+        if ($hasCatchAll || $rules->isEmpty()) {
+            return [
+                'all_floors' => true,
+                'dining_area_ids' => [],
+            ];
+        }
+
+        $diningAreaIds = $rules
+            ->pluck('dining_area_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        return [
+            'all_floors' => false,
+            'dining_area_ids' => $diningAreaIds,
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\ReservationUpdated;
 use App\Events\TableStatusUpdated;
 use App\Events\WaitlistEntryUpdated;
+use App\Jobs\ProcessRestaurantAvailabilityAlerts;
 use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
@@ -466,6 +467,8 @@ class ReservationService
                 ->notify(new GuestReservationLifecycleMailNotification($reservation, $reservation->guestContact, 'cancelled'));
         }
 
+        $this->dispatchAvailabilityAlertCheck($reservation);
+
         return $reservation;
     }
 
@@ -538,6 +541,8 @@ class ReservationService
         event(new ReservationUpdated($reservation, 'completed'));
 
         $this->maybeAwardReservationPoints($reservation);
+
+        $this->dispatchAvailabilityAlertCheck($reservation);
 
         return $reservation;
     }
@@ -646,7 +651,21 @@ class ReservationService
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show'));
 
+        $this->dispatchAvailabilityAlertCheck($reservation);
+
         return $reservation;
+    }
+
+    protected function dispatchAvailabilityAlertCheck(Reservation $reservation): void
+    {
+        if ($reservation->restaurant_id === null) {
+            return;
+        }
+
+        ProcessRestaurantAvailabilityAlerts::dispatch(
+            $reservation->restaurant_id,
+            $reservation->starts_at?->copy(),
+        );
     }
 
     /**

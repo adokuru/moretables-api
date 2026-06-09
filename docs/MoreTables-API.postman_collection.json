@@ -2327,6 +2327,119 @@
      }
     },
     {
+     "name": "My availability alerts",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/me/availability-alerts",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "me",
+        "availability-alerts"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "OpenTable-style \"Notify me\" alerts. Returns the authenticated guest's active table-availability alerts."
+     }
+    },
+    {
+     "name": "Create availability alert",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_slug}}/availability-alerts",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "restaurants",
+        "{{restaurant_slug}}",
+        "availability-alerts"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"party_size\": 2,\n  \"date\": \"2025-12-25\",\n  \"window_start\": \"11:00\",\n  \"window_end\": \"13:00\",\n  \"whatsapp_updates\": true\n}"
+      },
+      "description": "Watch a restaurant for a table matching party size, date, and time window. When a table opens the guest is notified via push, email, and (when whatsapp_updates is true and the guest has SMS/WhatsApp alerts enabled) WhatsApp. Returns HTTP 201 for a new alert, or HTTP 200 with the existing alert if an identical active alert already exists."
+     }
+    },
+    {
+     "name": "Cancel availability alert",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/availability-alerts/{{availability_alert_id}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "availability-alerts",
+        "{{availability_alert_id}}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
      "name": "POST Add guests to reservation",
      "request": {
       "method": "POST",

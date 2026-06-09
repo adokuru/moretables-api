@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CustomerAvailabilityAlertController;
 use App\Http\Controllers\Api\V1\CustomerReservationController;
 use App\Http\Controllers\Api\V1\CustomerRestaurantListController;
 use App\Http\Controllers\Api\V1\CustomerRewardController;
@@ -68,4 +69,8 @@ Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function ():
     Route::post('waitlist-entries', [CustomerWaitlistController::class, 'store']);
     Route::post('waitlist-entries/{waitlistEntry}/accept', [CustomerWaitlistController::class, 'accept']);
     Route::post('waitlist-entries/{waitlistEntry}/decline', [CustomerWaitlistController::class, 'decline']);
+
+    Route::get('me/availability-alerts', [CustomerAvailabilityAlertController::class, 'index']);
+    Route::post('restaurants/{restaurant:slug}/availability-alerts', [CustomerAvailabilityAlertController::class, 'store']);
+    Route::delete('availability-alerts/{availabilityAlert}', [CustomerAvailabilityAlertController::class, 'destroy']);
 });
