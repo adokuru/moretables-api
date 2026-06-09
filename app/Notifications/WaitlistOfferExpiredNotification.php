@@ -5,12 +5,13 @@ namespace App\Notifications;
 use App\Models\WaitlistEntry;
 use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
+use App\Notifications\Contracts\Unsubscribable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class WaitlistOfferExpiredNotification extends Notification implements ShouldQueue
+class WaitlistOfferExpiredNotification extends Notification implements ShouldQueue, Unsubscribable
 {
     use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 

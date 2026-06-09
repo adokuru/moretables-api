@@ -4,12 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Reservation;
 use App\Notifications\Concerns\UsesNotificationQueues;
+use App\Notifications\Contracts\Unsubscribable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ReservationLifecycleNotification extends Notification implements ShouldQueue
+class ReservationLifecycleNotification extends Notification implements ShouldQueue, Unsubscribable
 {
     use Queueable, UsesNotificationQueues;
 

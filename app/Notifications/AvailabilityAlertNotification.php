@@ -6,13 +6,14 @@ use App\Models\WaitlistEntry;
 use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
+use App\Notifications\Contracts\Unsubscribable;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AvailabilityAlertNotification extends Notification implements ShouldQueue
+class AvailabilityAlertNotification extends Notification implements ShouldQueue, Unsubscribable
 {
     use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 

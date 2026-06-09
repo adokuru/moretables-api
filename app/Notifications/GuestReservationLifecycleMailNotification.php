@@ -8,12 +8,13 @@ use App\Models\ReservationGuest;
 use App\Models\User;
 use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
+use App\Notifications\Contracts\Unsubscribable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class GuestReservationLifecycleMailNotification extends Notification implements ShouldQueue
+class GuestReservationLifecycleMailNotification extends Notification implements ShouldQueue, Unsubscribable
 {
     use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
@@ -35,8 +36,9 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
 
         $restaurant = $this->reservation->restaurant;
         $subject = $this->subject($restaurant->name);
+        $recipientEmail = $this->recipientEmail();
 
-        return (new MailMessage)->subject($subject)->view(
+        $message = (new MailMessage)->subject($subject)->view(
             [
                 'html' => 'emails.reservation-lifecycle',
                 'text' => 'emails.reservation-lifecycle-text',
@@ -66,12 +68,26 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'modifyUrl' => $this->manageReservationUrl(),
                 'cancelUrl' => $this->manageReservationUrl(),
                 'newReservationUrl' => $this->newReservationUrl(),
-                'footerLink1Url' => $this->frontendBaseUrl(),
+                'footerLink1Url' => $this->rewardsUrl(),
                 'footerLink1Label' => 'Earn rewards',
-                'footerLink2Url' => $this->frontendBaseUrl().'/unsubscribe',
+                'footerLink2Url' => $this->unsubscribeUrl($recipientEmail) ?? $this->frontendBaseUrl(),
                 'footerLink2Label' => 'Unsubscribe',
             ],
         );
+
+        return $this->withUnsubscribeHeaders($message, $recipientEmail);
+    }
+
+    protected function recipientEmail(): ?string
+    {
+        $email = match (true) {
+            $this->guestRecipient instanceof GuestContact => $this->guestRecipient->email,
+            $this->guestRecipient instanceof ReservationGuest => $this->guestRecipient->email_address,
+            $this->guestRecipient instanceof User => $this->guestRecipient->email,
+            default => null,
+        };
+
+        return is_string($email) && $email !== '' ? $email : null;
     }
 
     protected function title(string $restaurantName): string
