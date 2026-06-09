@@ -61,9 +61,9 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'extraBody' => $this->extraBody(),
                 'showReservationActions' => $this->showReservationActions(),
                 'showNewReservationButton' => $this->showNewReservationButton(),
-                'calendarUrl' => $this->reservationActionUrl('calendar'),
-                'modifyUrl' => $this->reservationActionUrl('modify'),
-                'cancelUrl' => $this->reservationActionUrl('cancel'),
+                'calendarUrl' => $this->calendarUrl(),
+                'modifyUrl' => $this->manageReservationUrl(),
+                'cancelUrl' => $this->manageReservationUrl(),
                 'newReservationUrl' => $this->newReservationUrl(),
                 'footerLink1Url' => $this->frontendBaseUrl(),
                 'footerLink1Label' => 'Earn rewards',
@@ -111,7 +111,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
     protected function extraBody(): ?string
     {
         return match ($this->action) {
-            'created' => "You can manage or update your reservation anytime",
+            'created' => 'You can manage or update your reservation anytime',
             default => null,
         };
     }
@@ -204,9 +204,36 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
         return rtrim(config('app.frontend_urls.main') ?: config('app.url'), '/');
     }
 
-    protected function reservationActionUrl(string $action): string
+    protected function manageReservationUrl(): string
     {
-        return $this->frontendBaseUrl().'/reservations/'.$this->reservation->reservation_reference.'/'.$action;
+        $slug = $this->reservation->restaurant->slug;
+
+        if ($slug === null || $slug === '') {
+            return $this->frontendBaseUrl();
+        }
+
+        return $this->frontendBaseUrl().'/restaurants/'.$slug.'/reservations?reservation_id='.$this->reservation->id;
+    }
+
+    protected function calendarUrl(): string
+    {
+        $start = $this->reservation->starts_at;
+
+        if ($start === null) {
+            return $this->manageReservationUrl();
+        }
+
+        $end = $this->reservation->ends_at ?? $start->copy()->addHours(2);
+
+        $params = [
+            'action' => 'TEMPLATE',
+            'text' => 'Reservation at '.$this->reservation->restaurant->name,
+            'dates' => $start->copy()->utc()->format('Ymd\THis\Z').'/'.$end->copy()->utc()->format('Ymd\THis\Z'),
+            'details' => 'Confirmation #: '.$this->reservation->reservation_reference,
+            'location' => $this->restaurantAddressQuery() ?? '',
+        ];
+
+        return 'https://calendar.google.com/calendar/render?'.http_build_query($params);
     }
 
     protected function newReservationUrl(): string
@@ -240,13 +267,32 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
     {
         $restaurant = $this->reservation->restaurant;
 
-        if ($restaurant->latitude === null || $restaurant->longitude === null) {
+        if ($restaurant->latitude !== null && $restaurant->longitude !== null) {
+            $query = number_format((float) $restaurant->latitude, 7, '.', '').','.number_format((float) $restaurant->longitude, 7, '.', '');
+        } else {
+            $query = $this->restaurantAddressQuery();
+        }
+
+        if ($query === null) {
             return null;
         }
 
-        $coordinates = number_format((float) $restaurant->latitude, 7, '.', '').','.number_format((float) $restaurant->longitude, 7, '.', '');
+        return 'https://www.google.com/maps/search/?api=1&query='.urlencode($query);
+    }
 
-        return 'https://www.google.com/maps/search/?api=1&query='.urlencode($coordinates);
+    protected function restaurantAddressQuery(): ?string
+    {
+        $restaurant = $this->reservation->restaurant;
+        $parts = array_filter([
+            $restaurant->name,
+            $restaurant->address_line_1,
+            $restaurant->address_line_2,
+            $restaurant->city,
+            $restaurant->state,
+            $restaurant->country,
+        ]);
+
+        return $parts === [] ? null : implode(', ', $parts);
     }
 
     /**

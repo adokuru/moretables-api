@@ -79,6 +79,44 @@ it('renders the reservation confirmed email with restaurant details and actions'
         ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000');
 });
 
+it('falls back to an address-based directions link when the restaurant has no coordinates', function (): void {
+    Storage::fake('public');
+
+    config(['app.url' => 'https://moretables.test']);
+
+    $restaurant = Restaurant::factory()->create([
+        'name' => 'Pepp & Dolores',
+        'address_line_1' => '1501 Vine Street',
+        'address_line_2' => null,
+        'city' => 'Cincinnati',
+        'state' => 'OH',
+        'country' => 'USA',
+        'timezone' => 'America/New_York',
+        'menu_link' => 'https://pepp.example.com/menu',
+        'latitude' => null,
+        'longitude' => null,
+    ]);
+
+    $guestContact = GuestContact::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'first_name' => 'Urenna',
+        'last_name' => 'Anyadike',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'guest_contact_id' => $guestContact->id,
+        'starts_at' => Carbon::parse('2026-04-14 00:00:00', 'UTC'),
+        'party_size' => 2,
+        'reservation_reference' => '378493',
+    ]);
+
+    $mailMessage = (new GuestReservationLifecycleMailNotification($reservation, $guestContact, 'created'))->toMail((object) []);
+
+    expect($mailMessage->data()['directionsUrl'])
+        ->toBe('https://www.google.com/maps/search/?api=1&query='.urlencode('Pepp & Dolores, 1501 Vine Street, Cincinnati, OH, USA'));
+});
+
 it('renders the reservation canceled email with the canceled copy and trimmed details', function (): void {
     Storage::fake('public');
 
@@ -193,8 +231,8 @@ it('renders the reservation changed email with the updated copy and full details
         ->and($html)->toContain('Add to calendar')
         ->and($html)->toContain('Modify')
         ->and($html)->toContain('Cancel')
-        ->and($mailMessage->data()['modifyUrl'])->toContain('/reservations/378493/modify')
-        ->and($mailMessage->data()['cancelUrl'])->toContain('/reservations/378493/cancel')
+        ->and($mailMessage->data()['modifyUrl'])->toContain('/restaurants/'.$restaurant->slug.'/reservations?reservation_id='.$reservation->id)
+        ->and($mailMessage->data()['cancelUrl'])->toContain('/restaurants/'.$restaurant->slug.'/reservations?reservation_id='.$reservation->id)
         ->and($html)->not->toContain('Make a new reservation')
         ->and($text)->toContain('Reservation changed')
         ->and($text)->toContain('Here are the new details:')
