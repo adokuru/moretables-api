@@ -41,7 +41,7 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->group(function ():
     Route::get('merchant/billing/plans', [MerchantBillingController::class, 'plans']);
 });
 
-Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
+Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::prefix('billing')->group(function (): void {
         Route::get('/', [MerchantBillingController::class, 'show']);
         Route::post('checkout', [MerchantBillingController::class, 'checkout']);

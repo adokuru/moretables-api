@@ -31,7 +31,7 @@ Route::prefix('admin/auth')->group(function (): void {
     });
 });
 
-Route::middleware(['auth:sanctum', 'throttle:admin-api'])->prefix('admin')->group(function (): void {
+Route::middleware(['auth:sanctum', 'admin.access', 'throttle:admin-api'])->prefix('admin')->group(function (): void {
     Route::get('dashboard', [AdminDashboardController::class, 'index']);
 
     Route::get('reward-program', [AdminRewardProgramController::class, 'show']);

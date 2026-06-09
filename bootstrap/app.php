@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureAdminAccess;
+use App\Http\Middleware\EnsureMerchantAccess;
 use App\Http\Middleware\EnsureMerchantBillingActive;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -22,9 +24,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'merchant.billing.active' => EnsureMerchantBillingActive::class,
+            'admin.access' => EnsureAdminAccess::class,
+            'merchant.access' => EnsureMerchantAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
+        );
+
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([

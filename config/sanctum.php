@@ -50,7 +50,19 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 43200),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Token Expiration Minutes
+    |--------------------------------------------------------------------------
+    |
+    | Admin/staff sessions are higher privilege, so their tokens are issued
+    | with a shorter, explicit "expires_at" lifetime than the global default.
+    |
+    */
+
+    'admin_expiration' => env('SANCTUM_ADMIN_TOKEN_EXPIRATION', 720),
 
     /*
     |--------------------------------------------------------------------------

@@ -22,7 +22,7 @@ class UpdateRestaurantReviewRequest extends FormRequest
             'title' => ['sometimes', 'nullable', 'string', 'max:160'],
             'body' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'review_images' => ['sometimes', 'nullable', 'array', 'max:5'],
-            'review_images.*' => ['image', 'max:10240'],
+            'review_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'visited_at' => ['sometimes', 'nullable', 'date'],
         ];
     }

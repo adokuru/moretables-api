@@ -257,9 +257,10 @@ class AdminRestaurantController extends Controller
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
         $oldValues = $restaurant->only(['id', 'name', 'slug']);
-        $restaurant->delete();
 
         $this->logAdminAudit($request, 'restaurant.deleted', $restaurant, oldValues: $oldValues);
+
+        $restaurant->delete();
 
         return response()->json([
             'message' => 'Restaurant deleted successfully.',

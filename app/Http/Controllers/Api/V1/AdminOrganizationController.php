@@ -133,9 +133,10 @@ class AdminOrganizationController extends Controller
         $this->authorize('delete', $organization);
 
         $oldValues = $organization->only(['id', 'name', 'slug']);
-        $organization->delete();
 
         $this->logAdminAudit($request, 'organization.deleted', $organization, oldValues: $oldValues);
+
+        $organization->delete();
 
         return response()->json([
             'message' => 'Organization deleted successfully.',

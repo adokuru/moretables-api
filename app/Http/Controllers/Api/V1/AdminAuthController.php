@@ -72,7 +72,11 @@ class AdminAuthController extends Controller
 
         $user->forceFill(['last_active_at' => now()])->save();
 
-        $token = $user->createToken($request->input('device_name', 'admin-api'))->plainTextToken;
+        $token = $user->createToken(
+            $request->input('device_name', 'admin-api'),
+            ['*'],
+            now()->addMinutes((int) config('sanctum.admin_expiration')),
+        )->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful.',

@@ -17,7 +17,7 @@ class UploadMoretableLineupCoverRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'cover' => ['required', 'image', 'max:10240'],
+            'cover' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'alt_text' => ['nullable', 'string', 'max:255'],
         ];
     }
