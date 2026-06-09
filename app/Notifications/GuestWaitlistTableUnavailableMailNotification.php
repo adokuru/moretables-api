@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class GuestWaitlistTableUnavailableMailNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -30,7 +31,8 @@ class GuestWaitlistTableUnavailableMailNotification extends Notification impleme
             ->subject("Table no longer available — {$restaurantName}")
             ->greeting($name !== '' ? "Hello {$name}," : 'Hello,')
             ->line("The table that was held for you at {$restaurantName} is no longer available.")
-            ->line('Please contact the restaurant if you would still like a table.');
+            ->line('If you would still like a table, you can rejoin the waitlist or book another time.')
+            ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 
     /**

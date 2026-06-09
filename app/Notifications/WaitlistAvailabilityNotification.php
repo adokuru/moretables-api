@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class WaitlistAvailabilityNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -35,7 +36,8 @@ class WaitlistAvailabilityNotification extends Notification implements ShouldQue
             ->greeting('Good news!')
             ->line("A table may be available at {$restaurantName}.")
             ->line('Preferred time: '.$this->entry->preferred_starts_at?->toDayDateTimeString())
-            ->line('Please confirm with the restaurant as soon as possible.');
+            ->action('Book your table', $this->restaurantUrl($this->entry->restaurant->slug))
+            ->line('This offer is time-limited, so please confirm as soon as you can.');
     }
 
     public function toExpoPush(object $notifiable): ExpoPushMessage

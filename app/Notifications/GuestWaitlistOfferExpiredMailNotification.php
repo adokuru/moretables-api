@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class GuestWaitlistOfferExpiredMailNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -30,7 +31,8 @@ class GuestWaitlistOfferExpiredMailNotification extends Notification implements 
             ->subject("Waitlist offer expired — {$restaurantName}")
             ->greeting($name !== '' ? "Hello {$name}," : 'Hello,')
             ->line("The time to respond to your table offer at {$restaurantName} has passed.")
-            ->line('You can ask the restaurant to add you to the waitlist again if you are still interested.');
+            ->line('If you are still interested, you can rejoin the waitlist or book another time.')
+            ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
 use App\Notifications\Channels\WhatsAppChannel;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
@@ -13,7 +14,7 @@ use Illuminate\Notifications\Notification;
 
 class AvailabilityAlertNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $alert) {}
 
@@ -44,7 +45,7 @@ class AvailabilityAlertNotification extends Notification implements ShouldQueue
             ->greeting('Good news!')
             ->line("A table for {$this->alert->party_size} is now available at {$restaurantName}.")
             ->line('Your requested time: '.$this->windowLabel())
-            ->action('Book now', url('/restaurants/'.$this->alert->restaurant->slug))
+            ->action('Book now', $this->restaurantUrl($this->alert->restaurant->slug))
             ->line('Tables go fast — book as soon as you can.');
     }
 

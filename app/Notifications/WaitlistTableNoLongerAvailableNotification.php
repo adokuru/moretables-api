@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class WaitlistTableNoLongerAvailableNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -34,7 +35,8 @@ class WaitlistTableNoLongerAvailableNotification extends Notification implements
             ->subject('Waitlist table no longer available')
             ->greeting('Hello!')
             ->line("The table held for your waitlist offer at {$restaurantName} is no longer available.")
-            ->line('Please join the waitlist again in the app if you would still like a table.');
+            ->line('If you would still like a table, you can rejoin the waitlist or book another time.')
+            ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 
     public function toExpoPush(object $notifiable): ExpoPushMessage

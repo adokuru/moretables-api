@@ -110,6 +110,23 @@ it('lists only the customer own availability alerts and excludes seating waitlis
         ->and($response->json('0.id'))->toBe($customer->waitlistEntries()->availabilityAlerts()->first()->id);
 });
 
+it('points the availability alert book button at the frontend restaurant page', function () {
+    config(['app.url' => 'https://api.moretables.test', 'app.frontend_urls.main' => 'https://www.moretables.test']);
+
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $alert = WaitlistEntry::factory()->availabilityAlert()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+    ]);
+
+    $html = (string) (new AvailabilityAlertNotification($alert))->toMail($customer)->render();
+
+    expect($html)->toContain('https://www.moretables.test/restaurants/'.$data['restaurant']->slug)
+        ->and($html)->not->toContain('https://api.moretables.test/restaurants/');
+});
+
 it('lets a customer cancel their availability alert', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();

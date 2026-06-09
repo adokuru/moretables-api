@@ -6,6 +6,7 @@ use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\User;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,7 +15,7 @@ use Illuminate\Notifications\Notification;
 
 class GuestReservationLifecycleMailNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(
         protected Reservation $reservation,
@@ -199,11 +200,6 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
         return $this->action === 'cancelled';
     }
 
-    protected function frontendBaseUrl(): string
-    {
-        return rtrim(config('app.frontend_urls.main') ?: config('app.url'), '/');
-    }
-
     protected function manageReservationUrl(): string
     {
         $slug = $this->reservation->restaurant->slug;
@@ -238,11 +234,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
 
     protected function newReservationUrl(): string
     {
-        $slug = $this->reservation->restaurant->slug;
-
-        return $slug !== null && $slug !== ''
-            ? $this->frontendBaseUrl().'/restaurants/'.$slug
-            : $this->frontendBaseUrl();
+        return $this->restaurantUrl($this->reservation->restaurant->slug);
     }
 
     protected function showRestaurantContactDetails(): bool

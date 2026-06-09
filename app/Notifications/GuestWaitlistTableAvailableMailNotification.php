@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class GuestWaitlistTableAvailableMailNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -31,8 +32,8 @@ class GuestWaitlistTableAvailableMailNotification extends Notification implement
             ->greeting($name !== '' ? "Hello {$name}," : 'Hello,')
             ->line("Good news — a table may be available at {$restaurantName} for your waitlist request.")
             ->line('Preferred time: '.$this->entry->preferred_starts_at?->toDayDateTimeString())
-            ->line('Please open the MoreTables app or contact the restaurant as soon as possible to confirm.')
-            ->line('This offer is time-limited.');
+            ->action('Book your table', $this->restaurantUrl($this->entry->restaurant->slug))
+            ->line('This offer is time-limited, so please confirm as soon as you can.');
     }
 
     /**

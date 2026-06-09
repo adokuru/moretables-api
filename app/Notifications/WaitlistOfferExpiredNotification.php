@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WaitlistEntry;
+use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class WaitlistOfferExpiredNotification extends Notification implements ShouldQueue
 {
-    use Queueable, UsesNotificationQueues;
+    use BuildsFrontendUrls, Queueable, UsesNotificationQueues;
 
     public function __construct(protected WaitlistEntry $entry) {}
 
@@ -34,7 +35,8 @@ class WaitlistOfferExpiredNotification extends Notification implements ShouldQue
             ->subject('Waitlist offer expired')
             ->greeting('Hello!')
             ->line("The time to respond to your table offer at {$restaurantName} has passed.")
-            ->line('You can join the waitlist again in the app if tables become available.');
+            ->line('If you are still interested, you can rejoin the waitlist or book another time.')
+            ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 
     public function toExpoPush(object $notifiable): ExpoPushMessage
