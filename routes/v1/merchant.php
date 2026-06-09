@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMenuDocumentController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
+use App\Http\Controllers\Api\V1\MerchantReportingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
@@ -225,6 +226,20 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
             Route::get('shift-overview/covers-by-time', [FrontOfHouseShiftOverviewController::class, 'coversByTime']);
             Route::get('shift-overview/covers-by-source', [FrontOfHouseShiftOverviewController::class, 'coversBySource']);
             Route::get('shift-overview/covers-by-party-size', [FrontOfHouseShiftOverviewController::class, 'coversByPartySize']);
+        });
+
+        Route::prefix('reporting')->group(function (): void {
+            Route::get('filters', [MerchantReportingController::class, 'filters']);
+            Route::get('shift-occupancy', [MerchantReportingController::class, 'shiftOccupancy']);
+            Route::get('cover-trends', [MerchantReportingController::class, 'coverTrends']);
+            Route::get('first-time-visits', [MerchantReportingController::class, 'firstTimeVisits']);
+            Route::get('guest-frequency', [MerchantReportingController::class, 'guestFrequency']);
+            Route::get('guest-frequency/export', [MerchantReportingController::class, 'exportGuestFrequency']);
+            Route::get('reservations', [MerchantReportingController::class, 'reservations']);
+            Route::get('reservations/export', [MerchantReportingController::class, 'exportReservations']);
+            Route::get('turn-times', [MerchantReportingController::class, 'turnTimes']);
+            Route::get('guest-export', [MerchantReportingController::class, 'guestExport']);
+            Route::get('guest-export/export', [MerchantReportingController::class, 'exportGuestExport']);
         });
     });
 });
