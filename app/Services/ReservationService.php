@@ -577,6 +577,12 @@ class ReservationService
                 'description' => 'Points earned for completing a reservation.',
                 'reference_type' => Reservation::class,
                 'reference_id' => $reservation->id,
+                'metadata' => [
+                    'restaurant_id' => $reservation->restaurant_id,
+                    'restaurant_name' => $reservation->restaurant->name,
+                    'reservation_reference' => $reservation->reservation_reference,
+                    'reservation_starts_at' => $reservation->starts_at?->toIso8601String(),
+                ],
             ],
         );
     }

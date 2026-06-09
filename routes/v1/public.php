@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function ():
 
     Route::get('me/rewards/status', [CustomerRewardController::class, 'status']);
     Route::get('me/rewards/transactions', [CustomerRewardController::class, 'transactions']);
+    Route::post('me/rewards/redeem', [CustomerRewardController::class, 'redeem']);
 
     Route::get('me/saved-restaurants', [CustomerSavedRestaurantController::class, 'index']);
     Route::post('restaurants/{restaurant:slug}/save', [CustomerSavedRestaurantController::class, 'store']);

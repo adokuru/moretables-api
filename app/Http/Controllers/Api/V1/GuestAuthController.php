@@ -36,12 +36,6 @@ class GuestAuthController extends Controller
             ]);
         }
 
-        if ($user?->requiresStaffLogin()) {
-            throw ValidationException::withMessages([
-                'email' => ['Use the staff login endpoint for this account.'],
-            ]);
-        }
-
         if ($user?->status === UserStatus::Suspended) {
             throw ValidationException::withMessages([
                 'email' => ['This account is suspended. Contact support for help.'],

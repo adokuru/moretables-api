@@ -6,19 +6,16 @@ use App\Models\EmailUnsubscribe;
 use App\Models\GuestContact;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class EmailUnsubscribeController extends Controller
 {
-    public function show(Request $request): View
+    public function show(Request $request): RedirectResponse
     {
-        $email = $this->unsubscribe($request);
+        $this->unsubscribe($request);
 
-        return view('emails.unsubscribed', [
-            'email' => $email,
-            'frontendBaseUrl' => rtrim(config('app.frontend_urls.main') ?: config('app.url'), '/'),
-        ]);
+        return redirect()->away($this->frontendBaseUrl());
     }
 
     public function update(Request $request): JsonResponse
@@ -45,5 +42,10 @@ class EmailUnsubscribeController extends Controller
             ->update(['marketing_opt_in' => false]);
 
         return $email;
+    }
+
+    protected function frontendBaseUrl(): string
+    {
+        return rtrim(config('app.frontend_urls.main') ?: config('app.url'), '/');
     }
 }

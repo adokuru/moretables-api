@@ -24,6 +24,10 @@ class RewardPointTransaction extends Model
         'reference_type',
         'reference_id',
         'metadata',
+        'expires_at',
+        'points_remaining',
+        'credit_value',
+        'credit_currency',
     ];
 
     protected function casts(): array
@@ -33,6 +37,9 @@ class RewardPointTransaction extends Model
             'points' => 'integer',
             'balance_after' => 'integer',
             'metadata' => 'array',
+            'expires_at' => 'datetime',
+            'points_remaining' => 'integer',
+            'credit_value' => 'integer',
         ];
     }
 

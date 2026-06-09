@@ -1471,7 +1471,51 @@
         }
        ]
       },
-      "description": "Paginated loyalty point history for the authenticated customer."
+      "description": "Paginated reward point ledger: earn (credit) with restaurant/reservation source and expires_at; redeem (debit) with credit_value/credit_currency and consumed lots; expire (debit) when points pass their 1-year validity."
+     }
+    },
+    {
+     "name": "Redeem reward points",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"points\": 1000\n}"
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/me/rewards/redeem",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "me",
+        "rewards",
+        "redeem"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Redeem a configured tier of lifetime points for restaurant credit. Points must match an active redemption tier (see GET me/rewards/status). Returns the debit transaction with credit value and FIFO consumption details."
      }
     },
     {

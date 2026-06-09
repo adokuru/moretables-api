@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Customer\RedeemRewardPointsRequest;
 use App\Services\RewardProgramService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -35,9 +36,9 @@ class CustomerRewardController extends Controller
 
         return response()->json([
             'rewards' => $this->rewardProgramService->statusForUser($request->user()),
-            'data' => $transactions->getCollection()
-                ->map(fn ($transaction): array => $this->rewardProgramService->transactionPayload($transaction))
-                ->values(),
+            'data' => $this->rewardProgramService->transactionPayloadsForCollection(
+                $transactions->getCollection(),
+            ),
             'meta' => [
                 'current_page' => $transactions->currentPage(),
                 'last_page' => $transactions->lastPage(),
@@ -45,5 +46,22 @@ class CustomerRewardController extends Controller
                 'total' => $transactions->total(),
             ],
         ]);
+    }
+
+    /**
+     * Redeem loyalty points for restaurant credit at a configured tier.
+     */
+    public function redeem(RedeemRewardPointsRequest $request): JsonResponse
+    {
+        $transaction = $this->rewardProgramService->redeemPoints(
+            user: $request->user(),
+            points: (int) $request->validated('points'),
+            actor: $request->user(),
+        );
+
+        return response()->json([
+            'transaction' => $this->rewardProgramService->transactionPayload($transaction),
+            'rewards' => $this->rewardProgramService->statusForUser($request->user()),
+        ], 201);
     }
 }

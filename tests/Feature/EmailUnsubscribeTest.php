@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 
 it('unsubscribes the recipient when the signed link is visited', function (): void {
+    config(['app.frontend_urls.main' => 'https://www.moretables.com']);
+
     $user = User::factory()->create([
         'email' => 'Guest@Example.com',
         'notify_marketing_emails' => true,
@@ -23,8 +25,7 @@ it('unsubscribes the recipient when the signed link is visited', function (): vo
     $url = URL::signedRoute('email.unsubscribe', ['email' => 'Guest@Example.com']);
 
     $this->get($url)
-        ->assertOk()
-        ->assertSee('unsubscribed');
+        ->assertRedirect('https://www.moretables.com');
 
     expect(EmailUnsubscribe::isSuppressed('guest@example.com'))->toBeTrue()
         ->and($user->fresh()->notify_marketing_emails)->toBeFalse();

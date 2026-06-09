@@ -12,6 +12,7 @@ Schedule::command('app:send-upcoming-reservation-reminders')->hourly()->onOneSer
 Schedule::command('app:process-availability-alerts')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('app:mark-no-show-reservations')->everyTenMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('billing:expire-subscriptions')->daily()->onOneServer()->withoutOverlapping();
+Schedule::command('app:expire-reward-points')->daily()->onOneServer()->withoutOverlapping();
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('queue:monitor redis:default,redis:notifications,redis:realtime --max='.(int) config('performance.monitoring.queue_backlog'))
     ->everyMinute()

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Reservation;
 use App\Models\RewardLevel;
 use App\Models\RewardPointTransaction;
 use App\Models\RewardProgram;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\RewardPointTransactionType;
 use App\RewardProgramPeriodType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -128,19 +130,134 @@ class RewardProgramService
                 ]);
             }
 
-            return RewardPointTransaction::query()->create([
+            $type = $this->resolveTransactionType($attributes['type'] ?? RewardPointTransactionType::Adjustment);
+            $metadata = $attributes['metadata'] ?? [];
+
+            if ($points < 0) {
+                $metadata['consumed_lots'] = $this->consumePointLots($user, $program, abs($points));
+            }
+
+            $createData = [
                 'reward_program_id' => $program->id,
                 'user_id' => $user->id,
                 'created_by' => $actor?->id,
-                'type' => $attributes['type'] ?? RewardPointTransactionType::Adjustment,
+                'type' => $type,
                 'points' => $points,
                 'balance_after' => $newBalance,
                 'description' => $attributes['description'] ?? null,
                 'reference_type' => $attributes['reference_type'] ?? null,
                 'reference_id' => $attributes['reference_id'] ?? null,
-                'metadata' => $attributes['metadata'] ?? null,
-            ])->load(['rewardProgram.levels', 'createdBy']);
+                'metadata' => $metadata !== [] ? $metadata : null,
+                'credit_value' => $attributes['credit_value'] ?? null,
+                'credit_currency' => $attributes['credit_currency'] ?? null,
+            ];
+
+            if ($type === RewardPointTransactionType::Earn && $points > 0) {
+                $createData['expires_at'] = now()->addYear();
+                $createData['points_remaining'] = $points;
+            }
+
+            return RewardPointTransaction::query()->create($createData)
+                ->load(['rewardProgram.levels', 'createdBy']);
         });
+    }
+
+    public function redeemPoints(User $user, int $points, ?User $actor = null): RewardPointTransaction
+    {
+        $program = $this->activeProgram();
+        $tier = $this->resolveRedemptionTier($program, $points);
+
+        if ($tier === null) {
+            throw ValidationException::withMessages([
+                'points' => ['Select a valid redemption tier.'],
+            ]);
+        }
+
+        return $this->awardPoints(
+            user: $user,
+            attributes: [
+                'points' => -$points,
+                'type' => RewardPointTransactionType::Redeem,
+                'description' => 'Points redeemed for restaurant credit.',
+                'credit_value' => $tier['credit_value'],
+                'credit_currency' => $tier['credit_currency'],
+                'metadata' => [
+                    'redemption' => [
+                        'points_redeemed' => $points,
+                        'credit_value' => $tier['credit_value'],
+                        'credit_currency' => $tier['credit_currency'],
+                    ],
+                ],
+            ],
+            actor: $actor,
+        );
+    }
+
+    public function expireDuePointLots(): int
+    {
+        $program = $this->activeProgram();
+        $expiredLots = 0;
+
+        $dueLots = RewardPointTransaction::query()
+            ->where('reward_program_id', $program->id)
+            ->where('type', RewardPointTransactionType::Earn)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->orderBy('expires_at')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (RewardPointTransaction $lot): bool => $this->remainingOnLot($lot) > 0);
+
+        $dueLots->groupBy('user_id')->each(function (Collection $userLots) use ($program, &$expiredLots): void {
+            DB::transaction(function () use ($userLots, $program, &$expiredLots): void {
+                foreach ($userLots as $lot) {
+                    $lockedLot = RewardPointTransaction::query()
+                        ->whereKey($lot->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $lockedLot) {
+                        continue;
+                    }
+
+                    $remaining = $this->remainingOnLot($lockedLot);
+
+                    if ($remaining <= 0) {
+                        continue;
+                    }
+
+                    $latestTransaction = RewardPointTransaction::query()
+                        ->where('reward_program_id', $program->id)
+                        ->where('user_id', $lockedLot->user_id)
+                        ->latest('id')
+                        ->lockForUpdate()
+                        ->first();
+
+                    $currentBalance = $latestTransaction?->balance_after ?? 0;
+                    $newBalance = $currentBalance - $remaining;
+
+                    RewardPointTransaction::query()->create([
+                        'reward_program_id' => $program->id,
+                        'user_id' => $lockedLot->user_id,
+                        'created_by' => null,
+                        'type' => RewardPointTransactionType::Expire,
+                        'points' => -$remaining,
+                        'balance_after' => $newBalance,
+                        'description' => 'Points expired after one year.',
+                        'reference_type' => $lockedLot->reference_type,
+                        'reference_id' => $lockedLot->reference_id,
+                        'metadata' => array_merge($lockedLot->metadata ?? [], [
+                            'earn_transaction_id' => $lockedLot->id,
+                        ]),
+                    ]);
+
+                    $lockedLot->update(['points_remaining' => 0]);
+                    $expiredLots++;
+                }
+            });
+        });
+
+        return $expiredLots;
     }
 
     /**
@@ -259,9 +376,32 @@ class RewardProgramService
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    public function transactionPayloadsForCollection(Collection $transactions): array
+    {
+        $reservationIds = $transactions
+            ->filter(fn (RewardPointTransaction $transaction): bool => $transaction->reference_type === Reservation::class && $transaction->reference_id !== null)
+            ->pluck('reference_id')
+            ->unique()
+            ->values();
+
+        $reservationsById = Reservation::query()
+            ->with('restaurant')
+            ->whereIn('id', $reservationIds)
+            ->get()
+            ->keyBy('id');
+
+        return $transactions
+            ->map(fn (RewardPointTransaction $transaction): array => $this->transactionPayload($transaction, $reservationsById))
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    public function transactionPayload(RewardPointTransaction $transaction): array
+    public function transactionPayload(RewardPointTransaction $transaction, ?Collection $reservationsById = null): array
     {
         $transaction->loadMissing(['rewardProgram.levels', 'createdBy']);
         $level = $transaction->rewardProgram
@@ -271,12 +411,18 @@ class RewardProgramService
         return [
             'id' => $transaction->id,
             'type' => $transaction->type?->value,
+            'direction' => $transaction->points >= 0 ? 'credit' : 'debit',
             'points' => $transaction->points,
             'balance_after' => $transaction->balance_after,
             'description' => $transaction->description,
             'reference_type' => $transaction->reference_type,
             'reference_id' => $transaction->reference_id,
             'metadata' => $transaction->metadata ?? [],
+            'expires_at' => $transaction->expires_at?->toIso8601String(),
+            'points_remaining' => $transaction->points_remaining,
+            'source' => $this->sourcePayload($transaction, $reservationsById),
+            'credit' => $this->creditPayload($transaction),
+            'redemption' => $this->redemptionPayload($transaction),
             'created_at' => $transaction->created_at?->toIso8601String(),
             'created_by' => $transaction->createdBy ? [
                 'id' => $transaction->createdBy->id,
@@ -351,5 +497,176 @@ class RewardProgramService
         $progress = (($points - $currentLevel->start_points) / $range) * 100;
 
         return (int) round(max(0, min($progress, 100)));
+    }
+
+    protected function resolveTransactionType(RewardPointTransactionType|string $type): RewardPointTransactionType
+    {
+        return $type instanceof RewardPointTransactionType
+            ? $type
+            : RewardPointTransactionType::from($type);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function consumePointLots(User $user, RewardProgram $program, int $points): array
+    {
+        $remainingToConsume = $points;
+        $consumed = [];
+
+        $lots = RewardPointTransaction::query()
+            ->where('reward_program_id', $program->id)
+            ->where('user_id', $user->id)
+            ->where('type', RewardPointTransactionType::Earn)
+            ->where(function ($query): void {
+                $query->where('points_remaining', '>', 0)
+                    ->orWhere(function ($query): void {
+                        $query->whereNull('points_remaining')->where('points', '>', 0);
+                    });
+            })
+            ->where(function ($query): void {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->orderBy('expires_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lots as $lot) {
+            $available = $this->remainingOnLot($lot);
+
+            if ($available <= 0) {
+                continue;
+            }
+
+            $take = min($available, $remainingToConsume);
+            $lot->update(['points_remaining' => $available - $take]);
+
+            $consumed[] = [
+                'earn_transaction_id' => $lot->id,
+                'points' => $take,
+                'reservation_id' => $lot->reference_type === Reservation::class ? $lot->reference_id : null,
+                'restaurant_id' => $lot->metadata['restaurant_id'] ?? null,
+                'restaurant_name' => $lot->metadata['restaurant_name'] ?? null,
+                'expires_at' => $lot->expires_at?->toIso8601String(),
+            ];
+
+            $remainingToConsume -= $take;
+
+            if ($remainingToConsume <= 0) {
+                break;
+            }
+        }
+
+        if ($remainingToConsume > 0) {
+            throw ValidationException::withMessages([
+                'points' => ['Not enough available points to complete this transaction.'],
+            ]);
+        }
+
+        return $consumed;
+    }
+
+    protected function remainingOnLot(RewardPointTransaction $lot): int
+    {
+        if ($lot->points_remaining !== null) {
+            return max($lot->points_remaining, 0);
+        }
+
+        return max($lot->points, 0);
+    }
+
+    /**
+     * @return array{points: int, credit_value: int, credit_currency: string}|null
+     */
+    protected function resolveRedemptionTier(RewardProgram $program, int $points): ?array
+    {
+        return collect($program->redemption_tiers ?? [])
+            ->first(fn (array $tier): bool => (int) $tier['points'] === $points);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function sourcePayload(RewardPointTransaction $transaction, ?Collection $reservationsById = null): ?array
+    {
+        if (! in_array($transaction->type, [RewardPointTransactionType::Earn, RewardPointTransactionType::Expire], true)) {
+            return null;
+        }
+
+        if ($transaction->reference_type === Reservation::class && $transaction->reference_id) {
+            $reservation = $reservationsById?->get($transaction->reference_id)
+                ?? Reservation::query()->with('restaurant')->find($transaction->reference_id);
+
+            if ($reservation) {
+                return [
+                    'type' => 'reservation',
+                    'reservation' => [
+                        'id' => $reservation->id,
+                        'reference' => $reservation->reservation_reference,
+                        'starts_at' => $reservation->starts_at?->toIso8601String(),
+                    ],
+                    'restaurant' => [
+                        'id' => $reservation->restaurant_id,
+                        'name' => $reservation->restaurant?->name,
+                    ],
+                ];
+            }
+        }
+
+        $metadata = $transaction->metadata ?? [];
+
+        if (! isset($metadata['restaurant_id'], $metadata['restaurant_name'])) {
+            return null;
+        }
+
+        return [
+            'type' => 'reservation',
+            'reservation' => [
+                'id' => $transaction->reference_id,
+                'reference' => $metadata['reservation_reference'] ?? null,
+                'starts_at' => $metadata['reservation_starts_at'] ?? null,
+            ],
+            'restaurant' => [
+                'id' => $metadata['restaurant_id'],
+                'name' => $metadata['restaurant_name'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{value: int, currency: string}|null
+     */
+    protected function creditPayload(RewardPointTransaction $transaction): ?array
+    {
+        if ($transaction->credit_value === null) {
+            return null;
+        }
+
+        return [
+            'value' => $transaction->credit_value,
+            'currency' => $transaction->credit_currency ?? 'NGN',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function redemptionPayload(RewardPointTransaction $transaction): ?array
+    {
+        if ($transaction->type !== RewardPointTransactionType::Redeem) {
+            return null;
+        }
+
+        $metadata = $transaction->metadata ?? [];
+        $redemption = $metadata['redemption'] ?? [];
+        $consumedLots = $metadata['consumed_lots'] ?? [];
+
+        return [
+            'points_redeemed' => abs($transaction->points),
+            'credit_value' => $redemption['credit_value'] ?? $transaction->credit_value,
+            'credit_currency' => $redemption['credit_currency'] ?? $transaction->credit_currency ?? 'NGN',
+            'consumed_from' => $consumedLots,
+        ];
     }
 }
