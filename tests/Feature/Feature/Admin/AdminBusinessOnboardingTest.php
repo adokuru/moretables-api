@@ -80,6 +80,11 @@ it('onboards a business with nested categorized manual menu items', function ():
 
     $restaurant = Restaurant::query()->where('name', 'Category Bistro')->firstOrFail();
 
+    expect($restaurant->diningAreas()->count())->toBe(1);
+    expect($restaurant->diningAreas()->first()?->name)->toBe('Main Area');
+    expect($restaurant->diningAreas()->first()?->floor_type)->toBe('Main');
+    expect($restaurant->tables()->count())->toBe(0);
+
     expect($restaurant->menuItems()->count())->toBe(2);
 
     $breakfastItem = $restaurant->menuItems()->where('item_name', 'Smokey Jollof')->firstOrFail();
@@ -137,7 +142,8 @@ it('allows business admins to onboard a business with multiple restaurants', fun
     foreach ($restaurants as $restaurant) {
         expect($owner->hasRole(Role::PrincipalAdmin, restaurant: $restaurant))->toBeTrue();
         expect($restaurant->diningAreas()->count())->toBe(1);
-        expect($restaurant->diningAreas()->first()?->name)->toBe('Main Dining');
+        expect($restaurant->diningAreas()->first()?->name)->toBe('Main Area');
+        expect($restaurant->diningAreas()->first()?->floor_type)->toBe('Main');
         expect($restaurant->tables()->count())->toBe($restaurant->number_of_tables);
         expect((int) $restaurant->tables()->sum('max_capacity'))->toBe($restaurant->total_seating_capacity);
     }

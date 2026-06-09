@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DiningArea;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\User;
@@ -231,11 +232,19 @@ class AdminBusinessOnboardingService
             return;
         }
 
-        $diningArea = $restaurant->diningAreas()->create([
-            'name' => 'Main Dining',
-            'is_active' => true,
-            'sort_order' => 0,
-        ]);
+        $diningArea = $restaurant->diningAreas()
+            ->where('name', DiningArea::DEFAULT_NAME)
+            ->where('floor_type', DiningArea::DEFAULT_FLOOR_TYPE)
+            ->first();
+
+        if (! $diningArea) {
+            $diningArea = $restaurant->diningAreas()->create([
+                'name' => DiningArea::DEFAULT_NAME,
+                'floor_type' => DiningArea::DEFAULT_FLOOR_TYPE,
+                'is_active' => true,
+                'sort_order' => 0,
+            ]);
+        }
 
         $baseCapacity = intdiv($totalSeatingCapacity, $numberOfTables);
         $remainder = $totalSeatingCapacity % $numberOfTables;

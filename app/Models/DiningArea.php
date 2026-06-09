@@ -13,6 +13,10 @@ class DiningArea extends Model
     /** @use HasFactory<DiningAreaFactory> */
     use HasFactory;
 
+    public const DEFAULT_NAME = 'Main Area';
+
+    public const DEFAULT_FLOOR_TYPE = 'Main';
+
     protected $fillable = [
         'restaurant_id',
         'name',
