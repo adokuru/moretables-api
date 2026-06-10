@@ -306,7 +306,9 @@ class Restaurant extends Model implements HasMedia
     {
         $this->addMediaCollection('featured')->singleFile();
         $this->addMediaCollection('gallery');
-        $this->addMediaCollection('menu_documents')->singleFile();
+        $this->addMediaCollection('menu_documents')
+            ->useDisk('public')
+            ->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void

@@ -16,6 +16,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
+use App\Services\RestaurantMenuSyncService;
 use App\Services\RestaurantReviewSummaryService;
 use App\Services\ScopedRoleAssignmentService;
 use App\UserAuthMethod;
@@ -33,6 +34,7 @@ class AdminRestaurantController extends Controller
         protected MediaLibraryService $mediaLibraryService,
         protected ScopedRoleAssignmentService $scopedRoleAssignmentService,
         protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
+        protected RestaurantMenuSyncService $restaurantMenuSyncService,
         protected RestaurantReviewSummaryService $restaurantReviewSummaryService,
     ) {}
 
@@ -97,25 +99,16 @@ class AdminRestaurantController extends Controller
     {
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
-        $validated = $request->validated();
+        $validated = $request->validatedWithMenuUploads();
         $restaurant = Restaurant::query()->create([
-            ...collect($validated)->except([
-                'featured_image',
-                'featured_image_alt_text',
-                'gallery_images',
-                'gallery_image_alt_texts',
-                'menu_document',
-                'cuisines',
-                'hours',
-                'policy',
-            ])->toArray(),
+            ...collect($validated)->except($this->restaurantPersistExcludedFields())->toArray(),
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
         ]);
 
         RestaurantPolicy::query()->firstOrCreate(['restaurant_id' => $restaurant->id]);
         $this->syncRestaurantFeatures($restaurant, $validated);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
-        $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
+        $this->restaurantMenuSyncService->sync($restaurant, $validated);
 
         $this->logAdminAudit(
             $request,
@@ -150,28 +143,20 @@ class AdminRestaurantController extends Controller
     {
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
-        $validated = $request->validated();
+        $validated = $request->validatedWithMenuUploads();
+
         if (array_key_exists('name', $validated) && empty($validated['slug'])) {
             $validated['slug'] = str($validated['name'])->slug()->toString();
         }
 
         $oldValues = $restaurant->only(['name', 'slug', 'status', 'is_featured']);
         $restaurant->update(
-            collect($validated)->except([
-                'featured_image',
-                'featured_image_alt_text',
-                'gallery_images',
-                'gallery_image_alt_texts',
-                'menu_document',
-                'cuisines',
-                'hours',
-                'policy',
-            ])->toArray(),
+            collect($validated)->except($this->restaurantPersistExcludedFields())->toArray(),
         );
 
         $this->syncRestaurantFeatures($restaurant, $validated);
         $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
-        $this->mediaLibraryService->syncMenuDocument($restaurant, $validated['menu_document'] ?? null);
+        $this->restaurantMenuSyncService->sync($restaurant, $validated);
 
         $this->logAdminAudit(
             $request,
@@ -312,6 +297,32 @@ class AdminRestaurantController extends Controller
                 ->with(['user.roles', 'role.permissions', 'accessConfig', 'assignedBy'])
                 ->whereHas('role', fn ($roleQuery) => $roleQuery->whereIn('name', Role::allRestaurantStaffRoles())),
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function restaurantPersistExcludedFields(): array
+    {
+        return [
+            'featured_image',
+            'featured_image_alt_text',
+            'gallery_images',
+            'gallery_image_alt_texts',
+            'gallery_category_ids',
+            'menu',
+            'menu_document',
+            'menu_source',
+            'menu_link',
+            'cuisines',
+            'cuisine_type',
+            'restaurant_logo',
+            'restaurant_photos',
+            'hours',
+            'policy',
+            'booking_window_days',
+            'reservation_duration_minutes',
+        ];
     }
 
     /**
