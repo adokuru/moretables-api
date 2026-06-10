@@ -7,7 +7,6 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantShift;
 use App\Models\User;
-use App\ReservationSource;
 use App\ReservationStatus;
 use App\Services\RestaurantShiftService;
 use Carbon\CarbonImmutable;
@@ -76,8 +75,8 @@ class ReportingQueryService
             ];
         }
 
-        $chart = $this->buildResWalkChart($current, $context);
-        $sourceStats = $this->buildSourceStatsSeries($current, $context);
+        $chart = $this->buildResWalkChart($current, $context, $restaurant);
+        $sourceStats = $this->buildSourceStatsSeries($current, $context, $restaurant);
         $circleStats = [
             'resPct' => $totalCovers > 0 ? round(($resCovers / $totalCovers) * 100, 1) : 0.0,
             'walkPct' => $totalCovers > 0 ? round(($walkCovers / $totalCovers) * 100, 1) : 0.0,
@@ -504,7 +503,7 @@ class ReportingQueryService
         return $this->loadReservations($query);
     }
 
-  /**
+    /**
      * @param  EloquentCollection<int, Reservation>  $reservations
      */
     private function sumCovers(EloquentCollection|Collection $reservations): int
@@ -553,9 +552,13 @@ class ReportingQueryService
      * @param  EloquentCollection<int, Reservation>  $reservations
      * @return list<array{name: string, res: int, walk: int}>
      */
-    private function buildResWalkChart(EloquentCollection $reservations, ReportingFilterContext $context): array
+    private function buildResWalkChart(EloquentCollection $reservations, ReportingFilterContext $context, ?Restaurant $restaurant = null): array
     {
-        $grouped = $reservations->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context));
+        $labelFn = ($context->chartGroup === 'shift' && $restaurant !== null)
+            ? fn (Reservation $r) => $this->shiftLabel($r, $restaurant, $context)
+            : fn (Reservation $r) => $this->periodLabel($r->starts_at, $context);
+
+        $grouped = $reservations->groupBy($labelFn);
 
         return $grouped->map(function (Collection $items, string $name): array {
             $walk = $this->sumCovers($items->filter(fn (Reservation $r) => ReportingSourceMapper::isWalkIn($r->source)));
@@ -572,10 +575,14 @@ class ReportingQueryService
      * @param  EloquentCollection<int, Reservation>  $reservations
      * @return list<array{name: string, walkin: int, phone: int, network: int, moretables: int}>
      */
-    private function buildSourceStatsSeries(EloquentCollection $reservations, ReportingFilterContext $context): array
+    private function buildSourceStatsSeries(EloquentCollection $reservations, ReportingFilterContext $context, ?Restaurant $restaurant = null): array
     {
+        $labelFn = ($context->chartGroup === 'shift' && $restaurant !== null)
+            ? fn (Reservation $r) => $this->shiftLabel($r, $restaurant, $context)
+            : fn (Reservation $r) => $this->periodLabel($r->starts_at, $context);
+
         return $reservations
-            ->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context))
+            ->groupBy($labelFn)
             ->map(function (Collection $items, string $name): array {
                 $stats = $this->emptySourceStats($name);
                 foreach ($items as $reservation) {
@@ -634,9 +641,20 @@ class ReportingQueryService
     {
         $local = CarbonImmutable::parse($startsAt)->setTimezone($context->timezone);
 
-        return $context->dayCount <= 31
-            ? $local->format('M j')
-            : $local->format('M Y');
+        return match ($context->chartGroup) {
+            'month' => $local->format('M Y'),
+            'week' => 'W'.$local->isoWeek.' '.$local->format('Y'),
+            'day' => $local->format('M j'),
+            default => $context->dayCount <= 31 ? $local->format('M j') : $local->format('M Y'),
+        };
+    }
+
+    private function shiftLabel(Reservation $reservation, Restaurant $restaurant, ReportingFilterContext $context): string
+    {
+        $local = CarbonImmutable::parse($reservation->starts_at)->setTimezone($context->timezone);
+        $shift = $this->shiftService->resolveShiftForSlot($restaurant, $local);
+
+        return $shift?->name ?? 'Other';
     }
 
     /**

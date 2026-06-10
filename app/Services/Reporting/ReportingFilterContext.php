@@ -21,5 +21,6 @@ readonly class ReportingFilterContext
         public int $page,
         public int $perPage,
         public bool $export,
+        public string $chartGroup = 'auto',
     ) {}
 }

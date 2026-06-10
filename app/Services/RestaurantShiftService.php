@@ -121,7 +121,7 @@ class RestaurantShiftService
                     return false;
                 }
 
-                if ($rule->table_type !== null && $rule->table_type !== $table->table_type) {
+                if ($rule->table_type !== null && $rule->table_type->value !== $table->table_type) {
                     return false;
                 }
 

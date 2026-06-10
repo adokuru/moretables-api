@@ -142,6 +142,7 @@ class MerchantDiningAreaController extends Controller
                 'min_capacity' => $table['min_party_size'] ?? RestaurantTable::DEFAULT_MIN_CAPACITY,
                 'max_capacity' => $table['max_party_size'] ?? RestaurantTable::DEFAULT_MAX_CAPACITY,
                 'sort_order' => $index,
+                'table_type' => $existingTable?->table_type ?? 'regular',
             ];
 
             $existingTable = $existingTables->get($table['table_label']);
