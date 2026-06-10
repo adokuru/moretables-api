@@ -30,6 +30,8 @@ Route::prefix('auth')->group(function (): void {
         Route::get('staff/profile', [AuthController::class, 'profile']);
         Route::patch('staff/profile', [AuthController::class, 'updateProfile']);
         Route::patch('staff/profile/password', [AuthController::class, 'changeStaffPassword']);
+        Route::post('staff/profile/password/initiate', [AuthController::class, 'initiateStaffPasswordChange'])->middleware('throttle:auth-initiate');
+        Route::patch('staff/profile/password/confirm', [AuthController::class, 'confirmStaffPasswordChange'])->middleware('throttle:auth-verify');
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
