@@ -9,6 +9,7 @@ use App\Http\Resources\RestaurantMenuItemResource;
 use App\Models\Restaurant;
 use App\Models\RestaurantMenuItem;
 use App\Services\AuditLogService;
+use App\Services\MediaLibraryService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 
@@ -17,6 +18,7 @@ class MerchantMenuItemController extends Controller
 {
     public function __construct(
         protected AuditLogService $auditLogService,
+        protected MediaLibraryService $mediaLibraryService,
     ) {}
 
     public function index(Restaurant $restaurant): JsonResponse
@@ -71,6 +73,8 @@ class MerchantMenuItemController extends Controller
             'currency' => $validated['currency'] ?? 'NGN',
             'sort_order' => $validated['sort_order'] ?? ((int) $restaurant->menuItems()->max('sort_order') + 1),
         ]);
+
+        $this->mediaLibraryService->syncUploadedMedia($menuItem, $validated);
 
         $this->auditLogService->log(
             action: 'menu_item.created',

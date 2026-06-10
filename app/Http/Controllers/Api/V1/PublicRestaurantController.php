@@ -16,6 +16,7 @@ use App\Services\AvailabilityService;
 use App\Services\PerformanceCacheService;
 use App\Services\RestaurantReviewSummaryService;
 use App\Services\RestaurantSearchService;
+use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
@@ -242,7 +243,13 @@ class PublicRestaurantController extends Controller
      *
      * Returns 404 when the restaurant is not publicly listed (inactive or without an active or
      * trialing merchant subscription whose current billing period has not expired).
+     *
+     * When `time` is provided (H:i), only slots starting at or after that time on the requested date are returned.
      */
+    #[QueryParameter('date', type: 'string', required: true, example: '2026-06-09')]
+    #[QueryParameter('time', type: 'string', required: false, example: '13:30')]
+    #[QueryParameter('party_size', type: 'integer', required: true, example: 2)]
+    #[QueryParameter('timezone', type: 'string', required: false)]
     #[Response(429, type: 'array{message: string}')]
     public function availability(RestaurantAvailabilityRequest $request, Restaurant $restaurant): JsonResponse
     {
@@ -262,7 +269,7 @@ class PublicRestaurantController extends Controller
         if ($request->filled('time')) {
             $requestedTime = $request->string('time')->toString();
             $slots = array_values(array_filter($slots, function (array $slot) use ($requestedTime): bool {
-                return str_contains($slot['local_starts_at'], $requestedTime);
+                return Carbon::parse($slot['local_starts_at'])->format('H:i') >= $requestedTime;
             }));
         }
 

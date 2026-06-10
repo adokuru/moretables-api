@@ -120,6 +120,41 @@ it('returns slots for solo diners when the smallest table has a minimum capacity
     expect(Carbon::parse($response->json('slots.0.local_starts_at'))->format('H:i'))->toBe('18:00');
 });
 
+it('returns requested time and all later slots when time query parameter is provided', function () {
+    $data = createListedBookableRestaurant();
+    $restaurant = $data['restaurant'];
+    $restaurant->update(['status' => RestaurantStatus::Active, 'timezone' => 'UTC']);
+
+    $tomorrow = Carbon::tomorrow('UTC');
+    $dayOfWeek = $tomorrow->dayOfWeek;
+
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
+    RestaurantHour::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'day_of_week' => $dayOfWeek,
+        'opens_at' => '13:00',
+        'closes_at' => '21:00',
+        'is_closed' => false,
+    ]);
+
+    $response = $this->getJson(availUrl($restaurant->slug, $tomorrow->format('Y-m-d'), 2, '13:30'));
+
+    $response->assertOk();
+
+    $times = collect($response->json('slots'))
+        ->pluck('local_starts_at')
+        ->map(fn ($t) => Carbon::parse($t)->format('H:i'))
+        ->values()
+        ->all();
+
+    expect($times)->not->toBeEmpty();
+    expect($times)->toContain('13:30');
+    expect($times)->toContain('13:45');
+    expect($times)->toContain('14:00');
+    expect($times)->not->toContain('13:00');
+    expect($times)->not->toContain('13:15');
+});
+
 // ── Meal schedules preferred over legacy hours ────────────────────────────────
 
 it('uses meal schedules when both meal schedules and hours exist', function () {

@@ -998,7 +998,7 @@
        }
       ],
       "url": {
-       "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/availability?date=2025-03-20&party_size=2",
+       "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_id}}/availability?date=2025-03-20&time=13:30&party_size=2",
        "host": [
         "{{baseUrl}}"
        ],
@@ -1015,12 +1015,17 @@
          "value": "2025-03-20"
         },
         {
+         "key": "time",
+         "value": "13:30",
+         "description": "Optional earliest slot time (H:i). When provided, returns slots starting at or after this time on the requested date."
+        },
+        {
          "key": "party_size",
          "value": "2"
         }
        ]
       },
-      "description": "Live reservation availability. Returns 404 when the restaurant is inactive or does not have an active or trialing merchant subscription."
+      "description": "Live reservation availability. Optional time filters slots to those starting at or after the given H:i value on the requested date. Returns 404 when the restaurant is inactive or does not have an active or trialing merchant subscription."
      }
     },
     {
@@ -3632,10 +3637,6 @@
        {
         "key": "Accept",
         "value": "application/json"
-       },
-       {
-        "key": "Content-Type",
-        "value": "application/json"
        }
       ],
       "url": {
@@ -3662,9 +3663,53 @@
         }
        ]
       },
+      "description": "Create a menu item. Send JSON (raw) or multipart form-data when attaching images. Optional media fields: featured_image (file), featured_image_alt_text, gallery_images[] (files), gallery_image_alt_texts[], gallery_category_ids[].",
       "body": {
-       "mode": "raw",
-       "raw": "{\n  \"section_name\": \"Mains\",\n  \"item_name\": \"House Burger\",\n  \"description\": \"Optional description\",\n  \"price\": 15.99,\n  \"currency\": \"USD\",\n  \"sort_order\": 0\n}"
+       "mode": "formdata",
+       "formdata": [
+        {
+         "key": "section_name",
+         "value": "Mains",
+         "type": "text"
+        },
+        {
+         "key": "item_name",
+         "value": "House Burger",
+         "type": "text"
+        },
+        {
+         "key": "description",
+         "value": "Optional description",
+         "type": "text"
+        },
+        {
+         "key": "price",
+         "value": "15.99",
+         "type": "text"
+        },
+        {
+         "key": "currency",
+         "value": "USD",
+         "type": "text"
+        },
+        {
+         "key": "sort_order",
+         "value": "0",
+         "type": "text"
+        },
+        {
+         "key": "featured_image",
+         "type": "file",
+         "src": [],
+         "description": "Optional featured image (jpg, jpeg, png, webp; max 10MB)"
+        },
+        {
+         "key": "featured_image_alt_text",
+         "value": "House burger",
+         "type": "text",
+         "description": "Optional alt text for featured image"
+        }
+       ]
       }
      }
     },

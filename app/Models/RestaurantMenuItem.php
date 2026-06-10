@@ -26,12 +26,14 @@ class RestaurantMenuItem extends Model implements HasMedia
         'price',
         'currency',
         'sort_order',
+        'is_featured',
     ];
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
+            'is_featured' => 'boolean',
         ];
     }
 

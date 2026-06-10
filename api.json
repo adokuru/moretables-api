@@ -359,7 +359,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
+                        "description": "Paginated list of publicly listed restaurants (active with active or trialing merchant subscription).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -417,7 +417,23 @@
                         }
                     },
                     "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
+                        "description": "Restaurant is inactive or does not have an active or trialing merchant subscription.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -425,7 +441,7 @@
         "/restaurants/{restaurant}/availability": {
             "get": {
                 "operationId": "publicRestaurant.availability",
-                "description": "Returns 404 when the restaurant is not publicly listed (inactive or without an active or\ntrialing merchant subscription whose current billing period has not expired).",
+                "description": "Returns 404 when the restaurant is not publicly listed (inactive or without an active or\ntrialing merchant subscription whose current billing period has not expired).\n\nWhen `time` is provided (H:i), only slots starting at or after that time on the requested date are returned.",
                 "summary": "Live reservation availability for a publicly listed restaurant",
                 "tags": [
                     "Public Restaurants"
@@ -445,37 +461,32 @@
                         "in": "query",
                         "required": true,
                         "schema": {
-                            "type": "string",
-                            "format": "date"
-                        }
+                            "type": "string"
+                        },
+                        "example": "2026-06-09"
                     },
                     {
                         "name": "time",
                         "in": "query",
                         "schema": {
-                            "type": [
-                                "string",
-                                "null"
-                            ]
-                        }
+                            "type": "string"
+                        },
+                        "example": "13:30"
                     },
                     {
                         "name": "party_size",
                         "in": "query",
                         "required": true,
                         "schema": {
-                            "type": "integer",
-                            "minimum": 1
-                        }
+                            "type": "integer"
+                        },
+                        "example": 2
                     },
                     {
                         "name": "timezone",
                         "in": "query",
                         "schema": {
-                            "type": [
-                                "string",
-                                "null"
-                            ]
+                            "type": "string"
                         }
                     }
                 ],
@@ -8312,7 +8323,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/StoreRestaurantMenuItemRequest"
                             }
@@ -32977,6 +32988,59 @@
                             "null"
                         ],
                         "minimum": 0
+                    },
+                    "featured_image": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "maxLength": 10240
+                    },
+                    "featured_image_alt_text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "gallery_images": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        }
+                    },
+                    "gallery_image_alt_texts": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    "gallery_category_ids": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
                     }
                 },
                 "required": [

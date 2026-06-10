@@ -44,8 +44,8 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
         $restaurantName = $this->reservation->restaurant->name;
 
         return ExpoPushMessage::make(
-            title: 'Reservation update',
-            body: "Your reservation at {$restaurantName} was {$this->action}.",
+            title: $this->pushTitle(),
+            body: $this->pushBody($restaurantName),
         )->data([
             'type' => 'reservation_lifecycle',
             'reservation_id' => $this->reservation->id,
@@ -63,5 +63,29 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
             'reservation_id' => $this->reservation->id,
             'action' => $this->action,
         ];
+    }
+
+    protected function pushTitle(): string
+    {
+        return match ($this->action) {
+            'created' => 'New reservation',
+            'updated' => 'Reservation changed',
+            'cancelled' => 'Reservation canceled',
+            'guest_added' => 'Added to reservation',
+            'upcoming_reminder' => 'Reservation reminder',
+            default => 'Reservation update',
+        };
+    }
+
+    protected function pushBody(string $restaurantName): string
+    {
+        return match ($this->action) {
+            'created' => "Your reservation at {$restaurantName} is confirmed.",
+            'updated' => "Your reservation at {$restaurantName} has been updated.",
+            'cancelled' => "Your reservation at {$restaurantName} was canceled.",
+            'guest_added' => "You've been added to a reservation at {$restaurantName}.",
+            'upcoming_reminder' => "Your reservation at {$restaurantName} is coming up soon.",
+            default => "There is an update to your reservation at {$restaurantName}.",
+        };
     }
 }

@@ -93,10 +93,14 @@ Regards,
 
 ### Push
 
-| Field | Value |
-|-------|--------|
-| **Title** | `Reservation update` |
-| **Body** | `Your reservation at {restaurantName} was {action}.` |
+| Action | Title | Body |
+|--------|-------|------|
+| **created** | `New reservation` | `Your reservation at {restaurantName} is confirmed.` |
+| **updated** | `Reservation changed` | `Your reservation at {restaurantName} has been updated.` |
+| **cancelled** | `Reservation canceled` | `Your reservation at {restaurantName} was canceled.` |
+| **guest_added** | `Added to reservation` | `You've been added to a reservation at {restaurantName}.` |
+| **upcoming_reminder** | `Reservation reminder` | `Your reservation at {restaurantName} is coming up soon.` |
+| *(other)* | `Reservation update` | `There is an update to your reservation at {restaurantName}.` |
 
 **Data payload (JSON keys):**
 

@@ -21,8 +21,9 @@ class AvailabilityService
 
     public function calculateEndTime(Restaurant $restaurant, CarbonInterface $startsAt, ?int $partySize = null): Carbon
     {
+        $parsedStartsAt = Carbon::parse($startsAt);
         $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
-        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $localStartsAt = $parsedStartsAt->copy()->setTimezone($restaurantTimezone);
         $fallbackDuration = $restaurant->policy?->reservation_duration_minutes ?? 120;
         $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
         $duration = $fallbackDuration;
@@ -31,7 +32,7 @@ class AvailabilityService
             $duration = $this->restaurantShiftService->turnDurationForPartySize($shift, $partySize, $fallbackDuration);
         }
 
-        return $localStartsAt->copy()->addMinutes($duration);
+        return $localStartsAt->copy()->addMinutes($duration)->setTimezone($parsedStartsAt->timezone);
     }
 
     public function isBookableAt(Restaurant $restaurant, CarbonInterface $startsAt, ?int $partySize = null): bool

@@ -410,3 +410,26 @@ it('renders the registered user reservation email with the branded centered temp
         ->and($html)->toContain('Add to calendar')
         ->and($html)->not->toContain('was created.');
 });
+
+it('renders action-specific expo push copy for reservation lifecycle notifications', function (string $action, string $title, string $body): void {
+    $restaurant = Restaurant::factory()->create([
+        'name' => 'Pepp & Dolores',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $user = User::factory()->create();
+
+    $pushMessage = (new ReservationLifecycleNotification($reservation, $action))->toExpoPush($user);
+
+    expect($pushMessage->title)->toBe($title)
+        ->and($pushMessage->body)->toBe($body)
+        ->and($pushMessage->data['type'])->toBe('reservation_lifecycle')
+        ->and($pushMessage->data['action'])->toBe($action);
+})->with([
+    'created' => ['created', 'New reservation', 'Your reservation at Pepp & Dolores is confirmed.'],
+    'updated' => ['updated', 'Reservation changed', 'Your reservation at Pepp & Dolores has been updated.'],
+    'cancelled' => ['cancelled', 'Reservation canceled', 'Your reservation at Pepp & Dolores was canceled.'],
+]);
