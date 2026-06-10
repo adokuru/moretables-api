@@ -147,6 +147,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantRewardRule::class);
     }
 
+    public function cancellationPolicies(): HasMany
+    {
+        return $this->hasMany(RestaurantCancellationPolicy::class)->orderBy('sort_order');
+    }
+
     public function tableCombinations(): HasMany
     {
         return $this->hasMany(TableCombination::class);

@@ -3,6 +3,7 @@
 use App\Models\Organization;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantAvailabilitySchedule;
+use App\Models\RestaurantCancellationPolicy;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
@@ -212,6 +213,38 @@ it('uses meal schedules to summarize public restaurant detail hours', function (
         ->assertJsonPath('data.meal_types.0.schedules.0.opens_at', '06:00')
         ->assertJsonPath('data.meal_types.1.name', 'Dinner')
         ->assertJsonPath('data.meal_schedules.0.restaurant_meal_type_id', $breakfast->id);
+});
+
+it('exposes booking policy and active cancellation policies on public restaurant detail', function () {
+    $restaurant = createListedRestaurant();
+
+    RestaurantPolicy::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'booking_details_locale' => 'en',
+        'custom_dining_policy' => 'Guests are required to arrive within fifteen minutes of their reserved time. Reservations held beyond this window may be released to other diners.',
+    ]);
+
+    $activePolicy = RestaurantCancellationPolicy::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Weekend card hold',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+
+    RestaurantCancellationPolicy::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Inactive policy',
+        'is_active' => false,
+    ]);
+
+    $response = $this->getJson('/api/v1/restaurants/'.$restaurant->slug);
+
+    $response->assertOk()
+        ->assertJsonPath('data.policy.booking_details_locale', 'en')
+        ->assertJsonPath('data.policy.custom_dining_policy', 'Guests are required to arrive within fifteen minutes of their reserved time. Reservations held beyond this window may be released to other diners.')
+        ->assertJsonCount(1, 'data.cancellation_policies')
+        ->assertJsonPath('data.cancellation_policies.0.id', $activePolicy->id)
+        ->assertJsonPath('data.cancellation_policies.0.name', 'Weekend card hold');
 });
 
 it('only includes internal notes for users who can access the restaurant', function () {

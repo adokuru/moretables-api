@@ -14,6 +14,8 @@ class RestaurantPolicy extends Model
 
     protected $fillable = [
         'restaurant_id',
+        'booking_details_locale',
+        'custom_dining_policy',
         'reservation_duration_minutes',
         'booking_window_days',
         'cancellation_cutoff_hours',

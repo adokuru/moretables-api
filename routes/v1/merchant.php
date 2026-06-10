@@ -13,7 +13,10 @@ use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
 use App\Http\Controllers\Api\V1\MerchantMenuCategoryController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
+use App\Http\Controllers\Api\V1\MerchantReportingController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantBookingPolicyController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantCancellationPolicyController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGuestController;
@@ -21,7 +24,6 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantInternalNoteController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMediaController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantMenuDocumentController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
-use App\Http\Controllers\Api\V1\MerchantReportingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
@@ -78,6 +80,15 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::get('reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'show']);
         Route::match(['put', 'patch'], 'reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'update']);
         Route::delete('reward-rules/{rewardRule}', [MerchantRewardRuleController::class, 'destroy']);
+
+        Route::get('booking-policy', [MerchantRestaurantBookingPolicyController::class, 'show']);
+        Route::patch('booking-policy', [MerchantRestaurantBookingPolicyController::class, 'update']);
+
+        Route::get('cancellation-policies', [MerchantRestaurantCancellationPolicyController::class, 'index']);
+        Route::post('cancellation-policies', [MerchantRestaurantCancellationPolicyController::class, 'store']);
+        Route::get('cancellation-policies/{cancellationPolicy}', [MerchantRestaurantCancellationPolicyController::class, 'show']);
+        Route::match(['put', 'patch'], 'cancellation-policies/{cancellationPolicy}', [MerchantRestaurantCancellationPolicyController::class, 'update']);
+        Route::delete('cancellation-policies/{cancellationPolicy}', [MerchantRestaurantCancellationPolicyController::class, 'destroy']);
 
         Route::get('guests', [MerchantRestaurantGuestController::class, 'index']);
 

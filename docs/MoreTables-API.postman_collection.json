@@ -5729,6 +5729,222 @@
      ]
     },
     {
+     "name": "Show booking policy",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/booking-policy",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "booking-policy"
+       ]
+      },
+      "description": "Show the restaurant booking policy, including booking details locale and custom dining policy text shown to diners."
+     }
+    },
+    {
+     "name": "Update booking policy",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/booking-policy",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "booking-policy"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"booking_details_locale\": \"en\",\n  \"custom_dining_policy\": \"Guests are required to arrive within 15 minutes of their reserved time. Reservations held beyond this window may be released. We kindly ask that all diners respect the ambiance of the restaurant and adhere to our dress code policy. Large party bookings require a deposit to confirm the reservation.\"\n}"
+      },
+      "description": "Update booking details locale and custom dining policy text. `custom_dining_policy` must be 100-1000 characters when provided."
+     }
+    },
+    {
+     "name": "List cancellation policies",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/cancellation-policies",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "cancellation-policies"
+       ]
+      },
+      "description": "List cancellation and no-show policies for the restaurant."
+     }
+    },
+    {
+     "name": "Create cancellation policy",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/cancellation-policies",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "cancellation-policies"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"name\": \"Weekend card hold\",\n  \"management_method\": \"card_hold\",\n  \"party_size_scope\": \"all_party_sizes\",\n  \"hold_charge_amount\": 5000,\n  \"starts_on\": \"2026-01-23\",\n  \"ends_on\": \"2026-03-23\",\n  \"days\": [\n    5,\n    6\n  ],\n  \"is_active\": true\n}"
+      },
+      "description": "Create a cancellation or no-show policy. `management_method` is currently `card_hold`. `party_size_scope` can be `all_party_sizes`, `large_parties_only`, or `custom` (requires `min_party_size` and `max_party_size`). `days` are 0=Sunday..6=Saturday."
+     }
+    },
+    {
+     "name": "Show cancellation policy",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/cancellation-policies/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "cancellation-policies",
+        "1"
+       ]
+      },
+      "description": "Show a single cancellation or no-show policy."
+     }
+    },
+    {
+     "name": "Update cancellation policy",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/cancellation-policies/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "cancellation-policies",
+        "1"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"name\": \"Updated weekend hold\",\n  \"hold_charge_amount\": 7500\n}"
+      },
+      "description": "Update a cancellation or no-show policy."
+     }
+    },
+    {
+     "name": "Delete cancellation policy",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/cancellation-policies/1",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "cancellation-policies",
+        "1"
+       ]
+      },
+      "description": "Delete a cancellation or no-show policy."
+     }
+    },
+    {
      "name": "List reward rules",
      "request": {
       "method": "GET",

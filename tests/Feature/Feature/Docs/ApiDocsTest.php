@@ -102,6 +102,8 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/merchant/restaurants/{restaurant}/onboarding/meal-types']['get']['tags'][0])->toBe('Merchant Onboarding');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/shifts']['get']['tags'][0])->toBe('Merchant Shifts');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/shifts/{shift}']['get']['tags'][0])->toBe('Merchant Shifts');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/booking-policy']['get']['tags'][0])->toBe('Merchant Booking Policies');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/cancellation-policies']['get']['tags'][0])->toBe('Merchant Cancellation Policies');
     expect($specification['paths']['/cuisine-options']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['required'])->toContain('data', 'links', 'meta');
     expect($specification['paths']['/admin/organizations']['get']['responses']['200']['content']['application/json']['schema']['properties']['links']['required'])->toContain('first', 'last', 'prev', 'next');

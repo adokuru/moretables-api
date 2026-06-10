@@ -26,6 +26,8 @@ class RestaurantPolicyFactory extends Factory
             'min_party_size' => 1,
             'max_party_size' => 12,
             'deposit_required' => false,
+            'booking_details_locale' => 'en',
+            'custom_dining_policy' => 'Guests are required to arrive within fifteen minutes of their reserved time. Reservations held beyond this window may be released to other diners.',
         ];
     }
 }

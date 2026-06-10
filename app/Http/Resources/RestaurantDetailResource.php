@@ -138,15 +138,24 @@ class RestaurantDetailResource extends JsonResource
                 'opens_at' => $schedule->opens_at,
                 'closes_at' => $schedule->closes_at,
             ])->values()),
-            'policy' => $this->whenLoaded('policy', fn () => [
-                'reservation_duration_minutes' => $this->policy?->reservation_duration_minutes,
-                'booking_window_days' => $this->policy?->booking_window_days,
-                'cancellation_cutoff_hours' => $this->policy?->cancellation_cutoff_hours,
-                'min_party_size' => $this->policy?->min_party_size,
-                'max_party_size' => $this->policy?->max_party_size,
-                'large_party_threshold' => $this->policy?->large_party_threshold,
-                'deposit_required' => $this->policy?->deposit_required,
-            ]),
+            'policy' => $this->whenLoaded('policy', function (): array {
+                $customDiningPolicy = $this->policy?->custom_dining_policy;
+
+                return [
+                    'booking_details_locale' => $this->policy?->booking_details_locale ?? 'en',
+                    'custom_dining_policy' => $customDiningPolicy,
+                    'reservation_duration_minutes' => $this->policy?->reservation_duration_minutes,
+                    'booking_window_days' => $this->policy?->booking_window_days,
+                    'cancellation_cutoff_hours' => $this->policy?->cancellation_cutoff_hours,
+                    'min_party_size' => $this->policy?->min_party_size,
+                    'max_party_size' => $this->policy?->max_party_size,
+                    'large_party_threshold' => $this->policy?->large_party_threshold,
+                    'deposit_required' => $this->policy?->deposit_required,
+                ];
+            }),
+            'cancellation_policies' => RestaurantCancellationPolicyResource::collection(
+                $this->whenLoaded('cancellationPolicies'),
+            ),
             'menus' => $this->whenLoaded('menuItems', fn () => $this->menuItems
                 ->groupBy('section_name')
                 ->map(fn ($items, $section) => [

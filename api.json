@@ -81,6 +81,12 @@
             "name": "Merchant Special Days"
         },
         {
+            "name": "Merchant Booking Policies"
+        },
+        {
+            "name": "Merchant Cancellation Policies"
+        },
+        {
             "name": "Merchant Menu"
         },
         {
@@ -14079,6 +14085,471 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/booking-policy": {
+            "get": {
+                "operationId": "merchantRestaurantBookingPolicy.show",
+                "tags": [
+                    "Merchant Booking Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantBookingPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantBookingPolicyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "merchantRestaurantBookingPolicy.update",
+                "tags": [
+                    "Merchant Booking Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantBookingPolicyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantBookingPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantBookingPolicyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/cancellation-policies": {
+            "get": {
+                "operationId": "merchantRestaurantCancellationPolicy.index",
+                "tags": [
+                    "Merchant Cancellation Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `RestaurantCancellationPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "merchantRestaurantCancellationPolicy.store",
+                "summary": "Create a cancellation or no-show policy with optional date and time windows",
+                "tags": [
+                    "Merchant Cancellation Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreRestaurantCancellationPolicyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "`RestaurantCancellationPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/cancellation-policies/{cancellationPolicy}": {
+            "get": {
+                "operationId": "merchantRestaurantCancellationPolicy.show",
+                "tags": [
+                    "Merchant Cancellation Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cancellationPolicy",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cancellation policy ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantCancellationPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "merchantRestaurantCancellationPolicy.update",
+                "tags": [
+                    "Merchant Cancellation Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cancellationPolicy",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cancellation policy ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantCancellationPolicyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`RestaurantCancellationPolicyResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "merchantRestaurantCancellationPolicy.destroy",
+                "tags": [
+                    "Merchant Cancellation Policies"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "cancellationPolicy",
+                        "in": "path",
+                        "required": true,
+                        "description": "The cancellation policy ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Cancellation policy deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/menu-categories": {
             "get": {
                 "operationId": "merchantMenuCategory.index",
@@ -21765,7 +22236,7 @@
                 }
             },
             "patch": {
-                "operationId": "adminRestaurant.update",
+                "operationId": "v1.adminRestaurant.update_1",
                 "tags": [
                     "Admin Restaurants"
                 ],
@@ -21781,6 +22252,88 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAdminRestaurantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Restaurant updated successfully."
+                                        },
+                                        "restaurant": {
+                                            "$ref": "#/components/schemas/RestaurantDetailResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "restaurant"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1.adminRestaurant.update_2",
+                "tags": [
+                    "Admin Restaurants"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
@@ -27644,6 +28197,22 @@
                     "policy": {
                         "type": "object",
                         "properties": {
+                            "booking_details_locale": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "en"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "custom_dining_policy": {
+                                "type": "string"
+                            },
                             "reservation_duration_minutes": {
                                 "type": "string"
                             },
@@ -27667,6 +28236,8 @@
                             }
                         },
                         "required": [
+                            "booking_details_locale",
+                            "custom_dining_policy",
                             "reservation_duration_minutes",
                             "booking_window_days",
                             "cancellation_cutoff_hours",
@@ -27675,6 +28246,12 @@
                             "large_party_threshold",
                             "deposit_required"
                         ]
+                    },
+                    "cancellation_policies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                        }
                     },
                     "menus": {
                         "type": "string"
@@ -28403,6 +28980,22 @@
                     "is_active"
                 ],
                 "title": "BillingPlanResource"
+            },
+            "CancellationPolicyManagementMethod": {
+                "type": "string",
+                "enum": [
+                    "card_hold"
+                ],
+                "title": "CancellationPolicyManagementMethod"
+            },
+            "CancellationPolicyPartySizeScope": {
+                "type": "string",
+                "enum": [
+                    "all_party_sizes",
+                    "large_parties_only",
+                    "custom"
+                ],
+                "title": "CancellationPolicyPartySizeScope"
             },
             "ChangePasswordRequest": {
                 "type": "object",
@@ -29944,6 +30537,204 @@
                 ],
                 "title": "RestaurantAccessConfigResource"
             },
+            "RestaurantBookingPolicyResource": {
+                "type": "object",
+                "properties": {
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "booking_details_locale": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "en"
+                                ]
+                            }
+                        ]
+                    },
+                    "custom_dining_policy": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "custom_dining_policy_length": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "integer",
+                                "enum": [
+                                    0
+                                ]
+                            }
+                        ]
+                    },
+                    "custom_dining_policy_min_length": {
+                        "type": "integer",
+                        "const": 100
+                    },
+                    "custom_dining_policy_max_length": {
+                        "type": "integer",
+                        "const": 1000
+                    },
+                    "reservation_duration_minutes": {
+                        "type": "integer"
+                    },
+                    "booking_window_days": {
+                        "type": "integer"
+                    },
+                    "cancellation_cutoff_hours": {
+                        "type": "integer"
+                    },
+                    "min_party_size": {
+                        "type": "integer"
+                    },
+                    "max_party_size": {
+                        "type": "integer"
+                    },
+                    "large_party_threshold": {
+                        "type": "integer"
+                    },
+                    "deposit_required": {
+                        "type": "boolean"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "restaurant_id",
+                    "booking_details_locale",
+                    "custom_dining_policy",
+                    "custom_dining_policy_length",
+                    "custom_dining_policy_min_length",
+                    "custom_dining_policy_max_length",
+                    "reservation_duration_minutes",
+                    "booking_window_days",
+                    "cancellation_cutoff_hours",
+                    "min_party_size",
+                    "max_party_size",
+                    "large_party_threshold",
+                    "deposit_required",
+                    "updated_at"
+                ],
+                "title": "RestaurantBookingPolicyResource"
+            },
+            "RestaurantCancellationPolicyResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "restaurant_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "management_method": {
+                        "type": "string"
+                    },
+                    "party_size_scope": {
+                        "type": "string"
+                    },
+                    "min_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "max_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "hold_charge_amount": {
+                        "type": "integer"
+                    },
+                    "starts_on": {
+                        "type": "string"
+                    },
+                    "ends_on": {
+                        "type": "string"
+                    },
+                    "days": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "start_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "end_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "applies_all_day": {
+                        "type": "string"
+                    },
+                    "day_labels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "time_window_label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "restaurant_id",
+                    "name",
+                    "management_method",
+                    "party_size_scope",
+                    "min_party_size",
+                    "max_party_size",
+                    "hold_charge_amount",
+                    "starts_on",
+                    "ends_on",
+                    "days",
+                    "start_time",
+                    "end_time",
+                    "is_active",
+                    "sort_order",
+                    "applies_all_day",
+                    "day_labels",
+                    "time_window_label",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "RestaurantCancellationPolicyResource"
+            },
             "RestaurantDetailResource": {
                 "type": "object",
                 "properties": {
@@ -30327,6 +31118,22 @@
                     "policy": {
                         "type": "object",
                         "properties": {
+                            "booking_details_locale": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "en"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "custom_dining_policy": {
+                                "type": "string"
+                            },
                             "reservation_duration_minutes": {
                                 "type": "string"
                             },
@@ -30350,6 +31157,8 @@
                             }
                         },
                         "required": [
+                            "booking_details_locale",
+                            "custom_dining_policy",
                             "reservation_duration_minutes",
                             "booking_window_days",
                             "cancellation_cutoff_hours",
@@ -30358,6 +31167,12 @@
                             "large_party_threshold",
                             "deposit_required"
                         ]
+                    },
+                    "cancellation_policies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
+                        }
                     },
                     "menus": {
                         "type": "string"
@@ -32004,6 +32819,36 @@
                         "contentMediaType": "application/octet-stream",
                         "maxLength": 20480
                     },
+                    "cuisine_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "restaurant_logo": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "maxLength": 10240
+                    },
+                    "booking_window_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "reservation_duration_minutes": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 30
+                    },
                     "featured_image": {
                         "type": [
                             "string",
@@ -32095,6 +32940,165 @@
                             }
                         }
                     },
+                    "restaurant_photos": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        },
+                        "maxItems": 10
+                    },
+                    "menu": {
+                        "type": "object",
+                        "properties": {
+                            "mode": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "enum": [
+                                    "link",
+                                    "pdf",
+                                    "manual"
+                                ]
+                            },
+                            "link": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "pdf": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "binary",
+                                "contentMediaType": "application/octet-stream",
+                                "maxLength": 20480
+                            },
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 100
+                            },
+                            "currency": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 10
+                            },
+                            "items": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "maxLength": 255
+                                        },
+                                        "description": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "price": {
+                                            "type": "number",
+                                            "minimum": 0
+                                        }
+                                    }
+                                },
+                                "minItems": 1
+                            },
+                            "categories": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "maxLength": 100
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "maxLength": 255
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "maxLength": 200
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "minimum": 0
+                                                    },
+                                                    "is_featured": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "enum": [
+                                                            "0",
+                                                            "1",
+                                                            "0",
+                                                            "1",
+                                                            "1",
+                                                            ""
+                                                        ]
+                                                    },
+                                                    "image": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "format": "binary",
+                                                        "contentMediaType": "application/octet-stream",
+                                                        "maxLength": 2048
+                                                    }
+                                                },
+                                                "required": [
+                                                    "name",
+                                                    "price"
+                                                ]
+                                            },
+                                            "minItems": 1
+                                        }
+                                    }
+                                },
+                                "minItems": 1
+                            }
+                        }
+                    },
                     "gallery_images": {
                         "type": [
                             "array",
@@ -32169,7 +33173,8 @@
                 },
                 "required": [
                     "organization_id",
-                    "name"
+                    "name",
+                    "menu"
                 ],
                 "title": "StoreAdminRestaurantRequest"
             },
@@ -32957,6 +33962,92 @@
                     "party_size"
                 ],
                 "title": "StoreReservationRequest"
+            },
+            "StoreRestaurantCancellationPolicyRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "management_method": {
+                        "$ref": "#/components/schemas/CancellationPolicyManagementMethod"
+                    },
+                    "party_size_scope": {
+                        "$ref": "#/components/schemas/CancellationPolicyPartySizeScope"
+                    },
+                    "min_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 255
+                    },
+                    "max_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 255
+                    },
+                    "hold_charge_amount": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "starts_on": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "ends_on": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "start_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "end_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "days": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": [
+                    "name",
+                    "management_method",
+                    "party_size_scope",
+                    "hold_charge_amount",
+                    "days"
+                ],
+                "title": "StoreRestaurantCancellationPolicyRequest"
             },
             "StoreRestaurantListItemRequest": {
                 "type": "object",
@@ -34152,6 +35243,36 @@
                         "contentMediaType": "application/octet-stream",
                         "maxLength": 20480
                     },
+                    "cuisine_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
+                    "restaurant_logo": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
+                        "maxLength": 10240
+                    },
+                    "booking_window_days": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1
+                    },
+                    "reservation_duration_minutes": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 30
+                    },
                     "featured_image": {
                         "type": [
                             "string",
@@ -34243,6 +35364,165 @@
                             }
                         }
                     },
+                    "restaurant_photos": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string",
+                            "format": "binary",
+                            "contentMediaType": "application/octet-stream",
+                            "maxLength": 10240
+                        },
+                        "maxItems": 10
+                    },
+                    "menu": {
+                        "type": "object",
+                        "properties": {
+                            "mode": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "enum": [
+                                    "link",
+                                    "pdf",
+                                    "manual"
+                                ]
+                            },
+                            "link": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "uri",
+                                "maxLength": 2048
+                            },
+                            "pdf": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "format": "binary",
+                                "contentMediaType": "application/octet-stream",
+                                "maxLength": 20480
+                            },
+                            "name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 100
+                            },
+                            "currency": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "maxLength": 10
+                            },
+                            "items": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "maxLength": 255
+                                        },
+                                        "description": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "price": {
+                                            "type": "number",
+                                            "minimum": 0
+                                        }
+                                    }
+                                },
+                                "minItems": 1
+                            },
+                            "categories": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "maxLength": 100
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": [
+                                                            "integer",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "maxLength": 255
+                                                    },
+                                                    "description": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "maxLength": 200
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "minimum": 0
+                                                    },
+                                                    "is_featured": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "enum": [
+                                                            "0",
+                                                            "1",
+                                                            "0",
+                                                            "1",
+                                                            "1",
+                                                            ""
+                                                        ]
+                                                    },
+                                                    "image": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ],
+                                                        "format": "binary",
+                                                        "contentMediaType": "application/octet-stream",
+                                                        "maxLength": 2048
+                                                    }
+                                                },
+                                                "required": [
+                                                    "name",
+                                                    "price"
+                                                ]
+                                            },
+                                            "minItems": 1
+                                        }
+                                    }
+                                },
+                                "minItems": 1
+                            }
+                        }
+                    },
                     "gallery_images": {
                         "type": [
                             "array",
@@ -34315,6 +35595,9 @@
                         }
                     }
                 },
+                "required": [
+                    "menu"
+                ],
                 "title": "UpdateAdminRestaurantRequest"
             },
             "UpdateAdminReviewRequest": {
@@ -34967,6 +36250,103 @@
                     }
                 },
                 "title": "UpdateReservationRequest"
+            },
+            "UpdateRestaurantBookingPolicyRequest": {
+                "type": "object",
+                "properties": {
+                    "booking_details_locale": {
+                        "type": "string",
+                        "maxLength": 10
+                    },
+                    "custom_dining_policy": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 100,
+                        "maxLength": 1000
+                    }
+                },
+                "title": "UpdateRestaurantBookingPolicyRequest"
+            },
+            "UpdateRestaurantCancellationPolicyRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "management_method": {
+                        "$ref": "#/components/schemas/CancellationPolicyManagementMethod"
+                    },
+                    "party_size_scope": {
+                        "$ref": "#/components/schemas/CancellationPolicyPartySizeScope"
+                    },
+                    "min_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 255
+                    },
+                    "max_party_size": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 255
+                    },
+                    "hold_charge_amount": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "starts_on": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "ends_on": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "start_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "end_time": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "days": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 6
+                        },
+                        "minItems": 1
+                    }
+                },
+                "title": "UpdateRestaurantCancellationPolicyRequest"
             },
             "UpdateRestaurantListRequest": {
                 "type": "object",
@@ -36059,7 +37439,11 @@
                         "minimum": 1
                     },
                     "table_type": {
-                        "$ref": "#/components/schemas/TableType"
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 50
                     },
                     "shape": {
                         "$ref": "#/components/schemas/TableShape"
