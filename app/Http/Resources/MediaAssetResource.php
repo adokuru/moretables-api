@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\MediaUrlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -22,7 +23,7 @@ class MediaAssetResource extends JsonResource
             'featured' => $this->collection_name === 'featured',
             'alt_text' => $this->getCustomProperty('alt_text'),
             'gallery_category_id' => $this->getCustomProperty('gallery_category_id'),
-            'original_url' => $this->getUrl(),
+            'original_url' => app(MediaUrlService::class)->originalUrl($this->resource),
             'thumb_url' => $this->getAvailableUrl(['thumb']),
             'card_url' => $this->getAvailableUrl(['card']),
         ];

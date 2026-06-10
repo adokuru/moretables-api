@@ -2,18 +2,26 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Admin\Concerns\ValidatesAdminRestaurantMenu;
 use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateAdminRestaurantRequest extends FormRequest
 {
     use HasMediaUploadFields;
+    use ValidatesAdminRestaurantMenu;
 
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareAdminRestaurantFrontendPayload();
     }
 
     public function rules(): array
@@ -66,7 +74,18 @@ class UpdateAdminRestaurantRequest extends FormRequest
             'policy.min_party_size' => ['nullable', 'integer', 'min:1'],
             'policy.max_party_size' => ['nullable', 'integer', 'gte:policy.min_party_size'],
             'policy.deposit_required' => ['nullable', 'boolean'],
+            ...$this->adminRestaurantFrontendAliasRules(),
+            ...$this->adminRestaurantMenuRules(),
             ...$this->mediaUploadRules(),
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $this->validateAdminRestaurantMenu($validator);
+            },
         ];
     }
 }

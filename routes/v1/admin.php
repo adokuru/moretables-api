@@ -78,6 +78,7 @@ Route::middleware(['auth:sanctum', 'admin.access', 'throttle:admin-api'])->prefi
     Route::post('restaurants', [AdminRestaurantController::class, 'store']);
     Route::get('restaurants/{restaurant}', [AdminRestaurantController::class, 'show']);
     Route::patch('restaurants/{restaurant}', [AdminRestaurantController::class, 'update']);
+    Route::post('restaurants/{restaurant}', [AdminRestaurantController::class, 'update']);
     Route::delete('restaurants/{restaurant}', [AdminRestaurantController::class, 'destroy']);
     Route::post('restaurants/{restaurant}/invite-owner', [AdminRestaurantController::class, 'inviteOwner']);
     Route::patch('restaurants/{restaurant}/status', [AdminRestaurantController::class, 'updateStatus']);
