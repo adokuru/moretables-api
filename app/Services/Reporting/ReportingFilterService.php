@@ -51,6 +51,7 @@ class ReportingFilterService
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'export' => ['nullable', 'boolean'],
+            'chart_group' => ['nullable', 'string', Rule::in(['auto', 'month', 'week', 'day', 'shift'])],
         ];
 
         if ($options['include_status'] ?? false) {
@@ -121,6 +122,7 @@ class ReportingFilterService
             page: (int) ($validated['page'] ?? 1),
             perPage: (int) ($validated['per_page'] ?? 20),
             export: (bool) ($validated['export'] ?? false),
+            chartGroup: $validated['chart_group'] ?? 'auto',
         );
     }
 
@@ -160,6 +162,7 @@ class ReportingFilterService
             page: $context->page,
             perPage: $context->perPage,
             export: $context->export,
+            chartGroup: $context->chartGroup,
         );
 
         $this->applyWindowFilters($query, $restaurant, $compareContext);
