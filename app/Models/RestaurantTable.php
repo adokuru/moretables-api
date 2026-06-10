@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\TableShape;
 use App\TableStatus;
-use App\TableType;
 use Database\Factories\RestaurantTableFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +22,7 @@ class RestaurantTable extends Model
     protected $attributes = [
         'min_capacity' => self::DEFAULT_MIN_CAPACITY,
         'max_capacity' => self::DEFAULT_MAX_CAPACITY,
+        'table_type' => 'regular',
     ];
 
     protected $fillable = [
@@ -50,7 +50,6 @@ class RestaurantTable extends Model
     protected function casts(): array
     {
         return [
-            'table_type' => TableType::class,
             'shape' => TableShape::class,
             'status' => TableStatus::class,
             'is_active' => 'boolean',

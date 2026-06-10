@@ -4,7 +4,6 @@ namespace App\Http\Requests\Merchant;
 
 use App\TableShape;
 use App\TableStatus;
-use App\TableType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +23,7 @@ class UpdateRestaurantTableRequest extends FormRequest
                 ->ignore($this->table->id)],
             'min_capacity' => ['nullable', 'integer', 'min:1'],
             'max_capacity' => ['sometimes', 'integer', 'min:1', 'gte:min_capacity'],
-            'table_type' => ['sometimes', Rule::enum(TableType::class)],
+            'table_type' => ['sometimes', 'nullable', 'string', 'max:50'],
             'shape' => ['sometimes', Rule::enum(TableShape::class)],
             'status' => ['nullable', Rule::enum(TableStatus::class)],
             'is_active' => ['nullable', 'boolean'],

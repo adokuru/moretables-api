@@ -23,7 +23,7 @@ class RestaurantTableResource extends JsonResource
             'max_capacity' => $this->max_capacity,
             'min_party_size' => $this->min_capacity,
             'max_party_size' => $this->max_capacity,
-            'table_type' => $this->table_type?->value,
+            'table_type' => $this->table_type,
             'shape' => $this->shape?->value,
             'status' => $this->status?->value,
             'is_active' => $this->is_active,
