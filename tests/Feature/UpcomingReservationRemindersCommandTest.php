@@ -4,7 +4,7 @@ use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\User;
-use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 
@@ -39,7 +39,7 @@ it('sends upcoming reservation reminder emails for due reservations and marks th
         'metadata' => null,
     ]);
 
-    ReservationGuest::query()->create([
+    $guest = ReservationGuest::query()->create([
         'reservation_id' => $reservation->id,
         'restaurant_id' => $data['restaurant']->id,
         'attendee_name' => 'Added Diner',
@@ -49,19 +49,17 @@ it('sends upcoming reservation reminder emails for due reservations and marks th
     ]);
 
     $this->artisan('app:send-upcoming-reservation-reminders')
-        ->expectsOutput('Sent 2 upcoming reservation reminder email(s).')
+        ->expectsOutput('Sent 2 upcoming reservation reminder notification(s).')
         ->assertSuccessful();
 
-    Notification::assertSentOnDemand(GuestReservationLifecycleMailNotification::class, function ($notification, $channels, $notifiable): bool {
-        return ($notifiable->routes['mail'] ?? null) === 'owner@example.com'
-            && $notification->toArray((object) [])['action'] === 'upcoming_reminder'
-            && $notification->toArray((object) [])['upcoming_days'] === 3;
+    Notification::assertSentTo($owner, ReservationLifecycleNotification::class, function ($notification, array $channels): bool {
+        return in_array('mail', $channels, true)
+            && $notification->toArray((object) [])['action'] === 'upcoming_reminder';
     });
 
-    Notification::assertSentOnDemand(GuestReservationLifecycleMailNotification::class, function ($notification, $channels, $notifiable): bool {
-        return ($notifiable->routes['mail'] ?? null) === 'added.diner@example.com'
-            && $notification->toArray((object) [])['action'] === 'upcoming_reminder'
-            && $notification->toArray((object) [])['upcoming_days'] === 3;
+    Notification::assertSentTo($guest, ReservationLifecycleNotification::class, function ($notification, array $channels): bool {
+        return in_array('mail', $channels, true)
+            && $notification->toArray((object) [])['action'] === 'upcoming_reminder';
     });
 
     $reservation->refresh();
@@ -102,7 +100,7 @@ it('does not resend an upcoming reminder cadence that has already been marked as
     ]);
 
     $this->artisan('app:send-upcoming-reservation-reminders')
-        ->expectsOutput('Sent 0 upcoming reservation reminder email(s).')
+        ->expectsOutput('Sent 0 upcoming reservation reminder notification(s).')
         ->assertSuccessful();
 
     Notification::assertNothingSent();

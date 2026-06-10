@@ -2925,6 +2925,51 @@
      }
     },
     {
+     "name": "Guest broadcast send",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"title\": \"Weekend special\",\n  \"message\": \"Join us this weekend for a special tasting menu.\",\n  \"audience\": \"all\",\n  \"guest_contact_ids\": []\n}"
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/broadcasts",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "broadcasts"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Sends an in-app + push notification broadcast to the restaurant's guests. audience is 'all' (every user with an active or completed reservation) or 'selected' (only users linked to the provided guest_contact_ids, which come from the merchant guests endpoint). No WhatsApp or email is sent."
+     }
+    },
+    {
      "name": "Guest communication show",
      "request": {
       "method": "GET",
@@ -7631,7 +7676,7 @@
         "value": "application/json"
        }
       ],
-       "url": {
+      "url": {
        "raw": "{{baseUrl}}/api/v1/admin/audit-logs?search=Tola&per_page=20&page=1",
        "host": [
         "{{baseUrl}}"

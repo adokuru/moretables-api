@@ -1,11 +1,12 @@
 <?php
 
+use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
-use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
+use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
 use Database\Seeders\BillingPlanSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -220,9 +221,14 @@ it('emails a guest when operations staff creates a walk-in reservation with gues
         ],
     ])->assertCreated();
 
-    Notification::assertSentOnDemand(GuestReservationLifecycleMailNotification::class, function ($notification, $channels, $notifiable): bool {
-        return ($notifiable->routes['mail'] ?? null) === 'guest.walkin@example.com';
-    });
+    Notification::assertSentTo(
+        GuestContact::query()->where('email', 'guest.walkin@example.com')->firstOrFail(),
+        ReservationLifecycleNotification::class,
+        function ($notification, array $channels): bool {
+            return in_array('mail', $channels, true)
+                && $notification->toArray((object) [])['action'] === 'created';
+        },
+    );
 });
 
 it('allows operations staff to notify waitlist guests', function () {

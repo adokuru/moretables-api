@@ -314,7 +314,7 @@ class RestaurantShiftService
             ->filter()
             ->unique();
 
-        $groups = $tables->groupBy(fn (RestaurantTable $table): string => (string) $table->dining_area_id.'|'.$table->table_type->value);
+        $groups = $tables->groupBy(fn (RestaurantTable $table): string => (string) $table->dining_area_id.'|'.$table->table_type);
 
         $rows = $groups->map(function ($group, string $key) use ($combinationAreaIds): array {
             [$diningAreaId] = explode('|', $key, 2);
@@ -387,7 +387,7 @@ class RestaurantShiftService
             ->unique();
 
         $groups = $tables->groupBy(
-            fn ($table): string => (string) $table->dining_area_id.'|'.$table->table_type->value
+            fn ($table): string => (string) $table->dining_area_id.'|'.$table->table_type
         );
 
         $rows = $groups

@@ -13,7 +13,6 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Models\WaitlistEntry;
-use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\GuestWaitlistOfferExpiredMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\GuestWaitlistTableUnavailableMailNotification;
@@ -241,11 +240,8 @@ class ReservationService
 
             event(new ReservationUpdated($reservation, 'updated'));
 
-            if ($reservation->user) {
-                $reservation->user->notify(new ReservationLifecycleNotification($reservation, 'updated'));
-            } elseif ($this->guestContactHasEmail($reservation->guestContact)) {
-                Notification::route('mail', $reservation->guestContact->email)
-                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $reservation->guestContact, 'updated'));
+            foreach ($reservation->notifiableParticipants() as $participant) {
+                $participant->notify(new ReservationLifecycleNotification($reservation, 'updated'));
             }
 
             return $reservation;
@@ -427,24 +423,19 @@ class ReservationService
                 ->values();
 
             foreach ($newlyAddedGuests as $guest) {
-                if (filter_var($guest->email_address, FILTER_VALIDATE_EMAIL) === false) {
-                    continue;
-                }
-
-                Notification::route('mail', $guest->email_address)
-                    ->notify(new GuestReservationLifecycleMailNotification($reservation, $guest, 'guest_added'));
+                $guest->notify(new ReservationLifecycleNotification($reservation, 'guest_added'));
             }
 
             return $reservation;
         });
     }
 
-    public function cancelReservation(Reservation $reservation, User $actor, string $action = 'cancelled'): Reservation
+    public function cancelReservation(Reservation $reservation, ?User $actor, string $action = 'cancelled'): Reservation
     {
         $reservation->forceFill([
             'status' => ReservationStatus::Cancelled,
             'canceled_at' => now(),
-            'canceled_by_user_id' => $actor->id,
+            'canceled_by_user_id' => $actor?->id,
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
@@ -460,11 +451,8 @@ class ReservationService
 
         event(new ReservationUpdated($reservation, $action));
 
-        if ($reservation->user) {
-            $reservation->user->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
-        } elseif ($this->guestContactHasEmail($reservation->guestContact)) {
-            Notification::route('mail', $reservation->guestContact->email)
-                ->notify(new GuestReservationLifecycleMailNotification($reservation, $reservation->guestContact, 'cancelled'));
+        foreach ($reservation->notifiableParticipants() as $participant) {
+            $participant->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
         }
 
         $this->dispatchAvailabilityAlertCheck($reservation);
@@ -935,9 +923,8 @@ class ReservationService
 
                 if ($user) {
                     $user->notify(new ReservationLifecycleNotification($reservation, 'created'));
-                } elseif ($this->guestContactHasEmail($guestContact)) {
-                    Notification::route('mail', $guestContact->email)
-                        ->notify(new GuestReservationLifecycleMailNotification($reservation, $guestContact, 'created'));
+                } elseif ($guestContact) {
+                    $guestContact->notify(new ReservationLifecycleNotification($reservation, 'created'));
                 }
 
                 return $reservation;

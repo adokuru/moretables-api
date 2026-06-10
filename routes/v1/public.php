@@ -14,7 +14,11 @@ use App\Http\Controllers\Api\V1\PublicRestaurantController;
 use App\Http\Controllers\Api\V1\PublicRestaurantDiscoveryController;
 use App\Http\Controllers\Api\V1\PublicRestaurantViewController;
 use App\Http\Controllers\Api\V1\RestaurantReviewController;
+use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify']);
+Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
 

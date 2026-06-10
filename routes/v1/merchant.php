@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
 use App\Http\Controllers\Api\V1\MerchantReportingController;
 use App\Http\Controllers\Api\V1\MerchantReservationController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantBookingPolicyController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantBroadcastController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantCancellationPolicyController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantGalleryCategoryController;
@@ -91,6 +92,8 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::delete('cancellation-policies/{cancellationPolicy}', [MerchantRestaurantCancellationPolicyController::class, 'destroy']);
 
         Route::get('guests', [MerchantRestaurantGuestController::class, 'index']);
+
+        Route::post('broadcasts', [MerchantRestaurantBroadcastController::class, 'store']);
 
         Route::get('guest-communication', [MerchantGuestCommunicationController::class, 'show']);
         Route::patch('guest-communication/automated-messaging', [MerchantGuestCommunicationController::class, 'updateAutomatedMessaging']);

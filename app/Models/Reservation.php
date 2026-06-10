@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class Reservation extends Model
 {
@@ -129,6 +131,55 @@ class Reservation extends Model
         }
 
         return array_values($guests);
+    }
+
+    /**
+     * Everyone who should be notified about this reservation: the primary booker
+     * (registered user or guest contact) plus the additional guests, deduplicated
+     * by email and phone so nobody receives the same notification twice.
+     *
+     * @return Collection<int, User|GuestContact|ReservationGuest>
+     */
+    public function notifiableParticipants(): Collection
+    {
+        $this->loadMissing(['user', 'guestContact', 'reservationGuests']);
+
+        $seenEmails = [];
+        $seenPhones = [];
+
+        $alreadySeen = function (?string $email, ?string $phone) use (&$seenEmails, &$seenPhones): bool {
+            $email = Str::lower(trim((string) $email));
+            $phone = preg_replace('/\D+/', '', (string) $phone) ?? '';
+
+            $duplicate = ($email !== '' && in_array($email, $seenEmails, true))
+                || ($phone !== '' && in_array($phone, $seenPhones, true));
+
+            if ($email !== '') {
+                $seenEmails[] = $email;
+            }
+
+            if ($phone !== '') {
+                $seenPhones[] = $phone;
+            }
+
+            return $duplicate;
+        };
+
+        $participants = collect();
+        $primaryBooker = $this->user ?? $this->guestContact;
+
+        if ($primaryBooker !== null) {
+            $alreadySeen($primaryBooker->email, $primaryBooker->phone);
+            $participants->push($primaryBooker);
+        }
+
+        foreach ($this->reservationGuests as $guest) {
+            if (! $alreadySeen($guest->email_address, $guest->phone_number)) {
+                $participants->push($guest);
+            }
+        }
+
+        return $participants;
     }
 
     public function hasUpcomingReminderSent(int $daysBefore): bool

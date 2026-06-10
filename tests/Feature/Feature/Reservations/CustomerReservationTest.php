@@ -6,7 +6,6 @@ use App\Models\ReservationGuest;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantSpecialDay;
 use App\Models\User;
-use App\Notifications\GuestReservationLifecycleMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
 use Illuminate\Support\Facades\Event;
@@ -270,10 +269,14 @@ it('emails a newly added diner when a customer adds a guest to a reservation', f
     ])->assertOk()
         ->assertJsonCount(1, 'reservation.guests');
 
-    Notification::assertSentOnDemand(GuestReservationLifecycleMailNotification::class, function ($notification, $channels, $notifiable): bool {
-        return ($notifiable->routes['mail'] ?? null) === 'added.diner@example.com'
-            && $notification->toArray((object) [])['action'] === 'guest_added';
-    });
+    Notification::assertSentTo(
+        ReservationGuest::query()->where('email_normalized', 'added.diner@example.com')->firstOrFail(),
+        ReservationLifecycleNotification::class,
+        function ($notification, array $channels): bool {
+            return in_array('mail', $channels, true)
+                && $notification->toArray((object) [])['action'] === 'guest_added';
+        },
+    );
 });
 
 it('removes a single guest via delete endpoint', function () {

@@ -2,17 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Models\GuestContact;
 use App\Models\Reservation;
-use App\Models\ReservationGuest;
-use App\Models\User;
-use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Notification;
 
 #[Signature('app:send-upcoming-reservation-reminders')]
 #[Description('Send upcoming reservation reminder emails for configured cadences')]
@@ -43,7 +38,7 @@ class SendUpcomingReservationReminders extends Command
             $sentReminderCount += $this->sendRemindersForCadence($daysBefore, $windowMinutes);
         }
 
-        $this->info("Sent {$sentReminderCount} upcoming reservation reminder email(s).");
+        $this->info("Sent {$sentReminderCount} upcoming reservation reminder notification(s).");
 
         return self::SUCCESS;
     }
@@ -60,27 +55,27 @@ class SendUpcomingReservationReminders extends Command
             ->get();
 
         $sentReminderCount = 0;
+        $hoursUntilReservation = $daysBefore * 24;
 
         foreach ($reservations as $reservation) {
             if ($reservation->hasUpcomingReminderSent($daysBefore)) {
                 continue;
             }
 
-            $recipients = $this->reminderRecipients($reservation);
+            $participants = $reservation->notifiableParticipants();
 
-            if ($recipients->isEmpty()) {
+            if ($participants->isEmpty()) {
                 continue;
             }
 
-            foreach ($recipients as $recipient) {
-                Notification::route('mail', $recipient['email'])
-                    ->notify(new GuestReservationLifecycleMailNotification(
-                        $reservation,
-                        $recipient['model'],
-                        'upcoming_reminder',
-                        $daysBefore,
-                    ));
+            $notification = new ReservationLifecycleNotification(
+                $reservation,
+                'upcoming_reminder',
+                $hoursUntilReservation,
+            );
 
+            foreach ($participants as $participant) {
+                $participant->notify($notification);
                 $sentReminderCount++;
             }
 
@@ -88,51 +83,5 @@ class SendUpcomingReservationReminders extends Command
         }
 
         return $sentReminderCount;
-    }
-
-    /**
-     * @return Collection<int, array{email: string, model: User|GuestContact|ReservationGuest}>
-     */
-    protected function reminderRecipients(Reservation $reservation): Collection
-    {
-        $recipients = collect();
-
-        if ($this->isValidEmail($reservation->user?->email)) {
-            $recipients->push([
-                'email' => $reservation->user->email,
-                'model' => $reservation->user,
-            ]);
-        }
-
-        if ($this->isValidEmail($reservation->guestContact?->email)) {
-            $recipients->push([
-                'email' => $reservation->guestContact->email,
-                'model' => $reservation->guestContact,
-            ]);
-        }
-
-        foreach ($reservation->reservationGuests as $guest) {
-            if (! $this->isValidEmail($guest->email_address)) {
-                continue;
-            }
-
-            $recipients->push([
-                'email' => $guest->email_address,
-                'model' => $guest,
-            ]);
-        }
-
-        return $recipients
-            ->unique(fn (array $recipient): string => strtolower($recipient['email']))
-            ->values();
-    }
-
-    protected function isValidEmail(?string $email): bool
-    {
-        if (! is_string($email) || $email === '') {
-            return false;
-        }
-
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 }

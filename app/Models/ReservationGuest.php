@@ -6,9 +6,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Notifications\Notifiable;
 
 class ReservationGuest extends Model
 {
+    use Notifiable;
+
+    public function routeNotificationForMail(): ?string
+    {
+        return $this->email_address;
+    }
+
+    public function routeNotificationForWhatsapp(): ?string
+    {
+        return $this->phone_number;
+    }
+
     protected $fillable = [
         'reservation_id',
         'restaurant_id',
