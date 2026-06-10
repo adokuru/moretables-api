@@ -6080,18 +6080,29 @@
        }
       ],
       "url": {
-       "raw": "{{baseUrl}}/api/v1/admin/users?account_type=merchant&search=musa@example.com&per_page=20&page=1",
+       "raw": "{{baseUrl}}/api/v1/admin/users?account_type=admin&search=&per_page=20&page=1",
        "host": [
         "{{baseUrl}}"
        ],
        "query": [
         {
          "key": "account_type",
-         "value": "merchant"
+         "value": "admin",
+         "description": "admin | merchant | customer"
         },
         {
          "key": "search",
-         "value": "musa@example.com"
+         "value": ""
+        },
+        {
+         "key": "status",
+         "value": "active",
+         "disabled": true
+        },
+        {
+         "key": "role",
+         "value": "business_admin",
+         "disabled": true
         },
         {
          "key": "per_page",
