@@ -468,6 +468,51 @@
      }
     },
     {
+     "name": "Staff \u2014 change password",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/auth/staff/profile/password",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "auth",
+        "staff",
+        "profile",
+        "password"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Change the authenticated merchant staff user's password. Requires correct current_password and merchant staff role.",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"current_password\": \"OldPassword1!\",\n  \"password\": \"NewPassword2@\",\n  \"password_confirmation\": \"NewPassword2@\"\n}"
+      }
+     }
+    },
+    {
      "name": "Staff \u2014 password forgot",
      "request": {
       "method": "POST",

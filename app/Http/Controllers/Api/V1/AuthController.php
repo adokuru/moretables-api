@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StaffLoginRequest;
@@ -128,6 +129,20 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user' => UserResource::make($user->refresh()->load('roles')),
+        ]);
+    }
+
+    public function changeStaffPassword(ChangePasswordRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
+
+        $user->fill(['password' => $request->validated('password')])->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
         ]);
     }
 

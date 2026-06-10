@@ -18,6 +18,7 @@ it('serves the generated api specification route', function () {
         '/auth/notifications/{notification}/read',
         '/auth/staff/login',
         '/auth/staff/profile',
+        '/auth/staff/profile/password',
         '/admin/auth/login',
         '/admin/auth/profile',
         '/admin/notifications',

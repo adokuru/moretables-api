@@ -29,6 +29,7 @@ Route::prefix('auth')->group(function (): void {
         Route::post('profile-picture', [ProfileSettingsController::class, 'updateProfilePicture']);
         Route::get('staff/profile', [AuthController::class, 'profile']);
         Route::patch('staff/profile', [AuthController::class, 'updateProfile']);
+        Route::patch('staff/profile/password', [AuthController::class, 'changeStaffPassword']);
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
