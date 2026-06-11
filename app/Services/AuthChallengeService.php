@@ -41,7 +41,11 @@ class AuthChallengeService
 
             $user->notify(new AuthChallengeCodeNotification(
                 code: $code,
-                purpose: $type === AuthChallengeType::GuestSignup ? 'verify your email' : 'finish signing in',
+                purpose: match ($type) {
+                    AuthChallengeType::GuestSignup => 'verify your email',
+                    AuthChallengeType::PasswordChange => 'confirm your password change',
+                    default => 'finish signing in',
+                },
                 expiresInMinutes: $ttlMinutes,
             ));
 
@@ -102,7 +106,11 @@ class AuthChallengeService
 
         $challenge->user->notify(new AuthChallengeCodeNotification(
             code: $code,
-            purpose: $challenge->type === AuthChallengeType::GuestSignup ? 'verify your email' : 'finish signing in',
+            purpose: match ($challenge->type) {
+                AuthChallengeType::GuestSignup => 'verify your email',
+                AuthChallengeType::PasswordChange => 'confirm your password change',
+                default => 'finish signing in',
+            },
             expiresInMinutes: $ttlMinutes,
         ));
 

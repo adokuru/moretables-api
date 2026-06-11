@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\ConfirmPasswordChangeRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\InitiatePasswordChangeRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StaffLoginRequest;
 use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
@@ -138,6 +140,44 @@ class AuthController extends Controller
         $user = $request->user();
 
         abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
+
+        $user->fill(['password' => $request->validated('password')])->save();
+
+        return response()->json([
+            'message' => 'Password changed successfully.',
+        ]);
+    }
+
+    public function initiateStaffPasswordChange(InitiatePasswordChangeRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
+
+        $challenge = $this->authChallengeService->create($user, AuthChallengeType::PasswordChange);
+
+        return response()->json([
+            'message' => 'A verification code has been sent to your email.',
+            'challenge_token' => $challenge->challenge_token,
+            'expires_at' => $challenge->code_expires_at->toIso8601String(),
+        ]);
+    }
+
+    public function confirmStaffPasswordChange(ConfirmPasswordChangeRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
+
+        $challenge = $this->authChallengeService->verify(
+            challengeToken: $request->validated('challenge_token'),
+            code: $request->validated('code'),
+            type: AuthChallengeType::PasswordChange,
+        );
+
+        abort_unless($challenge->user_id === $user->id, 403);
 
         $user->fill(['password' => $request->validated('password')])->save();
 
