@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantShiftController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantStaffController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantWidgetSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRewardRuleController;
 use App\Http\Controllers\Api\V1\MerchantTableCombinationController;
 use App\Http\Controllers\Api\V1\MerchantTableController;
@@ -84,6 +85,9 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         Route::get('booking-policy', [MerchantRestaurantBookingPolicyController::class, 'show']);
         Route::patch('booking-policy', [MerchantRestaurantBookingPolicyController::class, 'update']);
+
+        Route::get('widget-settings', [MerchantRestaurantWidgetSettingsController::class, 'show']);
+        Route::patch('widget-settings', [MerchantRestaurantWidgetSettingsController::class, 'update']);
 
         Route::get('cancellation-policies', [MerchantRestaurantCancellationPolicyController::class, 'index']);
         Route::post('cancellation-policies', [MerchantRestaurantCancellationPolicyController::class, 'store']);
