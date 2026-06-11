@@ -40,7 +40,7 @@ trait ValidatesRestaurantCancellationPolicyAttributes
             'days' => [$required, 'array', 'min:1'],
             'days.*' => ['integer', 'between:0,6', 'distinct'],
             'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'is_active' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0', 'max:65535'],
         ];
@@ -56,7 +56,6 @@ trait ValidatesRestaurantCancellationPolicyAttributes
             'days.*.between' => 'Days must be between 0 (Sunday) and 6 (Saturday).',
             'start_time.date_format' => 'Start time must use 24-hour HH:MM format (e.g. 18:00).',
             'end_time.date_format' => 'End time must use 24-hour HH:MM format (e.g. 22:00).',
-            'end_time.after' => 'End time must be after the start time.',
             'custom_dining_policy.min' => 'Custom dining policy must be at least 100 characters.',
             'custom_dining_policy.max' => 'Custom dining policy may not exceed 1000 characters.',
         ];
