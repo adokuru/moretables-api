@@ -71,7 +71,35 @@ class Restaurant extends Model implements HasMedia
         'is_profile_published',
         'contact_email_verified_at',
         'contact_phone_verified_at',
+        'widget_settings',
     ];
+
+    /**
+     * Defaults for the embeddable reservation widget. Stored settings are
+     * merged over these so older rows and partial updates stay complete.
+     *
+     * @var array<string, mixed>
+     */
+    public const WIDGET_SETTINGS_DEFAULTS = [
+        'enabled' => true,
+        'theme' => 'light',
+        'accent_color' => '#AF8C59',
+        'layout' => 'card',
+        'button_text' => 'Book a table',
+    ];
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function widgetSettingsWithDefaults(): array
+    {
+        $stored = is_array($this->widget_settings) ? $this->widget_settings : [];
+
+        return array_merge(
+            self::WIDGET_SETTINGS_DEFAULTS,
+            array_intersect_key($stored, self::WIDGET_SETTINGS_DEFAULTS),
+        );
+    }
 
     protected function casts(): array
     {
@@ -92,6 +120,7 @@ class Restaurant extends Model implements HasMedia
             'payment_options' => 'array',
             'accessibility_features' => 'array',
             'onboarding_progress' => 'array',
+            'widget_settings' => 'array',
             'is_profile_published' => 'boolean',
             'contact_email_verified_at' => 'datetime',
             'contact_phone_verified_at' => 'datetime',
