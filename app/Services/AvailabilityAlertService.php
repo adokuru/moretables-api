@@ -76,12 +76,17 @@ class AvailabilityAlertService
     public function processForRestaurant(Restaurant $restaurant, ?CarbonInterface $onDate = null): int
     {
         $cooldownMinutes = max(0, (int) config('reservations.availability_alerts.renotify_cooldown_minutes', 30));
+        $maxNotifications = max(1, (int) config('reservations.availability_alerts.max_notifications', 2));
         $notifiedCount = 0;
 
         $this->activeAlertsQuery($restaurant, $onDate)
             ->with(['restaurant', 'user'])
-            ->chunkById(100, function (Collection $alerts) use ($cooldownMinutes, &$notifiedCount): void {
+            ->chunkById(100, function (Collection $alerts) use ($cooldownMinutes, $maxNotifications, &$notifiedCount): void {
                 foreach ($alerts as $alert) {
+                    if ($alert->notification_count >= $maxNotifications) {
+                        continue;
+                    }
+
                     if ($this->isWithinCooldown($alert, $cooldownMinutes)) {
                         continue;
                     }
@@ -174,6 +179,7 @@ class AvailabilityAlertService
             $alert->forceFill([
                 'status' => WaitlistStatus::Notified,
                 'notified_at' => now(),
+                'notification_count' => $alert->notification_count + 1,
             ])->save();
 
             $alert->user?->notify(new AvailabilityAlertNotification($alert));

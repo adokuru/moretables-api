@@ -18,5 +18,6 @@ return [
     'availability_alerts' => [
         'renotify_cooldown_minutes' => (int) env('AVAILABILITY_ALERT_RENOTIFY_COOLDOWN_MINUTES', 30),
         'max_active_per_user' => (int) env('AVAILABILITY_ALERT_MAX_ACTIVE_PER_USER', 20),
+        'max_notifications' => (int) env('AVAILABILITY_ALERT_MAX_NOTIFICATIONS', 2),
     ],
 ];
