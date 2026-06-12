@@ -238,6 +238,60 @@ it('respects the renotify cooldown', function () {
     Notification::assertNothingSent();
 });
 
+it('stops notifying after the maximum number of notifications is reached', function () {
+    Notification::fake();
+    config()->set('reservations.availability_alerts.renotify_cooldown_minutes', 30);
+    config()->set('reservations.availability_alerts.max_notifications', 2);
+
+    $data = createBookableRestaurant();
+    $data['restaurant']->update(['timezone' => 'Africa/Lagos']);
+    $customer = User::factory()->create();
+    $window = availabilityAlertWindow();
+
+    $alert = WaitlistEntry::factory()->availabilityAlert()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'status' => WaitlistStatus::Notified,
+        'notified_at' => now()->subHours(2),
+        'notification_count' => 2,
+        'preferred_starts_at' => $window['start_utc'],
+        'preferred_ends_at' => $window['end_utc'],
+    ]);
+
+    $notified = app(AvailabilityAlertService::class)->processForRestaurant($data['restaurant']->fresh());
+
+    expect($notified)->toBe(0)
+        ->and($alert->fresh()->notification_count)->toBe(2);
+    Notification::assertNothingSent();
+});
+
+it('notifies at most twice across processing runs', function () {
+    Notification::fake();
+    config()->set('reservations.availability_alerts.renotify_cooldown_minutes', 0);
+    config()->set('reservations.availability_alerts.max_notifications', 2);
+
+    $data = createBookableRestaurant();
+    $data['restaurant']->update(['timezone' => 'Africa/Lagos']);
+    $customer = User::factory()->create();
+    $window = availabilityAlertWindow();
+
+    $alert = WaitlistEntry::factory()->availabilityAlert()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'preferred_starts_at' => $window['start_utc'],
+        'preferred_ends_at' => $window['end_utc'],
+    ]);
+
+    $service = app(AvailabilityAlertService::class);
+
+    expect($service->processForRestaurant($data['restaurant']->fresh()))->toBe(1)
+        ->and($service->processForRestaurant($data['restaurant']->fresh()))->toBe(1)
+        ->and($service->processForRestaurant($data['restaurant']->fresh()))->toBe(0)
+        ->and($alert->fresh()->notification_count)->toBe(2);
+
+    Notification::assertSentToTimes($customer, AvailabilityAlertNotification::class, 2);
+});
+
 it('dispatches an availability alert check when a reservation frees a table', function () {
     Queue::fake();
 
