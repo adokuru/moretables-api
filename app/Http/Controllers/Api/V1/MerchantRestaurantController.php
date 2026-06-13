@@ -38,7 +38,7 @@ class MerchantRestaurantController extends Controller
         );
 
         $restaurants = Restaurant::query()
-            ->with(['media', 'cuisines'])
+            ->with(['media', 'cuisines', 'organization'])
             ->when(! $hasGlobalAccess, function ($query) use ($assignments): void {
                 $restaurantIds = $assignments->whereNotNull('restaurant_id')->pluck('restaurant_id');
                 $orgIds = $assignments->whereNull('restaurant_id')->whereNotNull('organization_id')->pluck('organization_id');
@@ -60,6 +60,7 @@ class MerchantRestaurantController extends Controller
                 return [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
+                    'organization_name' => $restaurant->organization?->name,
                     'slug' => $restaurant->slug,
                     'status' => $restaurant->status?->value,
                     'city' => $restaurant->city,
