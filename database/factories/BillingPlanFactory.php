@@ -18,7 +18,7 @@ class BillingPlanFactory extends Factory
      */
     public function definition(): array
     {
-        $slug = $this->faker->randomElement(BillingPlanSlug::cases());
+        $slug = $this->resolveAvailableSlug();
 
         return [
             'name' => str($slug->value)->headline()->toString(),
@@ -37,5 +37,16 @@ class BillingPlanFactory extends Factory
             'is_active' => true,
             'sort_order' => $this->faker->numberBetween(1, 10),
         ];
+    }
+
+    private function resolveAvailableSlug(): BillingPlanSlug
+    {
+        foreach (BillingPlanSlug::cases() as $case) {
+            if (! BillingPlan::query()->where('slug', $case->value)->exists()) {
+                return $case;
+            }
+        }
+
+        return BillingPlanSlug::Foundation;
     }
 }
