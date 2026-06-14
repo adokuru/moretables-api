@@ -22,7 +22,7 @@ class MerchantSubscriptionFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'billing_plan_id' => BillingPlan::factory(),
+            'billing_plan_id' => fn () => BillingPlan::query()->value('id') ?? BillingPlan::factory()->create()->id,
             'provider' => 'paystack',
             'status' => MerchantSubscriptionStatus::Active,
             'provider_customer_code' => 'CUS_'.$this->faker->unique()->bothify('????????'),

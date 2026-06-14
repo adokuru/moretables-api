@@ -22,7 +22,7 @@ class MerchantInvoiceFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
-            'billing_plan_id' => BillingPlan::factory(),
+            'billing_plan_id' => fn () => BillingPlan::query()->value('id') ?? BillingPlan::factory()->create()->id,
             'invoice_number' => 'MT-INV-'.$this->faker->unique()->numerify('######'),
             'provider' => 'paystack',
             'provider_reference' => 'mt_'.$this->faker->unique()->bothify('????????'),
