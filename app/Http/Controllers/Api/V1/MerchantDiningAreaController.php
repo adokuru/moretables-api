@@ -24,10 +24,14 @@ class MerchantDiningAreaController extends Controller
         abort_unless(request()->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
         $tableType = request()->query('table_type');
+        $diningSpotId = request()->query('dining_spot_id');
 
         return response()->json(DiningAreaResource::collection(
             $restaurant->diningAreas()
-                ->with(['tables' => fn ($q) => $q->when($tableType, fn ($q) => $q->where('table_type', $tableType))])
+                ->with(['tables' => fn ($q) => $q
+                    ->when($tableType, fn ($q) => $q->where('table_type', $tableType))
+                    ->when($diningSpotId, fn ($q) => $q->where('dining_spot_id', $diningSpotId))
+                ])
                 ->orderBy('sort_order')
                 ->get()
         ));
