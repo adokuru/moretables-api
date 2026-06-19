@@ -30,7 +30,7 @@ class MerchantDiningAreaController extends Controller
             $restaurant->diningAreas()
                 ->with(['tables' => fn ($q) => $q
                     ->when($tableType, fn ($q) => $q->where('table_type', $tableType))
-                    ->when($diningSpotId, fn ($q) => $q->where('dining_spot_id', $diningSpotId))
+                    ->when($diningSpotId, fn ($q) => $q->where('dining_spot_id', $diningSpotId)),
                 ])
                 ->orderBy('sort_order')
                 ->get()
