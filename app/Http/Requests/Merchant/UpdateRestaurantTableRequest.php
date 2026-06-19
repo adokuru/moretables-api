@@ -34,6 +34,7 @@ class UpdateRestaurantTableRequest extends FormRequest
             'height' => ['nullable', 'integer', 'min:1'],
             'rotation' => ['nullable', 'integer', 'between:0,359'],
             'color' => ['nullable', 'string', 'max:20', 'regex:/^#(?:[0-9a-fA-F]{3}){1,2}$/'],
+            'dining_spot_id' => ['nullable', 'integer', 'exists:dining_spots,id'],
         ];
     }
 }

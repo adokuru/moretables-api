@@ -36,8 +36,8 @@ Content-Type: {{contentType}}
 Accept: {{accept}}
 
 {
-  "challenge_token": "72bc0a91-313d-41d6-866b-819bc0731cdd",
-  "code": "0297",
+  "challenge_token": "2722ae47-5a3e-4c55-87c7-d0e0116ccbad",
+  "code": "7014",
   "device_name": "local-http-client"
 }
 
@@ -63,21 +63,24 @@ Accept: {{accept}}
 Authorization: Bearer {{adminToken}}
 
 {
-  "business_name": "Wally Food",
+  "business_name": "Awwal Food",
   "business_phone": "+2348012345678",
-  "business_email": "infowallyfood@yopmail.com",
-  "business_website": "https://wallyfood.com",
+  "business_email": "infoAwwalfood@yopmail.com",
+  "business_website": "https://Awwalfood.com",
   "business_city": "Lagos",
   "business_state": "Lagos",
   "business_country": "Nigeria",
-  "owner_name": "Wally Owner",
-  "owner_email": "wally@yopmail.com",
-  "owner_phone": "+2348087654321",
+  "owner_name": "Awwal Owner",
+  "owner_email": "Awwal@yopmail.com",
+  "owner_phone": "+2348055667788",
   "restaurants_count": 1,
   "restaurants": [
     {
-      "name": "Wally's Kitchen",
+      "name": "Awwal's Kitchen",
+      "email": "kitchen@awwalfood.com",
       "phone": "+2348012345678",
+      "latitude": 6.4541,
+      "longitude": 3.3947,
       "cuisine_type": "Nigerian",
       "average_price_range": "5000 - 15000",
       "dining_style": "Casual",
@@ -96,7 +99,7 @@ Authorization: Bearer {{adminToken}}
       ],
       "menu": {
         "mode": "link",
-        "link": "https://wallyfood.com/menu"
+        "link": "https://Awwalfood.com/menu"
       }
     }
   ]
@@ -133,7 +136,7 @@ Content-Type: {{contentType}}
 Accept: {{accept}}
 
 {
-  "identifier": "wally@wallyfood.com",
+  "identifier": "Awwal@yopmail.com",
   "password": "NEW_PASSWORD_AFTER_RESET"
 }
 
