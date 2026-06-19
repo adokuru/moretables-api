@@ -85,6 +85,49 @@ it('uses the restaurant frontend url for organization owners', function (): void
     });
 });
 
+it('returns a native deep link for staff when the request comes from the app', function (): void {
+    config([
+        'app.frontend_urls.restaurant' => 'https://restaurant.moretables.com',
+        'app.mobile_schemes.foh' => 'moretables-foh',
+    ]);
+
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $organization = Organization::factory()->create();
+    $owner = User::factory()->create(['email' => 'app-owner@example.com']);
+    assignScopedRole($owner, Role::OrganizationOwner, $organization);
+
+    app()->instance('password_reset.client', 'app');
+
+    Password::sendResetLink(['email' => $owner->email]);
+
+    Notification::assertSentTo($owner, ResetPassword::class, function (ResetPassword $notification) use ($owner): bool {
+        $url = (string) $notification->toMail($owner)->actionUrl;
+
+        return str_starts_with($url, 'moretables-foh://reset-password?')
+            && str_contains($url, 'token=')
+            && str_contains($url, 'email=app-owner%40example.com');
+    });
+});
+
+it('keeps the web url for customers even when the request comes from the app', function (): void {
+    config(['app.frontend_urls.main' => 'https://www.moretables.com']);
+
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $customer = User::factory()->create(['email' => 'app-customer@example.com']);
+
+    app()->instance('password_reset.client', 'app');
+
+    Password::sendResetLink(['email' => $customer->email]);
+
+    Notification::assertSentTo($customer, ResetPassword::class, function (ResetPassword $notification) use ($customer): bool {
+        return str_starts_with((string) $notification->toMail($customer)->actionUrl, 'https://www.moretables.com/reset-password?');
+    });
+});
+
 it('does not route customers to the restaurant or admin frontends', function (): void {
     config([
         'app.frontend_urls.main' => 'https://www.moretables.com',
