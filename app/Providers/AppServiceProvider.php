@@ -105,6 +105,18 @@ class AppServiceProvider extends ServiceProvider
                 default => 'main',
             };
 
+            // Native app clients receive a custom-scheme deep link so the reset
+            // screen opens in-app. Only staff (restaurant audience) use this path.
+            $client = app()->bound('password_reset.client') ? app('password_reset.client') : null;
+            if ($client === 'app' && $audience === 'restaurant') {
+                $scheme = (string) config('app.mobile_schemes.foh');
+
+                return $scheme.'://reset-password?'.http_build_query([
+                    'token' => $token,
+                    'email' => $notifiable->getEmailForPasswordReset(),
+                ]);
+            }
+
             $frontendUrl = config('app.frontend_urls.'.$audience);
             $path = config('app.frontend_paths.password_reset.'.$audience);
 

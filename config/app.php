@@ -100,6 +100,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mobile App Deep Link Schemes
+    |--------------------------------------------------------------------------
+    |
+    | Custom URL schemes for native apps. When a password reset is requested
+    | from a native client (the request carries client="app"), links are built
+    | as "<scheme>://reset-password?token=...&email=..." so the app opens the
+    | reset screen directly instead of routing through the web frontend.
+    |
+    */
+
+    'mobile_schemes' => [
+        'foh' => env('FOH_APP_SCHEME', 'moretables-foh'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

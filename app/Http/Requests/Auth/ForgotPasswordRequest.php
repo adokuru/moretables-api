@@ -15,6 +15,7 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'email'],
+            'client' => ['sometimes', 'string', 'in:app,web'],
         ];
     }
 }

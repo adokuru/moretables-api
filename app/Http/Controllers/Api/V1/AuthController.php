@@ -209,6 +209,9 @@ class AuthController extends Controller
         $user = User::query()->where('email', $request->string('email')->toString())->first();
 
         if ($user?->requiresTwoFactor()) {
+            // Carried into the ResetPassword::createUrlUsing closure (sent
+            // synchronously) so app clients receive a deep link instead of a web URL.
+            app()->instance('password_reset.client', $request->string('client')->toString());
             Password::sendResetLink($request->safe()->only('email'));
         }
 
