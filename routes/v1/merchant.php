@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\FrontOfHouseController;
 use App\Http\Controllers\Api\V1\FrontOfHouseFloorPlanController;
+use App\Http\Controllers\Api\V1\FrontOfHouseOperationsController;
+use App\Http\Controllers\Api\V1\FrontOfHouseShiftNoteController;
 use App\Http\Controllers\Api\V1\FrontOfHouseShiftOverviewController;
 use App\Http\Controllers\Api\V1\FrontOfHouseTimelineController;
 use App\Http\Controllers\Api\V1\GuestbookController;
@@ -188,6 +190,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('reservations/{reservation}/assign-table', [MerchantReservationController::class, 'assignTable']);
         Route::post('reservations/{reservation}/seat', [MerchantReservationController::class, 'seat']);
         Route::post('reservations/{reservation}/complete', [MerchantReservationController::class, 'complete']);
+        Route::patch('reservations/{reservation}/service-stage', [MerchantReservationController::class, 'updateServiceStage']);
         Route::post('reservations/{reservation}/cancel', [MerchantReservationController::class, 'cancel']);
 
         Route::get('reviews/aggregate', [MerchantRestaurantReviewController::class, 'aggregate']);
@@ -197,6 +200,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('waitlist-entries', [MerchantWaitlistController::class, 'store']);
         Route::post('waitlist-entries/{waitlistEntry}/notify', [MerchantWaitlistController::class, 'notify']);
         Route::post('waitlist-entries/{waitlistEntry}/assign-table', [MerchantWaitlistController::class, 'assignTable']);
+        Route::post('waitlist-entries/{waitlistEntry}/cancel', [MerchantWaitlistController::class, 'cancel']);
 
         // Status transitions
         Route::post('reservations/{reservation}/arrive', [MerchantReservationController::class, 'arrive']);
@@ -225,6 +229,13 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {
+            Route::get('service-periods', [FrontOfHouseOperationsController::class, 'servicePeriods']);
+            Route::get('available-tables', [FrontOfHouseOperationsController::class, 'availableTables']);
+            Route::get('removed', [FrontOfHouseOperationsController::class, 'removed']);
+            Route::get('shift-notes', [FrontOfHouseShiftNoteController::class, 'index']);
+            Route::post('shift-notes', [FrontOfHouseShiftNoteController::class, 'store']);
+            Route::patch('shift-notes/{shiftNote}', [FrontOfHouseShiftNoteController::class, 'update']);
+            Route::delete('shift-notes/{shiftNote}', [FrontOfHouseShiftNoteController::class, 'destroy']);
             Route::get('summary', [FrontOfHouseController::class, 'summary']);
             Route::get('reservations', [FrontOfHouseController::class, 'reservations']);
             Route::get('arrived', [FrontOfHouseController::class, 'arrived']);

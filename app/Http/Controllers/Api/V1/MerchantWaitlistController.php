@@ -107,4 +107,17 @@ class MerchantWaitlistController extends Controller
             'reservation' => ReservationResource::make($reservation),
         ]);
     }
+
+    public function cancel(Request $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        $entry = $this->reservationService->cancelWaitlistEntry($waitlistEntry, $request->user());
+
+        return response()->json([
+            'message' => 'Waitlist entry cancelled successfully.',
+            'waitlist_entry' => WaitlistEntryResource::make($entry),
+        ]);
+    }
 }

@@ -77,7 +77,7 @@ class FrontOfHouseController extends Controller
         $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
             'starts_at' => ['nullable', 'date_format:H:i', 'required_with:ends_at'],
-            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at', 'after:starts_at'],
+            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at'],
             'meal_type_id' => ['nullable', 'integer', 'exists:restaurant_meal_types,id'],
         ]);
     }
@@ -164,6 +164,9 @@ class FrontOfHouseController extends Controller
                 ReservationStatus::Booked,
                 ReservationStatus::Confirmed,
                 ReservationStatus::Arrived,
+                ReservationStatus::PartiallyArrived,
+                ReservationStatus::LeftMessage,
+                ReservationStatus::RunningLate,
                 ReservationStatus::Seated,
                 ReservationStatus::Completed,
                 ReservationStatus::NoShow,
@@ -173,8 +176,13 @@ class FrontOfHouseController extends Controller
             ->get()
             ->keyBy(fn ($row): string => $row->status->value);
 
-        $reservationCount = $this->countStatuses($counts, [ReservationStatus::Booked, ReservationStatus::Confirmed]);
-        $arrivedCount = $this->countStatuses($counts, [ReservationStatus::Arrived]);
+        $reservationCount = $this->countStatuses($counts, [
+            ReservationStatus::Booked,
+            ReservationStatus::Confirmed,
+            ReservationStatus::LeftMessage,
+            ReservationStatus::RunningLate,
+        ]);
+        $arrivedCount = $this->countStatuses($counts, [ReservationStatus::Arrived, ReservationStatus::PartiallyArrived]);
         $seatedCount = $this->countStatuses($counts, [ReservationStatus::Seated]);
         $finishedCount = $this->countStatuses($counts, [ReservationStatus::Completed]);
         $noShowCount = $this->countStatuses($counts, [ReservationStatus::NoShow]);
@@ -226,7 +234,12 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereIn('status', [ReservationStatus::Booked, ReservationStatus::Confirmed])
+            ->whereIn('status', [
+                ReservationStatus::Booked,
+                ReservationStatus::Confirmed,
+                ReservationStatus::LeftMessage,
+                ReservationStatus::RunningLate,
+            ])
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
@@ -257,7 +270,7 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->where('status', ReservationStatus::Arrived)
+            ->whereIn('status', [ReservationStatus::Arrived, ReservationStatus::PartiallyArrived])
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 

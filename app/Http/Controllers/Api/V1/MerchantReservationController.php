@@ -10,12 +10,14 @@ use App\Http\Resources\ReservationResource;
 use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
+use App\ReservationServiceStage;
 use App\Services\ReservationService;
 use App\Services\RestaurantDateRangeService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 #[Group('Merchant Reservations', weight: 36)]
 class MerchantReservationController extends Controller
@@ -127,6 +129,30 @@ class MerchantReservationController extends Controller
 
         return response()->json([
             'message' => 'Reservation completed successfully.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    /**
+     * Correct the dining progression while the party remains seated.
+     */
+    public function updateServiceStage(Request $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $validated = $request->validate([
+            'service_stage' => ['required', Rule::enum(ReservationServiceStage::class)],
+        ]);
+
+        $updatedReservation = $this->reservationService->updateServiceStage(
+            $reservation,
+            ReservationServiceStage::from($validated['service_stage']),
+            $request->user(),
+        );
+
+        return response()->json([
+            'message' => 'Service stage updated successfully.',
             'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }

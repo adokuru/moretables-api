@@ -104,7 +104,7 @@ class AvailabilityService
     ): bool {
         if ($table->restaurant_id !== $restaurant->id
             || ! $table->is_active
-            || $table->status === TableStatus::Unavailable
+            || in_array($table->status, [TableStatus::Unavailable, TableStatus::Cleaning], true)
             || $table->max_capacity < $partySize
             || ($partySize > 1 && $table->min_capacity > $partySize)) {
             return false;
@@ -202,7 +202,7 @@ class AvailabilityService
 
         $restaurantIds = $restaurants->pluck('id')->all();
         $specialDaysByRestaurant = RestaurantSpecialDay::query()
-            ->with('shifts')
+            ->with('shifts.availabilityPeriod')
             ->whereIn('restaurant_id', $restaurantIds)
             ->where('date', $date)
             ->get()
@@ -503,7 +503,7 @@ class AvailabilityService
             ->where('is_active', true)
             ->when($partySize > 1, fn (Builder $query) => $query->where('min_capacity', '<=', $partySize))
             ->where('max_capacity', '>=', $partySize)
-            ->where('status', '!=', TableStatus::Unavailable->value)
+            ->whereNotIn('status', [TableStatus::Unavailable->value, TableStatus::Cleaning->value])
             ->orderBy('max_capacity')
             ->orderBy('name');
     }
@@ -537,6 +537,9 @@ class AvailabilityService
                 ReservationStatus::Booked->value,
                 ReservationStatus::Confirmed->value,
                 ReservationStatus::Arrived->value,
+                ReservationStatus::PartiallyArrived->value,
+                ReservationStatus::LeftMessage->value,
+                ReservationStatus::RunningLate->value,
                 ReservationStatus::Seated->value,
             ])
             ->where('starts_at', '<', $endsAt)
@@ -562,8 +565,11 @@ class AvailabilityService
                 ->sortBy('opens_at')
                 ->map(fn ($shift) => [
                     'opens' => Carbon::parse($dateStr.' '.$shift->opens_at, $timezone),
-                    'closes' => Carbon::parse($dateStr.' '.$shift->closes_at, $timezone),
+                    'closes' => $this->closingTime($dateStr, $shift->opens_at, $shift->closes_at, $timezone),
                     'shift' => null,
+                    'source' => 'special_day',
+                    'name' => $shift->availabilityPeriod?->name ?? $specialDay->name,
+                    'meal_type_id' => $shift->restaurant_meal_type_id,
                 ])
                 ->values()
                 ->all();
@@ -592,21 +598,31 @@ class AvailabilityService
             return $weeklyShifts
                 ->map(fn (RestaurantShift $shift) => [
                     'opens' => Carbon::parse($dateStr.' '.$shift->starts_at, $timezone),
-                    'closes' => Carbon::parse($dateStr.' '.$shift->ends_at, $timezone),
+                    'closes' => $this->closingTime($dateStr, $shift->starts_at, $shift->ends_at, $timezone),
                     'shift' => $shift,
+                    'source' => 'weekly_shift',
+                    'name' => $shift->name,
+                    'meal_type_id' => $shift->restaurant_meal_type_id,
                 ])
                 ->all();
         }
 
         $availabilitySchedules = $restaurant->relationLoaded('availabilitySchedules')
             ? $restaurant->availabilitySchedules->where('day_of_week', $dayOfWeek)->sortBy('opens_at')->values()
-            : $restaurant->availabilitySchedules()->where('day_of_week', $dayOfWeek)->orderBy('opens_at')->get();
+            : $restaurant->availabilitySchedules()
+                ->with('availabilityPeriod')
+                ->where('day_of_week', $dayOfWeek)
+                ->orderBy('opens_at')
+                ->get();
 
         if ($availabilitySchedules->isNotEmpty()) {
             return $availabilitySchedules->map(fn ($schedule) => [
                 'opens' => Carbon::parse($dateStr.' '.$schedule->opens_at, $timezone),
-                'closes' => Carbon::parse($dateStr.' '.$schedule->closes_at, $timezone),
+                'closes' => $this->closingTime($dateStr, $schedule->opens_at, $schedule->closes_at, $timezone),
                 'shift' => null,
+                'source' => 'meal_schedule',
+                'name' => $schedule->availabilityPeriod?->name ?? 'Service',
+                'meal_type_id' => $schedule->restaurant_meal_type_id,
             ])->all();
         }
 
@@ -618,9 +634,20 @@ class AvailabilityService
 
         return [[
             'opens' => Carbon::parse($dateStr.' '.$hours->opens_at, $timezone),
-            'closes' => Carbon::parse($dateStr.' '.$hours->closes_at, $timezone),
+            'closes' => $this->closingTime($dateStr, $hours->opens_at, $hours->closes_at, $timezone),
             'shift' => null,
+            'source' => 'restaurant_hours',
+            'name' => 'Service',
+            'meal_type_id' => null,
         ]];
+    }
+
+    private function closingTime(string $date, string $opensAt, string $closesAt, string $timezone): Carbon
+    {
+        $opens = Carbon::parse($date.' '.$opensAt, $timezone);
+        $closes = Carbon::parse($date.' '.$closesAt, $timezone);
+
+        return $closes->lessThanOrEqualTo($opens) ? $closes->addDay() : $closes;
     }
 
     private function restaurantUsesWeeklyShifts(Restaurant $restaurant): bool
@@ -639,11 +666,11 @@ class AvailabilityService
             $specialDay = $restaurant->specialDays
                 ->first(fn (RestaurantSpecialDay $day): bool => $day->date->format('Y-m-d') === $dateStr);
 
-            return $specialDay?->loadMissing('shifts');
+            return $specialDay?->loadMissing('shifts.availabilityPeriod');
         }
 
         return $restaurant->specialDays()
-            ->with('shifts')
+            ->with('shifts.availabilityPeriod')
             ->where('date', $dateStr)
             ->first();
     }

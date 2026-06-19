@@ -216,6 +216,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(WaitlistEntry::class);
     }
 
+    public function shiftNotes(): HasMany
+    {
+        return $this->hasMany(RestaurantShiftNote::class);
+    }
+
     public function guestCommunicationSetting(): HasOne
     {
         return $this->hasOne(GuestCommunicationSetting::class);

@@ -27,10 +27,14 @@ class RestaurantDateRangeService
     {
         $timezone = $this->timezone($restaurant);
 
-        return [
-            'start' => CarbonImmutable::parse("{$date} {$startsAt}", $timezone)->utc(),
-            'end' => CarbonImmutable::parse("{$date} {$endsAt}", $timezone)->utc(),
-        ];
+        $start = CarbonImmutable::parse("{$date} {$startsAt}", $timezone);
+        $end = CarbonImmutable::parse("{$date} {$endsAt}", $timezone);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            $end = $end->addDay();
+        }
+
+        return ['start' => $start->utc(), 'end' => $end->utc()];
     }
 
     private function timezone(Restaurant $restaurant): string

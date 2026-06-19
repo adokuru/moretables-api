@@ -27,6 +27,10 @@
    "value": "1"
   },
   {
+   "key": "shift_note_id",
+   "value": "1"
+  },
+  {
    "key": "organization_id",
    "value": "1"
   },
@@ -95,6 +99,233 @@
   }
  ],
  "item": [
+  {
+   "name": "Front of House Backend Integration",
+   "description": "Staff OTP resend, authenticated Reverb authorization, service periods, table availability, removed reservations, dining stages, waitlist cancellation, and shift-note contracts.",
+   "auth": {
+    "type": "bearer",
+    "bearer": [
+     {
+      "key": "token",
+      "value": "{{token}}",
+      "type": "string"
+     }
+    ]
+   },
+   "item": [
+    {
+     "name": "Resend Staff OTP",
+     "request": {
+      "auth": {
+       "type": "noauth"
+      },
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": "{{baseUrl}}/api/v1/auth/staff/resend-2fa"
+     }
+    },
+    {
+     "name": "Authorize Private Restaurant Channel",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "urlencoded",
+       "urlencoded": [
+        {
+         "key": "socket_id",
+         "value": "1234.5678"
+        },
+        {
+         "key": "channel_name",
+         "value": "private-restaurant.{{restaurant_id}}"
+        }
+       ]
+      },
+      "url": "{{baseUrl}}/api/broadcasting/auth"
+     }
+    },
+    {
+     "name": "List Service Periods",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/service-periods?from=2026-06-19&to=2026-06-25"
+     }
+    },
+    {
+     "name": "Available Tables",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/available-tables?starts_at=2026-06-20T18:00:00Z&party_size=2"
+     }
+    },
+    {
+     "name": "Removed Reservations",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/removed?date=2026-06-20&starts_at=18:00&ends_at=23:59"
+     }
+    },
+    {
+     "name": "Update Reservation Service Stage",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"service_stage\": \"entree\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/service-stage"
+     }
+    },
+    {
+     "name": "Cancel Waitlist Entry",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/waitlist-entries/{{waitlist_entry_id}}/cancel"
+     }
+    },
+    {
+     "name": "List Shift Notes",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes?service_starts_at=2026-06-20T18:00:00Z&service_ends_at=2026-06-20T23:00:00Z"
+     }
+    },
+    {
+     "name": "Create Shift Note",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"service_starts_at\": \"2026-06-20T18:00:00Z\",\n  \"service_ends_at\": \"2026-06-20T23:00:00Z\",\n  \"body\": \"VIP arrival at 8pm.\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes"
+     }
+    },
+    {
+     "name": "Edit Shift Note",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"body\": \"VIP arrival moved to 8:30pm.\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}"
+     }
+    },
+    {
+     "name": "Delete Shift Note",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}"
+     }
+    }
+   ]
+  },
   {
    "name": "00 - Mailgun (direct API)",
    "description": "Send a test message through Mailgun to confirm DNS and keys before relying on app OTP email (Guest Start). Does not hit MoreTables API.",

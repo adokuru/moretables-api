@@ -14,6 +14,7 @@ class ReservationResource extends JsonResource
             'reference' => $this->reservation_reference,
             'restaurant_id' => $this->restaurant_id,
             'status' => $this->status?->value,
+            'service_stage' => $this->service_stage?->value,
             'source' => $this->source?->value,
             'party_size' => $this->party_size,
             'starts_at' => optional($this->starts_at)?->toIso8601String(),
@@ -40,6 +41,16 @@ class ReservationResource extends JsonResource
                 'email' => $this->guestContact?->email,
                 'phone' => $this->guestContact?->phone,
             ]),
+            'guest' => [
+                'name' => $this->user?->fullName()
+                    ?? trim(($this->guestContact?->first_name ?? '').' '.($this->guestContact?->last_name ?? '')),
+                'email' => $this->user?->email ?? $this->guestContact?->email,
+                'phone' => $this->user?->phone ?? $this->guestContact?->phone,
+            ],
+            'actions' => [
+                'can_manage' => (bool) $request->user()?->hasRestaurantPermission('reservations.manage', $this->restaurant),
+                'can_assign_table' => (bool) $request->user()?->hasRestaurantPermission('tables.manage', $this->restaurant),
+            ],
         ];
     }
 }

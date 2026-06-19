@@ -3,6 +3,7 @@
 use App\Models\Reservation;
 use App\Models\RewardPointTransaction;
 use App\Models\User;
+use App\ReservationStatus;
 use App\Services\ReservationService;
 use App\UserStatus;
 use Laravel\Sanctum\Sanctum;
@@ -93,6 +94,7 @@ it('awards 100 points to a user on reservation completion when accept_points is 
         'starts_at' => now()->subHour(),
         'ends_at' => now()->addHour(),
         'accept_points' => true,
+        'status' => ReservationStatus::Seated,
     ]);
 
     app(ReservationService::class)->completeReservation($reservation, $customer);
@@ -121,6 +123,7 @@ it('does not award points when accept_points is false', function () {
         'starts_at' => now()->subHour(),
         'ends_at' => now()->addHour(),
         'accept_points' => false,
+        'status' => ReservationStatus::Seated,
     ]);
 
     app(ReservationService::class)->completeReservation($reservation, $customer);
@@ -144,6 +147,7 @@ it('does not award points when restaurant rewards are disabled', function () {
         'starts_at' => now()->subHour(),
         'ends_at' => now()->addHour(),
         'accept_points' => true,
+        'status' => ReservationStatus::Seated,
     ]);
 
     app(ReservationService::class)->completeReservation($reservation, $customer);
@@ -167,6 +171,7 @@ it('awards a custom points amount set by the restaurant on reservation completio
         'starts_at' => now()->subHour(),
         'ends_at' => now()->addHour(),
         'accept_points' => true,
+        'status' => ReservationStatus::Seated,
     ]);
 
     app(ReservationService::class)->completeReservation($reservation, $customer);
@@ -191,6 +196,7 @@ it('does not award points for guest reservations without a user account', functi
         'starts_at' => now()->subHour(),
         'ends_at' => now()->addHour(),
         'accept_points' => true,
+        'status' => ReservationStatus::Seated,
     ]);
 
     $actor = User::factory()->create();

@@ -63,7 +63,7 @@ php artisan queue:work
 
 ## Production baseline
 
-Production should use MySQL plus managed Redis with `CACHE_STORE=redis`, `CACHE_LIMITER_STORE=redis-limiter`, `SESSION_DRIVER=redis`, `SESSION_CONNECTION=sessions`, and `QUEUE_CONNECTION=redis`. Set `REVERB_ALLOWED_ORIGINS` to the exact deployed frontend origins and enable Reverb scaling when more than one server handles websocket traffic.
+Production should use MySQL plus managed Redis with `CACHE_STORE=redis`, `CACHE_LIMITER_STORE=redis-limiter`, `SESSION_DRIVER=redis`, `SESSION_CONNECTION=sessions`, and `QUEUE_CONNECTION=redis`. Set `REVERB_ALLOWED_ORIGINS` to deployed browser and verified native-client hostnames (without schemes or paths), never `*`, and enable Reverb scaling when more than one server handles websocket traffic. API mutations remain authoritative if broadcasting is delayed or unavailable.
 
 Deploy with:
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\ReservationServiceStage;
 use App\ReservationSource;
 use App\ReservationStatus;
 use Database\Factories\ReservationFactory;
@@ -26,6 +27,7 @@ class Reservation extends Model
         'reservation_reference',
         'source',
         'status',
+        'service_stage',
         'party_size',
         'starts_at',
         'ends_at',
@@ -45,6 +47,7 @@ class Reservation extends Model
         return [
             'source' => ReservationSource::class,
             'status' => ReservationStatus::class,
+            'service_stage' => ReservationServiceStage::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'seated_at' => 'datetime',

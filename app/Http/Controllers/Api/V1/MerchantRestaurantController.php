@@ -52,7 +52,7 @@ class MerchantRestaurantController extends Controller
             ->get();
 
         return response()->json([
-            'restaurants' => $restaurants->map(function (Restaurant $restaurant) {
+            'restaurants' => $restaurants->map(function (Restaurant $restaurant) use ($user) {
                 /** @var ?Media $cover */
                 $cover = $restaurant->media->firstWhere('collection_name', 'featured')
                     ?? $restaurant->media->where('collection_name', 'gallery')->sortBy('order_column')->first();
@@ -65,6 +65,17 @@ class MerchantRestaurantController extends Controller
                     'city' => $restaurant->city,
                     'state' => $restaurant->state,
                     'country' => $restaurant->country,
+                    'timezone' => $restaurant->timezone ?: config('app.timezone'),
+                    'permissions' => collect([
+                        'restaurants.view',
+                        'restaurants.manage',
+                        'reservations.view',
+                        'reservations.manage',
+                        'waitlist.manage',
+                        'tables.manage',
+                        'staff.manage',
+                        'audit_logs.view',
+                    ])->filter(fn (string $permission): bool => $user->hasRestaurantPermission($permission, $restaurant))->values(),
                     'is_profile_published' => (bool) $restaurant->is_profile_published,
                     'onboarding_current_step' => $restaurant->onboarding_current_step,
                     'cuisines' => $restaurant->cuisines->pluck('name')->values(),

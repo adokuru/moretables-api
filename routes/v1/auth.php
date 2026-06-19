@@ -15,6 +15,7 @@ Route::prefix('auth')->group(function (): void {
     Route::post('apple', [SocialAuthController::class, 'apple'])->middleware('throttle:public-write');
     Route::post('staff/login', [AuthController::class, 'staffLogin'])->middleware('throttle:auth-initiate');
     Route::post('staff/verify-2fa', [AuthController::class, 'verifyStaffLogin'])->middleware('throttle:auth-verify');
+    Route::post('staff/resend-2fa', [AuthController::class, 'resendStaffLogin'])->middleware('throttle:auth-initiate');
     Route::post('password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-initiate');
     Route::post('password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:public-write');
 

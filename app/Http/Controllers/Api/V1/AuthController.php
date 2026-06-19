@@ -8,11 +8,13 @@ use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\ConfirmPasswordChangeRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\InitiatePasswordChangeRequest;
+use App\Http\Requests\Auth\ResendChallengeRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StaffLoginRequest;
 use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
 use App\Http\Requests\Auth\VerifyChallengeRequest;
 use App\Http\Resources\UserResource;
+use App\Models\AuthChallenge;
 use App\Models\User;
 use App\Services\AuthChallengeService;
 use App\UserAuthMethod;
@@ -90,6 +92,22 @@ class AuthController extends Controller
             'token' => $token,
             'token_type' => 'Bearer',
             'user' => UserResource::make($user),
+        ]);
+    }
+
+    public function resendStaffLogin(ResendChallengeRequest $request): JsonResponse
+    {
+        $challenge = AuthChallenge::query()
+            ->where('challenge_token', $request->validated('challenge_token'))
+            ->where('type', AuthChallengeType::StaffLogin)
+            ->firstOrFail();
+
+        $challenge = $this->authChallengeService->resend($challenge);
+
+        return response()->json([
+            'message' => 'A new verification code has been sent to your email address.',
+            'challenge_token' => $challenge->challenge_token,
+            'expires_at' => $challenge->code_expires_at->toIso8601String(),
         ]);
     }
 

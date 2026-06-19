@@ -42,7 +42,7 @@ class FrontOfHouseFloorPlanController extends Controller
         $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
             'starts_at' => ['nullable', 'date_format:H:i', 'required_with:ends_at'],
-            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at', 'after:starts_at'],
+            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at'],
             'meal_type_id' => ['nullable', 'integer', 'exists:restaurant_meal_types,id'],
         ]);
     }
@@ -143,6 +143,9 @@ class FrontOfHouseFloorPlanController extends Controller
                 ReservationStatus::Booked,
                 ReservationStatus::Confirmed,
                 ReservationStatus::Arrived,
+                ReservationStatus::PartiallyArrived,
+                ReservationStatus::LeftMessage,
+                ReservationStatus::RunningLate,
                 ReservationStatus::Seated,
             ]);
 
@@ -156,7 +159,9 @@ class FrontOfHouseFloorPlanController extends Controller
             $reservation = $reservationsByTable->get($table->id);
 
             // Derive live status
-            if ($table->status === TableStatus::Unavailable) {
+            if ($table->status === TableStatus::Cleaning) {
+                $liveStatus = 'cleaning';
+            } elseif ($table->status === TableStatus::Unavailable) {
                 $liveStatus = 'unavailable';
             } elseif (! $reservation) {
                 $liveStatus = 'available';

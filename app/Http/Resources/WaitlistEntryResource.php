@@ -23,6 +23,17 @@ class WaitlistEntryResource extends JsonResource
             'seated_at' => optional($this->seated_at)?->toIso8601String(),
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'reservation' => ReservationResource::make($this->whenLoaded('reservation')),
+            'user' => UserResource::make($this->whenLoaded('user')),
+            'guest_contact' => GuestContactResource::make($this->whenLoaded('guestContact')),
+            'guest' => [
+                'name' => $this->user?->fullName()
+                    ?? trim(($this->guestContact?->first_name ?? '').' '.($this->guestContact?->last_name ?? '')),
+                'email' => $this->user?->email ?? $this->guestContact?->email,
+                'phone' => $this->user?->phone ?? $this->guestContact?->phone,
+            ],
+            'actions' => [
+                'can_manage' => (bool) $request->user()?->hasRestaurantPermission('waitlist.manage', $this->restaurant),
+            ],
         ];
     }
 }

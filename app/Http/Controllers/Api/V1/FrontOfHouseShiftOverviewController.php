@@ -71,7 +71,7 @@ class FrontOfHouseShiftOverviewController extends Controller
         $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
             'starts_at' => ['nullable', 'date_format:H:i', 'required_with:ends_at'],
-            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at', 'after:starts_at'],
+            'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at'],
             'meal_type_id' => ['nullable', 'integer', 'exists:restaurant_meal_types,id'],
             'slot_minutes' => ['nullable', 'integer', 'in:15,30,60'],
         ]);
@@ -99,7 +99,7 @@ class FrontOfHouseShiftOverviewController extends Controller
         $query = $restaurant->reservations()
             ->where('starts_at', '>=', $range['start'])
             ->where('starts_at', '<', $range['end'])
-            ->whereNotIn('status', [ReservationStatus::Cancelled]);
+            ->whereNotIn('status', [ReservationStatus::Cancelled, ReservationStatus::NoShow]);
 
         return $query;
     }
@@ -126,6 +126,10 @@ class FrontOfHouseShiftOverviewController extends Controller
         $slots = [];
         $current = Carbon::createFromFormat('H:i', $from);
         $end = Carbon::createFromFormat('H:i', $to);
+
+        if ($end->lessThanOrEqualTo($current)) {
+            $end->addDay();
+        }
 
         while ($current->lte($end)) {
             $slots[] = $current->format('H:i');
@@ -165,8 +169,9 @@ class FrontOfHouseShiftOverviewController extends Controller
             ->get();
 
         // Group by slot
+        $timezone = $restaurant->timezone ?: config('app.timezone');
         $grouped = $reservations->groupBy(fn ($r) => $this->slotKey(
-            Carbon::parse($r->starts_at)->format('H:i'),
+            Carbon::parse($r->starts_at)->setTimezone($timezone)->format('H:i'),
             $slotMinutes,
         ));
 
@@ -225,8 +230,9 @@ class FrontOfHouseShiftOverviewController extends Controller
             ->orderBy('starts_at')
             ->get(['party_size', 'starts_at']);
 
+        $timezone = $restaurant->timezone ?: config('app.timezone');
         $grouped = $reservations->groupBy(fn ($r) => $this->slotKey(
-            Carbon::parse($r->starts_at)->format('H:i'),
+            Carbon::parse($r->starts_at)->setTimezone($timezone)->format('H:i'),
             $slotMinutes,
         ));
 

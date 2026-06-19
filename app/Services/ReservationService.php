@@ -20,6 +20,7 @@ use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
 use App\Notifications\WaitlistOfferExpiredNotification;
 use App\Notifications\WaitlistTableNoLongerAvailableNotification;
+use App\ReservationServiceStage;
 use App\ReservationSource;
 use App\ReservationStatus;
 use App\RewardPointTransactionType;
@@ -497,8 +498,28 @@ class ReservationService
 
     public function seatReservation(Reservation $reservation, User $actor): Reservation
     {
+        if (! in_array($reservation->status, [
+            ReservationStatus::Booked,
+            ReservationStatus::Confirmed,
+            ReservationStatus::Arrived,
+            ReservationStatus::PartiallyArrived,
+            ReservationStatus::LeftMessage,
+            ReservationStatus::RunningLate,
+        ], true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Only an active reservation can be seated.'],
+            ]);
+        }
+
+        if (! $reservation->restaurant_table_id) {
+            throw ValidationException::withMessages([
+                'restaurant_table_id' => ['Assign an available table before seating this reservation.'],
+            ]);
+        }
+
         $reservation->forceFill([
             'status' => ReservationStatus::Seated,
+            'service_stage' => ReservationServiceStage::Seated,
             'seated_at' => now(),
         ])->save();
 
@@ -515,14 +536,20 @@ class ReservationService
 
     public function completeReservation(Reservation $reservation, User $actor): Reservation
     {
+        if ($reservation->status !== ReservationStatus::Seated) {
+            throw ValidationException::withMessages([
+                'status' => ['Only a seated reservation can be completed.'],
+            ]);
+        }
+
         $reservation->forceFill([
             'status' => ReservationStatus::Completed,
             'completed_at' => now(),
         ])->save();
 
         if ($reservation->table) {
-            $reservation->table->update(['status' => TableStatus::Available]);
-            event(new TableStatusUpdated($reservation->table, 'available'));
+            $reservation->table->update(['status' => TableStatus::Cleaning]);
+            event(new TableStatusUpdated($reservation->table, 'cleaning'));
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
@@ -531,6 +558,34 @@ class ReservationService
         $this->maybeAwardReservationPoints($reservation);
 
         $this->dispatchAvailabilityAlertCheck($reservation);
+
+        return $reservation;
+    }
+
+    public function updateServiceStage(
+        Reservation $reservation,
+        ReservationServiceStage $stage,
+        User $actor,
+    ): Reservation {
+        if ($reservation->status !== ReservationStatus::Seated) {
+            throw ValidationException::withMessages([
+                'service_stage' => ['The service stage can only be changed while a reservation is seated.'],
+            ]);
+        }
+
+        $reservation->forceFill(['service_stage' => $stage])->save();
+        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+
+        $this->auditLogService->log(
+            action: 'reservation.service_stage_updated',
+            actor: $actor,
+            auditable: $reservation,
+            restaurant: $reservation->restaurant,
+            organization: $reservation->restaurant->organization,
+            description: 'Reservation service stage updated',
+        );
+
+        event(new ReservationUpdated($reservation, 'service_stage_updated'));
 
         return $reservation;
     }
@@ -726,6 +781,35 @@ class ReservationService
             }
 
             event(new WaitlistEntryUpdated($entry, 'notified'));
+
+            return $entry;
+        });
+    }
+
+    public function cancelWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
+    {
+        return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified], true)) {
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['Only waiting or notified entries can be cancelled.'],
+                ]);
+            }
+
+            $entry->forceFill(['status' => WaitlistStatus::Cancelled])->save();
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
+
+            $this->auditLogService->log(
+                action: 'waitlist.cancelled',
+                actor: $actor,
+                auditable: $entry,
+                restaurant: $entry->restaurant,
+                organization: $entry->restaurant->organization,
+                description: 'Waitlist entry cancelled',
+            );
+
+            event(new WaitlistEntryUpdated($entry, 'cancelled'));
 
             return $entry;
         });
