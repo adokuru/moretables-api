@@ -166,6 +166,11 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(RestaurantTable::class);
     }
 
+    public function servers(): HasMany
+    {
+        return $this->hasMany(RestaurantServer::class);
+    }
+
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);

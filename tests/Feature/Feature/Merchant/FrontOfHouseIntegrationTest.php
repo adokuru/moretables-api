@@ -2,6 +2,7 @@
 
 use App\Events\ReservationUpdated;
 use App\Events\RestaurantShiftNoteUpdated;
+use App\Models\DiningArea;
 use App\Models\Reservation;
 use App\Models\RestaurantShiftNote;
 use App\Models\Role;
@@ -36,6 +37,41 @@ function frontOfHouseUrl(array $data, string $path): string
 {
     return '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/'.$path;
 }
+
+it('returns the configured dining-area layout contract through the front-of-house floor endpoint', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $diningArea = DiningArea::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'name' => 'Main Floor',
+        'is_active' => true,
+    ]);
+    $data['table']->update([
+        'dining_area_id' => $diningArea->id,
+        'layout_type' => 'rect-8-tb-2-lr',
+        'x_position' => 1,
+        'y_position' => 2,
+        'width' => 2,
+        'height' => 1,
+        'rotation' => 90,
+        'color' => '#AABBCC',
+        'chair_color' => '#112233',
+    ]);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/floors/'.$diningArea->id))
+        ->assertOk()
+        ->assertJsonPath('floor.id', $diningArea->id)
+        ->assertJsonPath('tables.0.layout_type', 'rect-8-tb-2-lr')
+        ->assertJsonPath('tables.0.x_position', 1)
+        ->assertJsonPath('tables.0.y_position', 2)
+        ->assertJsonPath('tables.0.width', 2)
+        ->assertJsonPath('tables.0.height', 1)
+        ->assertJsonPath('tables.0.rotation', 90)
+        ->assertJsonPath('tables.0.rotate', 'r2')
+        ->assertJsonPath('tables.0.table_color', '#AABBCC')
+        ->assertJsonPath('tables.0.chair_color', '#112233');
+});
 
 it('returns chronological cross-midnight service periods and enforces the 31 day range', function () {
     $data = createBookableRestaurant();

@@ -323,6 +323,47 @@
       ],
       "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}"
      }
+    },
+    {
+     "name": "Servers list",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/servers",
+      "description": "Lists the restaurant's servers. Servers are restaurant records, not user accounts."
+     }
+    },
+    {
+     "name": "Server create",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"name\": \"Ada\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/servers",
+      "description": "Adds a restaurant server using only a name. This does not create or invite a user."
+     }
     }
    ]
   },

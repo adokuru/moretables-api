@@ -48,6 +48,7 @@ it('serves the generated api specification route', function () {
         '/waitlist-entries/{waitlistEntry}/accept',
         '/admin/restaurants',
         '/merchant/restaurants/{restaurant}/staff',
+        '/merchant/restaurants/{restaurant}/servers',
         '/merchant/restaurants/{restaurant}/media',
         '/merchant/restaurants/{restaurant}/menu-items',
         '/merchant/restaurants/{restaurant}/reviews',
@@ -90,6 +91,7 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/me/restaurant-lists']['get']['tags'][0])->toBe('Customer Restaurant Lists');
     expect($specification['paths']['/admin/organizations/onboard']['post']['tags'][0])->toBe('Admin Organizations');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/staff']['get']['tags'][0])->toBe('Merchant Staff');
+    expect($specification['paths']['/merchant/restaurants/{restaurant}/servers']['get']['tags'][0])->toBe('Front of House / Servers');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/menu-items']['post']['tags'][0])->toBe('Merchant Menu');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/reviews']['get']['tags'][0])->toBe('Merchant Reviews');
     expect($specification['paths']['/merchant/restaurants/{restaurant}/reviews/aggregate']['get']['tags'][0])->toBe('Merchant Reviews');

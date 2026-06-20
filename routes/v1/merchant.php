@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantMenuDocumentController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantServerController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantShiftController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSpecialDayController;
@@ -136,6 +137,10 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('staff', [MerchantRestaurantStaffController::class, 'store']);
         Route::patch('staff/{user}', [MerchantRestaurantStaffController::class, 'update']);
         Route::delete('staff/{user}', [MerchantRestaurantStaffController::class, 'destroy']);
+
+        Route::get('servers', [MerchantRestaurantServerController::class, 'index']);
+        Route::post('servers', [MerchantRestaurantServerController::class, 'store']);
+
         Route::get('gallery', [MerchantRestaurantMediaController::class, 'gallery']);
         Route::get('gallery/categories', [MerchantRestaurantGalleryCategoryController::class, 'index']);
         Route::post('gallery/categories', [MerchantRestaurantGalleryCategoryController::class, 'store']);

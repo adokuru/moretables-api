@@ -9,4 +9,5 @@ enum AuthChallengeType: string
     case AdminLogin = 'admin_login';
     case RestaurantEmailVerification = 'restaurant_email_verification';
     case PasswordChange = 'password_change';
+    case PasswordReset = 'password_reset';
 }

@@ -101,6 +101,10 @@ class FrontOfHouseFloorPlanController extends Controller
      * `live_status` field and a `current_reservation` summary reflecting the actual
      * occupancy for the requested date and service window:
      *
+     * The table payload preserves the configured dining-area layout contract:
+     * `layout_type`, grid-based `x_position`, `y_position`, `width`, `height`,
+     * `rotation` / `rotate`, `table_color`, and `chair_color`.
+     *
      * | `live_status`  | Meaning                                              |
      * |----------------|------------------------------------------------------|
      * | `occupied`     | A guest is currently seated at this table            |

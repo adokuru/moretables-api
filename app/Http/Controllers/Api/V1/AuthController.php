@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\ConfirmPasswordChangeRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\InitiatePasswordChangeRequest;
 use App\Http\Requests\Auth\ResendChallengeRequest;
+use App\Http\Requests\Auth\ResetPasswordOtpRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\StaffLoginRequest;
 use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
@@ -209,9 +210,6 @@ class AuthController extends Controller
         $user = User::query()->where('email', $request->string('email')->toString())->first();
 
         if ($user?->requiresTwoFactor()) {
-            // Carried into the ResetPassword::createUrlUsing closure (sent
-            // synchronously) so app clients receive a deep link instead of a web URL.
-            app()->instance('password_reset.client', $request->string('client')->toString());
             Password::sendResetLink($request->safe()->only('email'));
         }
 
@@ -250,6 +248,61 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => $this->passwordResetApiMessage($status),
+        ]);
+    }
+
+    public function forgotPasswordOtp(ForgotPasswordRequest $request): JsonResponse
+    {
+        $user = User::query()->where('email', $request->string('email')->toString())->first();
+
+        if (! $user || ! $user->requiresTwoFactor()) {
+            throw ValidationException::withMessages([
+                'email' => ['We could not find a staff account with that email address.'],
+            ]);
+        }
+
+        $challenge = $this->authChallengeService->create($user, AuthChallengeType::PasswordReset);
+
+        return response()->json([
+            'message' => 'A verification code has been sent to your email.',
+            'challenge_token' => $challenge->challenge_token,
+            'expires_at' => $challenge->code_expires_at->toIso8601String(),
+        ]);
+    }
+
+    public function resendForgotPasswordOtp(ResendChallengeRequest $request): JsonResponse
+    {
+        $challenge = AuthChallenge::query()
+            ->where('challenge_token', $request->validated('challenge_token'))
+            ->where('type', AuthChallengeType::PasswordReset)
+            ->firstOrFail();
+
+        $challenge = $this->authChallengeService->resend($challenge);
+
+        return response()->json([
+            'message' => 'A new verification code has been sent to your email address.',
+            'challenge_token' => $challenge->challenge_token,
+            'expires_at' => $challenge->code_expires_at->toIso8601String(),
+        ]);
+    }
+
+    public function resetPasswordOtp(ResetPasswordOtpRequest $request): JsonResponse
+    {
+        $challenge = $this->authChallengeService->verify(
+            challengeToken: $request->validated('challenge_token'),
+            code: $request->validated('code'),
+            type: AuthChallengeType::PasswordReset,
+        );
+
+        $challenge->user->forceFill([
+            'password' => $request->validated('password'),
+            'remember_token' => Str::random(60),
+            'auth_method' => UserAuthMethod::Password,
+            'status' => UserStatus::Active,
+        ])->save();
+
+        return response()->json([
+            'message' => 'Your password has been reset successfully.',
         ]);
     }
 

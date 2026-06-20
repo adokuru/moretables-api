@@ -18,6 +18,9 @@ Route::prefix('auth')->group(function (): void {
     Route::post('staff/resend-2fa', [AuthController::class, 'resendStaffLogin'])->middleware('throttle:auth-initiate');
     Route::post('password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-initiate');
     Route::post('password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:public-write');
+    Route::post('password/forgot-otp', [AuthController::class, 'forgotPasswordOtp'])->middleware('throttle:auth-initiate');
+    Route::post('password/forgot-otp/resend', [AuthController::class, 'resendForgotPasswordOtp'])->middleware('throttle:auth-initiate');
+    Route::post('password/reset-otp', [AuthController::class, 'resetPasswordOtp'])->middleware('throttle:auth-verify');
 
     Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function (): void {
         Route::post('complete-profile', [GuestAuthController::class, 'completeProfile']);
