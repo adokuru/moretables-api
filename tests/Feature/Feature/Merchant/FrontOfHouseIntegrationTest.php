@@ -197,6 +197,28 @@ it('groups operational statuses and cancellation records correctly', function ()
         ->assertJsonCount(2, 'data');
 });
 
+it('seats a waitlist party into the Seated bucket when a table is assigned', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Waiting,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/assign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.status', ReservationStatus::Seated->value)
+        ->assertJsonPath('reservation.service_stage', ReservationServiceStage::Seated->value);
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
+});
+
 it('cancels waitlist entries and enforces author-or-manager shift-note mutation rights', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);

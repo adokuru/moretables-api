@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\PublicRestaurantController;
 use App\Http\Controllers\Api\V1\PublicRestaurantDiscoveryController;
 use App\Http\Controllers\Api\V1\PublicRestaurantViewController;
 use App\Http\Controllers\Api\V1\RestaurantReviewController;
+use App\Http\Controllers\Api\V1\StatusIconController;
 use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,8 @@ Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
 
 Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index'])->middleware('throttle:public-read');
+
+Route::get('reference/status-icons', [StatusIconController::class, 'index'])->middleware('throttle:public-read');
 
 Route::get('moretable-lineups', [PublicMoretableLineupController::class, 'index'])->middleware('throttle:public-read');
 Route::get('moretable-lineups/{slug}', [PublicMoretableLineupController::class, 'show'])->middleware('throttle:public-read');

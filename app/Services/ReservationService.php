@@ -917,6 +917,10 @@ class ReservationService
                 guestContact: $entry->guestContact,
             );
 
+            // Assigning a table to a waitlist party seats them now: the reservation
+            // must land in the Seated bucket, not Reservations (it is created as Booked).
+            $reservation = $this->seatReservation($reservation, $actor);
+
             $entry->forceFill([
                 'status' => WaitlistStatus::Seated,
                 'reservation_id' => $reservation->id,

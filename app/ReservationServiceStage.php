@@ -12,4 +12,6 @@ enum ReservationServiceStage: string
     case Cleared = 'cleared';
     case CheckDropped = 'check_dropped';
     case Paid = 'paid';
+    case Finished = 'finished';
+    case BussingNeeded = 'bussing_needed';
 }
