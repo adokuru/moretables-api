@@ -20,9 +20,20 @@ class PublicCuisineOptionController extends Controller
      * List cuisine options for filtering and onboarding flows (read-only catalog).
      */
     #[QueryParameter('per_page', type: 'integer', default: 20, example: 25)]
+    #[QueryParameter('search', type: 'string', description: 'Filter by cuisine name')]
     public function index(Request $request): JsonResponse
     {
         $perPage = $this->perPage($request);
+        $search = $request->string('search')->trim()->value();
+
+        if ($search !== '') {
+            $options = CuisineOption::query()
+                ->where('name', 'LIKE', "%{$search}%")
+                ->orderBy('name')
+                ->paginate($perPage);
+
+            return response()->json(CuisineOptionResource::collection($options)->response()->getData(true));
+        }
 
         $payload = $this->performanceCache->flexible(
             $this->performanceCache->versionedKey(
