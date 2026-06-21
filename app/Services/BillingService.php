@@ -14,9 +14,11 @@ use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantSubscription;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Notifications\MerchantPaymentConfirmationNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class BillingService
@@ -29,7 +31,7 @@ class BillingService
     /**
      * @return array<string, mixed>
      */
-    public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan): array
+    public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan, bool $isUpgrade = false): array
     {
         $invoice = MerchantInvoice::query()->create([
             'restaurant_id' => $restaurant->id,
@@ -43,6 +45,7 @@ class BillingService
             'billing_period_start' => now(),
             'billing_period_end' => now()->addMonth(),
             'due_at' => now()->addDay(),
+            'metadata' => $isUpgrade ? ['is_upgrade' => true] : null,
         ]);
 
         $providerResponse = $this->provider->initializeSubscriptionCheckout($restaurant, $plan, $invoice);
@@ -259,6 +262,7 @@ class BillingService
 
     protected function recordTransaction(MerchantInvoice $invoice, array $data): MerchantPayment
     {
+        $isUpgrade = (bool) ($invoice->metadata['is_upgrade'] ?? false);
         $paymentMethod = $this->upsertPaymentMethod($invoice->restaurant, $data);
         $status = $this->paymentStatusFrom((string) Arr::get($data, 'status', 'pending'));
 
@@ -285,13 +289,19 @@ class BillingService
             ],
         );
 
+        $paidAt = $status === MerchantPaymentStatus::Success
+            ? ($this->dateOrNull(Arr::get($data, 'paid_at')) ?? now())
+            : null;
+
         $invoice->update([
             'merchant_subscription_id' => $subscription?->id ?? $invoice->merchant_subscription_id,
             'receipt_number' => Arr::get($data, 'id', $invoice->receipt_number),
             'status' => $status === MerchantPaymentStatus::Success
                 ? MerchantInvoiceStatus::Paid
                 : MerchantInvoiceStatus::Failed,
-            'paid_at' => $status === MerchantPaymentStatus::Success ? ($this->dateOrNull(Arr::get($data, 'paid_at')) ?? now()) : $invoice->paid_at,
+            'paid_at' => $paidAt ?? $invoice->paid_at,
+            'billing_period_start' => $paidAt ?? $invoice->billing_period_start,
+            'billing_period_end' => $paidAt ? $paidAt->addMonth() : $invoice->billing_period_end,
             'metadata' => [
                 ...($invoice->metadata ?? []),
                 'gateway_response' => Arr::get($data, 'gateway_response'),
@@ -299,6 +309,18 @@ class BillingService
         ]);
 
         $this->performanceCache->invalidateBillingEligibility($invoice->restaurant_id);
+
+        if ($status === MerchantPaymentStatus::Success) {
+            $invoice->refresh()->loadMissing(['restaurant.organization', 'plan']);
+            $billingEmail = $invoice->restaurant->organization?->billing_email
+                ?? $invoice->restaurant->organization?->business_email
+                ?? $invoice->restaurant->email;
+
+            if ($billingEmail) {
+                Notification::route('mail', $billingEmail)
+                    ->notify(new MerchantPaymentConfirmationNotification($invoice, $isUpgrade));
+            }
+        }
 
         return $payment->refresh();
     }

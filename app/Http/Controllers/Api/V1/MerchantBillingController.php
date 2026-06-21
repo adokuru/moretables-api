@@ -90,7 +90,7 @@ class MerchantBillingController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $checkout = $this->billingService->initializeCheckout($restaurant, $plan);
+        $checkout = $this->billingService->initializeCheckout($restaurant, $plan, isUpgrade: true);
 
         $email = $restaurant->organization?->billing_email
             ?? $restaurant->organization?->business_email
