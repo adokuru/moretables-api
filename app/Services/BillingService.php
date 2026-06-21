@@ -300,6 +300,7 @@ class BillingService
                 ? MerchantInvoiceStatus::Paid
                 : MerchantInvoiceStatus::Failed,
             'paid_at' => $paidAt ?? $invoice->paid_at,
+            'due_at' => $paidAt ? $paidAt->addMonth() : $invoice->due_at,
             'billing_period_start' => $paidAt ?? $invoice->billing_period_start,
             'billing_period_end' => $paidAt ? $paidAt->addMonth() : $invoice->billing_period_end,
             'metadata' => [
@@ -369,8 +370,7 @@ class BillingService
             ?? Arr::get($data, 'subscription_code')
             ?? 'local_'.$invoice->provider_reference;
 
-        $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'subscription.next_payment_date'))
-            ?? $this->dateOrNull(Arr::get($data, 'paid_at'))?->addMonth()
+        $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'paid_at'))?->addMonth()
             ?? now()->addMonth();
 
         MerchantSubscription::query()
