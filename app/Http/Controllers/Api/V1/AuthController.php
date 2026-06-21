@@ -207,7 +207,7 @@ class AuthController extends Controller
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $user = User::query()->where('email', $request->string('email')->toString())->first();
+        $user = User::query()->whereRaw('LOWER(email) = ?', [strtolower($request->string('email')->toString())])->first();
 
         if ($user?->requiresTwoFactor()) {
             Password::sendResetLink($request->safe()->only('email'));
@@ -220,7 +220,7 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        $user = User::query()->where('email', $request->string('email')->toString())->first();
+        $user = User::query()->whereRaw('LOWER(email) = ?', [strtolower($request->string('email')->toString())])->first();
 
         if ($user && ! $user->requiresTwoFactor()) {
             throw ValidationException::withMessages([
@@ -253,7 +253,7 @@ class AuthController extends Controller
 
     public function forgotPasswordOtp(ForgotPasswordRequest $request): JsonResponse
     {
-        $user = User::query()->where('email', $request->string('email')->toString())->first();
+        $user = User::query()->whereRaw('LOWER(email) = ?', [strtolower($request->string('email')->toString())])->first();
 
         if (! $user || ! $user->requiresTwoFactor()) {
             throw ValidationException::withMessages([
@@ -319,9 +319,13 @@ class AuthController extends Controller
 
     protected function findUserByIdentifier(string $identifier): ?User
     {
+        $normalized = strtolower($identifier);
+
         return User::query()
-            ->where('email', $identifier)
-            ->orWhere('phone', $identifier)
+            ->where(function ($q) use ($normalized, $identifier): void {
+                $q->whereRaw('LOWER(email) = ?', [$normalized])
+                    ->orWhere('phone', $identifier);
+            })
             ->first();
     }
 }
