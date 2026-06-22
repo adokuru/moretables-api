@@ -41,6 +41,11 @@ class StoreAdminUserRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $payload = [];
+
+        if ($this->filled('email')) {
+            $payload['email'] = strtolower($this->string('email')->toString());
+        }
+
         $name = trim((string) $this->input('name', ''));
 
         if ($name !== '') {

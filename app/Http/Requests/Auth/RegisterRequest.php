@@ -13,6 +13,13 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('email')) {
+            $this->merge(['email' => strtolower($this->string('email')->toString())]);
+        }
+    }
+
     public function rules(): array
     {
         return [
