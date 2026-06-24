@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\OnboardingRequest;
 use App\Models\Role;
 use App\RestaurantStatus;
 use Illuminate\Contracts\Validation\Validator;
@@ -36,6 +37,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'business_city' => ['nullable', 'string', 'max:100'],
             'business_state' => ['nullable', 'string', 'max:100'],
             'business_country' => ['nullable', 'string', 'max:100'],
+            'onboarding_request_id' => ['nullable', 'integer', 'exists:onboarding_requests,id'],
             'restaurants_count' => ['required', 'integer', 'min:1'],
             'restaurants' => ['required', 'array', 'min:1'],
             'restaurants.*.name' => ['required', 'string', 'max:255'],
@@ -134,9 +136,29 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 $restaurants = $this->input('restaurants', []);
+                $plannedCount = (int) $this->input('restaurants_count');
+                $submittedCount = count($restaurants);
 
-                if (count($restaurants) !== (int) $this->input('restaurants_count')) {
-                    $validator->errors()->add('restaurants_count', 'The restaurants count must match the submitted restaurants.');
+                if ($submittedCount < 1) {
+                    $validator->errors()->add('restaurants', 'At least one restaurant must be submitted.');
+                }
+
+                if ($submittedCount > $plannedCount) {
+                    $validator->errors()->add(
+                        'restaurants_count',
+                        'The restaurants count cannot be less than the number of submitted restaurants.',
+                    );
+                }
+
+                if ($this->filled('onboarding_request_id')) {
+                    $onboardingRequest = OnboardingRequest::query()->find($this->integer('onboarding_request_id'));
+
+                    if ($onboardingRequest?->organization_id !== null) {
+                        $validator->errors()->add(
+                            'onboarding_request_id',
+                            'This onboarding request has already been linked to an organization.',
+                        );
+                    }
                 }
 
                 $providedSlugs = collect($restaurants)

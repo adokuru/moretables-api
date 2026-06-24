@@ -35,6 +35,7 @@ class OnboardingRequest extends Model
         'status',
         'reviewed_by',
         'reviewed_at',
+        'organization_id',
     ];
 
     protected function casts(): array
@@ -51,5 +52,10 @@ class OnboardingRequest extends Model
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

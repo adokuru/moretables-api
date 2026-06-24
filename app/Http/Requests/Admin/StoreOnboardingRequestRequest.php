@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Concerns\NormalizesOnboardingLeadFields;
 use App\OnboardingContactReason;
 use App\OnboardingJobTitle;
 use App\OnboardingLocationCount;
@@ -10,9 +11,16 @@ use Illuminate\Validation\Rule;
 
 class StoreOnboardingRequestRequest extends FormRequest
 {
+    use NormalizesOnboardingLeadFields;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareOnboardingLeadFields();
     }
 
     public function rules(): array

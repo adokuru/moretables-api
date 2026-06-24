@@ -26,6 +26,7 @@ class OrganizationResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
             'country' => $this->country,
+            'planned_restaurants_count' => $this->planned_restaurants_count,
             'restaurants_count' => $this->whenCounted('restaurants'),
             'restaurants' => RestaurantListResource::collection($this->whenLoaded('restaurants')),
             'created_at' => optional($this->created_at)?->toIso8601String(),

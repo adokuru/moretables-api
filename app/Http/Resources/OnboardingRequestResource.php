@@ -23,6 +23,7 @@ class OnboardingRequestResource extends JsonResource
             'address' => $this->address,
             'notes' => $this->notes,
             'status' => $this->status?->value,
+            'organization_id' => $this->organization_id,
             'reviewed_at' => optional($this->reviewed_at)?->toIso8601String(),
             'reviewed_by' => UserResource::make($this->whenLoaded('reviewedBy')),
             'created_at' => optional($this->created_at)?->toIso8601String(),
