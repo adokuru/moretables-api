@@ -295,7 +295,8 @@ it('validates onboarding request counts and menu payloads', function (Closure $m
 })->with([
     'restaurant count mismatch' => [
         fn (array $payload): array => tap($payload, function (array &$payload): void {
-            $payload['restaurants_count'] = 2;
+            $payload['restaurants_count'] = 1;
+            $payload['restaurants'][] = $payload['restaurants'][0];
         }),
         'restaurants_count',
     ],

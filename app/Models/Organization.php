@@ -29,6 +29,7 @@ class Organization extends Model
         'state',
         'country',
         'status',
+        'planned_restaurants_count',
     ];
 
     public function restaurants(): HasMany

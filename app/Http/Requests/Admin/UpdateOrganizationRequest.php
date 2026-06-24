@@ -32,6 +32,7 @@ class UpdateOrganizationRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:100'],
             'country' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'string', 'max:50'],
+            'planned_restaurants_count' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

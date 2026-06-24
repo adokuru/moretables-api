@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\DiningArea;
+use App\Models\OnboardingRequest;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\OnboardingRequestStatus;
 use App\RestaurantStatus;
 use App\UserAuthMethod;
 use App\UserStatus;
@@ -65,6 +67,8 @@ class AdminBusinessOnboardingService
                 ]));
             }
 
+            $this->linkOnboardingRequest($payload, $organization, $admin);
+
             return [
                 'organization' => $organization->refresh()->loadCount('restaurants'),
                 'owner' => $owner->refresh()->load('roles'),
@@ -95,7 +99,30 @@ class AdminBusinessOnboardingService
             'state' => $payload['business_state'] ?? data_get($payload, 'restaurants.0.state'),
             'country' => $payload['business_country'] ?? data_get($payload, 'restaurants.0.country'),
             'status' => 'active',
+            'planned_restaurants_count' => (int) ($payload['restaurants_count'] ?? count($payload['restaurants'] ?? [])),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function linkOnboardingRequest(array $payload, Organization $organization, User $admin): void
+    {
+        $onboardingRequestId = $payload['onboarding_request_id'] ?? null;
+
+        if ($onboardingRequestId === null) {
+            return;
+        }
+
+        OnboardingRequest::query()
+            ->whereKey($onboardingRequestId)
+            ->whereNull('organization_id')
+            ->update([
+                'organization_id' => $organization->id,
+                'status' => OnboardingRequestStatus::Approved->value,
+                'reviewed_by' => $admin->id,
+                'reviewed_at' => now(),
+            ]);
     }
 
     /**
