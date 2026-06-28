@@ -74,6 +74,7 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
 
     foreach ([$bookedChampion, $viewedChampion, $savedChampion, $ratedChampion, $featuredChampion, $newChampion] as $listedRestaurant) {
         activateMerchantBilling($listedRestaurant);
+        markRestaurantOnboardingComplete($listedRestaurant);
     }
 
     Reservation::factory()->count(5)->create([
@@ -207,11 +208,13 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
 });
 
 it('returns distance_km in discovery section when coordinates are provided', function () {
-    activateMerchantBilling(Restaurant::factory()->create([
+    $restaurant = Restaurant::factory()->create([
         'status' => RestaurantStatus::Active,
         'latitude' => 6.5244,
         'longitude' => 3.3792,
-    ]));
+    ]);
+    activateMerchantBilling($restaurant);
+    markRestaurantOnboardingComplete($restaurant);
 
     $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables?latitude=6.5244&longitude=3.3792');
 
@@ -223,7 +226,9 @@ it('returns distance_km in discovery section when coordinates are provided', fun
 });
 
 it('omits distance_km in discovery section when no coordinates are provided', function () {
-    activateMerchantBilling(Restaurant::factory()->create(['status' => RestaurantStatus::Active]));
+    $restaurant = Restaurant::factory()->create(['status' => RestaurantStatus::Active]);
+    activateMerchantBilling($restaurant);
+    markRestaurantOnboardingComplete($restaurant);
 
     $response = $this->getJson('/api/v1/restaurants/discovery/new_on_moretables');
 

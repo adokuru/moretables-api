@@ -332,7 +332,7 @@ it('returns empty slots for a closed day', function () {
     $tomorrow = Carbon::tomorrow('UTC');
     $dayOfWeek = $tomorrow->dayOfWeek;
 
-    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->where('day_of_week', $dayOfWeek)->delete();
     RestaurantHour::factory()->create([
         'restaurant_id' => $restaurant->id,
         'day_of_week' => $dayOfWeek,

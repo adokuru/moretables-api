@@ -330,6 +330,13 @@ class Restaurant extends Model implements HasMedia
     {
         return $query
             ->where('status', RestaurantStatus::Active->value)
+            ->where('is_profile_published', true)
+            ->where(function (Builder $bookableQuery): void {
+                $bookableQuery
+                    ->whereHas('shifts', fn (Builder $shiftQuery): Builder => $shiftQuery->where('is_active', true))
+                    ->orWhereHas('availabilitySchedules')
+                    ->orWhereHas('hours', fn (Builder $hoursQuery): Builder => $hoursQuery->where('is_closed', false));
+            })
             ->whereHas('activeBillingSubscription');
     }
 
@@ -339,11 +346,42 @@ class Restaurant extends Model implements HasMedia
             return false;
         }
 
+        if (! $this->is_profile_published) {
+            return false;
+        }
+
+        if (! $this->hasBookableTimes()) {
+            return false;
+        }
+
         if ($this->relationLoaded('activeBillingSubscription')) {
             return $this->activeBillingSubscription !== null;
         }
 
         return $this->activeBillingSubscription()->exists();
+    }
+
+    private function hasBookableTimes(): bool
+    {
+        $hasActiveShift = $this->relationLoaded('shifts')
+            ? $this->shifts->contains(fn (RestaurantShift $shift): bool => $shift->is_active)
+            : $this->shifts()->where('is_active', true)->exists();
+
+        if ($hasActiveShift) {
+            return true;
+        }
+
+        $hasAvailabilitySchedule = $this->relationLoaded('availabilitySchedules')
+            ? $this->availabilitySchedules->isNotEmpty()
+            : $this->availabilitySchedules()->exists();
+
+        if ($hasAvailabilitySchedule) {
+            return true;
+        }
+
+        return $this->relationLoaded('hours')
+            ? $this->hours->contains(fn (RestaurantHour $hour): bool => ! $hour->is_closed)
+            : $this->hours()->where('is_closed', false)->exists();
     }
 
     public function registerMediaCollections(): void

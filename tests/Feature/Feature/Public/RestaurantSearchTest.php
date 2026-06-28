@@ -80,6 +80,7 @@ it('uses meal schedules to summarize hours on restaurant listings', function () 
         'slug' => 'scheduled-restaurant',
         'city' => 'Lagos',
     ]);
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
     RestaurantHour::factory()->create([
         'restaurant_id' => $restaurant->id,
         'day_of_week' => 4,

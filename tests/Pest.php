@@ -115,8 +115,27 @@ function createListedBookableRestaurant(): array
 {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    markRestaurantOnboardingComplete($data['restaurant']);
 
     return $data;
+}
+
+function markRestaurantOnboardingComplete(Restaurant $restaurant): void
+{
+    $restaurant->update(['is_profile_published' => true]);
+
+    $hasBookableTimes = $restaurant->shifts()->where('is_active', true)->exists()
+        || $restaurant->availabilitySchedules()->exists()
+        || $restaurant->hours()->where('is_closed', false)->exists();
+
+    if (! $hasBookableTimes) {
+        foreach (range(0, 6) as $day) {
+            RestaurantHour::factory()->create([
+                'restaurant_id' => $restaurant->id,
+                'day_of_week' => $day,
+            ]);
+        }
+    }
 }
 
 function activateMerchantBilling(Restaurant $restaurant): void
@@ -142,6 +161,7 @@ function createListedRestaurant(array $attributes = []): Restaurant
 {
     $restaurant = Restaurant::factory()->create($attributes);
     activateMerchantBilling($restaurant);
+    markRestaurantOnboardingComplete($restaurant);
 
     return $restaurant;
 }

@@ -26,6 +26,7 @@ it('includes grouped menu items in the public restaurant detail response', funct
         'restaurant_id' => $restaurant->id,
     ]);
 
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
     foreach (range(0, 6) as $day) {
         RestaurantHour::factory()->create([
             'restaurant_id' => $restaurant->id,
@@ -167,6 +168,7 @@ it('includes has_saved in the public restaurant detail response for authenticate
 
 it('uses meal schedules to summarize public restaurant detail hours', function () {
     $restaurant = createListedRestaurant();
+    RestaurantHour::query()->where('restaurant_id', $restaurant->id)->delete();
     RestaurantHour::factory()->create([
         'restaurant_id' => $restaurant->id,
         'day_of_week' => 5,
