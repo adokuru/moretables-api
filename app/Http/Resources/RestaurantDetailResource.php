@@ -181,6 +181,14 @@ class RestaurantDetailResource extends JsonResource
                 $this->relationLoaded('activeBillingSubscription'),
                 fn () => $this->activeBillingSubscription?->plan?->slug?->value,
             ),
+            'billing' => $this->when(
+                $this->relationLoaded('activeBillingSubscription') || $this->relationLoaded('latestBillingSubscription'),
+                fn () => RestaurantBillingSummaryResource::make($this->resource)->resolve($request),
+            ),
+            'plan' => $this->when(
+                $this->relationLoaded('activeBillingSubscription') || $this->relationLoaded('latestBillingSubscription'),
+                fn () => RestaurantBillingSummaryResource::make($this->resource)->resolve($request)['plan'],
+            ),
         ];
     }
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -38,6 +39,8 @@ class AuthChallengeService
                 'last_sent_at' => now(),
                 'meta' => $meta,
             ]);
+
+            Log::info('Auth challenge OTP sent.', ['code' => $code]);
 
             $user->notify(new AuthChallengeCodeNotification(
                 code: $code,

@@ -13,6 +13,7 @@ use App\Services\AuthChallengeService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 #[Group('Admin Auth', weight: 48)]
@@ -50,6 +51,10 @@ class AdminAuthController extends Controller
 
         $challenge = $this->authChallengeService->create($user, AuthChallengeType::AdminLogin, [
             'identifier' => $request->string('identifier')->toString(),
+        ]);
+
+        Log::info('Admin login challenge created', [
+            'challenge' => $challenge,
         ]);
 
         return response()->json([
