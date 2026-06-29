@@ -46,7 +46,14 @@ class AdminRestaurantController extends Controller
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
         $restaurants = Restaurant::query()
-            ->with(['organization', 'policy', 'cuisines', 'media'])
+            ->with([
+                'organization',
+                'policy',
+                'cuisines',
+                'media',
+                'activeBillingSubscription.plan',
+                'latestBillingSubscription.plan',
+            ])
             ->when(
                 filled($request->string('search')->toString()),
                 fn ($query) => $query->where(function ($restaurantQuery) use ($request): void {

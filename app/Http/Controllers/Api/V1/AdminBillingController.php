@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\AdminBillingPaymentIndexRequest;
 use App\Http\Requests\Admin\AdminBillingSubscriptionIndexRequest;
 use App\Http\Requests\Admin\StoreAdminBillingSubscriptionRequest;
 use App\Http\Resources\BillingPlanResource;
+use App\Http\Resources\MerchantBillingResource;
 use App\Http\Resources\MerchantInvoiceResource;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
@@ -35,6 +36,41 @@ class AdminBillingController extends Controller
 
         return response()->json([
             'plans' => BillingPlanResource::collection($plans),
+        ]);
+    }
+
+    public function restaurantPlan(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+
+        $restaurant->loadMissing([
+            'organization',
+            'activeBillingSubscription.plan',
+            'latestBillingSubscription.plan',
+            'defaultPaymentMethod',
+        ]);
+
+        $subscription = $restaurant->activeBillingSubscription ?? $restaurant->latestBillingSubscription;
+
+        return response()->json([
+            'organization' => [
+                'id' => $restaurant->organization?->id,
+                'name' => $restaurant->organization?->name,
+                'slug' => $restaurant->organization?->slug,
+                'billing_email' => $restaurant->organization?->billing_email,
+            ],
+            'restaurant' => [
+                'id' => $restaurant->id,
+                'name' => $restaurant->name,
+                'slug' => $restaurant->slug,
+            ],
+            'billing' => MerchantBillingResource::make($this->restaurantBillingPayload($restaurant, $subscription)),
+            'plan' => $subscription?->plan
+                ? BillingPlanResource::make($subscription->plan)
+                : null,
+            'subscription' => $subscription
+                ? $this->subscriptionPayload($subscription)
+                : null,
         ]);
     }
 
@@ -365,6 +401,23 @@ class AdminBillingController extends Controller
                 'interval' => $subscription->plan?->interval,
             ],
             'created_at' => optional($subscription->created_at)?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array{is_active: bool, subscription: ?MerchantSubscription, payment_method: null, upcoming_invoice: ?MerchantInvoice}
+     */
+    protected function restaurantBillingPayload(Restaurant $restaurant, ?MerchantSubscription $subscription): array
+    {
+        return [
+            'is_active' => $this->billingService->isRestaurantBillable($restaurant),
+            'subscription' => $subscription?->loadMissing('plan'),
+            'payment_method' => $restaurant->defaultPaymentMethod,
+            'upcoming_invoice' => $restaurant->invoices()
+                ->with('plan')
+                ->where('status', 'pending')
+                ->latest()
+                ->first(),
         ];
     }
 }

@@ -60,6 +60,88 @@ it('allows admins to list billing plans and assign a subscription to a restauran
         ->and(MerchantPayment::query()->where('merchant_subscription_id', $subscription->id)->where('status', 'success')->exists())->toBeTrue();
 });
 
+it('returns the billing plan for a restaurant with its organization context', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create([
+        'name' => 'Plan Org',
+        'billing_email' => 'billing@plan-org.example',
+    ]);
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Plan Bistro',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/v1/admin/billing/subscriptions', [
+        'restaurant_id' => $restaurant->id,
+        'plan' => 'core',
+        'status' => 'active',
+    ])->assertCreated();
+
+    $response = $this->getJson('/api/v1/admin/restaurants/'.$restaurant->id.'/billing/plan');
+
+    $response->assertOk()
+        ->assertJsonPath('organization.id', $organization->id)
+        ->assertJsonPath('organization.name', 'Plan Org')
+        ->assertJsonPath('organization.billing_email', 'billing@plan-org.example')
+        ->assertJsonPath('restaurant.id', $restaurant->id)
+        ->assertJsonPath('plan.slug', 'core')
+        ->assertJsonPath('subscription.plan.slug', 'core')
+        ->assertJsonPath('billing.is_active', true);
+});
+
+it('returns null plan when a restaurant has no subscription', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $response = $this->getJson('/api/v1/admin/restaurants/'.$restaurant->id.'/billing/plan');
+
+    $response->assertOk()
+        ->assertJsonPath('organization.id', $organization->id)
+        ->assertJsonPath('plan', null)
+        ->assertJsonPath('subscription', null)
+        ->assertJsonPath('billing.is_active', false);
+});
+
+it('includes billing plan on admin restaurant index without extra requests', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create();
+    $restaurant = Restaurant::factory()->create([
+        'organization_id' => $organization->id,
+        'name' => 'Indexed Plan Bistro',
+    ]);
+
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/v1/admin/billing/subscriptions', [
+        'restaurant_id' => $restaurant->id,
+        'plan' => 'foundation',
+        'status' => 'active',
+    ])->assertCreated();
+
+    $response = $this->getJson('/api/v1/admin/restaurants?search=Indexed+Plan+Bistro');
+
+    $response->assertOk()
+        ->assertJsonPath('data.0.id', $restaurant->id)
+        ->assertJsonPath('data.0.billing.is_active', true)
+        ->assertJsonPath('data.0.billing.plan.slug', 'foundation')
+        ->assertJsonPath('data.0.plan.slug', 'foundation')
+        ->assertJsonPath('data.0.is_subscribed', true)
+        ->assertJsonPath('data.0.subscription_type', 'foundation');
+});
+
 it('replaces an existing active subscription when admin assigns a new plan', function (): void {
     $admin = User::factory()->create();
     assignScopedRole($admin, Role::BusinessAdmin);
