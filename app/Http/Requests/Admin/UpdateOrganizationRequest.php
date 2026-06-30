@@ -2,14 +2,22 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Concerns\NormalizesOrganizationFields;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateOrganizationRequest extends FormRequest
 {
+    use NormalizesOrganizationFields;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareOrganizationFrontendPayload();
     }
 
     public function rules(): array

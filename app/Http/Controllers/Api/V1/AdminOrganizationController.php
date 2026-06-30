@@ -93,11 +93,15 @@ class AdminOrganizationController extends Controller
         ], 201);
     }
 
-    public function show(Organization $organization): OrganizationResource
+    public function show(Request $request, Organization $organization): JsonResponse
     {
         $this->authorize('view', $organization);
 
-        return OrganizationResource::make($organization->load(['restaurants.cuisines', 'restaurants.media'])->loadCount('restaurants'));
+        $organization->load(['restaurants.cuisines', 'restaurants.media'])->loadCount('restaurants');
+
+        return response()->json([
+            'organization' => OrganizationResource::make($organization)->resolve($request),
+        ]);
     }
 
     public function update(UpdateOrganizationRequest $request, Organization $organization): JsonResponse

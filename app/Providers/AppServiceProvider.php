@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -59,6 +60,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Route::bind('organization', function (string $value): Organization {
+            if (! ctype_digit($value)) {
+                abort(404, 'Organization not found.');
+            }
+
+            return Organization::query()->findOrFail($value);
+        });
+
         Restaurant::observe(RestaurantObserver::class);
         Restaurant::observe(RestaurantPublicDataObserver::class);
         RestaurantReview::observe(RestaurantPublicDataObserver::class);

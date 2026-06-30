@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin;
 
 use App\Http\Requests\Admin\Concerns\ValidatesAdminRestaurantMenu;
+use App\Http\Requests\Concerns\NormalizesAveragePriceRange;
+use App\Http\Requests\Concerns\ValidatesAveragePriceRange;
 use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
 use Illuminate\Contracts\Validation\Validator;
@@ -12,7 +14,9 @@ use Illuminate\Validation\Rule;
 class UpdateAdminRestaurantRequest extends FormRequest
 {
     use HasMediaUploadFields;
+    use NormalizesAveragePriceRange;
     use ValidatesAdminRestaurantMenu;
+    use ValidatesAveragePriceRange;
 
     public function authorize(): bool
     {
@@ -21,6 +25,7 @@ class UpdateAdminRestaurantRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->prepareAveragePriceRangeField();
         $this->prepareAdminRestaurantFrontendPayload();
     }
 
@@ -48,7 +53,7 @@ class UpdateAdminRestaurantRequest extends FormRequest
             'internal_notes' => ['nullable', 'string'],
             'website' => ['nullable', 'url', 'max:2048'],
             'instagram_handle' => ['nullable', 'string', 'max:255'],
-            'average_price_range' => ['nullable', 'string', 'max:100'],
+            'average_price_range' => $this->averagePriceRangeRules(),
             'dining_style' => ['nullable', 'string', 'max:100'],
             'dress_code' => ['nullable', 'string', 'max:100'],
             'total_seating_capacity' => ['nullable', 'integer', 'min:1'],

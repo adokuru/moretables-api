@@ -51,11 +51,9 @@ class RestaurantMenuItem extends Model implements HasMedia
     public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')
-            ->fit(Fit::Crop, 240, 240)
-            ->nonQueued();
+            ->fit(Fit::Crop, 240, 240);
 
         $this->addMediaConversion('card')
-            ->fit(Fit::Crop, 720, 540)
-            ->nonQueued();
+            ->fit(Fit::Crop, 720, 540);
     }
 }

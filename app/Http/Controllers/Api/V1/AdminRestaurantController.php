@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateRestaurantStatusRequest;
 use App\Http\Resources\AdminRestaurantDetailResource;
 use App\Http\Resources\RestaurantDetailResource;
 use App\Http\Resources\UserResource;
+use App\Jobs\ProcessRestaurantMediaUploads;
 use App\Models\Restaurant;
 use App\Models\RestaurantPolicy;
 use App\Models\Role;
@@ -18,6 +19,7 @@ use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
 use App\Services\RestaurantMenuSyncService;
 use App\Services\RestaurantReviewSummaryService;
+use App\Services\RestaurantUploadStagingService;
 use App\Services\ScopedRoleAssignmentService;
 use App\UserAuthMethod;
 use App\UserStatus;
@@ -26,6 +28,7 @@ use Dedoc\Scramble\Attributes\QueryParameter;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 #[Group('Admin Restaurants', weight: 52)]
 class AdminRestaurantController extends Controller
@@ -36,6 +39,7 @@ class AdminRestaurantController extends Controller
         protected CuisineOptionRestaurantSyncService $cuisineOptionRestaurantSyncService,
         protected RestaurantMenuSyncService $restaurantMenuSyncService,
         protected RestaurantReviewSummaryService $restaurantReviewSummaryService,
+        protected RestaurantUploadStagingService $restaurantUploadStagingService,
     ) {}
 
     #[QueryParameter('page', type: 'integer', default: 1, example: 1)]
@@ -106,7 +110,10 @@ class AdminRestaurantController extends Controller
     {
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
+        $startedAt = microtime(true);
         $validated = $request->validatedWithMenuUploads();
+        $deferUploads = $this->restaurantUploadStagingService->hasDeferredUploads($validated);
+
         $restaurant = Restaurant::query()->create([
             ...collect($validated)->except($this->restaurantPersistExcludedFields())->toArray(),
             'slug' => $validated['slug'] ?? str($validated['name'])->slug()->toString(),
@@ -114,8 +121,25 @@ class AdminRestaurantController extends Controller
 
         RestaurantPolicy::query()->firstOrCreate(['restaurant_id' => $restaurant->id]);
         $this->syncRestaurantFeatures($restaurant, $validated);
-        $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
-        $this->restaurantMenuSyncService->sync($restaurant, $validated);
+
+        $mediaProcessing = null;
+
+        if ($deferUploads) {
+            if (config('queue.default') === 'sync') {
+                $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+                $this->restaurantMenuSyncService->sync($restaurant, $validated);
+            } else {
+                $stagedPayload = $this->restaurantUploadStagingService->stage($validated);
+                $job = ProcessRestaurantMediaUploads::dispatch($restaurant->id, $stagedPayload);
+                $mediaProcessing = [
+                    'status' => 'processing',
+                    'job_id' => $job->id ?? null,
+                ];
+            }
+        } else {
+            $this->mediaLibraryService->syncUploadedMedia($restaurant, $validated);
+            $this->restaurantMenuSyncService->sync($restaurant, $validated);
+        }
 
         $this->logAdminAudit(
             $request,
@@ -124,19 +148,29 @@ class AdminRestaurantController extends Controller
             newValues: ['name' => $restaurant->name, 'slug' => $restaurant->slug],
         );
 
-        return response()->json([
+        Log::info('admin.restaurant.store.completed', [
+            'restaurant_id' => $restaurant->id,
+            'deferred_uploads' => $deferUploads,
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ]);
+
+        $response = [
             'message' => 'Restaurant created successfully.',
+            'id' => $restaurant->id,
             'restaurant' => RestaurantDetailResource::make($restaurant->load([
                 'organization',
                 'policy',
                 'cuisines',
                 'media',
                 'hours',
-                'menuItems.media',
-                'diningAreas.tables',
-                'galleryCategories',
             ])),
-        ], 201);
+        ];
+
+        if ($mediaProcessing !== null) {
+            $response['media_processing'] = $mediaProcessing;
+        }
+
+        return response()->json($response, 201);
     }
 
     public function show(Request $request, Restaurant $restaurant): AdminRestaurantDetailResource

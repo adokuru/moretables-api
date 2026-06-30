@@ -22881,18 +22881,19 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "`OrganizationResource`",
+                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/OrganizationResource"
+                                        "organization": {
+                                            "type": "array",
+                                            "items": {}
                                         }
                                     },
                                     "required": [
-                                        "data"
+                                        "organization"
                                     ]
                                 }
                             }
@@ -23716,13 +23717,37 @@
                                             "type": "string",
                                             "const": "Restaurant created successfully."
                                         },
+                                        "id": {
+                                            "type": "integer"
+                                        },
                                         "restaurant": {
                                             "$ref": "#/components/schemas/RestaurantDetailResource"
+                                        },
+                                        "media_processing": {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "const": "processing"
+                                                },
+                                                "job_id": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "job_id"
+                                            ]
                                         }
                                     },
                                     "required": [
                                         "message",
-                                        "restaurant"
+                                        "id",
+                                        "restaurant",
+                                        "media_processing"
                                     ]
                                 }
                             }
@@ -30718,6 +30743,16 @@
                 ],
                 "title": "AvailabilityAlertResource"
             },
+            "AveragePriceRange": {
+                "type": "string",
+                "enum": [
+                    "10k and under",
+                    "20k and under",
+                    "50k and under",
+                    "50k and above"
+                ],
+                "title": "AveragePriceRange"
+            },
             "BillingPlanResource": {
                 "type": "object",
                 "properties": {
@@ -34313,8 +34348,7 @@
                                     "maxLength": 100
                                 },
                                 "average_price_range": {
-                                    "type": "string",
-                                    "maxLength": 100
+                                    "$ref": "#/components/schemas/AveragePriceRange"
                                 },
                                 "dining_style": {
                                     "type": "string",
@@ -34861,11 +34895,7 @@
                         "maxLength": 255
                     },
                     "average_price_range": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 100
+                        "$ref": "#/components/schemas/AveragePriceRange"
                     },
                     "dining_style": {
                         "type": [
@@ -37299,11 +37329,7 @@
                         "maxLength": 255
                     },
                     "average_price_range": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 100
+                        "$ref": "#/components/schemas/AveragePriceRange"
                     },
                     "dining_style": {
                         "type": [
