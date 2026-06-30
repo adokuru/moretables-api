@@ -177,6 +177,18 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 </td></tr>
 @endif
 
+{{-- Leave a review (review_request) --}}
+@if($showReviewButton)
+<tr><td><div style="mso-line-height-rule:exactly;line-height:36px;font-size:1px;display:block;">&nbsp;</div></td></tr>
+<tr><td align="center">
+<table role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;">
+<tr><td align="center" style="background-color:{{ $brandColor }};border-radius:4px;">
+<a href="{{ $reviewUrl }}" style="display:inline-block;padding:16px 40px;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;" target="_blank">Leave a review</a>
+</td></tr>
+</table>
+</td></tr>
+@endif
+
 </table>
 </td></tr>
 </table>

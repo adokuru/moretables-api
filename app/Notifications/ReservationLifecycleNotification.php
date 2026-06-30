@@ -94,6 +94,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
             'type' => 'reservation_lifecycle',
             'reservation_id' => $this->reservation->id,
             'restaurant_id' => $this->reservation->restaurant_id,
+            'restaurant_slug' => $this->reservation->restaurant->slug,
             'status' => $this->reservation->status?->value,
             'action' => $this->action,
             'reference' => $this->reservation->reservation_reference,
@@ -258,6 +259,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
             'cancelled' => 'Reservation canceled',
             'guest_added' => 'Added to reservation',
             'upcoming_reminder' => 'Reservation reminder',
+            'review_request' => 'How was your visit?',
             default => 'Reservation update',
         };
     }
@@ -270,6 +272,7 @@ class ReservationLifecycleNotification extends Notification implements ShouldQue
             'cancelled' => "Your reservation at {$restaurantName} was canceled.",
             'guest_added' => "You've been added to a reservation at {$restaurantName}.",
             'upcoming_reminder' => "Your reservation at {$restaurantName} is coming up soon.",
+            'review_request' => "Tell us how your visit to {$restaurantName} went.",
             default => "There is an update to your reservation at {$restaurantName}.",
         };
     }

@@ -34,3 +34,7 @@ Cancel: {!! $cancelUrl !!}
 
 Make a new reservation: {!! $newReservationUrl !!}
 @endif
+@if($showReviewButton)
+
+Leave a review: {!! $reviewUrl !!}
+@endif
