@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\AveragePriceRange;
+use App\Http\Requests\Concerns\NormalizesAveragePriceRange;
+use App\Http\Requests\Concerns\ValidatesAveragePriceRange;
 use App\Models\OnboardingRequest;
 use App\Models\Role;
 use App\RestaurantStatus;
@@ -11,6 +14,9 @@ use Illuminate\Validation\Rule;
 
 class StoreAdminBusinessOnboardingRequest extends FormRequest
 {
+    use NormalizesAveragePriceRange;
+    use ValidatesAveragePriceRange;
+
     public function authorize(): bool
     {
         return (bool) $this->user()?->hasAnyRole([
@@ -18,6 +24,29 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             Role::DevAdmin,
             Role::SuperAdmin,
         ]);
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! is_array($this->input('restaurants'))) {
+            return;
+        }
+
+        $restaurants = $this->input('restaurants');
+
+        foreach ($restaurants as $index => $restaurant) {
+            if (! is_array($restaurant) || ! array_key_exists('average_price_range', $restaurant)) {
+                continue;
+            }
+
+            $normalized = AveragePriceRange::normalize($restaurant['average_price_range']);
+
+            if ($normalized !== null) {
+                $restaurants[$index]['average_price_range'] = $normalized;
+            }
+        }
+
+        $this->merge(['restaurants' => $restaurants]);
     }
 
     public function rules(): array
@@ -50,7 +79,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'restaurants.*.website' => ['nullable', 'url', 'max:2048'],
             'restaurants.*.instagram_handle' => ['nullable', 'string', 'max:255'],
             'restaurants.*.cuisine_type' => ['required', 'string', 'max:100'],
-            'restaurants.*.average_price_range' => ['required', 'string', 'max:100'],
+            'restaurants.*.average_price_range' => $this->averagePriceRangeRules(required: true),
             'restaurants.*.dining_style' => ['required', 'string', 'max:100'],
             'restaurants.*.dress_code' => ['required', 'string', 'max:100'],
             'restaurants.*.country' => ['nullable', 'string', 'max:100'],

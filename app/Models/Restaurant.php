@@ -397,12 +397,10 @@ class Restaurant extends Model implements HasMedia
     {
         $this->addMediaConversion('thumb')
             ->fit(Fit::Crop, 320, 240)
-            ->performOnCollections('featured', 'gallery')
-            ->nonQueued();
+            ->performOnCollections('featured', 'gallery');
 
         $this->addMediaConversion('card')
             ->fit(Fit::Crop, 900, 640)
-            ->performOnCollections('featured', 'gallery')
-            ->nonQueued();
+            ->performOnCollections('featured', 'gallery');
     }
 }
