@@ -8,6 +8,7 @@ use App\Models\RestaurantShiftNote;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationServiceStage;
 use App\ReservationStatus;
 use App\TableStatus;
@@ -141,6 +142,28 @@ it('requires a table before seating and moves completed tables through cleaning 
     expect($event->broadcastWith()['service_stage'])->toBe(ReservationServiceStage::Entree->value)
         ->and($event->broadcastOn()[0]->name)->toBe('private-restaurant.'.$data['restaurant']->id)
         ->and($staff->canAccessRestaurant($data['restaurant']))->toBeTrue();
+});
+
+it('sends a review request to the guest when a reservation is completed', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $guest = User::factory()->create();
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'user_id' => $guest->id,
+        'status' => ReservationStatus::Seated,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/complete'))
+        ->assertOk();
+
+    Notification::assertSentTo(
+        $guest,
+        ReservationLifecycleNotification::class,
+        fn (ReservationLifecycleNotification $notification): bool => (new ReflectionProperty($notification, 'action'))->getValue($notification) === 'review_request',
+    );
 });
 
 it('rejects service stages and completion until the reservation is seated', function () {

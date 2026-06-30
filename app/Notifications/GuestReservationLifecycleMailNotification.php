@@ -64,6 +64,8 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
                 'extraBody' => $this->extraBody(),
                 'showReservationActions' => $this->showReservationActions(),
                 'showNewReservationButton' => $this->showNewReservationButton(),
+                'showReviewButton' => $this->action === 'review_request',
+                'reviewUrl' => $this->reviewUrl(),
                 'calendarUrl' => $this->calendarUrl(),
                 'modifyUrl' => $this->manageReservationUrl(),
                 'cancelUrl' => $this->manageReservationUrl(),
@@ -98,6 +100,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             'cancelled' => 'Reservation canceled',
             'guest_added' => 'You have been added to the below reservation',
             'upcoming_reminder' => "Your reservation is coming up at {$restaurantName} in {$this->daysUntilReservationLabel()}",
+            'review_request' => 'How was your visit?',
             default => 'Reservation update',
         };
     }
@@ -110,6 +113,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             'cancelled' => "Reservation canceled - {$restaurantName}",
             'guest_added' => "You have been added to a reservation at {$restaurantName}",
             'upcoming_reminder' => "Your reservation is coming up at {$restaurantName} in {$this->daysUntilReservationLabel()}",
+            'review_request' => "How was your visit to {$restaurantName}?",
             default => "Reservation update - {$restaurantName}",
         };
     }
@@ -121,6 +125,7 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
             'updated' => 'Here are the new details:',
             'guest_added', 'upcoming_reminder' => 'Here are the details',
             'cancelled' => "You've successfully canceled your reservation at {$restaurantName}.",
+            'review_request' => "Thanks for dining at {$restaurantName}. We'd love to hear how it went.",
             default => 'There is an update to your reservation.',
         };
     }
@@ -251,6 +256,17 @@ class GuestReservationLifecycleMailNotification extends Notification implements 
     protected function newReservationUrl(): string
     {
         return $this->restaurantUrl($this->reservation->restaurant->slug);
+    }
+
+    protected function reviewUrl(): string
+    {
+        $slug = $this->reservation->restaurant->slug;
+
+        if ($slug === null || $slug === '') {
+            return $this->frontendBaseUrl();
+        }
+
+        return $this->frontendBaseUrl().'/restaurants/'.$slug.'/reservations/'.$this->reservation->id.'/review';
     }
 
     protected function showRestaurantContactDetails(): bool
