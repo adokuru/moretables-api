@@ -48,6 +48,27 @@ it('starts guest onboarding, verifies otp, and completes the profile', function 
         ->assertJsonPath('user.status', UserStatus::Active->value);
 });
 
+it('completes a guest profile without a phone number', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'email' => 'no-phone-guest@example.com',
+        'status' => UserStatus::PendingProfileCompletion,
+    ]);
+
+    $token = $user->createToken('test-device')->plainTextToken;
+
+    $response = $this->withToken($token)->postJson('/api/v1/auth/complete-profile', [
+        'first_name' => 'Ada',
+        'last_name' => 'Okafor',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('user.first_name', 'Ada')
+        ->assertJsonPath('user.phone', null)
+        ->assertJsonPath('user.status', UserStatus::Active->value);
+});
+
 it('lets an existing customer sign in again through the passwordless email otp flow', function () {
     Notification::fake();
 
@@ -77,6 +98,36 @@ it('lets an existing customer sign in again through the passwordless email otp f
         ->assertJsonPath('message', 'Login successful.')
         ->assertJsonPath('user.email', 'returning@example.com')
         ->assertJsonPath('user.status', UserStatus::Active->value);
+});
+
+it('does not require phone to finish guest otp login when names already exist', function () {
+    Notification::fake();
+
+    $customer = User::factory()->create([
+        'email' => 'named-no-phone@example.com',
+        'first_name' => 'Ada',
+        'last_name' => 'Okafor',
+        'phone' => null,
+        'password' => null,
+        'auth_method' => UserAuthMethod::Passwordless,
+    ]);
+
+    $this->postJson('/api/v1/auth/start', [
+        'email' => 'named-no-phone@example.com',
+    ])->assertCreated();
+
+    $challenge = AuthChallenge::query()->where('user_id', $customer->id)->latest()->firstOrFail();
+
+    $response = $this->postJson('/api/v1/auth/verify-otp', [
+        'challenge_token' => $challenge->challenge_token,
+        'code' => '1234',
+        'device_name' => 'no-phone-device',
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('message', 'Login successful.')
+        ->assertJsonPath('user.status', UserStatus::Active->value)
+        ->assertJsonPath('user.phone', null);
 });
 
 it('prevents incomplete guest accounts from booking reservations', function () {

@@ -23,7 +23,7 @@ class StoreMerchantWaitlistEntryRequest extends FormRequest
             'guest_contact.first_name' => ['required_without:user_id', 'string', 'max:120'],
             'guest_contact.last_name' => ['nullable', 'string', 'max:120'],
             'guest_contact.email' => ['nullable', 'email'],
-            'guest_contact.phone' => ['required_without:user_id', 'string', 'max:30'],
+            'guest_contact.phone' => ['nullable', 'string', 'max:30'],
         ];
     }
 }

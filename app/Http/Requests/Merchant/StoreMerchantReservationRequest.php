@@ -22,7 +22,7 @@ class StoreMerchantReservationRequest extends FormRequest
             'starts_at' => ['required', 'date', 'after:now'],
             'party_size' => ['required', 'integer', 'min:1'],
             'source' => ['required', Rule::enum(ReservationSource::class)],
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string'],
             'occasion' => ['nullable', 'string', 'max:100'],
             'internal_notes' => ['nullable', 'string', 'max:500'],
             'guest_contact' => ['nullable', 'array'],
@@ -30,7 +30,7 @@ class StoreMerchantReservationRequest extends FormRequest
             'guest_contact.first_name' => ['nullable', 'string', 'max:120'],
             'guest_contact.last_name' => ['nullable', 'string', 'max:120'],
             'guest_contact.email' => ['nullable', 'email'],
-            'guest_contact.phone' => ['required_without:user_id', 'string', 'max:30'],
+            'guest_contact.phone' => ['nullable', 'string', 'max:30'],
         ];
     }
 }

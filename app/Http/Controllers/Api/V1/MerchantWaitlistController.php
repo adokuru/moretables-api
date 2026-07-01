@@ -41,12 +41,13 @@ class MerchantWaitlistController extends Controller
 
         $guestContact = null;
         if (! empty($request->validated('guest_contact')) && ! $request->filled('user_id')) {
-            // Find existing permanent guest by phone or create a new permanent record
-            $guestContact = GuestContact::query()
-                ->where('restaurant_id', $restaurant->id)
-                ->where('phone', $request->input('guest_contact.phone'))
-                ->where('is_temporary', false)
-                ->first();
+            $guestContact = $request->filled('guest_contact.phone')
+                ? GuestContact::query()
+                    ->where('restaurant_id', $restaurant->id)
+                    ->where('phone', $request->input('guest_contact.phone'))
+                    ->where('is_temporary', false)
+                    ->first()
+                : null;
 
             if (! $guestContact) {
                 $guestContact = GuestContact::query()->create([

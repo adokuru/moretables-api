@@ -888,10 +888,10 @@
         }
        ]
       },
-      "description": "GuestCompleteProfileRequest: first_name, last_name, phone (unique per user). Bearer token from verify-otp.",
+      "description": "GuestCompleteProfileRequest: first_name and last_name are required. phone is optional and must be unique when supplied. Bearer token from verify-otp.",
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"+2348000000001\"\n}"
+       "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"phone\": null\n}"
       }
      }
     },
@@ -2374,7 +2374,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"optional\"\n}"
+       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"Long-form special request text is supported here. Include accessibility, allergy, seating, celebration, timing, or other guest context as needed.\"\n}"
       },
       "description": "Availability is checked live inside a restaurant-scoped lock. Retry HTTP 422 validation responses when availability changes during processing."
      }
@@ -2451,7 +2451,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"starts_at\": \"2025-12-25T20:00:00Z\",\n  \"party_size\": 3,\n  \"notes\": \"updated notes\"\n}"
+       "raw": "{\n  \"starts_at\": \"2025-12-25T20:00:00Z\",\n  \"party_size\": 3,\n  \"notes\": \"Updated long-form special request text is supported here.\"\n}"
       }
      }
     },
@@ -4541,9 +4541,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"source\": \"walk_in\",\n  \"guest_contact\": {\n    \"first_name\": \"Walk-in\",\n    \"phone\": \"+15551234567\"\n  }\n}"
+       "raw": "{\n  \"starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"source\": \"walk_in\",\n  \"notes\": \"Long-form guest special request text is supported here.\",\n  \"guest_contact\": {\n    \"first_name\": \"Walk-in\",\n    \"phone\": null\n  }\n}"
       },
-      "description": "Availability is checked live inside a restaurant-scoped lock. Retry HTTP 422 validation responses when availability changes during processing."
+      "description": "Availability is checked live inside a restaurant-scoped lock. guest_contact.phone is optional. Retry HTTP 422 validation responses when availability changes during processing."
      }
     },
     {
@@ -4984,7 +4984,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"preferred_starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"guest_contact\": {\n    \"first_name\": \"Guest\",\n    \"phone\": \"+15551234567\"\n  },\n  \"notes\": \"optional\"\n}"
+       "raw": "{\n  \"preferred_starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"guest_contact\": {\n    \"first_name\": \"Guest\",\n    \"phone\": null\n  },\n  \"notes\": \"optional\"\n}"
       }
      }
     },

@@ -18,7 +18,7 @@ class GuestCompleteProfileRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:120'],
             'last_name' => ['required', 'string', 'max:120'],
             'phone' => [
-                'required',
+                'nullable',
                 'string',
                 'max:30',
                 Rule::unique('users', 'phone')->ignore($this->user()?->id),

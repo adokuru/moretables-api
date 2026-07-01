@@ -137,13 +137,13 @@ class ReservationService
                 $contact['last_name'] = $parts[1] ?? null;
             }
 
-            // Find an existing permanent guest by phone (same restaurant) or create a new one.
-            // This prevents duplicate guestbook entries when the same person books again.
-            $guestContact = GuestContact::query()
-                ->where('restaurant_id', $restaurant->id)
-                ->where('phone', $contact['phone'])
-                ->where('is_temporary', false)
-                ->first();
+            $guestContact = ! empty($contact['phone'])
+                ? GuestContact::query()
+                    ->where('restaurant_id', $restaurant->id)
+                    ->where('phone', $contact['phone'])
+                    ->where('is_temporary', false)
+                    ->first()
+                : null;
 
             if ($guestContact) {
                 // Update any missing details from the new booking.
@@ -158,7 +158,7 @@ class ReservationService
                     'first_name' => $contact['first_name'],
                     'last_name' => $contact['last_name'] ?? null,
                     'email' => $contact['email'] ?? null,
-                    'phone' => $contact['phone'],
+                    'phone' => $contact['phone'] ?? null,
                     'notes' => $attributes['notes'] ?? null,
                     'is_temporary' => false,
                 ]);

@@ -78,7 +78,7 @@ class GuestAuthController extends Controller
         );
 
         $user = $challenge->user;
-        $needsProfileCompletion = blank($user->first_name) || blank($user->last_name) || blank($user->phone);
+        $needsProfileCompletion = blank($user->first_name) || blank($user->last_name);
 
         $user->forceFill([
             'email_verified_at' => $user->email_verified_at ?? now(),
@@ -102,11 +102,13 @@ class GuestAuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        $validated = $request->validated();
+
         $user->forceFill([
-            'name' => $request->string('first_name')->toString().' '.$request->string('last_name')->toString(),
-            'first_name' => $request->string('first_name')->toString(),
-            'last_name' => $request->string('last_name')->toString(),
-            'phone' => $request->string('phone')->toString(),
+            'name' => $validated['first_name'].' '.$validated['last_name'],
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'phone' => $validated['phone'] ?? null,
             'status' => UserStatus::Active,
             'auth_method' => UserAuthMethod::Passwordless,
             'last_active_at' => now(),

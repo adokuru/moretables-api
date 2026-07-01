@@ -131,7 +131,31 @@ it('creates a permanent guest manually', function () {
     ]);
 });
 
-it('requires first_name and phone when creating a guest', function () {
+it('creates a permanent guest without a phone', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    ['restaurant' => $restaurant, 'manager' => $manager] = guestbookSetup();
+
+    Sanctum::actingAs($manager);
+
+    $response = $this->postJson("/api/v1/merchant/restaurants/{$restaurant->id}/guestbook", [
+        'first_name' => 'Abayomi',
+        'last_name' => 'Thompson',
+        'email' => 'abayomi@example.com',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('guest.first_name', 'Abayomi')
+        ->assertJsonPath('guest.phone', null);
+
+    $this->assertDatabaseHas('guest_contacts', [
+        'restaurant_id' => $restaurant->id,
+        'email' => 'abayomi@example.com',
+        'phone' => null,
+        'is_temporary' => false,
+    ]);
+});
+
+it('requires first_name when creating a guest', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     ['restaurant' => $restaurant, 'manager' => $manager] = guestbookSetup();
 
@@ -139,7 +163,8 @@ it('requires first_name and phone when creating a guest', function () {
 
     $this->postJson("/api/v1/merchant/restaurants/{$restaurant->id}/guestbook", [])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['first_name', 'phone']);
+        ->assertJsonValidationErrors(['first_name'])
+        ->assertJsonMissingValidationErrors(['phone']);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

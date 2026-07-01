@@ -16,7 +16,7 @@ class UpdateReservationRequest extends FormRequest
         return [
             'starts_at' => ['sometimes', 'date', 'after:now'],
             'party_size' => ['sometimes', 'integer', 'min:1'],
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string'],
             'occasion' => ['nullable', 'string', 'max:100'],
             'subscribe_to_promotions' => ['nullable', 'boolean'],
         ];

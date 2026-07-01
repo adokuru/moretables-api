@@ -39,6 +39,30 @@ it('creates a reservation for an active customer and assigns a table', function 
     Event::assertDispatched(ReservationUpdated::class);
 });
 
+it('accepts long-form special requests when creating a reservation', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $specialRequest = trim(str_repeat('Please account for detailed accessibility, dietary, and celebration context. ', 20));
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'notes' => $specialRequest,
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('reservation.notes', $specialRequest);
+
+    $this->assertDatabaseHas('reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'notes' => $specialRequest,
+    ]);
+});
+
 it('rejects a reservation on a closed special day', function () {
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
@@ -137,6 +161,31 @@ it('lets a customer update a future reservation', function () {
     expect($reservation->ends_at->toDateTimeString())->toBe($newStartsAt->copy()->addHours(2)->toDateTimeString());
     Event::assertDispatched(ReservationUpdated::class);
     Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
+});
+
+it('accepts long-form special requests when updating a reservation', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+    $specialRequest = trim(str_repeat('Updated long-form guest request with seating, allergy, accessibility, and occasion details. ', 20));
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'starts_at' => now()->addDays(3)->setTime(18, 0),
+        'ends_at' => now()->addDays(3)->setTime(20, 0),
+        'notes' => 'Original note',
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->patchJson('/api/v1/reservations/'.$reservation->id, [
+        'notes' => $specialRequest,
+    ])->assertOk()
+        ->assertJsonPath('reservation.notes', $specialRequest);
+
+    expect($reservation->refresh()->notes)->toBe($specialRequest);
 });
 
 it('prevents customers from modifying reservations after the cutoff window', function () {

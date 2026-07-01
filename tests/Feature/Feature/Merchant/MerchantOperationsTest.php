@@ -295,3 +295,32 @@ it('emails guest when operations staff notifies guest-only waitlist with email',
         return ($notifiable->routes['mail'] ?? null) === 'waitlist.guest@example.com';
     });
 });
+
+it('allows operations staff to create a guest-only waitlist entry without phone', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $response = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/waitlist-entries', [
+        'preferred_starts_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'guest_contact' => [
+            'first_name' => 'Guest',
+            'last_name' => 'User',
+            'email' => 'waitlist.no-phone@example.com',
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('waitlist_entry.guest_contact.phone', null);
+
+    $this->assertDatabaseHas('guest_contacts', [
+        'restaurant_id' => $data['restaurant']->id,
+        'email' => 'waitlist.no-phone@example.com',
+        'phone' => null,
+        'is_temporary' => false,
+    ]);
+});

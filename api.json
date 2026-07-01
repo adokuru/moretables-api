@@ -20345,7 +20345,10 @@
                                         "maxLength": 150
                                     },
                                     "phone": {
-                                        "type": "string",
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
                                         "maxLength": 30
                                     },
                                     "notes": {
@@ -20377,8 +20380,7 @@
                                     }
                                 },
                                 "required": [
-                                    "first_name",
-                                    "phone"
+                                    "first_name"
                                 ]
                             }
                         }
@@ -20568,7 +20570,10 @@
                                         "maxLength": 150
                                     },
                                     "phone": {
-                                        "type": "string",
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
                                         "maxLength": 30
                                     },
                                     "notes": {
@@ -30946,18 +30951,6 @@
                     "name": {
                         "type": "string"
                     },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
                     "description": {
                         "type": [
                             "string",
@@ -30990,20 +30983,32 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
-                    "category",
-                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
+                    "category",
+                    "floor_type"
                 ],
                 "title": "DiningArea"
             },
@@ -31199,14 +31204,16 @@
                         "maxLength": 120
                     },
                     "phone": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 30
                     }
                 },
                 "required": [
                     "first_name",
-                    "last_name",
-                    "phone"
+                    "last_name"
                 ],
                 "title": "GuestCompleteProfileRequest"
             },
@@ -31953,10 +31960,7 @@
                         "type": "string"
                     },
                     "organization_id": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "reviewed_at": {
                         "type": "string"
@@ -32085,10 +32089,7 @@
                         ]
                     },
                     "planned_restaurants_count": {
-                        "type": [
-                            "integer",
-                            "null"
-                        ]
+                        "type": "string"
                     },
                     "restaurants_count": {
                         "type": "integer"
@@ -35700,8 +35701,7 @@
                         "type": [
                             "string",
                             "null"
-                        ],
-                        "maxLength": 500
+                        ]
                     },
                     "occasion": {
                         "type": [
@@ -35749,7 +35749,10 @@
                                 "format": "email"
                             },
                             "phone": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "maxLength": 30
                             }
                         }
@@ -35815,7 +35818,10 @@
                                 "format": "email"
                             },
                             "phone": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "maxLength": 30
                             }
                         }
@@ -36067,8 +36073,7 @@
                         "type": [
                             "string",
                             "null"
-                        ],
-                        "maxLength": 500
+                        ]
                     },
                     "occasion": {
                         "type": [
@@ -38383,8 +38388,7 @@
                         "type": [
                             "string",
                             "null"
-                        ],
-                        "maxLength": 500
+                        ]
                     },
                     "occasion": {
                         "type": [
