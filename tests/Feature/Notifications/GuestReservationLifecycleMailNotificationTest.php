@@ -8,6 +8,7 @@ use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Notifications\GuestReservationLifecycleMailNotification;
+use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -433,3 +434,35 @@ it('renders action-specific expo push copy for reservation lifecycle notificatio
     'updated' => ['updated', 'Reservation changed', 'Your reservation at Pepp & Dolores has been updated.'],
     'cancelled' => ['cancelled', 'Reservation canceled', 'Your reservation at Pepp & Dolores was canceled.'],
 ]);
+
+it('renders owner reservation lifecycle email copy', function (): void {
+    $restaurant = Restaurant::factory()->create([
+        'name' => 'Pepp & Dolores',
+        'timezone' => 'America/New_York',
+    ]);
+
+    $customer = User::factory()->create([
+        'first_name' => 'Urenna',
+        'last_name' => 'Anyadike',
+    ]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'user_id' => $customer->id,
+        'starts_at' => Carbon::parse('2026-04-14 00:00:00', 'UTC'),
+        'party_size' => 2,
+        'reservation_reference' => '378493',
+        'notes' => 'Window seat please',
+    ]);
+
+    $mailMessage = (new OwnerReservationLifecycleNotification($reservation, 'created'))->toMail(User::factory()->make());
+    $html = (string) $mailMessage->render();
+
+    expect($mailMessage->subject)->toBe('New reservation - Pepp & Dolores')
+        ->and($html)->toContain('A new reservation has been created.')
+        ->and($html)->toContain('Restaurant: Pepp &amp; Dolores')
+        ->and($html)->toContain('Guest: Urenna Anyadike')
+        ->and($html)->toContain('Party size: 2')
+        ->and($html)->toContain('Reference: 378493')
+        ->and($html)->toContain('Special request: Window seat please');
+});

@@ -118,6 +118,19 @@ Regards,
 
 ---
 
+## 2b. OwnerReservationLifecycleNotification
+
+| | |
+|--|--|
+| **File** | `app/Notifications/OwnerReservationLifecycleNotification.php` |
+| **Channels** | Email |
+| **When** | Reservation **created**, **updated**, or **cancelled** |
+| **Recipient** | Users assigned `organization_owner` for the reservation restaurant's organization |
+
+Owners receive restaurant-facing reservation alerts with the restaurant, guest, party size, date/time, reference, and special request when provided.
+
+---
+
 ## 3. GuestReservationLifecycleMailNotification
 
 | | |

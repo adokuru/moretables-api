@@ -33,7 +33,7 @@ class CustomerReservationController extends Controller
     }
 
     /**
-     * Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
+     * Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing. The guest and restaurant owner are notified by email.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreReservationRequest $request): JsonResponse
@@ -138,7 +138,7 @@ class CustomerReservationController extends Controller
 
     protected function ensureModificationAllowed(Reservation $reservation): void
     {
-        $cutoffHours = $reservation->restaurant->policy?->cancellation_cutoff_hours ?? 24;
+        $cutoffHours = $reservation->restaurant->policy?->cancellation_cutoff_hours ?? 1;
         abort_if(Carbon::parse($reservation->starts_at)->subHours($cutoffHours)->isPast(), 422, 'This reservation can no longer be modified.');
     }
 }

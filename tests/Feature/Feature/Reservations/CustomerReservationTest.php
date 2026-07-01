@@ -5,9 +5,12 @@ use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantSpecialDay;
+use App\Models\Role;
 use App\Models\User;
+use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -15,9 +18,12 @@ use Laravel\Sanctum\Sanctum;
 it('creates a reservation for an active customer and assigns a table', function () {
     Notification::fake();
     Event::fake([ReservationUpdated::class]);
+    $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
+    $owner = User::factory()->create();
+    assignScopedRole($owner, Role::OrganizationOwner, $data['organization']);
 
     Sanctum::actingAs($customer);
 
@@ -36,6 +42,7 @@ it('creates a reservation for an active customer and assigns a table', function 
 
     expect($reservation->restaurant_table_id)->not->toBeNull();
     Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
+    Notification::assertSentTo($owner, OwnerReservationLifecycleNotification::class);
     Event::assertDispatched(ReservationUpdated::class);
 });
 
@@ -107,8 +114,13 @@ it('rejects a reservation outside a special day shift', function () {
 });
 
 it('lets a customer cancel their reservation before the cutoff window', function () {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
     $data = createBookableRestaurant();
     $customer = User::factory()->create();
+    $owner = User::factory()->create();
+    assignScopedRole($owner, Role::OrganizationOwner, $data['organization']);
 
     $reservation = Reservation::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
@@ -124,6 +136,9 @@ it('lets a customer cancel their reservation before the cutoff window', function
 
     $response->assertOk()
         ->assertJsonPath('reservation.status', 'cancelled');
+
+    Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
+    Notification::assertSentTo($owner, OwnerReservationLifecycleNotification::class);
 });
 
 it('lets a customer update a future reservation', function () {
@@ -196,8 +211,8 @@ it('prevents customers from modifying reservations after the cutoff window', fun
         'restaurant_id' => $data['restaurant']->id,
         'user_id' => $customer->id,
         'restaurant_table_id' => $data['table']->id,
-        'starts_at' => now()->addHours(12),
-        'ends_at' => now()->addHours(14),
+        'starts_at' => now()->addMinutes(30),
+        'ends_at' => now()->addHours(2)->addMinutes(30),
     ]);
 
     Sanctum::actingAs($customer);

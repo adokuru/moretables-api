@@ -2,9 +2,12 @@
 
 use App\Models\GuestContact;
 use App\Models\Reservation;
+use App\Models\Role;
 use App\Models\User;
+use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 
@@ -105,8 +108,11 @@ it('rejects all webhook payloads when no app secret is configured', function ():
 it('cancels the reservation when the primary booker taps the cancel button', function (): void {
     Notification::fake();
     Http::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
 
     $reservation = cancellableReservation();
+    $owner = User::factory()->create();
+    assignScopedRole($owner, Role::OrganizationOwner, $reservation->restaurant->organization);
 
     postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();
 
@@ -118,6 +124,12 @@ it('cancels the reservation when the primary booker taps the cancel button', fun
         $reservation->guestContact,
         ReservationLifecycleNotification::class,
         fn ($notification): bool => $notification->toArray((object) [])['action'] === 'cancelled',
+    );
+
+    Notification::assertSentTo(
+        $owner,
+        OwnerReservationLifecycleNotification::class,
+        fn (OwnerReservationLifecycleNotification $notification): bool => $notification->toMail($owner)->subject === 'Reservation cancelled - '.$reservation->restaurant->name,
     );
 });
 
@@ -139,8 +151,8 @@ it('replies with a text message instead of cancelling inside the cancellation cu
     Http::fake();
 
     $reservation = cancellableReservation([
-        'starts_at' => now()->addHours(2),
-        'ends_at' => now()->addHours(4),
+        'starts_at' => now()->addMinutes(30),
+        'ends_at' => now()->addHours(2)->addMinutes(30),
     ]);
 
     postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();

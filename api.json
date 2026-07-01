@@ -2707,7 +2707,7 @@
         "/reservations": {
             "post": {
                 "operationId": "customerReservation.store",
-                "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing",
+                "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing. The guest and restaurant owner are notified by email",
                 "tags": [
                     "Customer Reservations"
                 ],

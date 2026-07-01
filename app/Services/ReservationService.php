@@ -11,11 +11,13 @@ use App\Models\Reservation;
 use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\GuestWaitlistOfferExpiredMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\GuestWaitlistTableUnavailableMailNotification;
+use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
 use App\Notifications\WaitlistOfferExpiredNotification;
@@ -245,6 +247,8 @@ class ReservationService
                 $participant->notify(new ReservationLifecycleNotification($reservation, 'updated'));
             }
 
+            $this->notifyReservationOwners($reservation, 'updated');
+
             return $reservation;
         }));
     }
@@ -455,6 +459,8 @@ class ReservationService
         foreach ($reservation->notifiableParticipants() as $participant) {
             $participant->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
         }
+
+        $this->notifyReservationOwners($reservation, 'cancelled');
 
         $this->dispatchAvailabilityAlertCheck($reservation);
 
@@ -1019,9 +1025,28 @@ class ReservationService
                     $guestContact->notify(new ReservationLifecycleNotification($reservation, 'created'));
                 }
 
+                $this->notifyReservationOwners($reservation, 'created');
+
                 return $reservation;
             });
         });
+    }
+
+    protected function notifyReservationOwners(Reservation $reservation, string $action): void
+    {
+        $reservation->loadMissing('restaurant.organization');
+
+        $owners = User::query()
+            ->whereNotNull('email')
+            ->whereHas('roleAssignments', function ($query) use ($reservation): void {
+                $query
+                    ->where('organization_id', $reservation->restaurant->organization_id)
+                    ->whereHas('role', fn ($roleQuery) => $roleQuery->where('name', Role::OrganizationOwner));
+            })
+            ->get()
+            ->unique('email');
+
+        Notification::send($owners, new OwnerReservationLifecycleNotification($reservation, $action));
     }
 
     private function ensureBookableTime(Restaurant $restaurant, CarbonInterface $startsAt): void

@@ -60,7 +60,7 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
             return;
         }
 
-        $cutoffHours = $reservation->restaurant->policy?->cancellation_cutoff_hours ?? 24;
+        $cutoffHours = $reservation->restaurant->policy?->cancellation_cutoff_hours ?? 1;
 
         if ($reservation->starts_at === null || Carbon::parse($reservation->starts_at)->subHours($cutoffHours)->isPast()) {
             $whatsAppService->sendText($this->fromPhone, "Your reservation at {$restaurantName} ({$reservation->reservation_reference}) is within the cancellation window and can no longer be cancelled here. Please contact the restaurant.");

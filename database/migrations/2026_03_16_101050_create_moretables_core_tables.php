@@ -84,7 +84,7 @@ return new class extends Migration
             $table->foreignId('restaurant_id')->unique()->constrained()->cascadeOnDelete();
             $table->unsignedInteger('reservation_duration_minutes')->default(120);
             $table->unsignedInteger('booking_window_days')->default(30);
-            $table->unsignedInteger('cancellation_cutoff_hours')->default(24);
+            $table->unsignedInteger('cancellation_cutoff_hours')->default(1);
             $table->unsignedInteger('min_party_size')->default(1);
             $table->unsignedInteger('max_party_size')->default(12);
             $table->boolean('deposit_required')->default(false);
