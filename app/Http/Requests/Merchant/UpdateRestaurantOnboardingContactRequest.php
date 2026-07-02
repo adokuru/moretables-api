@@ -27,6 +27,8 @@ class UpdateRestaurantOnboardingContactRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'country' => ['nullable', 'string', 'max:100'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'primary_cuisine_option_id' => ['nullable', 'integer', Rule::exists('cuisine_options', 'id')],
             'additional_cuisine_option_ids' => ['nullable', 'array'],
             'additional_cuisine_option_ids.*' => ['integer', Rule::exists('cuisine_options', 'id')],
