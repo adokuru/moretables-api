@@ -577,14 +577,16 @@ class ReservationService
         ReservationServiceStage $stage,
         User $actor,
     ): Reservation {
-        // A completed reservation may still be flagged as needing its table
-        // bussed, but no other stage change makes sense once the guest has left.
+        // A completed reservation may still toggle between needing its table
+        // bussed and being fully finished (bussed), but no other stage change
+        // makes sense once the guest has left.
+        $allowedAfterCompletion = [ReservationServiceStage::BussingNeeded, ReservationServiceStage::Finished];
         $allowed = $reservation->status === ReservationStatus::Seated
-            || ($reservation->status === ReservationStatus::Completed && $stage === ReservationServiceStage::BussingNeeded);
+            || ($reservation->status === ReservationStatus::Completed && in_array($stage, $allowedAfterCompletion, true));
 
         if (! $allowed) {
             throw ValidationException::withMessages([
-                'service_stage' => ['The service stage can only be changed while a reservation is seated, or set to bussing needed after completion.'],
+                'service_stage' => ['The service stage can only be changed while a reservation is seated, or toggled between bussing needed and finished after completion.'],
             ]);
         }
 

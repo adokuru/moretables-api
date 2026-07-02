@@ -187,9 +187,10 @@ it('rejects service stages and completion until the reservation is seated', func
 
 // Covers the ReservationService::updateServiceStage carve-out added for the
 // front-of-house "Bussing Needed" quick action: a completed reservation may
-// still be flagged bussing_needed (so staff know the table needs clearing),
-// but no other service stage change is allowed once the guest has left.
-it('allows flagging a completed reservation as bussing needed but rejects other stage changes', function () {
+// still toggle its service stage between bussing_needed and finished (so
+// staff know whether a table still needs clearing), but no other service
+// stage change is allowed once the guest has left.
+it('allows toggling a completed reservation between bussing needed and finished but rejects other stage changes', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
     actingAsFrontOfHouse($data);
@@ -207,6 +208,14 @@ it('allows flagging a completed reservation as bussing needed but rejects other 
     $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
         'service_stage' => ReservationServiceStage::Entree->value,
     ])->assertUnprocessable()->assertJsonValidationErrors('service_stage');
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::BussingNeeded->value,
+    ])->assertOk()->assertJsonPath('reservation.service_stage', ReservationServiceStage::BussingNeeded->value);
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::Finished->value,
+    ])->assertOk()->assertJsonPath('reservation.service_stage', ReservationServiceStage::Finished->value);
 
     $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
         'service_stage' => ReservationServiceStage::BussingNeeded->value,
