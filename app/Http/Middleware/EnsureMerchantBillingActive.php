@@ -34,7 +34,7 @@ class EnsureMerchantBillingActive
             return response()->json([
                 'message' => 'An active billing subscription is required for this restaurant.',
                 'billing' => [
-                    'status' => 'unpaid',
+                    'status' => $restaurant->latestBillingSubscription?->status?->value ?? 'unpaid',
                 ],
             ], 402);
         }
