@@ -16,6 +16,7 @@ class SyncDiningAreaLayoutRequest extends FormRequest
     {
         return [
             'tables' => ['required', 'array'],
+            'tables.*.id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
             'tables.*.layout_type' => ['required', 'string', 'max:50'],
             'tables.*.x_position' => ['required', 'numeric', 'min:0'],
             'tables.*.y_position' => ['required', 'numeric', 'min:0'],
