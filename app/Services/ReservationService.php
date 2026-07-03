@@ -753,6 +753,7 @@ class ReservationService
             'preferred_starts_at' => Carbon::parse($attributes['preferred_starts_at']),
             'preferred_ends_at' => isset($attributes['preferred_ends_at']) ? Carbon::parse($attributes['preferred_ends_at']) : null,
             'notes' => $attributes['notes'] ?? null,
+            'occasion' => $attributes['occasion'] ?? null,
         ]);
 
         $entry->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
