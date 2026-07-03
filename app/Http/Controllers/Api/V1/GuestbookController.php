@@ -35,6 +35,7 @@ class GuestbookController extends Controller
 
         $request->validate([
             'search_term' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $totalGuests = $restaurant->guestContacts()->where('is_temporary', false)->count();
@@ -52,7 +53,7 @@ class GuestbookController extends Controller
             })
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->paginate(20);
+            ->paginate($request->integer('per_page', 20));
 
         $response = GuestContactResource::collection($guests)->response()->getData(true);
 
