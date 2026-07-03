@@ -41,6 +41,7 @@ class MerchantRestaurantOnboardingController extends Controller
         $restaurant->fill(collect($validated)->only([
             'email', 'phone', 'website', 'average_price_range',
             'address_line_1', 'address_line_2', 'city', 'state', 'country',
+            'latitude', 'longitude',
         ])->toArray());
         $restaurant->save();
 
@@ -73,6 +74,8 @@ class MerchantRestaurantOnboardingController extends Controller
                 'city' => $restaurant->city,
                 'state' => $restaurant->state,
                 'country' => $restaurant->country,
+                'latitude' => $restaurant->latitude !== null ? (float) $restaurant->latitude : null,
+                'longitude' => $restaurant->longitude !== null ? (float) $restaurant->longitude : null,
                 'cuisines' => $restaurant->cuisines->map(fn ($c) => [
                     'id' => $c->id,
                     'name' => $c->name,
@@ -301,6 +304,8 @@ class MerchantRestaurantOnboardingController extends Controller
             'city' => $restaurant->city,
             'state' => $restaurant->state,
             'country' => $restaurant->country,
+            'latitude' => $restaurant->latitude !== null ? (float) $restaurant->latitude : null,
+            'longitude' => $restaurant->longitude !== null ? (float) $restaurant->longitude : null,
             'description' => $restaurant->description,
             'cuisines' => $restaurant->cuisines->map(fn ($c) => [
                 'id' => $c->id,

@@ -26,6 +26,7 @@ class WaitlistEntry extends Model
         'preferred_starts_at',
         'preferred_ends_at',
         'notes',
+        'occasion',
         'whatsapp_updates',
         'notified_at',
         'notification_count',

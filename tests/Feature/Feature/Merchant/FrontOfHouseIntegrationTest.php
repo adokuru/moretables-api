@@ -185,6 +185,43 @@ it('rejects service stages and completion until the reservation is seated', func
         ->assertJsonValidationErrors('status');
 });
 
+// Covers the ReservationService::updateServiceStage carve-out added for the
+// front-of-house "Bussing Needed" quick action: a completed reservation may
+// still toggle its service stage between bussing_needed and finished (so
+// staff know whether a table still needs clearing), but no other service
+// stage change is allowed once the guest has left.
+it('allows toggling a completed reservation between bussing needed and finished but rejects other stage changes', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'service_stage' => ReservationServiceStage::Seated,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/complete'))
+        ->assertOk()
+        ->assertJsonPath('reservation.status', ReservationStatus::Completed->value);
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::Entree->value,
+    ])->assertUnprocessable()->assertJsonValidationErrors('service_stage');
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::BussingNeeded->value,
+    ])->assertOk()->assertJsonPath('reservation.service_stage', ReservationServiceStage::BussingNeeded->value);
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::Finished->value,
+    ])->assertOk()->assertJsonPath('reservation.service_stage', ReservationServiceStage::Finished->value);
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/service-stage'), [
+        'service_stage' => ReservationServiceStage::BussingNeeded->value,
+    ])->assertOk()->assertJsonPath('reservation.service_stage', ReservationServiceStage::BussingNeeded->value);
+});
+
 it('groups operational statuses and cancellation records correctly', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);

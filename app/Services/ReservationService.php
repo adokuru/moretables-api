@@ -577,9 +577,16 @@ class ReservationService
         ReservationServiceStage $stage,
         User $actor,
     ): Reservation {
-        if ($reservation->status !== ReservationStatus::Seated) {
+        // A completed reservation may still toggle between needing its table
+        // bussed and being fully finished (bussed), but no other stage change
+        // makes sense once the guest has left.
+        $allowedAfterCompletion = [ReservationServiceStage::BussingNeeded, ReservationServiceStage::Finished];
+        $allowed = $reservation->status === ReservationStatus::Seated
+            || ($reservation->status === ReservationStatus::Completed && in_array($stage, $allowedAfterCompletion, true));
+
+        if (! $allowed) {
             throw ValidationException::withMessages([
-                'service_stage' => ['The service stage can only be changed while a reservation is seated.'],
+                'service_stage' => ['The service stage can only be changed while a reservation is seated, or toggled between bussing needed and finished after completion.'],
             ]);
         }
 
@@ -746,6 +753,7 @@ class ReservationService
             'preferred_starts_at' => Carbon::parse($attributes['preferred_starts_at']),
             'preferred_ends_at' => isset($attributes['preferred_ends_at']) ? Carbon::parse($attributes['preferred_ends_at']) : null,
             'notes' => $attributes['notes'] ?? null,
+            'occasion' => $attributes['occasion'] ?? null,
         ]);
 
         $entry->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);

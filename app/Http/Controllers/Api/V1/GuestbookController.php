@@ -7,6 +7,7 @@ use App\Http\Resources\GuestContactResource;
 use App\Http\Resources\ReservationResource;
 use App\Models\GuestContact;
 use App\Models\Restaurant;
+use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class GuestbookController extends Controller
 
         $request->validate([
             'search_term' => ['nullable', 'string', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $totalGuests = $restaurant->guestContacts()->where('is_temporary', false)->count();
@@ -52,7 +54,7 @@ class GuestbookController extends Controller
             })
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->paginate(20);
+            ->paginate($request->integer('per_page', 20));
 
         $response = GuestContactResource::collection($guests)->response()->getData(true);
 
@@ -215,6 +217,9 @@ class GuestbookController extends Controller
             ->where('status', 'completed')
             ->get(['party_size', 'completed_at']);
 
+        $response = ReservationResource::collection($reservations)->response()->getData(true);
+        $response['data'] = $this->attachShifts($response['data'], $restaurant);
+
         return response()->json([
             'guest_id' => $guestContact->id,
             'stats' => [
@@ -222,8 +227,43 @@ class GuestbookController extends Controller
                 'total_covers' => $completedReservations->sum('party_size'),
                 'last_visit_at' => $completedReservations->sortByDesc('completed_at')->first()?->completed_at?->toIso8601String(),
             ],
-            ...(ReservationResource::collection($reservations)->response()->getData(true)),
+            ...$response,
         ]);
+    }
+
+    /**
+     * Tag each reservation with the configured shift (admin/availability-planning
+     * "Schedule" tab — RestaurantShift) its start time falls into. Reservations
+     * have no direct shift FK, so this matches day-of-week + time-of-day (in the
+     * restaurant's own timezone) against the restaurant's active shifts.
+     *
+     * @param  list<array<string, mixed>>  $reservations
+     * @return list<array<string, mixed>>
+     */
+    private function attachShifts(array $reservations, Restaurant $restaurant): array
+    {
+        $timezone = $restaurant->timezone ?: config('app.timezone');
+        $shifts = $restaurant->shifts()->where('is_active', true)->get();
+
+        foreach ($reservations as &$reservation) {
+            $shift = null;
+
+            if (! empty($reservation['starts_at'])) {
+                $startsAt = Carbon::parse($reservation['starts_at'])->setTimezone($timezone);
+                $time = $startsAt->format('H:i:s');
+                $dayOfWeek = $startsAt->dayOfWeek;
+
+                $matched = $shifts->first(fn ($s): bool => (int) $s->day_of_week === $dayOfWeek
+                    && $time >= $s->starts_at
+                    && $time <= $s->ends_at);
+
+                $shift = $matched ? ['id' => $matched->id, 'name' => $matched->name] : null;
+            }
+
+            $reservation['shift'] = $shift;
+        }
+
+        return $reservations;
     }
 
     /**
