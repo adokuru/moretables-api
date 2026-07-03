@@ -18,6 +18,7 @@ class WaitlistEntryResource extends JsonResource
             'preferred_starts_at' => optional($this->preferred_starts_at)?->toIso8601String(),
             'preferred_ends_at' => optional($this->preferred_ends_at)?->toIso8601String(),
             'notes' => $this->notes,
+            'occasion' => $this->occasion,
             'notified_at' => optional($this->notified_at)?->toIso8601String(),
             'expires_at' => optional($this->expires_at)?->toIso8601String(),
             'seated_at' => optional($this->seated_at)?->toIso8601String(),
