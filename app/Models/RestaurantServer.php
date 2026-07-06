@@ -15,6 +15,7 @@ class RestaurantServer extends Model
     protected $fillable = [
         'restaurant_id',
         'name',
+        'color',
     ];
 
     public function restaurant(): BelongsTo

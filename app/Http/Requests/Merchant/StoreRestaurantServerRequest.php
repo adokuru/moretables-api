@@ -28,6 +28,7 @@ class StoreRestaurantServerRequest extends FormRequest
                 Rule::unique('restaurant_servers', 'name')
                     ->where('restaurant_id', $restaurant instanceof Restaurant ? $restaurant->id : null),
             ],
+            'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }
 
@@ -36,6 +37,7 @@ class StoreRestaurantServerRequest extends FormRequest
         return [
             'name.required' => 'A server name is required.',
             'name.unique' => 'A server with this name already exists for the restaurant.',
+            'color.regex' => 'Color must be a hex code like #A52700.',
         ];
     }
 
