@@ -96,6 +96,8 @@ class FrontOfHouseTimelineController extends Controller
                     'party_size' => $res->party_size,
                     'starts_at' => $res->starts_at?->setTimezone($timezone)->toIso8601String(),
                     'ends_at' => $endsAt?->setTimezone($timezone)->toIso8601String(),
+                    'status' => $res->status?->value,
+                    'service_stage' => $res->service_stage?->value,
                 ];
             })->values();
 
