@@ -19,7 +19,7 @@ class MerchantRestaurantServerController extends Controller
 
         return response()->json([
             'servers' => RestaurantServerResource::collection(
-                $restaurant->servers()->orderBy('name')->get()
+                $restaurant->servers()->with('assignedTables:id,assigned_server_id')->orderBy('name')->get()
             ),
         ]);
     }

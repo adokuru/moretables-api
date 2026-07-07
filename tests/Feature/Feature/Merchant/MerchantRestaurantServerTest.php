@@ -47,6 +47,36 @@ it('lists restaurant servers and adds one using only a name', function () {
         ->assertJsonMissing(['name' => 'Hidden Server']);
 });
 
+it('accepts an optional color when creating a server and validates its format', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $url = '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/servers';
+
+    $this->postJson($url, ['name' => 'Ada', 'color' => '#A52700'])
+        ->assertCreated()
+        ->assertJsonPath('server.color', '#A52700');
+
+    $this->assertDatabaseHas('restaurant_servers', [
+        'name' => 'Ada',
+        'color' => '#A52700',
+    ]);
+
+    $this->postJson($url, ['name' => 'Zed', 'color' => 'not-a-color'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('color');
+
+    $this->postJson($url, ['name' => 'Bello'])
+        ->assertCreated()
+        ->assertJsonPath('server.color', null);
+});
+
 it('validates server names and restricts creation to front of house managers', function () {
     $this->seed(RoleAndPermissionSeeder::class);
 
