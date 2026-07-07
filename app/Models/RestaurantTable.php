@@ -45,6 +45,7 @@ class RestaurantTable extends Model
         'color',
         'layout_type',
         'chair_color',
+        'assigned_server_id',
     ];
 
     protected function casts(): array
@@ -79,5 +80,10 @@ class RestaurantTable extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function assignedServer(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantServer::class, 'assigned_server_id');
     }
 }

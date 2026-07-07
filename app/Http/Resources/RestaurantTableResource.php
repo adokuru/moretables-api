@@ -37,6 +37,7 @@ class RestaurantTableResource extends JsonResource
             'color' => $this->color,
             'table_color' => $this->color,
             'chair_color' => $this->chair_color,
+            'assigned_server_id' => $this->assigned_server_id,
         ];
     }
 }

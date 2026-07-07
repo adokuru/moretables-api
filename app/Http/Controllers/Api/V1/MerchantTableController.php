@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Events\TableStatusUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\AssignTableServerRequest;
 use App\Http\Requests\Merchant\StoreRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateTableStatusRequest;
@@ -67,6 +68,21 @@ class MerchantTableController extends Controller
         return response()->json([
             'message' => 'Table status updated successfully.',
             'table' => RestaurantTableResource::make($table),
+        ]);
+    }
+
+    public function assignServer(AssignTableServerRequest $request, Restaurant $restaurant, RestaurantTable $table): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
+        abort_unless($table->restaurant_id === $restaurant->id, 404);
+
+        $table->update(['assigned_server_id' => $request->validated('server_id')]);
+
+        return response()->json([
+            'message' => $request->validated('server_id')
+                ? 'Server assigned successfully.'
+                : 'Server unassigned successfully.',
+            'table' => RestaurantTableResource::make($table->refresh()),
         ]);
     }
 
