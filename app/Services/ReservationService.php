@@ -804,14 +804,43 @@ class ReservationService
         });
     }
 
-    public function cancelWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
+    public function arriveWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
     {
         return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
             $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
             if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified], true)) {
                 throw ValidationException::withMessages([
-                    'waitlist_entry' => ['Only waiting or notified entries can be cancelled.'],
+                    'waitlist_entry' => ['Only waiting or notified entries can be marked arrived.'],
+                ]);
+            }
+
+            $entry->forceFill(['status' => WaitlistStatus::Arrived])->save();
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
+
+            $this->auditLogService->log(
+                action: 'waitlist.arrived',
+                actor: $actor,
+                auditable: $entry,
+                restaurant: $entry->restaurant,
+                organization: $entry->restaurant->organization,
+                description: 'Waitlist entry marked arrived',
+            );
+
+            event(new WaitlistEntryUpdated($entry, 'arrived'));
+
+            return $entry;
+        });
+    }
+
+    public function cancelWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
+    {
+        return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived], true)) {
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['Only waiting, notified, or arrived entries can be cancelled.'],
                 ]);
             }
 
@@ -915,7 +944,7 @@ class ReservationService
         return DB::transaction(function () use ($entry, $table, $actor): Reservation {
             $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
-            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified], true)) {
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived], true)) {
                 throw ValidationException::withMessages([
                     'waitlist_entry' => ['This waitlist entry can no longer be assigned.'],
                 ]);
