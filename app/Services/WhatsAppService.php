@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Notifications\WhatsAppMessage;
+use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -63,6 +64,9 @@ class WhatsAppService
         if ($response->failed()) {
             Log::warning('WhatsApp notification request failed.', [
                 'status' => $response->status(),
+                'endpoint' => $this->endpoint(),
+                'api_version' => config('services.whatsapp.api_version'),
+                'phone_number_id' => config('services.whatsapp.phone_number_id'),
                 'response' => $response->json(),
             ]);
         }
@@ -80,6 +84,6 @@ class WhatsAppService
 
     protected function normalizeRecipient(string $recipient): string
     {
-        return preg_replace('/[^0-9]/', '', $recipient) ?? '';
+        return PhoneNumber::forWhatsApp($recipient);
     }
 }

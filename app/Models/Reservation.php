@@ -5,6 +5,7 @@ namespace App\Models;
 use App\ReservationServiceStage;
 use App\ReservationSource;
 use App\ReservationStatus;
+use App\Support\PhoneNumber;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -152,7 +153,7 @@ class Reservation extends Model
 
         $alreadySeen = function (?string $email, ?string $phone) use (&$seenEmails, &$seenPhones): bool {
             $email = Str::lower(trim((string) $email));
-            $phone = preg_replace('/\D+/', '', (string) $phone) ?? '';
+            $phone = PhoneNumber::forWhatsApp((string) $phone);
 
             $duplicate = ($email !== '' && in_array($email, $seenEmails, true))
                 || ($phone !== '' && in_array($phone, $seenPhones, true));
