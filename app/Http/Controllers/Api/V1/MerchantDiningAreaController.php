@@ -116,8 +116,6 @@ class MerchantDiningAreaController extends Controller
             $placed[] = [$x1, $y1, $x2, $y2, $table['table_label']];
         }
 
-        $rotationMap = ['r1' => 0, 'r2' => 90, 'r3' => 180, 'r4' => 270];
-
         $existingTables = $diningArea->tables()->get()->keyBy('name');
         $incomingLabels = collect($tables)->pluck('table_label')->all();
 
@@ -141,7 +139,7 @@ class MerchantDiningAreaController extends Controller
                 'height' => $table['height'] ?? 1,
                 'color' => $table['table_color'] ?? null,
                 'chair_color' => $table['chair_color'] ?? null,
-                'rotation' => $rotationMap[$table['rotate'] ?? 'r1'],
+                'rotation' => $table['rotation'] ?? 0,
                 'dining_spot_id' => $table['dining_spot_id'] ?? null,
                 'min_capacity' => $table['min_party_size'] ?? RestaurantTable::DEFAULT_MIN_CAPACITY,
                 'max_capacity' => $table['max_party_size'] ?? RestaurantTable::DEFAULT_MAX_CAPACITY,

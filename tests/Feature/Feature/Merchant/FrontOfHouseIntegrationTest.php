@@ -279,6 +279,52 @@ it('seats a waitlist party into the Seated bucket when a table is assigned', fun
     expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
 });
 
+it('marks a waitlist entry arrived without moving it out of the waitlist bucket, then still allows seating it', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Waiting,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/arrive'))
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.status', WaitlistStatus::Arrived->value);
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Arrived);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/waitlist'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $entry->id);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/assign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.status', ReservationStatus::Seated->value);
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
+});
+
+it('rejects arriving a waitlist entry that is not waiting or notified', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Cancelled,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/arrive'))
+        ->assertUnprocessable();
+});
+
 it('cancels waitlist entries and enforces author-or-manager shift-note mutation rights', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
