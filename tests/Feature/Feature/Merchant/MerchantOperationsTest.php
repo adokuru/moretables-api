@@ -169,6 +169,71 @@ it('defaults synced layout tables to one minimum seat and ten maximum seats', fu
         ->assertJsonPath('dining_area.tables.0.max_capacity', 10);
 });
 
+it('saves a free non-quadrant rotation degree through the layout sync endpoint', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $diningAreaResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Main Floor',
+    ]);
+
+    $diningAreaResponse->assertCreated();
+
+    // 47° isn't one of the old r1-r4 quadrant values (0/90/180/270) — this
+    // is exactly the case the legacy `rotate` enum couldn't represent and
+    // would have silently rounded away.
+    $response = $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$diningAreaResponse->json('dining_area.id').'/layout', [
+        'tables' => [
+            [
+                'layout_type' => 'square-2-tb',
+                'x_position' => 0,
+                'y_position' => 0,
+                'table_label' => 'A1',
+                'rotation' => 47,
+            ],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('dining_area.tables.0.rotation', 47);
+
+    $this->assertDatabaseHas('restaurant_tables', [
+        'name' => 'A1',
+        'rotation' => 47,
+    ]);
+});
+
+it('rejects an out-of-range rotation on the layout sync endpoint', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $diningAreaResponse = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Main Floor',
+    ]);
+
+    $diningAreaResponse->assertCreated();
+
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$diningAreaResponse->json('dining_area.id').'/layout', [
+        'tables' => [
+            [
+                'layout_type' => 'square-2-tb',
+                'x_position' => 0,
+                'y_position' => 0,
+                'table_label' => 'A1',
+                'rotation' => 360,
+            ],
+        ],
+    ])->assertUnprocessable();
+});
+
 it('allows restaurant managers to configure guest communication messaging', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
