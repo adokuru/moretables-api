@@ -9,6 +9,7 @@ use App\Notifications\ReservationLifecycleNotification;
 use App\Services\ReservationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function (): void {
@@ -141,6 +142,52 @@ it('sends the WhatsApp template to the guest contact phone through the channel',
             && $request['template']['name'] === 'reservation_created'
             && $request['template']['components'][0]['parameters'][4]['text'] === 'MT-12345678';
     });
+});
+
+it('sends WhatsApp templates to local Nigerian phone numbers in Meta format', function (): void {
+    Http::fake();
+
+    $reservation = reservationForWhatsAppTests();
+    $contact = GuestContact::factory()->create([
+        'restaurant_id' => $reservation->restaurant_id,
+        'phone' => '0801 234 5678',
+    ]);
+
+    app(WhatsAppChannel::class)->send($contact, new ReservationLifecycleNotification($reservation, 'created'));
+
+    Http::assertSent(fn ($request): bool => $request['to'] === '2348012345678');
+});
+
+it('logs WhatsApp Graph object context when Meta rejects a send', function (): void {
+    Http::fake([
+        '*' => Http::response([
+            'error' => [
+                'message' => 'Unsupported post request.',
+                'type' => 'GraphMethodException',
+                'code' => 100,
+                'error_subcode' => 33,
+            ],
+        ], 400),
+    ]);
+    Log::spy();
+
+    $reservation = reservationForWhatsAppTests();
+    $contact = GuestContact::factory()->create([
+        'restaurant_id' => $reservation->restaurant_id,
+        'phone' => '+2348012345678',
+    ]);
+
+    app(WhatsAppChannel::class)->send($contact, new ReservationLifecycleNotification($reservation, 'created'));
+
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->with('WhatsApp notification request failed.', Mockery::on(function (array $context): bool {
+            return $context['status'] === 400
+                && $context['endpoint'] === 'https://graph.test/v21.0/123456/messages'
+                && $context['api_version'] === 'v21.0'
+                && $context['phone_number_id'] === '123456'
+                && $context['response']['error']['error_subcode'] === 33;
+        }));
 });
 
 it('sanitizes template parameters that Meta would reject', function (): void {
@@ -328,6 +375,30 @@ it('notifies the primary booker and additional guests without duplicates', funct
     expect($participants)->toHaveCount(2)
         ->and($participants->first())->toBeInstanceOf(GuestContact::class)
         ->and($participants->last()->attendee_name)->toBe('Unique Guest');
+});
+
+it('deduplicates local and international Nigerian phone formats for WhatsApp participants', function (): void {
+    $reservation = reservationForWhatsAppTests(['user_id' => null]);
+    $contact = GuestContact::factory()->create([
+        'restaurant_id' => $reservation->restaurant_id,
+        'email' => 'booker@example.com',
+        'phone' => '0801 234 5678',
+    ]);
+    $reservation->forceFill(['guest_contact_id' => $contact->id])->save();
+
+    ReservationGuest::query()->create([
+        'reservation_id' => $reservation->id,
+        'restaurant_id' => $reservation->restaurant_id,
+        'attendee_name' => 'Same Phone',
+        'email_address' => 'same-phone@example.com',
+        'email_normalized' => 'same-phone@example.com',
+        'phone_number' => '+2348012345678',
+    ]);
+
+    $participants = $reservation->refresh()->notifiableParticipants();
+
+    expect($participants)->toHaveCount(1)
+        ->and($participants->first())->toBeInstanceOf(GuestContact::class);
 });
 
 it('notifies guest contact and additional guests when a reservation is cancelled', function (): void {

@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use App\ReservationStatus;
 use App\Services\ReservationService;
 use App\Services\WhatsAppService;
+use App\Support\PhoneNumber;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -77,21 +78,16 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
      */
     protected function senderIsPrimaryBooker(Reservation $reservation): bool
     {
-        $from = $this->normalizePhone($this->fromPhone);
+        $from = PhoneNumber::forWhatsApp($this->fromPhone);
 
         if ($from === '') {
             return false;
         }
 
-        $bookerPhone = $this->normalizePhone(
+        $bookerPhone = PhoneNumber::forWhatsApp(
             (string) ($reservation->user?->phone ?? $reservation->guestContact?->phone),
         );
 
         return $bookerPhone !== '' && hash_equals($bookerPhone, $from);
-    }
-
-    protected function normalizePhone(string $phone): string
-    {
-        return preg_replace('/\D+/', '', $phone) ?? '';
     }
 }

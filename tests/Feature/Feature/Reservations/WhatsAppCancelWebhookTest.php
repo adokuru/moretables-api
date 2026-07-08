@@ -133,6 +133,20 @@ it('cancels the reservation when the primary booker taps the cancel button', fun
     );
 });
 
+it('matches local Nigerian booker phone numbers to Meta sender numbers', function (): void {
+    Notification::fake();
+    Http::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $reservation = cancellableReservation();
+    $reservation->guestContact->forceFill(['phone' => '0801 234 5678'])->save();
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();
+
+    expect($reservation->refresh()->status)->toBe(ReservationStatus::Cancelled);
+    Notification::assertSentTo($reservation->guestContact, ReservationLifecycleNotification::class);
+});
+
 it('ignores cancel taps from a phone that is not the primary booker', function (): void {
     Notification::fake();
     Http::fake();
