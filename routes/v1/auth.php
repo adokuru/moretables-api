@@ -33,6 +33,7 @@ Route::prefix('auth')->group(function (): void {
         Route::post('profile-picture', [ProfileSettingsController::class, 'updateProfilePicture']);
         Route::get('staff/profile', [AuthController::class, 'profile']);
         Route::patch('staff/profile', [AuthController::class, 'updateProfile']);
+        Route::patch('staff/profile/tour', [AuthController::class, 'completeTour']);
         Route::patch('staff/profile/password', [AuthController::class, 'changeStaffPassword']);
         Route::post('staff/profile/password/initiate', [AuthController::class, 'initiateStaffPasswordChange'])->middleware('throttle:auth-initiate');
         Route::patch('staff/profile/password/confirm', [AuthController::class, 'confirmStaffPasswordChange'])->middleware('throttle:auth-verify');
