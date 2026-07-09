@@ -75,6 +75,14 @@ class MerchantWaitlistController extends Controller
         ], 201);
     }
 
+    public function show(Request $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): WaitlistEntryResource
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'user', 'guestContact']));
+    }
+
     public function notify(NotifyWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);

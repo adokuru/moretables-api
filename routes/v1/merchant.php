@@ -205,6 +205,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         Route::get('waitlist-entries', [MerchantWaitlistController::class, 'index']);
         Route::post('waitlist-entries', [MerchantWaitlistController::class, 'store']);
+        Route::get('waitlist-entries/{waitlistEntry}', [MerchantWaitlistController::class, 'show']);
         Route::post('waitlist-entries/{waitlistEntry}/notify', [MerchantWaitlistController::class, 'notify']);
         Route::post('waitlist-entries/{waitlistEntry}/arrive', [MerchantWaitlistController::class, 'arrive']);
         Route::post('waitlist-entries/{waitlistEntry}/assign-table', [MerchantWaitlistController::class, 'assignTable']);
