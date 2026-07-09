@@ -632,6 +632,46 @@ it('publishes the profile when the required onboarding steps are complete', func
     expect($restaurant->refresh()->is_profile_published)->toBeTrue();
 });
 
+it('does not unpublish a profile once a required step later becomes incomplete again', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $restaurant = Restaurant::factory()->create([
+        'description' => str_repeat('A welcoming dining room with seasonal menus and attentive service. ', 2),
+        'is_profile_published' => false,
+    ]);
+    $primaryCuisine = CuisineOption::factory()->create();
+    $restaurant->cuisines()->attach($primaryCuisine->id, ['is_primary' => true]);
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Dinner',
+    ]);
+    $actor = User::factory()->create();
+    assignScopedRole($actor, Role::MarketingGrowth, $restaurant->organization, $restaurant);
+
+    Sanctum::actingAs($actor);
+
+    $this->putJson(obUrl($restaurant->id, '/business-hours'), [
+        'schedules' => [
+            ['restaurant_meal_type_id' => $availabilityPeriod->id, 'day_of_week' => 1, 'opens_at' => '18:00', 'closes_at' => '22:00'],
+        ],
+    ])->assertOk();
+
+    expect($restaurant->refresh()->is_profile_published)->toBeTrue();
+
+    // Simulate a later edit that leaves the "hours" step incomplete again
+    // (e.g. the merchant removes their only schedule).
+    RestaurantAvailabilitySchedule::where('restaurant_meal_type_id', $availabilityPeriod->id)->delete();
+
+    $response = $this->patchJson(obUrl($restaurant->id, '/description'), [
+        'description' => $restaurant->description,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('onboarding_status.progress.'.RestaurantOnboardingStep::Hours->value, 'pending')
+        ->assertJsonPath('onboarding_status.is_profile_published', true);
+
+    expect($restaurant->refresh()->is_profile_published)->toBeTrue();
+});
+
 it('rejects an invalid step enum value in status update', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
