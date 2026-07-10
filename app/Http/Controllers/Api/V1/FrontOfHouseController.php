@@ -188,7 +188,7 @@ class FrontOfHouseController extends Controller
         $noShowCount = $this->countStatuses($counts, [ReservationStatus::NoShow]);
 
         $waitlistQuery = $restaurant->waitlistEntries()
-            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::Accepted]);
+            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted]);
         $this->scopeWaitlist($waitlistQuery, $restaurant, $date, $windowStart, $windowEnd);
 
         $waitlistCount = $waitlistQuery
@@ -287,8 +287,8 @@ class FrontOfHouseController extends Controller
      * List active waitlist entries.
      *
      * Returns paginated walk-in waitlist entries with a status of `waiting`,
-     * `notified`, `arrived`, or `accepted` for the requested date and optional
-     * service window.
+     * `notified`, `arrived`, `partially_arrived`, or `accepted` for the
+     * requested date and optional service window.
      */
     public function waitlist(Request $request, Restaurant $restaurant): JsonResponse
     {
@@ -301,7 +301,7 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->waitlistEntries()
             ->with(['reservation.reservationGuests', 'user', 'guestContact'])
-            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::Accepted])
+            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted])
             ->orderBy('created_at');
         $this->scopeWaitlist($query, $restaurant, $date, $windowStart, $windowEnd);
 

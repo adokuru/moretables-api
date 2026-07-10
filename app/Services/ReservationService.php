@@ -809,9 +809,13 @@ class ReservationService
         return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
             $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
-            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified], true)) {
+            // PartiallyArrived is allowed here too — the two are peer choices
+            // in the same "Update Status" list (see partiallyArriveWaitlistEntry
+            // below), so staff can correct one to the other without needing
+            // to go back through Waiting/Notified first.
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::PartiallyArrived], true)) {
                 throw ValidationException::withMessages([
-                    'waitlist_entry' => ['Only waiting or notified entries can be marked arrived.'],
+                    'waitlist_entry' => ['Only waiting, notified, or partially arrived entries can be marked arrived.'],
                 ]);
             }
 
@@ -833,14 +837,43 @@ class ReservationService
         });
     }
 
-    public function cancelWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
+    public function partiallyArriveWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
     {
         return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
             $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
             if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived], true)) {
                 throw ValidationException::withMessages([
-                    'waitlist_entry' => ['Only waiting, notified, or arrived entries can be cancelled.'],
+                    'waitlist_entry' => ['Only waiting, notified, or arrived entries can be marked partially arrived.'],
+                ]);
+            }
+
+            $entry->forceFill(['status' => WaitlistStatus::PartiallyArrived])->save();
+            $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
+
+            $this->auditLogService->log(
+                action: 'waitlist.partially_arrived',
+                actor: $actor,
+                auditable: $entry,
+                restaurant: $entry->restaurant,
+                organization: $entry->restaurant->organization,
+                description: 'Waitlist entry marked partially arrived',
+            );
+
+            event(new WaitlistEntryUpdated($entry, 'partially_arrived'));
+
+            return $entry;
+        });
+    }
+
+    public function cancelWaitlistEntry(WaitlistEntry $entry, User $actor): WaitlistEntry
+    {
+        return DB::transaction(function () use ($entry, $actor): WaitlistEntry {
+            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived], true)) {
+                throw ValidationException::withMessages([
+                    'waitlist_entry' => ['Only waiting, notified, arrived, or partially arrived entries can be cancelled.'],
                 ]);
             }
 
@@ -944,7 +977,7 @@ class ReservationService
         return DB::transaction(function () use ($entry, $table, $actor): Reservation {
             $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
 
-            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived], true)) {
+            if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived], true)) {
                 throw ValidationException::withMessages([
                     'waitlist_entry' => ['This waitlist entry can no longer be assigned.'],
                 ]);

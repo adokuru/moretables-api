@@ -90,6 +90,11 @@ class RestaurantOnboardingService
     {
         $status = $this->buildStatus($restaurant->refresh());
 
+        // Once a profile has been published, later edits that temporarily leave a
+        // required step incomplete (e.g. removing a meal type) must not silently
+        // unpublish it again — only an explicit updateStatus() call may do that.
+        $status['is_profile_published'] = $restaurant->is_profile_published || $status['is_profile_published'];
+
         $restaurant->update([
             'onboarding_progress' => $status['progress'],
             'onboarding_current_step' => $status['current_step'],
@@ -101,10 +106,14 @@ class RestaurantOnboardingService
 
     public function updateStatus(Restaurant $restaurant, array $data): array
     {
+        if (array_key_exists('last_step', $data)) {
+            $restaurant->update(['onboarding_last_step' => $data['last_step']]);
+        }
+
+        $status = $this->syncStatus($restaurant);
+
         if (array_key_exists('is_profile_published', $data)) {
             if ($data['is_profile_published']) {
-                $status = $this->buildStatus($restaurant->refresh());
-
                 abort_unless(
                     $this->isPublishable($status['progress']),
                     422,
@@ -112,16 +121,11 @@ class RestaurantOnboardingService
                 );
             }
 
-            $restaurant->update([
-                'is_profile_published' => $data['is_profile_published'],
-            ]);
+            $restaurant->update(['is_profile_published' => $data['is_profile_published']]);
+            $status['is_profile_published'] = $data['is_profile_published'];
         }
 
-        if (array_key_exists('last_step', $data)) {
-            $restaurant->update(['onboarding_last_step' => $data['last_step']]);
-        }
-
-        return $this->syncStatus($restaurant);
+        return $status;
     }
 
     public function availabilityPeriodBelongsToRestaurant(RestaurantAvailabilityPeriod $availabilityPeriod, Restaurant $restaurant): bool
