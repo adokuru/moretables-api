@@ -17,18 +17,21 @@ class MerchantRestaurantServerController extends Controller
     public function index(ListRestaurantServersRequest $request, Restaurant $restaurant): JsonResponse
     {
         $validated = $request->validated();
-        $serviceStartsAt = Carbon::parse($validated['service_starts_at'])->utc();
-        $serviceEndsAt = Carbon::parse($validated['service_ends_at'])->utc();
+        $servers = $restaurant->servers()->orderBy('name');
+
+        if (isset($validated['service_starts_at'], $validated['service_ends_at'])) {
+            $serviceStartsAt = Carbon::parse($validated['service_starts_at'])->utc();
+            $serviceEndsAt = Carbon::parse($validated['service_ends_at'])->utc();
+
+            $servers->with(['tableAssignments' => fn ($query) => $query
+                ->where('service_starts_at', $serviceStartsAt)
+                ->where('service_ends_at', $serviceEndsAt),
+            ]);
+        }
 
         return response()->json([
             'servers' => RestaurantServerResource::collection(
-                $restaurant->servers()
-                    ->with(['tableAssignments' => fn ($query) => $query
-                        ->where('service_starts_at', $serviceStartsAt)
-                        ->where('service_ends_at', $serviceEndsAt),
-                    ])
-                    ->orderBy('name')
-                    ->get()
+                $servers->get()
             ),
         ]);
     }

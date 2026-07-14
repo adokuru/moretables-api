@@ -18,8 +18,8 @@ class ListRestaurantServersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_starts_at' => ['required', 'date'],
-            'service_ends_at' => ['required', 'date', 'after:service_starts_at'],
+            'service_starts_at' => ['nullable', 'date', 'required_with:service_ends_at'],
+            'service_ends_at' => ['nullable', 'date', 'required_with:service_starts_at', 'after:service_starts_at'],
         ];
     }
 }
