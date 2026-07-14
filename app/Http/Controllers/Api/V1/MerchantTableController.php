@@ -14,6 +14,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantServerTableAssignment;
 use App\Models\RestaurantTable;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -80,24 +81,27 @@ class MerchantTableController extends Controller
         abort_unless($table->restaurant_id === $restaurant->id, 404);
 
         $validated = $request->validated();
+        $serviceStartsAt = Carbon::parse($validated['service_starts_at'])->utc();
+        $serviceEndsAt = Carbon::parse($validated['service_ends_at'])->utc();
         $assignment = RestaurantServerTableAssignment::query()
             ->where('restaurant_id', $restaurant->id)
             ->where('restaurant_table_id', $table->id)
-            ->where('service_starts_at', $validated['service_starts_at'])
+            ->where('service_starts_at', $serviceStartsAt)
             ->first();
 
         if ($validated['server_id'] === null) {
             $assignment?->delete();
+            $assignment = null;
         } else {
             $assignment = RestaurantServerTableAssignment::query()->updateOrCreate(
                 [
                     'restaurant_table_id' => $table->id,
-                    'service_starts_at' => $validated['service_starts_at'],
+                    'service_starts_at' => $serviceStartsAt,
                 ],
                 [
                     'restaurant_id' => $restaurant->id,
                     'restaurant_server_id' => $validated['server_id'],
-                    'service_ends_at' => $validated['service_ends_at'],
+                    'service_ends_at' => $serviceEndsAt,
                 ],
             );
         }
@@ -135,6 +139,8 @@ class MerchantTableController extends Controller
             'service_starts_at' => ['required', 'date'],
             'service_ends_at' => ['required', 'date', 'after:service_starts_at'],
         ]);
+        $serviceStartsAt = Carbon::parse($validated['service_starts_at'])->utc();
+        $serviceEndsAt = Carbon::parse($validated['service_ends_at'])->utc();
 
         $tableId = isset($validated['table_id']) ? (int) $validated['table_id'] : null;
         if ($tableId) {
@@ -143,8 +149,8 @@ class MerchantTableController extends Controller
                 ->with('server')
                 ->where('restaurant_id', $restaurant->id)
                 ->where('restaurant_table_id', $table->id)
-                ->where('service_starts_at', $validated['service_starts_at'])
-                ->where('service_ends_at', $validated['service_ends_at'])
+                ->where('service_starts_at', $serviceStartsAt)
+                ->where('service_ends_at', $serviceEndsAt)
                 ->first();
             if ($assignment) {
                 return response()->json([
