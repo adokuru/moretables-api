@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\RestaurantStatus;
+use App\Services\RestaurantRewardRuleService;
 use Database\Factories\RestaurantFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -179,6 +180,23 @@ class Restaurant extends Model implements HasMedia
     public function rewardRules(): HasMany
     {
         return $this->hasMany(RestaurantRewardRule::class);
+    }
+
+    /**
+     * Whether the restaurant participates in the MoreTables credits (loyalty rewards) program.
+     */
+    public function offersMoretablesCredits(): bool
+    {
+        return (bool) $this->rewards_enabled;
+    }
+
+    /**
+     * Whether the restaurant has set its own reservation reward points instead of relying on the default.
+     */
+    public function hasCustomReservationRewardPoints(): bool
+    {
+        return $this->reservation_reward_points !== null
+            && (int) $this->reservation_reward_points !== RestaurantRewardRuleService::DEFAULT_POINTS;
     }
 
     public function cancellationPolicies(): HasMany

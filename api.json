@@ -2932,6 +2932,103 @@
                 }
             }
         },
+        "/restaurants/{restaurant}/card-hold": {
+            "post": {
+                "operationId": "customerReservationCardHold.store",
+                "summary": "Capture a card before booking a slot covered by a card-hold cancellation policy. Charges a nominal\nverification amount to save the card (refunded once verified), and returns the Paystack checkout\npayload the frontend uses to collect it. Pass the returned `reference` when creating the reservation\nto link the hold. The card is only charged the policy hold amount if the guest is a no-show.\nReturns 422 when the requested slot does not require a card hold",
+                "tags": [
+                    "Customer Reservations"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreReservationCardHoldRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Card hold verification started."
+                                        },
+                                        "card_hold": {
+                                            "$ref": "#/components/schemas/ReservationCardHoldResource"
+                                        },
+                                        "authorization_url": {},
+                                        "access_code": {},
+                                        "reference": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "card_hold",
+                                        "authorization_url",
+                                        "access_code",
+                                        "reference"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/{reservation}/guests": {
             "post": {
                 "operationId": "customerReservation.addGuests",
@@ -7962,6 +8059,210 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/tables/{table}/assign-server": {
+            "patch": {
+                "operationId": "merchantTable.assignServer",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "required": true,
+                        "description": "The table ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignTableServerRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Server assigned successfully.",
+                                                "Server unassigned successfully."
+                                            ]
+                                        },
+                                        "table": {
+                                            "$ref": "#/components/schemas/RestaurantTableResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "table"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/tables/available-servers": {
+            "get": {
+                "operationId": "merchantTable.availableServers",
+                "tags": [
+                    "Merchant Floor Plan"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "table_id",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "assigned_server": {
+                                                    "type": "null"
+                                                },
+                                                "servers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/RestaurantServerResource"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "assigned_server",
+                                                "servers"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "assigned_server": {
+                                                    "$ref": "#/components/schemas/RestaurantServerResource"
+                                                },
+                                                "servers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "minItems": 0,
+                                                    "maxItems": 0,
+                                                    "additionalItems": false
+                                                }
+                                            },
+                                            "required": [
+                                                "assigned_server",
+                                                "servers"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/table-combinations": {
             "get": {
                 "operationId": "merchantTableCombination.index",
@@ -9584,7 +9885,7 @@
         "/merchant/restaurants/{restaurant}/front-of-house/waitlist": {
             "get": {
                 "operationId": "frontOfHouse.waitlist",
-                "description": "Returns paginated walk-in waitlist entries with a status of `waiting`,\n`notified`, or `accepted` for the requested date and optional service window.",
+                "description": "Returns paginated walk-in waitlist entries with a status of `waiting`,\n`notified`, `arrived`, `partially_arrived`, or `accepted` for the\nrequested date and optional service window.",
                 "summary": "List active waitlist entries",
                 "tags": [
                     "Front of House / Dashboard"
@@ -10425,7 +10726,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -10492,6 +10793,18 @@
                                                 "country": {
                                                     "type": "string"
                                                 },
+                                                "latitude": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "longitude": {
+                                                    "type": [
+                                                        "number",
+                                                        "null"
+                                                    ]
+                                                },
                                                 "cuisines": {
                                                     "type": "string"
                                                 },
@@ -10509,6 +10822,8 @@
                                                 "city",
                                                 "state",
                                                 "country",
+                                                "latitude",
+                                                "longitude",
                                                 "cuisines",
                                                 "social_handles"
                                             ]
@@ -10593,7 +10908,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -10693,7 +11008,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -10791,7 +11106,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11275,7 +11590,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11434,7 +11749,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11564,7 +11879,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11673,7 +11988,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11863,7 +12178,7 @@
                                                     ]
                                                 },
                                                 "is_profile_published": {
-                                                    "type": "boolean"
+                                                    "type": "string"
                                                 },
                                                 "progress": {
                                                     "type": "string"
@@ -11990,6 +12305,18 @@
                                         "country": {
                                             "type": "string"
                                         },
+                                        "latitude": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
+                                        "longitude": {
+                                            "type": [
+                                                "number",
+                                                "null"
+                                            ]
+                                        },
                                         "description": {
                                             "type": [
                                                 "string",
@@ -12035,6 +12362,8 @@
                                         "city",
                                         "state",
                                         "country",
+                                        "latitude",
+                                        "longitude",
                                         "description",
                                         "cuisines",
                                         "social_handles",
@@ -12205,7 +12534,7 @@
                                             ]
                                         },
                                         "is_profile_published": {
-                                            "type": "boolean"
+                                            "type": "string"
                                         },
                                         "progress": {
                                             "type": "string"
@@ -17653,6 +17982,99 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/rewards/status": {
+            "get": {
+                "operationId": "merchantRestaurantRewardStatus.show",
+                "summary": "Report whether the restaurant offers MoreTables credits and whether it has set a custom reward score",
+                "tags": [
+                    "Merchant Reward Rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rewards": {
+                                            "type": "object",
+                                            "properties": {
+                                                "restaurant_id": {
+                                                    "type": "integer"
+                                                },
+                                                "offers_credits": {
+                                                    "type": "boolean"
+                                                },
+                                                "has_custom_score": {
+                                                    "type": "boolean"
+                                                },
+                                                "reservation_reward_points": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "default_reward_points": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "restaurant_id",
+                                                "offers_credits",
+                                                "has_custom_score",
+                                                "reservation_reward_points",
+                                                "default_reward_points"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "rewards"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/reward-rules": {
             "get": {
                 "operationId": "merchantRewardRule.index",
@@ -19356,6 +19778,80 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}": {
+            "get": {
+                "operationId": "merchantWaitlist.show",
+                "tags": [
+                    "Merchant Waitlist"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "waitlistEntry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The waitlist entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`WaitlistEntryResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/WaitlistEntryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/notify": {
             "post": {
                 "operationId": "merchantWaitlist.notify",
@@ -19443,6 +19939,164 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/arrive": {
+            "post": {
+                "operationId": "merchantWaitlist.arrive",
+                "tags": [
+                    "Merchant Waitlist"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "waitlistEntry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The waitlist entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Waitlist guest marked arrived."
+                                        },
+                                        "waitlist_entry": {
+                                            "$ref": "#/components/schemas/WaitlistEntryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "waitlist_entry"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/partially-arrive": {
+            "post": {
+                "operationId": "merchantWaitlist.partiallyArrive",
+                "tags": [
+                    "Merchant Waitlist"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "waitlistEntry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The waitlist entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Waitlist guest marked partially arrived."
+                                        },
+                                        "waitlist_entry": {
+                                            "$ref": "#/components/schemas/WaitlistEntryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "waitlist_entry"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -19766,19 +20420,9 @@
                                                     ]
                                                 },
                                                 "email": {
-                                                    "anyOf": [
-                                                        {
-                                                            "type": "string"
-                                                        },
-                                                        {
-                                                            "type": "null"
-                                                        },
-                                                        {
-                                                            "type": "string",
-                                                            "enum": [
-                                                                "billing@moretables.local"
-                                                            ]
-                                                        }
+                                                    "type": [
+                                                        "string",
+                                                        "null"
                                                     ]
                                                 },
                                                 "plan_code": {
@@ -19892,19 +20536,9 @@
                                                     ]
                                                 },
                                                 "email": {
-                                                    "anyOf": [
-                                                        {
-                                                            "type": "string"
-                                                        },
-                                                        {
-                                                            "type": "null"
-                                                        },
-                                                        {
-                                                            "type": "string",
-                                                            "enum": [
-                                                                "billing@moretables.local"
-                                                            ]
-                                                        }
+                                                    "type": [
+                                                        "string",
+                                                        "null"
                                                     ]
                                                 },
                                                 "plan_code": {
@@ -20244,6 +20878,18 @@
                                 "null"
                             ],
                             "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "integer",
+                                "null"
+                            ],
+                            "minimum": 1,
+                            "maximum": 100
                         }
                     }
                 ],
@@ -21176,7 +21822,9 @@
                                                 "last_visit_at"
                                             ]
                                         },
-                                        "": {}
+                                        "": {
+                                            "type": "string"
+                                        }
                                     },
                                     "required": [
                                         "guest_id",
@@ -21716,6 +22364,62 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/staff/profile/tour": {
+            "patch": {
+                "operationId": "auth.completeTour",
+                "tags": [
+                    "Merchant Staff Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Product tour marked as completed."
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "user"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -30568,6 +31272,19 @@
                 ],
                 "title": "AssignReservationTableRequest"
             },
+            "AssignTableServerRequest": {
+                "type": "object",
+                "properties": {
+                    "server_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Nullable \u2014 passing null unassigns whichever server currently has this table."
+                    }
+                },
+                "title": "AssignTableServerRequest"
+            },
             "AuditLogResource": {
                 "type": "object",
                 "properties": {
@@ -30951,6 +31668,18 @@
                     "name": {
                         "type": "string"
                     },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -30983,32 +31712,20 @@
                             "null"
                         ],
                         "format": "date-time"
-                    },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
+                    "category",
+                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at",
-                    "category",
-                    "floor_type"
+                    "updated_at"
                 ],
                 "title": "DiningArea"
             },
@@ -31242,7 +31959,10 @@
                         ]
                     },
                     "phone": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -31960,7 +32680,10 @@
                         "type": "string"
                     },
                     "organization_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reviewed_at": {
                         "type": "string"
@@ -32089,7 +32812,10 @@
                         ]
                     },
                     "planned_restaurants_count": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "restaurants_count": {
                         "type": "integer"
@@ -32205,6 +32931,89 @@
                     "challenge_token"
                 ],
                 "title": "ResendChallengeRequest"
+            },
+            "ReservationCardHoldResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reservation_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "reference": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ReservationCardHoldStatus"
+                    },
+                    "amount": {
+                        "type": "integer"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "brand": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "last4": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "charged_amount": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "charged_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    },
+                    "created_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "id",
+                    "reservation_id",
+                    "reference",
+                    "status",
+                    "amount",
+                    "currency",
+                    "brand",
+                    "last4",
+                    "charged_amount",
+                    "charged_at",
+                    "created_at"
+                ],
+                "title": "ReservationCardHoldResource"
+            },
+            "ReservationCardHoldStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "authorized",
+                    "verification_failed",
+                    "charged",
+                    "charge_failed"
+                ],
+                "title": "ReservationCardHoldStatus"
             },
             "ReservationResource": {
                 "type": "object",
@@ -33520,12 +34329,23 @@
                     },
                     "name": {
                         "type": "string"
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "assigned_table_ids": {
+                        "type": "array",
+                        "items": {}
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
-                    "name"
+                    "name",
+                    "color"
                 ],
                 "title": "RestaurantServerResource"
             },
@@ -33979,6 +34799,12 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "assigned_server_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -34006,7 +34832,8 @@
                     "rotate",
                     "color",
                     "table_color",
-                    "chair_color"
+                    "chair_color",
+                    "assigned_server_id"
                 ],
                 "title": "RestaurantTableResource"
             },
@@ -35796,6 +36623,13 @@
                         ],
                         "maxLength": 500
                     },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 100
+                    },
                     "guest_contact": {
                         "type": "object",
                         "properties": {
@@ -36055,6 +36889,24 @@
                 ],
                 "title": "StoreOrganizationRequest"
             },
+            "StoreReservationCardHoldRequest": {
+                "type": "object",
+                "properties": {
+                    "starts_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "party_size": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "starts_at",
+                    "party_size"
+                ],
+                "title": "StoreReservationCardHoldRequest"
+            },
             "StoreReservationRequest": {
                 "type": "object",
                 "properties": {
@@ -36091,6 +36943,12 @@
                     "subscribe_to_promotions": {
                         "type": [
                             "boolean",
+                            "null"
+                        ]
+                    },
+                    "card_hold_reference": {
+                        "type": [
+                            "string",
                             "null"
                         ]
                     }
@@ -36476,6 +37334,13 @@
                     "name": {
                         "type": "string",
                         "maxLength": 120
+                    },
+                    "color": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "pattern": "^#[0-9A-Fa-f]{6}$"
                     }
                 },
                 "required": [
@@ -36961,6 +37826,12 @@
                         "items": {
                             "type": "object",
                             "properties": {
+                                "id": {
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
+                                },
                                 "layout_type": {
                                     "type": "string",
                                     "maxLength": 50
@@ -36993,17 +37864,13 @@
                                     "pattern": "^#(?:[0-9a-fA-F]{3}){1,2}$",
                                     "maxLength": 20
                                 },
-                                "rotate": {
+                                "rotation": {
                                     "type": [
-                                        "string",
+                                        "integer",
                                         "null"
                                     ],
-                                    "enum": [
-                                        "r1",
-                                        "r2",
-                                        "r3",
-                                        "r4"
-                                    ]
+                                    "minimum": 0,
+                                    "maximum": 359
                                 },
                                 "width": {
                                     "type": [
@@ -38630,6 +39497,22 @@
                         ],
                         "maxLength": 100
                     },
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -90,
+                        "maximum": 90
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "minimum": -180,
+                        "maximum": 180
+                    },
                     "primary_cuisine_option_id": {
                         "type": [
                             "integer",
@@ -40045,6 +40928,9 @@
                     "last_active_at": {
                         "type": "string"
                     },
+                    "has_completed_product_tour": {
+                        "type": "boolean"
+                    },
                     "notification_preferences": {
                         "type": "object",
                         "properties": {
@@ -40141,6 +41027,7 @@
                     "account_type",
                     "email_verified_at",
                     "last_active_at",
+                    "has_completed_product_tour",
                     "notification_preferences",
                     "profile_picture",
                     "created_at"
@@ -40233,6 +41120,12 @@
                             "null"
                         ]
                     },
+                    "occasion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "notified_at": {
                         "type": "string"
                     },
@@ -40294,6 +41187,7 @@
                     "preferred_starts_at",
                     "preferred_ends_at",
                     "notes",
+                    "occasion",
                     "notified_at",
                     "expires_at",
                     "seated_at",

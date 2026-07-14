@@ -6388,6 +6388,34 @@
      }
     },
     {
+     "name": "Reward status",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/rewards/status",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "rewards",
+        "status"
+       ]
+      },
+      "description": "Check whether the restaurant offers MoreTables credits (rewards_enabled) and whether it has entered its own custom reward score (reservation_reward_points differs from the default)."
+     }
+    },
+    {
      "name": "List reward rules",
      "request": {
       "method": "GET",
