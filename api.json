@@ -18109,6 +18109,99 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/rewards/status": {
+            "get": {
+                "operationId": "merchantRestaurantRewardStatus.show",
+                "summary": "Report whether the restaurant offers MoreTables credits and whether it has set a custom reward score",
+                "tags": [
+                    "Merchant Reward Rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rewards": {
+                                            "type": "object",
+                                            "properties": {
+                                                "restaurant_id": {
+                                                    "type": "integer"
+                                                },
+                                                "offers_credits": {
+                                                    "type": "boolean"
+                                                },
+                                                "has_custom_score": {
+                                                    "type": "boolean"
+                                                },
+                                                "reservation_reward_points": {
+                                                    "type": [
+                                                        "integer",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "default_reward_points": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "restaurant_id",
+                                                "offers_credits",
+                                                "has_custom_score",
+                                                "reservation_reward_points",
+                                                "default_reward_points"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "rewards"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/reward-rules": {
             "get": {
                 "operationId": "merchantRewardRule.index",
@@ -31796,6 +31889,18 @@
                     "name": {
                         "type": "string"
                     },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -31828,32 +31933,20 @@
                             "null"
                         ],
                         "format": "date-time"
-                    },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
+                    "category",
+                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at",
-                    "category",
-                    "floor_type"
+                    "updated_at"
                 ],
                 "title": "DiningArea"
             },
@@ -32087,7 +32180,10 @@
                         ]
                     },
                     "phone": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -32805,7 +32901,10 @@
                         "type": "string"
                     },
                     "organization_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reviewed_at": {
                         "type": "string"
@@ -32934,7 +33033,10 @@
                         ]
                     },
                     "planned_restaurants_count": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "restaurants_count": {
                         "type": "integer"
@@ -33055,37 +33157,57 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "reservation_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reference": {
                         "type": "string"
                     },
                     "status": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/ReservationCardHoldStatus"
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "currency": {
                         "type": "string"
                     },
                     "brand": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "last4": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "charged_amount": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "charged_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
                     },
                     "created_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
                     }
                 },
                 "required": [
@@ -33102,6 +33224,17 @@
                     "created_at"
                 ],
                 "title": "ReservationCardHoldResource"
+            },
+            "ReservationCardHoldStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "authorized",
+                    "verification_failed",
+                    "charged",
+                    "charge_failed"
+                ],
+                "title": "ReservationCardHoldStatus"
             },
             "ReservationResource": {
                 "type": "object",
@@ -34427,7 +34560,10 @@
                         "type": "string"
                     },
                     "color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "assigned_table_ids": {
                         "type": "array",
@@ -34894,7 +35030,10 @@
                         ]
                     },
                     "assigned_server_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -41228,7 +41367,10 @@
                         ]
                     },
                     "occasion": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notified_at": {
                         "type": "string"

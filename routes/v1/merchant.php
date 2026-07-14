@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\MerchantRestaurantMenuDocumentController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOnboardingController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantOverviewController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantReviewController;
+use App\Http\Controllers\Api\V1\MerchantRestaurantRewardStatusController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantServerController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantSettingsController;
 use App\Http\Controllers\Api\V1\MerchantRestaurantShiftController;
@@ -79,6 +80,8 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::get('shifts/{shift}', [MerchantRestaurantShiftController::class, 'show']);
         Route::match(['put', 'patch'], 'shifts/{shift}', [MerchantRestaurantShiftController::class, 'update']);
         Route::delete('shifts/{shift}', [MerchantRestaurantShiftController::class, 'destroy']);
+
+        Route::get('rewards/status', [MerchantRestaurantRewardStatusController::class, 'show']);
 
         Route::get('reward-rules', [MerchantRewardRuleController::class, 'index']);
         Route::post('reward-rules', [MerchantRewardRuleController::class, 'store']);
