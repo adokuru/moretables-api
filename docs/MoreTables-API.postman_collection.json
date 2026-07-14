@@ -5200,7 +5200,7 @@
      }
     },
     {
-     "name": "Waitlist assign table",
+     "name": "Waitlist assign table and seat",
      "request": {
       "method": "POST",
       "header": [
@@ -5242,7 +5242,55 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"restaurant_table_id\": 1\n}"
-      }
+      },
+      "description": "Assigns the table and immediately converts the waitlist entry into a seated reservation."
+     }
+    },
+    {
+     "name": "Waitlist pre-assign table",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/waitlist-entries/{{waitlist_entry_id}}/preassign-table",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "waitlist-entries",
+        "{{waitlist_entry_id}}",
+        "preassign-table"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"restaurant_table_id\": 1\n}"
+      },
+      "description": "Stores a table selection while keeping the party in its current waitlist status. It does not seat the party."
      }
     },
     {

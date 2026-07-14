@@ -20,6 +20,7 @@ class WaitlistEntry extends Model
         'user_id',
         'guest_contact_id',
         'reservation_id',
+        'restaurant_table_id',
         'status',
         'type',
         'party_size',
@@ -69,6 +70,11 @@ class WaitlistEntry extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    public function table(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
     }
 
     /**

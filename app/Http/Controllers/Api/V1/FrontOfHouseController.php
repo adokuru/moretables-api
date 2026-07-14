@@ -300,7 +300,7 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->waitlistEntries()
-            ->with(['reservation.reservationGuests', 'user', 'guestContact'])
+            ->with(['reservation.reservationGuests', 'table', 'user', 'guestContact'])
             ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted])
             ->orderBy('created_at');
         $this->scopeWaitlist($query, $restaurant, $date, $windowStart, $windowEnd);

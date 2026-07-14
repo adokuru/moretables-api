@@ -43,6 +43,8 @@ class FrontOfHouseOperationsController extends Controller
         $restaurant->load([
             'hours',
             'shifts.mealType',
+            'shifts.turnTimes',
+            'policy',
             'specialDays.shifts.availabilityPeriod',
             'availabilitySchedules.availabilityPeriod',
         ]);
@@ -50,7 +52,7 @@ class FrontOfHouseOperationsController extends Controller
         $periods = collect(CarbonPeriod::create($from, $to))
             ->flatMap(function ($date) use ($restaurant): array {
                 return collect($this->availabilityService->effectiveTimeWindows($restaurant, $date->format('Y-m-d')))
-                    ->map(function (array $window) use ($date): array {
+                    ->map(function (array $window) use ($date, $restaurant): array {
                         $shift = $window['shift'] ?? null;
                         $startsAt = $window['opens'];
                         $endsAt = $window['closes'];
@@ -72,6 +74,11 @@ class FrontOfHouseOperationsController extends Controller
                             'shift_id' => $shift?->id,
                             'meal_type_id' => $window['meal_type_id'] ?? $shift?->restaurant_meal_type_id,
                             'color' => $shift?->color,
+                            'default_turn_time_minutes' => $restaurant->policy?->reservation_duration_minutes ?? 120,
+                            'turn_times' => $shift?->turnTimes?->map(fn ($turnTime): array => [
+                                'party_size' => $turnTime->party_size,
+                                'duration_minutes' => $turnTime->duration_minutes,
+                            ])->values()->all() ?? [],
                             'source' => $source,
                         ];
                     })

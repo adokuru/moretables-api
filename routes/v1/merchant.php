@@ -210,6 +210,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('waitlist-entries/{waitlistEntry}/arrive', [MerchantWaitlistController::class, 'arrive']);
         Route::post('waitlist-entries/{waitlistEntry}/partially-arrive', [MerchantWaitlistController::class, 'partiallyArrive']);
         Route::post('waitlist-entries/{waitlistEntry}/assign-table', [MerchantWaitlistController::class, 'assignTable']);
+        Route::post('waitlist-entries/{waitlistEntry}/preassign-table', [MerchantWaitlistController::class, 'preassignTable']);
         Route::post('waitlist-entries/{waitlistEntry}/cancel', [MerchantWaitlistController::class, 'cancel']);
 
         // Status transitions

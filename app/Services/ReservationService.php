@@ -1037,6 +1037,51 @@ class ReservationService
     }
 
     /**
+     * Save a tentative table for a waitlist party without seating or changing status.
+     */
+    public function preassignWaitlistEntryToTable(WaitlistEntry $entry, RestaurantTable $table, User $actor): WaitlistEntry
+    {
+        return $this->withRestaurantReservationLock($entry->restaurant, function () use ($entry, $table, $actor): WaitlistEntry {
+            return DB::transaction(function () use ($entry, $table, $actor): WaitlistEntry {
+                $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+
+                if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived], true)) {
+                    throw ValidationException::withMessages([
+                        'waitlist_entry' => ['This waitlist entry can no longer be assigned.'],
+                    ]);
+                }
+
+                if (! $this->availabilityService->isTableAvailable(
+                    restaurant: $entry->restaurant,
+                    table: $table,
+                    startsAt: $entry->preferred_starts_at,
+                    partySize: $entry->party_size,
+                )) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                    ]);
+                }
+
+                $entry->forceFill(['restaurant_table_id' => $table->id])->save();
+                $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'table', 'user', 'guestContact']);
+
+                $this->auditLogService->log(
+                    action: 'waitlist.table_preassigned',
+                    actor: $actor,
+                    auditable: $entry,
+                    restaurant: $entry->restaurant,
+                    organization: $entry->restaurant->organization,
+                    description: 'Waitlist table pre-assigned',
+                );
+
+                event(new WaitlistEntryUpdated($entry, 'table_assigned'));
+
+                return $entry;
+            });
+        });
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
     protected function createReservation(

@@ -28,7 +28,7 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $entries = $restaurant->waitlistEntries()
-            ->with(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact'])
+            ->with(['restaurant', 'reservation.reservationGuests', 'table', 'user', 'guestContact'])
             ->latest('preferred_starts_at')
             ->paginate(20);
 
@@ -80,7 +80,7 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'user', 'guestContact']));
+        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'table', 'user', 'guestContact']));
     }
 
     public function notify(NotifyWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
@@ -140,6 +140,29 @@ class MerchantWaitlistController extends Controller
         return response()->json([
             'message' => 'Waitlist entry assigned to a table successfully.',
             'reservation' => ReservationResource::make($reservation),
+        ]);
+    }
+
+    /**
+     * Pre-assign a table without seating the waitlist party.
+     *
+     * The entry remains in its current waitlist status. Use `assign-table` only
+     * when the party should be converted to a reservation and seated.
+     */
+    public function preassignTable(AssignReservationTableRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        $table = RestaurantTable::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->findOrFail($request->integer('restaurant_table_id'));
+
+        $entry = $this->reservationService->preassignWaitlistEntryToTable($waitlistEntry, $table, $request->user());
+
+        return response()->json([
+            'message' => 'Table pre-assigned without seating the waitlist party.',
+            'waitlist_entry' => WaitlistEntryResource::make($entry),
         ]);
     }
 

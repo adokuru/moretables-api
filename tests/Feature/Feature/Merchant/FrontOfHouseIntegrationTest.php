@@ -128,7 +128,24 @@ it('returns chronological cross-midnight service periods and enforces the 31 day
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.starts_at', '18:00')
         ->assertJsonPath('data.0.ends_at', '02:00')
+        ->assertJsonPath('data.0.default_turn_time_minutes', 120)
+        ->assertJsonPath('data.0.turn_times', [])
         ->assertJsonPath('data.0.source', 'restaurant_hours');
+
+    $shift = $data['restaurant']->shifts()->create([
+        'name' => 'Saturday Dinner',
+        'day_of_week' => $date->dayOfWeek,
+        'starts_at' => '18:00',
+        'ends_at' => '23:00',
+        'is_active' => true,
+    ]);
+    $shift->turnTimes()->create(['party_size' => 2, 'duration_minutes' => 90]);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/service-periods?from=2026-06-20&to=2026-06-20'))
+        ->assertOk()
+        ->assertJsonPath('data.0.source', 'weekly_shift')
+        ->assertJsonPath('data.0.turn_times.0.party_size', 2)
+        ->assertJsonPath('data.0.turn_times.0.duration_minutes', 90);
 
     $this->getJson(frontOfHouseUrl($data, 'front-of-house/service-periods?from=2026-06-01&to=2026-07-02'))
         ->assertUnprocessable();
@@ -178,6 +195,32 @@ it('requires a table before seating and moves completed tables through cleaning 
     expect($event->broadcastWith()['service_stage'])->toBe(ReservationServiceStage::Entree->value)
         ->and($event->broadcastOn()[0]->name)->toBe('private-restaurant.'.$data['restaurant']->id)
         ->and($staff->canAccessRestaurant($data['restaurant']))->toBeTrue();
+});
+
+it('preassigns a reservation table without seating or changing its status', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => null,
+        'status' => ReservationStatus::Arrived,
+        'starts_at' => now()->addDay()->setTime(18, 0),
+        'ends_at' => now()->addDay()->setTime(20, 0),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/assign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.table.id', $data['table']->id)
+        ->assertJsonPath('reservation.status', ReservationStatus::Arrived->value)
+        ->assertJsonPath('reservation.seated_at', null);
+
+    expect($reservation->refresh())
+        ->restaurant_table_id->toBe($data['table']->id)
+        ->status->toBe(ReservationStatus::Arrived)
+        ->seated_at->toBeNull();
 });
 
 it('sends a review request to the guest when a reservation is completed', function () {
@@ -313,6 +356,32 @@ it('seats a waitlist party into the Seated bucket when a table is assigned', fun
         ->assertJsonPath('reservation.service_stage', ReservationServiceStage::Seated->value);
 
     expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
+});
+
+it('preassigns a waitlist table without seating or moving the entry', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Arrived,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.table.id', $data['table']->id)
+        ->assertJsonPath('waitlist_entry.status', WaitlistStatus::Arrived->value)
+        ->assertJsonPath('waitlist_entry.seated_at', null);
+
+    expect($entry->refresh())
+        ->restaurant_table_id->toBe($data['table']->id)
+        ->status->toBe(WaitlistStatus::Arrived)
+        ->seated_at->toBeNull();
 });
 
 it('marks a waitlist entry arrived without moving it out of the waitlist bucket, then still allows seating it', function () {

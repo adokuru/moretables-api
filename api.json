@@ -20166,6 +20166,100 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/preassign-table": {
+            "post": {
+                "operationId": "merchantWaitlist.preassignTable",
+                "description": "The entry remains in its current waitlist status. Use `assign-table` only\nwhen the party should be converted to a reservation and seated.",
+                "summary": "Pre-assign a table without seating the waitlist party",
+                "tags": [
+                    "Merchant Waitlist"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "waitlistEntry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The waitlist entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignReservationTableRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Table pre-assigned without seating the waitlist party."
+                                        },
+                                        "waitlist_entry": {
+                                            "$ref": "#/components/schemas/WaitlistEntryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "waitlist_entry"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/cancel": {
             "post": {
                 "operationId": "merchantWaitlist.cancel",
@@ -41051,6 +41145,9 @@
                             "null"
                         ]
                     },
+                    "restaurant_table_id": {
+                        "type": "string"
+                    },
                     "status": {
                         "type": "string"
                     },
@@ -41086,6 +41183,9 @@
                     },
                     "reservation": {
                         "$ref": "#/components/schemas/ReservationResource"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/RestaurantTableResource"
                     },
                     "user": {
                         "$ref": "#/components/schemas/UserResource"
@@ -41128,6 +41228,7 @@
                     "id",
                     "restaurant_id",
                     "reservation_id",
+                    "restaurant_table_id",
                     "status",
                     "party_size",
                     "preferred_starts_at",
