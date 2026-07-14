@@ -121,6 +121,16 @@ class FrontOfHouseController extends Controller
         }
     }
 
+    private function scopeAvailabilityAlerts(Builder|Relation $query, Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): void
+    {
+        $range = $windowStart && $windowEnd
+            ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
+            : $this->dateRanges->forDate($restaurant, $date->toDateString());
+
+        $query->where('preferred_starts_at', '>=', $range['start'])
+            ->where('preferred_starts_at', '<', $range['end']);
+    }
+
     /**
      * @param  Collection<string, object>  $counts
      * @param  list<ReservationStatus>  $statuses
@@ -188,6 +198,7 @@ class FrontOfHouseController extends Controller
         $noShowCount = $this->countStatuses($counts, [ReservationStatus::NoShow]);
 
         $waitlistQuery = $restaurant->waitlistEntries()
+            ->seating()
             ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted]);
         $this->scopeWaitlist($waitlistQuery, $restaurant, $date, $windowStart, $windowEnd);
 
@@ -300,10 +311,39 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->waitlistEntries()
+            ->seating()
             ->with(['reservation.reservationGuests', 'table', 'user', 'guestContact'])
             ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted])
             ->orderBy('created_at');
         $this->scopeWaitlist($query, $restaurant, $date, $windowStart, $windowEnd);
+
+        $entries = $query->paginate(20);
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'period' => $this->periodMeta($windowStart, $windowEnd, $availabilityPeriod),
+            ...(WaitlistEntryResource::collection($entries)->response()->getData(true)),
+        ]);
+    }
+
+    /**
+     * List active customer requests to be notified when a table becomes available.
+     */
+    public function availabilityAlerts(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+
+        $this->validateCommonParams($request);
+
+        $date = $this->resolveDate($request, $restaurant);
+        ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
+
+        $query = $restaurant->waitlistEntries()
+            ->availabilityAlerts()
+            ->with(['restaurant', 'user', 'guestContact'])
+            ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified])
+            ->orderBy('preferred_starts_at');
+        $this->scopeAvailabilityAlerts($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $entries = $query->paginate(20);
 

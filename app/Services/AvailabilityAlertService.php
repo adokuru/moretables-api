@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\WaitlistEntryUpdated;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Models\WaitlistEntry;
@@ -13,6 +14,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AvailabilityAlertService
 {
@@ -65,6 +67,32 @@ class AvailabilityAlertService
             organization: $alert->restaurant?->organization,
             description: 'Table availability alert cancelled',
         );
+
+        return $alert;
+    }
+
+    public function notifyNow(WaitlistEntry $alert, User $actor): WaitlistEntry
+    {
+        if (! $alert->isAvailabilityAlert() || $alert->status !== WaitlistStatus::Waiting) {
+            throw ValidationException::withMessages([
+                'availability_alert' => ['Only waiting availability alerts can be notified.'],
+            ]);
+        }
+
+        $alert->loadMissing(['restaurant', 'user']);
+        $this->notify($alert);
+        $alert->refresh()->load(['restaurant', 'user', 'guestContact']);
+
+        $this->auditLogService->log(
+            action: 'availability_alert.notified',
+            actor: $actor,
+            auditable: $alert,
+            restaurant: $alert->restaurant,
+            organization: $alert->restaurant?->organization,
+            description: 'Table availability alert manually notified',
+        );
+
+        event(new WaitlistEntryUpdated($alert, 'notified'));
 
         return $alert;
     }

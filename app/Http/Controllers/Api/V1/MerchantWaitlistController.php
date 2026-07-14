@@ -13,6 +13,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Services\AvailabilityAlertService;
 use App\Services\ReservationService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,10 @@ use Illuminate\Http\Request;
 #[Group('Merchant Waitlist', weight: 38)]
 class MerchantWaitlistController extends Controller
 {
-    public function __construct(protected ReservationService $reservationService) {}
+    public function __construct(
+        protected ReservationService $reservationService,
+        protected AvailabilityAlertService $availabilityAlertService,
+    ) {}
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
@@ -88,11 +92,13 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        $entry = $this->reservationService->notifyWaitlistEntry(
-            entry: $waitlistEntry,
-            actor: $request->user(),
-            expiresInMinutes: $request->integer('expires_in_minutes', 15),
-        );
+        $entry = $waitlistEntry->isAvailabilityAlert()
+            ? $this->availabilityAlertService->notifyNow($waitlistEntry, $request->user())
+            : $this->reservationService->notifyWaitlistEntry(
+                entry: $waitlistEntry,
+                actor: $request->user(),
+                expiresInMinutes: $request->integer('expires_in_minutes', 15),
+            );
 
         return response()->json([
             'message' => 'Waitlist guest notified successfully.',
@@ -171,7 +177,9 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        $entry = $this->reservationService->cancelWaitlistEntry($waitlistEntry, $request->user());
+        $entry = $waitlistEntry->isAvailabilityAlert()
+            ? $this->availabilityAlertService->cancel($waitlistEntry, $request->user())
+            : $this->reservationService->cancelWaitlistEntry($waitlistEntry, $request->user());
 
         return response()->json([
             'message' => 'Waitlist entry cancelled successfully.',

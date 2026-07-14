@@ -24,7 +24,7 @@ return [
     ['key' => 'arrived',           'group' => 'reservation',     'label' => 'Arrived',           'color' => '#7880BD', 'icon' => 'arrived'],
 
     // Seated dining progression
-    ['key' => 'seated',            'group' => 'seated',          'label' => 'Seated',            'color' => '#7880BD', 'icon' => 'seated'],
+    ['key' => 'seated',            'group' => 'seated',          'label' => 'Seated',            'color' => '#39469C', 'icon' => 'seated'],
     ['key' => 'partially_seated',  'group' => 'seated',          'label' => 'Partially Seated',  'color' => '#39469C', 'icon' => 'partially_seated'],
     ['key' => 'appetizer',         'group' => 'seated',          'label' => 'Appetizer',         'color' => '#D4C5F6', 'icon' => 'appetizer'],
     ['key' => 'entree',            'group' => 'seated',          'label' => 'Entree',            'color' => '#506BDB', 'icon' => 'entree'],

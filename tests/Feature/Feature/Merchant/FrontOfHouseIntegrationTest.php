@@ -8,6 +8,7 @@ use App\Models\RestaurantShiftNote;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\AvailabilityAlertNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationServiceStage;
 use App\ReservationStatus;
@@ -464,6 +465,44 @@ it('marks a waitlist entry arrived without moving it out of the waitlist bucket,
         ->assertJsonPath('reservation.status', ReservationStatus::Seated->value);
 
     expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
+});
+
+it('separates availability alerts from the seating waitlist', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $seatingEntry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'preferred_starts_at' => now()->addHour(),
+    ]);
+    $alertDate = now()->addDay()->toDateString();
+    $alert = WaitlistEntry::factory()->availabilityAlert()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'preferred_starts_at' => now()->addDay()->setTime(12, 0),
+        'preferred_ends_at' => now()->addDay()->setTime(13, 0),
+    ]);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/waitlist'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $seatingEntry->id)
+        ->assertJsonPath('data.0.type', 'seating');
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/availability-alerts?date='.$alertDate))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $alert->id)
+        ->assertJsonPath('data.0.type', 'availability_alert');
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$alert->id.'/notify'))
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.status', WaitlistStatus::Notified->value);
+    Notification::assertSentTo($alert->user, AvailabilityAlertNotification::class);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$alert->id.'/cancel'))
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.status', WaitlistStatus::Cancelled->value);
 });
 
 it('rejects arriving a waitlist entry that is not waiting or notified', function () {

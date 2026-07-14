@@ -251,6 +251,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
             Route::get('reservations', [FrontOfHouseController::class, 'reservations']);
             Route::get('arrived', [FrontOfHouseController::class, 'arrived']);
             Route::get('waitlist', [FrontOfHouseController::class, 'waitlist']);
+            Route::get('availability-alerts', [FrontOfHouseController::class, 'availabilityAlerts']);
             Route::get('seated', [FrontOfHouseController::class, 'seated']);
             Route::get('finished', [FrontOfHouseController::class, 'finished']);
             Route::get('no-show', [FrontOfHouseController::class, 'noshow']);

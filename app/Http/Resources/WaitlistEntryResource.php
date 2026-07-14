@@ -15,6 +15,7 @@ class WaitlistEntryResource extends JsonResource
             'reservation_id' => $this->reservation_id,
             'restaurant_table_id' => $this->restaurant_table_id,
             'status' => $this->status?->value,
+            'type' => $this->type?->value,
             'party_size' => $this->party_size,
             'preferred_starts_at' => optional($this->preferred_starts_at)?->toIso8601String(),
             'preferred_ends_at' => optional($this->preferred_ends_at)?->toIso8601String(),
