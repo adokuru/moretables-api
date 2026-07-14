@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CustomerAvailabilityAlertController;
+use App\Http\Controllers\Api\V1\CustomerReservationCardHoldController;
 use App\Http\Controllers\Api\V1\CustomerReservationController;
 use App\Http\Controllers\Api\V1\CustomerRestaurantListController;
 use App\Http\Controllers\Api\V1\CustomerRewardController;
@@ -67,6 +68,7 @@ Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function ():
     Route::get('me/reservations', [CustomerReservationController::class, 'index']);
     Route::post('reservations', [CustomerReservationController::class, 'store']);
     Route::get('reservations/{reservation}', [CustomerReservationController::class, 'show']);
+    Route::post('restaurants/{restaurant:slug}/card-hold', [CustomerReservationCardHoldController::class, 'store']);
     Route::patch('reservations/{reservation}', [CustomerReservationController::class, 'update']);
     Route::post('reservations/{reservation}/guests', [CustomerReservationController::class, 'addGuests']);
     Route::put('reservations/{reservation}/guests', [CustomerReservationController::class, 'updateGuests']);

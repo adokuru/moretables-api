@@ -21,6 +21,7 @@ class StoreReservationRequest extends FormRequest
             'occasion' => ['nullable', 'string', 'max:100'],
             'accept_points' => ['nullable', 'boolean'],
             'subscribe_to_promotions' => ['nullable', 'boolean'],
+            'card_hold_reference' => ['nullable', 'string'],
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\ReservationUpdated;
 use App\Events\TableStatusUpdated;
 use App\Events\WaitlistEntryUpdated;
+use App\Jobs\ChargeNoShowFeeJob;
 use App\Jobs\ProcessRestaurantAvailabilityAlerts;
 use App\Models\GuestContact;
 use App\Models\Reservation;
@@ -49,6 +50,7 @@ class ReservationService
         protected AuditLogService $auditLogService,
         protected RewardProgramService $rewardProgramService,
         protected RestaurantRewardRuleService $rewardRuleService,
+        protected ReservationCardHoldService $cardHoldService,
     ) {}
 
     /**
@@ -76,6 +78,16 @@ class ReservationService
                 'starts_at' => ['You already have a reservation at this restaurant for the selected date and time.'],
             ]);
         }
+
+        // Slots under a card-hold policy require a verified card before booking; resolve it up front
+        // so the booking is rejected before any reservation row is created, then link it afterwards.
+        $cardHold = $this->cardHoldService->resolveForBooking(
+            $user,
+            $restaurant,
+            $startsAt,
+            (int) $attributes['party_size'],
+            $attributes['card_hold_reference'] ?? null,
+        );
 
         // Add the customer to the restaurant's guestbook on first booking.
         // Match by phone (preferred) then email, so the same person is never
@@ -112,7 +124,7 @@ class ReservationService
             }
         }
 
-        return $this->createReservation(
+        $reservation = $this->createReservation(
             actor: $user,
             restaurant: $restaurant,
             source: ReservationSource::Customer,
@@ -120,6 +132,12 @@ class ReservationService
             user: $user,
             guestContact: $guestContact,
         );
+
+        if ($cardHold !== null) {
+            $this->cardHoldService->linkToReservation($cardHold, $reservation);
+        }
+
+        return $reservation;
     }
 
     /**
@@ -716,6 +734,8 @@ class ReservationService
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show'));
+
+        ChargeNoShowFeeJob::dispatch($reservation->id);
 
         $this->dispatchAvailabilityAlertCheck($reservation);
 

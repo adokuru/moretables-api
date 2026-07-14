@@ -2374,7 +2374,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"Long-form special request text is supported here. Include accessibility, allergy, seating, celebration, timing, or other guest context as needed.\"\n}"
+       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"Long-form special request text is supported here. Include accessibility, allergy, seating, celebration, timing, or other guest context as needed.\",\n  \"card_hold_reference\": \"rch_... (required only for card-hold slots; from Place card hold)\"\n}"
       },
       "description": "Availability is checked live inside a restaurant-scoped lock. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
      }
@@ -2411,6 +2411,50 @@
         }
        ]
       }
+     }
+    },
+    {
+     "name": "Place card hold",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/restaurants/{{restaurant_slug}}/card-hold",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "restaurants",
+        "{{restaurant_slug}}",
+        "card-hold"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4\n}"
+      },
+      "description": "Capture a card BEFORE booking a slot covered by a card-hold cancellation policy. Charges a nominal verification amount to save the card (auto-refunded once verified) and returns authorization_url/access_code plus a reference. Pass that reference as card_hold_reference when creating the reservation. The card is only charged the policy hold amount if the guest is a no-show. Returns 422 when the slot does not require a card hold."
      }
     },
     {

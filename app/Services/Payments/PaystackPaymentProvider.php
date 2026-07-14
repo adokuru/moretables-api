@@ -44,6 +44,47 @@ class PaystackPaymentProvider implements PaymentProvider
             ->json();
     }
 
+    public function initializeCardAuthorization(string $email, int $amount, string $reference, string $currency, array $metadata = []): array
+    {
+        return $this->client()
+            ->post('/transaction/initialize', [
+                'email' => $email,
+                'amount' => $amount,
+                'currency' => $currency,
+                'reference' => $reference,
+                'callback_url' => config('billing.card_hold.callback_url'),
+                'metadata' => $metadata,
+            ])
+            ->throw()
+            ->json();
+    }
+
+    public function chargeAuthorization(string $authorizationCode, string $email, int $amount, string $reference, string $currency, array $metadata = []): array
+    {
+        return $this->client()
+            ->post('/transaction/charge_authorization', [
+                'authorization_code' => $authorizationCode,
+                'email' => $email,
+                'amount' => $amount,
+                'currency' => $currency,
+                'reference' => $reference,
+                'metadata' => $metadata,
+            ])
+            ->throw()
+            ->json();
+    }
+
+    public function refundTransaction(string $reference, ?int $amount = null): array
+    {
+        return $this->client()
+            ->post('/refund', array_filter([
+                'transaction' => $reference,
+                'amount' => $amount,
+            ], fn ($value): bool => $value !== null))
+            ->throw()
+            ->json();
+    }
+
     public function syncSubscription(string $subscriptionCode): array
     {
         return $this->client()

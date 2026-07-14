@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Contracts\PaymentProvider;
 use App\Http\Controllers\Controller;
 use App\Services\BillingService;
+use App\Services\ReservationCardHoldService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ class PaystackWebhookController extends Controller
 {
     public function __construct(
         protected BillingService $billingService,
+        protected ReservationCardHoldService $cardHoldService,
         protected PaymentProvider $paymentProvider,
     ) {}
 
@@ -34,6 +36,7 @@ class PaystackWebhookController extends Controller
             ], 400);
         }
 
+        $this->cardHoldService->handleWebhook($decoded);
         $this->billingService->handlePaystackWebhook($decoded);
 
         return response()->json([

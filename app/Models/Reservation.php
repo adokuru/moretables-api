@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -88,6 +89,11 @@ class Reservation extends Model
     public function reservationGuests(): HasMany
     {
         return $this->hasMany(ReservationGuest::class);
+    }
+
+    public function cardHold(): HasOne
+    {
+        return $this->hasOne(ReservationCardHold::class);
     }
 
     /**

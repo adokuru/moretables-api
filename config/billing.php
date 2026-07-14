@@ -5,6 +5,14 @@ return [
 
     'frontend_billing_url' => env('RESTAURANT_FRONTEND_BILLING_URL', rtrim((string) env('RESTAURANT_FRONTEND_URL', 'https://restaurant.moretables.com'), '/').'/billing'),
 
+    // ponytail: Paystack cannot tokenize a card at zero amount, so verification charges a nominal
+    // (refundable) amount to save the authorization. The real no-show fee is the policy hold_charge_amount.
+    'card_hold' => [
+        'verification_amount' => (int) env('CARD_HOLD_VERIFICATION_AMOUNT', 5000),
+        'currency' => env('CARD_HOLD_CURRENCY', 'NGN'),
+        'callback_url' => env('CARD_HOLD_CALLBACK_URL', env('PAYSTACK_CALLBACK_URL')),
+    ],
+
     'providers' => [
         'paystack' => [
             'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
