@@ -144,16 +144,26 @@ class FrontOfHouseFloorPlanController extends Controller
         $dateRange = $windowStart && $windowEnd
             ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
             : $this->dateRanges->forDate($restaurant, $date->toDateString());
+        $serviceDayRange = $this->dateRanges->forDate($restaurant, $date->toDateString());
+        $seatedRangeEnd = $serviceDayRange['end']->greaterThan($dateRange['end'])
+            ? $serviceDayRange['end']
+            : $dateRange['end'];
 
         $reservationQuery = $restaurant->reservations()
             ->with(['user', 'guestContact'])
             ->whereIn('restaurant_table_id', $tableIds)
-            ->where(function ($query) use ($dateRange) {
+            ->where(function ($query) use ($dateRange, $serviceDayRange, $seatedRangeEnd) {
                 // A party that is still seated owns the table even when its
-                // booking began just outside the selected service/date window.
-                $query->where('status', ReservationStatus::Seated)
+                // booking began earlier in this service day. Do not leak a
+                // currently seated party into unrelated future/past dates.
+                $query->where(function ($query) use ($serviceDayRange, $seatedRangeEnd) {
+                    $query->where('status', ReservationStatus::Seated)
+                        ->where('starts_at', '>=', $serviceDayRange['start'])
+                        ->where('starts_at', '<', $seatedRangeEnd);
+                })
                     ->orWhere(function ($query) use ($dateRange) {
-                        $query->where('starts_at', '>=', $dateRange['start'])
+                        $query->where('status', '!=', ReservationStatus::Seated)
+                            ->where('starts_at', '>=', $dateRange['start'])
                             ->where('starts_at', '<', $dateRange['end']);
                     });
             })

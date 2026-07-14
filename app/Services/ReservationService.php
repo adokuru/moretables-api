@@ -499,10 +499,20 @@ class ReservationService
                     return $reservation->load(['user', 'guestContact', 'reservationGuests']);
                 }
 
-                if (! $this->availabilityService->isTableAvailable(
+                $availabilityStartsAt = $reservation->status === ReservationStatus::Seated
+                    ? now()
+                    : $reservation->starts_at;
+                $occupiedByAnotherSeatedParty = $reservation->status === ReservationStatus::Seated
+                    && Reservation::query()
+                        ->where('restaurant_table_id', $table->id)
+                        ->where('status', ReservationStatus::Seated)
+                        ->whereKeyNot($reservation->id)
+                        ->exists();
+
+                if ($occupiedByAnotherSeatedParty || ! $this->availabilityService->isTableAvailable(
                     restaurant: $reservation->restaurant,
                     table: $table,
-                    startsAt: $reservation->starts_at,
+                    startsAt: $availabilityStartsAt,
                     partySize: $reservation->party_size,
                     excludingReservationId: $reservation->id,
                 )) {

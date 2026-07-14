@@ -169,6 +169,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         Route::get('tables', [MerchantTableController::class, 'index']);
         Route::post('tables', [MerchantTableController::class, 'store']);
+        Route::patch('tables/assign-servers', [MerchantTableController::class, 'assignServers']);
         Route::patch('tables/{table}', [MerchantTableController::class, 'update']);
         Route::patch('tables/{table}/status', [MerchantTableController::class, 'updateStatus']);
         Route::patch('tables/{table}/assign-server', [MerchantTableController::class, 'assignServer']);

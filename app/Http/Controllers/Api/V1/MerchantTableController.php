@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Events\TableStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\AssignTableServerRequest;
+use App\Http\Requests\Merchant\AssignTableServersRequest;
 use App\Http\Requests\Merchant\StoreRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantTableRequest;
 use App\Http\Requests\Merchant\UpdateTableStatusRequest;
@@ -18,6 +19,7 @@ use Carbon\Carbon;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 #[Group('Merchant Floor Plan', weight: 32)]
 class MerchantTableController extends Controller
@@ -124,6 +126,73 @@ class MerchantTableController extends Controller
                 'service_starts_at' => $assignment->service_starts_at?->toIso8601String(),
                 'service_ends_at' => $assignment->service_ends_at?->toIso8601String(),
             ] : null,
+        ]);
+    }
+
+    /**
+     * Atomically replace server assignments for several tables in one dated
+     * service period. Either every requested table is updated or none are.
+     */
+    public function assignServers(AssignTableServersRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
+
+        $validated = $request->validated();
+        $serviceStartsAt = Carbon::parse($validated['service_starts_at'])->utc();
+        $serviceEndsAt = Carbon::parse($validated['service_ends_at'])->utc();
+        $requested = collect($validated['assignments']);
+
+        $tables = DB::transaction(function () use ($restaurant, $requested, $serviceStartsAt, $serviceEndsAt) {
+            $tables = RestaurantTable::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->whereIn('id', $requested->pluck('table_id'))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($requested as $item) {
+                $table = $tables->get((int) $item['table_id']);
+                abort_unless($table, 404);
+
+                $assignment = RestaurantServerTableAssignment::query()
+                    ->where('restaurant_id', $restaurant->id)
+                    ->where('restaurant_table_id', $table->id)
+                    ->where('service_starts_at', $serviceStartsAt)
+                    ->first();
+
+                if ($item['server_id'] === null) {
+                    $assignment?->delete();
+                } else {
+                    RestaurantServerTableAssignment::query()->updateOrCreate(
+                        [
+                            'restaurant_table_id' => $table->id,
+                            'service_starts_at' => $serviceStartsAt,
+                        ],
+                        [
+                            'restaurant_id' => $restaurant->id,
+                            'restaurant_server_id' => $item['server_id'],
+                            'service_ends_at' => $serviceEndsAt,
+                        ],
+                    );
+                }
+
+                if ($table->assigned_server_id !== null) {
+                    $table->update(['assigned_server_id' => null]);
+                }
+            }
+
+            return $tables->values();
+        });
+
+        foreach ($tables as $table) {
+            event(new TableStatusUpdated($table->refresh(), 'server_assignment_changed'));
+        }
+
+        return response()->json([
+            'message' => 'Server assignments updated successfully.',
+            'assignments' => $requested->values(),
+            'service_starts_at' => $serviceStartsAt->toIso8601String(),
+            'service_ends_at' => $serviceEndsAt->toIso8601String(),
         ]);
     }
 

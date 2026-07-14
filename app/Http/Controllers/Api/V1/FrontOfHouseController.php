@@ -101,6 +101,20 @@ class FrontOfHouseController extends Controller
             ->where('starts_at', '<', $range['end']);
     }
 
+    private function scopeSeatedReservations(Builder|Relation $query, Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): void
+    {
+        $serviceDayRange = $this->dateRanges->forDate($restaurant, $date->toDateString());
+        $windowRange = $windowStart && $windowEnd
+            ? $this->dateRanges->forTimeWindow($restaurant, $date->toDateString(), $windowStart, $windowEnd)
+            : $serviceDayRange;
+        $rangeEnd = $serviceDayRange['end']->greaterThan($windowRange['end'])
+            ? $serviceDayRange['end']
+            : $windowRange['end'];
+
+        $query->where('starts_at', '>=', $serviceDayRange['start'])
+            ->where('starts_at', '<', $rangeEnd);
+    }
+
     private function scopeWaitlist(Builder|Relation $query, Restaurant $restaurant, Carbon $date, ?string $windowStart, ?string $windowEnd): void
     {
         $dateRange = $this->dateRanges->forDate($restaurant, $date->toDateString());
@@ -373,7 +387,7 @@ class FrontOfHouseController extends Controller
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
             ->where('status', ReservationStatus::Seated)
             ->orderBy('seated_at');
-        $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
+        $this->scopeSeatedReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
         $reservations = $query->paginate(20);
 

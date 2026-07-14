@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\RestaurantServer;
+use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -91,6 +92,54 @@ it('keeps server assignments isolated between dated service shifts', function ()
         ->assertJsonPath('servers.0.assigned_table_ids', [$data['table']->id]);
 
     $this->assertDatabaseCount('restaurant_server_table_assignments', 2);
+});
+
+it('updates multiple table server assignments atomically for one shift', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+    Sanctum::actingAs($operations);
+
+    $secondTable = RestaurantTable::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $firstServer = RestaurantServer::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $secondServer = RestaurantServer::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $service = [
+        'service_starts_at' => now()->addDay()->setTime(18, 0)->utc()->toIso8601String(),
+        'service_ends_at' => now()->addDay()->setTime(23, 0)->utc()->toIso8601String(),
+    ];
+    $url = '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables/assign-servers';
+
+    $this->patchJson($url, [
+        'assignments' => [
+            ['table_id' => $data['table']->id, 'server_id' => $firstServer->id],
+            ['table_id' => $secondTable->id, 'server_id' => $secondServer->id],
+        ],
+        ...$service,
+    ])->assertOk()->assertJsonCount(2, 'assignments');
+
+    $this->assertDatabaseHas('restaurant_server_table_assignments', [
+        'restaurant_table_id' => $data['table']->id,
+        'restaurant_server_id' => $firstServer->id,
+    ]);
+    $this->assertDatabaseHas('restaurant_server_table_assignments', [
+        'restaurant_table_id' => $secondTable->id,
+        'restaurant_server_id' => $secondServer->id,
+    ]);
+
+    $this->patchJson($url, [
+        'assignments' => [
+            ['table_id' => $data['table']->id, 'server_id' => null],
+            ['table_id' => $secondTable->id, 'server_id' => 999999],
+        ],
+        ...$service,
+    ])->assertUnprocessable()->assertJsonValidationErrors('assignments.1.server_id');
+
+    $this->assertDatabaseHas('restaurant_server_table_assignments', [
+        'restaurant_table_id' => $data['table']->id,
+        'restaurant_server_id' => $firstServer->id,
+    ]);
 });
 
 it('rejects an unknown server id and enforces table-manage permission and restaurant scoping', function () {

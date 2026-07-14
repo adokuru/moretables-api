@@ -78,6 +78,7 @@ it('tracks and exposes reservation arrival, seating, and finished times', functi
 });
 
 it('returns the configured dining-area layout contract through the front-of-house floor endpoint', function () {
+    Carbon::setTestNow('2026-07-14 12:00:00');
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
     actingAsFrontOfHouse($data);
@@ -129,6 +130,49 @@ it('returns the configured dining-area layout contract through the front-of-hous
         ->assertJsonPath('tables.0.live_status', 'occupied')
         ->assertJsonPath('tables.0.current_reservation.id', $seated->id)
         ->assertJsonPath('tables.0.current_reservation.service_stage', ReservationServiceStage::Appetizer->value);
+});
+
+it('keeps seated floor and list state inside the requested service day', function () {
+    Carbon::setTestNow('2026-07-14 12:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $diningArea = DiningArea::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'is_active' => true,
+    ]);
+    $data['table']->update(['dining_area_id' => $diningArea->id]);
+    $seated = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => Carbon::parse('2026-07-14 12:00:00'),
+        'ends_at' => Carbon::parse('2026-07-14 14:00:00'),
+        'seated_at' => Carbon::parse('2026-07-14 12:00:00'),
+    ]);
+    $future = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Booked,
+        'starts_at' => Carbon::parse('2026-07-15 12:00:00'),
+        'ends_at' => Carbon::parse('2026-07-15 14:00:00'),
+    ]);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/floors/'.$diningArea->id.'?date=2026-07-14&starts_at=18:00&ends_at=23:00'))
+        ->assertOk()
+        ->assertJsonPath('tables.0.live_status', 'occupied')
+        ->assertJsonPath('tables.0.current_reservation.id', $seated->id);
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/seated?date=2026-07-14&starts_at=18:00&ends_at=23:00'))
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $seated->id);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/floors/'.$diningArea->id.'?date=2026-07-15'))
+        ->assertOk()
+        ->assertJsonPath('tables.0.live_status', 'reserved')
+        ->assertJsonPath('tables.0.current_reservation.id', $future->id);
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/seated?date=2026-07-15'))
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
 });
 
 it('returns chronological cross-midnight service periods and enforces the 31 day range', function () {
@@ -306,6 +350,54 @@ it('moves a seated reservation to another table and updates both table states', 
     expect($reservation->refresh()->restaurant_table_id)->toBe($newTable->id)
         ->and($data['table']->refresh()->status)->toBe(TableStatus::Available)
         ->and($newTable->refresh()->status)->toBe(TableStatus::Occupied);
+});
+
+it('validates seated table moves against live occupancy and upcoming bookings from now', function () {
+    Carbon::setTestNow('2026-07-14 20:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => now()->subHours(4),
+        'ends_at' => now()->subHours(2),
+        'seated_at' => now()->subHours(4),
+    ]);
+    $upcomingTable = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => TableStatus::Available,
+    ]);
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $upcomingTable->id,
+        'status' => ReservationStatus::Booked,
+        'starts_at' => now()->addMinutes(30),
+        'ends_at' => now()->addHours(2),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/assign-table'), [
+        'restaurant_table_id' => $upcomingTable->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('restaurant_table_id');
+
+    $occupiedTable = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => TableStatus::Occupied,
+    ]);
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $occupiedTable->id,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => now()->subHours(5),
+        'ends_at' => now()->subHours(3),
+        'seated_at' => now()->subHours(5),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/assign-table'), [
+        'restaurant_table_id' => $occupiedTable->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('restaurant_table_id');
+    expect($reservation->refresh()->restaurant_table_id)->toBe($data['table']->id);
 });
 
 it('sends a review request to the guest when a reservation is completed', function () {
