@@ -669,6 +669,7 @@ class ReservationService
     {
         $reservation->forceFill([
             'status' => ReservationStatus::Arrived,
+            'arrived_at' => $reservation->arrived_at ?? now(),
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
@@ -681,6 +682,7 @@ class ReservationService
     {
         $reservation->forceFill([
             'status' => ReservationStatus::PartiallyArrived,
+            'arrived_at' => $reservation->arrived_at ?? now(),
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);

@@ -38,6 +38,7 @@ class ReservationFactory extends Factory
             'ends_at' => (clone $startsAt)->addHours(2),
             'notes' => $this->faker->sentence(),
             'internal_notes' => null,
+            'arrived_at' => null,
             'seated_at' => null,
             'completed_at' => null,
             'canceled_at' => null,

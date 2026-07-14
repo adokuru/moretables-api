@@ -25,6 +25,10 @@ beforeEach(function (): void {
     $this->seed(BillingPlanSeeder::class);
 });
 
+afterEach(function (): void {
+    Carbon::setTestNow();
+});
+
 function actingAsFrontOfHouse(array $data, string $role = Role::Operations): User
 {
     $user = User::factory()->create();
@@ -38,6 +42,38 @@ function frontOfHouseUrl(array $data, string $path): string
 {
     return '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/'.$path;
 }
+
+it('tracks and exposes reservation arrival, seating, and finished times', function () {
+    Carbon::setTestNow('2026-07-14 10:15:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Confirmed,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/partially-arrive'))
+        ->assertOk()
+        ->assertJsonPath('reservation.arrived_at', '2026-07-14T10:15:00+00:00');
+
+    Carbon::setTestNow('2026-07-14 10:20:00');
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/arrive'))
+        ->assertOk()
+        ->assertJsonPath('reservation.arrived_at', '2026-07-14T10:15:00+00:00');
+
+    Carbon::setTestNow('2026-07-14 10:30:00');
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/seat'))
+        ->assertOk()
+        ->assertJsonPath('reservation.seated_at', '2026-07-14T10:30:00+00:00');
+
+    Carbon::setTestNow('2026-07-14 11:45:00');
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/complete'))
+        ->assertOk()
+        ->assertJsonPath('reservation.completed_at', '2026-07-14T11:45:00+00:00')
+        ->assertJsonPath('reservation.finished_at', '2026-07-14T11:45:00+00:00');
+});
 
 it('returns the configured dining-area layout contract through the front-of-house floor endpoint', function () {
     $data = createBookableRestaurant();

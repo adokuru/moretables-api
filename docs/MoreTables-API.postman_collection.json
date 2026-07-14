@@ -1222,6 +1222,44 @@
      }
     },
     {
+     "name": "Join campaign waitlist",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/campaign-waitlist",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "campaign-waitlist"
+       ]
+      },
+      "description": "Add an email address to the campaign Google Sheet and queue a confirmation email.",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"subscriber@example.com\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     },
+     "response": []
+    },
+    {
      "name": "List restaurants",
      "request": {
       "method": "GET",
@@ -4625,7 +4663,8 @@
          "type": "string"
         }
        ]
-      }
+      },
+      "description": "Reservation responses expose arrived_at, seated_at, completed_at, and finished_at lifecycle timestamps when those transitions have occurred. finished_at is the UI-facing alias of completed_at."
      }
     },
     {
@@ -4721,6 +4760,84 @@
      }
     },
     {
+     "name": "Reservation arrive",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/arrive",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reservations",
+        "{{reservation_id}}",
+        "arrive"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Marks the reservation arrived and sets arrived_at on the first arrival transition. Later changes between partially arrived and arrived preserve that original timestamp."
+     }
+    },
+    {
+     "name": "Reservation partially arrive",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/partially-arrive",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reservations",
+        "{{reservation_id}}",
+        "partially-arrive"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Marks the reservation partially arrived and sets arrived_at only when no arrival time has previously been recorded."
+     }
+    },
+    {
      "name": "Reservation seat",
      "request": {
       "method": "POST",
@@ -4763,7 +4880,8 @@
       "body": {
        "mode": "raw",
        "raw": "{}"
-      }
+      },
+      "description": "Marks the reservation seated and records seated_at."
      }
     },
     {
@@ -4809,7 +4927,8 @@
       "body": {
        "mode": "raw",
        "raw": "{}"
-      }
+      },
+      "description": "Marks the reservation completed and records completed_at. Responses also expose the same value as finished_at for front-of-house clients."
      }
     },
     {
