@@ -95,6 +95,22 @@ it('returns the configured dining-area layout contract through the front-of-hous
         'color' => '#AABBCC',
         'chair_color' => '#112233',
     ]);
+    $seated = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'service_stage' => ReservationServiceStage::Appetizer,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'seated_at' => now()->subMinutes(30),
+    ]);
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Booked,
+        'starts_at' => now()->addHours(2),
+        'ends_at' => now()->addHours(4),
+    ]);
 
     $this->getJson(frontOfHouseUrl($data, 'front-of-house/floors/'.$diningArea->id))
         ->assertOk()
@@ -107,7 +123,10 @@ it('returns the configured dining-area layout contract through the front-of-hous
         ->assertJsonPath('tables.0.rotation', 90)
         ->assertJsonPath('tables.0.rotate', 'r2')
         ->assertJsonPath('tables.0.table_color', '#AABBCC')
-        ->assertJsonPath('tables.0.chair_color', '#112233');
+        ->assertJsonPath('tables.0.chair_color', '#112233')
+        ->assertJsonPath('tables.0.live_status', 'occupied')
+        ->assertJsonPath('tables.0.current_reservation.id', $seated->id)
+        ->assertJsonPath('tables.0.current_reservation.service_stage', ReservationServiceStage::Appetizer->value);
 });
 
 it('returns chronological cross-midnight service periods and enforces the 31 day range', function () {

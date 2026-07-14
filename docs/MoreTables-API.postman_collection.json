@@ -178,7 +178,8 @@
         "value": "application/json"
        }
       ],
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/service-periods?from=2026-06-19&to=2026-06-25"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/service-periods?from=2026-06-19&to=2026-06-25",
+      "description": "Returns effective service periods with default_turn_time_minutes and party-size turn_times used by front-of-house seated-duration alerts."
      }
     },
     {

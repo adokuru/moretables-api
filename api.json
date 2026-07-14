@@ -10456,6 +10456,35 @@
                                                     "color": {
                                                         "type": "string"
                                                     },
+                                                    "default_turn_time_minutes": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "integer",
+                                                                "enum": [
+                                                                    120
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "turn_times": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "minItems": 0,
+                                                                "maxItems": 0,
+                                                                "additionalItems": false
+                                                            }
+                                                        ]
+                                                    },
                                                     "source": {
                                                         "anyOf": [
                                                             {
@@ -10482,6 +10511,8 @@
                                                     "shift_id",
                                                     "meal_type_id",
                                                     "color",
+                                                    "default_turn_time_minutes",
+                                                    "turn_times",
                                                     "source"
                                                 ]
                                             }
