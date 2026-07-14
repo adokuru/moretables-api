@@ -153,10 +153,14 @@ class FrontOfHouseFloorPlanController extends Controller
                 ReservationStatus::Seated,
             ]);
 
-        // Key reservations by table id — one active reservation per table
+        // A table may have several bookings in the service window. Always let the
+        // currently seated party win over an upcoming reservation on that table.
         $reservationsByTable = $reservationQuery
             ->get()
-            ->keyBy('restaurant_table_id');
+            ->groupBy('restaurant_table_id')
+            ->map(fn ($reservations) => $reservations->first(
+                fn ($reservation): bool => $reservation->status === ReservationStatus::Seated,
+            ) ?? $reservations->sortBy('starts_at')->first());
 
         // Build enriched table list
         $enrichedTables = $tables->map(function ($table) use ($reservationsByTable) {
@@ -181,6 +185,7 @@ class FrontOfHouseFloorPlanController extends Controller
                 'id' => $reservation->id,
                 'reference' => $reservation->reservation_reference,
                 'status' => $reservation->status?->value,
+                'service_stage' => $reservation->service_stage?->value,
                 'party_size' => $reservation->party_size,
                 'starts_at' => $reservation->starts_at?->toIso8601String(),
                 'ends_at' => $reservation->ends_at?->toIso8601String(),

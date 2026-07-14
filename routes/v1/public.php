@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CampaignWaitlistController;
 use App\Http\Controllers\Api\V1\CustomerAvailabilityAlertController;
 use App\Http\Controllers\Api\V1\CustomerReservationCardHoldController;
 use App\Http\Controllers\Api\V1\CustomerReservationController;
@@ -23,6 +24,7 @@ Route::get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify']);
 Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
+Route::post('campaign-waitlist', [CampaignWaitlistController::class, 'store'])->middleware('throttle:public-write');
 
 Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index'])->middleware('throttle:public-read');
 

@@ -13,6 +13,7 @@ class WaitlistEntryResource extends JsonResource
             'id' => $this->id,
             'restaurant_id' => $this->restaurant_id,
             'reservation_id' => $this->reservation_id,
+            'restaurant_table_id' => $this->restaurant_table_id,
             'status' => $this->status?->value,
             'party_size' => $this->party_size,
             'preferred_starts_at' => optional($this->preferred_starts_at)?->toIso8601String(),
@@ -24,6 +25,7 @@ class WaitlistEntryResource extends JsonResource
             'seated_at' => optional($this->seated_at)?->toIso8601String(),
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'reservation' => ReservationResource::make($this->whenLoaded('reservation')),
+            'table' => RestaurantTableResource::make($this->whenLoaded('table')),
             'user' => UserResource::make($this->whenLoaded('user')),
             'guest_contact' => GuestContactResource::make($this->whenLoaded('guestContact')),
             'guest' => [

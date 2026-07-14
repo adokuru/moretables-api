@@ -24,6 +24,9 @@
             "name": "Onboarding Requests"
         },
         {
+            "name": "Campaign Waitlist"
+        },
+        {
             "name": "Restaurant Reviews"
         },
         {
@@ -1381,6 +1384,69 @@
                                     "required": [
                                         "message",
                                         "onboarding_request"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/campaign-waitlist": {
+            "post": {
+                "operationId": "campaignWaitlist.store",
+                "description": "Appends the subscriber to the configured Google Sheet and queues a confirmation email.",
+                "summary": "Join the campaign waitlist",
+                "tags": [
+                    "Campaign Waitlist"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreCampaignWaitlistRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The email was added to the waitlist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "You have joined the waitlist. Please check your email for confirmation."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "The waitlist storage service is temporarily unavailable.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "We could not add you to the waitlist right now. Please try again shortly."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
                                     ]
                                 }
                             }
@@ -10390,6 +10456,35 @@
                                                     "color": {
                                                         "type": "string"
                                                     },
+                                                    "default_turn_time_minutes": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "integer",
+                                                                "enum": [
+                                                                    120
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    "turn_times": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string"
+                                                            },
+                                                            {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                },
+                                                                "minItems": 0,
+                                                                "maxItems": 0,
+                                                                "additionalItems": false
+                                                            }
+                                                        ]
+                                                    },
                                                     "source": {
                                                         "anyOf": [
                                                             {
@@ -10416,6 +10511,8 @@
                                                     "shift_id",
                                                     "meal_type_id",
                                                     "color",
+                                                    "default_turn_time_minutes",
+                                                    "turn_times",
                                                     "source"
                                                 ]
                                             }
@@ -20156,6 +20253,100 @@
                                     "required": [
                                         "message",
                                         "reservation"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/waitlist-entries/{waitlistEntry}/preassign-table": {
+            "post": {
+                "operationId": "merchantWaitlist.preassignTable",
+                "description": "The entry remains in its current waitlist status. Use `assign-table` only\nwhen the party should be converted to a reservation and seated.",
+                "summary": "Pre-assign a table without seating the waitlist party",
+                "tags": [
+                    "Merchant Waitlist"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "waitlistEntry",
+                        "in": "path",
+                        "required": true,
+                        "description": "The waitlist entry ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AssignReservationTableRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Table pre-assigned without seating the waitlist party."
+                                        },
+                                        "waitlist_entry": {
+                                            "$ref": "#/components/schemas/WaitlistEntryResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "waitlist_entry"
                                     ]
                                 }
                             }
@@ -33093,10 +33284,16 @@
                             "null"
                         ]
                     },
+                    "arrived_at": {
+                        "type": "string"
+                    },
                     "seated_at": {
                         "type": "string"
                     },
                     "completed_at": {
+                        "type": "string"
+                    },
+                    "finished_at": {
                         "type": "string"
                     },
                     "canceled_at": {
@@ -33188,8 +33385,10 @@
                     "accept_points",
                     "subscribe_to_promotions",
                     "guests",
+                    "arrived_at",
                     "seated_at",
                     "completed_at",
+                    "finished_at",
                     "canceled_at",
                     "guest",
                     "actions"
@@ -36334,6 +36533,20 @@
                     "window_end"
                 ],
                 "title": "StoreAvailabilityAlertRequest"
+            },
+            "StoreCampaignWaitlistRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "email"
+                ],
+                "title": "StoreCampaignWaitlistRequest"
             },
             "StoreDiningAreaRequest": {
                 "type": "object",
@@ -41102,6 +41315,9 @@
                             "null"
                         ]
                     },
+                    "restaurant_table_id": {
+                        "type": "string"
+                    },
                     "status": {
                         "type": "string"
                     },
@@ -41140,6 +41356,9 @@
                     },
                     "reservation": {
                         "$ref": "#/components/schemas/ReservationResource"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/RestaurantTableResource"
                     },
                     "user": {
                         "$ref": "#/components/schemas/UserResource"
@@ -41182,6 +41401,7 @@
                     "id",
                     "restaurant_id",
                     "reservation_id",
+                    "restaurant_table_id",
                     "status",
                     "party_size",
                     "preferred_starts_at",

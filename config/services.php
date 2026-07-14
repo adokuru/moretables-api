@@ -67,6 +67,12 @@ return [
         'access_token' => env('EXPO_ACCESS_TOKEN'),
     ],
 
+    'campaign_waitlist' => [
+        'spreadsheet_id' => env('CAMPAIGN_WAITLIST_SPREADSHEET_ID'),
+        'sheet_range' => env('CAMPAIGN_WAITLIST_SHEET_RANGE', 'Waitlist!A:B'),
+        'service_account_base64' => env('GOOGLE_SERVICE_ACCOUNT_BASE64'),
+    ],
+
     'whatsapp' => [
         'base_url' => env('WHATSAPP_BASE_URL', 'https://graph.facebook.com'),
         'api_version' => env('WHATSAPP_API_VERSION', 'v21.0'),
