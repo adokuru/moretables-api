@@ -11,7 +11,7 @@ interface PaymentProvider
     /**
      * @return array<string, mixed>
      */
-    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice): array;
+    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array;
 
     /**
      * @return array<string, mixed>

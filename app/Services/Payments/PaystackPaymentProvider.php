@@ -3,18 +3,30 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentProvider;
+use App\Exceptions\PaymentProviderException;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
 use App\Models\Restaurant;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PaystackPaymentProvider implements PaymentProvider
 {
-    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice): array
+    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array
     {
+        $email = $restaurant->billingEmail() ?? $fallbackEmail;
+
+        if (! $email) {
+            throw new PaymentProviderException(
+                "We couldn't determine a billing email for this account. Please contact support.",
+            );
+        }
+
         $payload = [
-            'email' => $this->billingEmailFor($restaurant),
+            'email' => $email,
             'amount' => $invoice->amount,
             'currency' => $invoice->currency,
             'reference' => $invoice->provider_reference,
@@ -30,18 +42,24 @@ class PaystackPaymentProvider implements PaymentProvider
             $payload['plan'] = $plan->provider_plan_code;
         }
 
-        return $this->client()
-            ->post('/transaction/initialize', array_filter($payload, fn ($value): bool => $value !== null))
-            ->throw()
-            ->json();
+        return $this->request(
+            fn () => $this->client()
+                ->post('/transaction/initialize', array_filter($payload, fn ($value): bool => $value !== null))
+                ->throw()
+                ->json(),
+            "We couldn't start your payment right now. Please try again in a moment.",
+        );
     }
 
     public function verifyTransaction(string $reference): array
     {
-        return $this->client()
-            ->get('/transaction/verify/'.urlencode($reference))
-            ->throw()
-            ->json();
+        return $this->request(
+            fn () => $this->client()
+                ->get('/transaction/verify/'.urlencode($reference))
+                ->throw()
+                ->json(),
+            "We couldn't confirm your payment right now. Please try again in a moment.",
+        );
     }
 
     public function initializeCardAuthorization(string $email, int $amount, string $reference, string $currency, array $metadata = []): array
@@ -87,10 +105,13 @@ class PaystackPaymentProvider implements PaymentProvider
 
     public function syncSubscription(string $subscriptionCode): array
     {
-        return $this->client()
-            ->get('/subscription/'.urlencode($subscriptionCode))
-            ->throw()
-            ->json();
+        return $this->request(
+            fn () => $this->client()
+                ->get('/subscription/'.urlencode($subscriptionCode))
+                ->throw()
+                ->json(),
+            "We couldn't retrieve your subscription right now. Please try again in a moment.",
+        );
     }
 
     public function handleWebhook(array $payload): array
@@ -124,12 +145,26 @@ class PaystackPaymentProvider implements PaymentProvider
             ->asJson();
     }
 
-    protected function billingEmailFor(Restaurant $restaurant): string
+    /**
+     * @return array<string, mixed>
+     */
+    protected function request(callable $call, string $friendlyMessage): array
     {
-        return $restaurant->organization?->billing_email
-            ?? $restaurant->organization?->business_email
-            ?? $restaurant->email
-            ?? $restaurant->organization?->primary_contact_email
-            ?? 'billing@moretables.local';
+        try {
+            return $call();
+        } catch (RequestException $exception) {
+            Log::error('Paystack API request failed.', [
+                'status' => $exception->response->status(),
+                'body' => $exception->response->body(),
+            ]);
+
+            throw new PaymentProviderException($friendlyMessage, previous: $exception);
+        } catch (ConnectionException $exception) {
+            Log::error('Paystack API connection failed.', [
+                'exception' => $exception->getMessage(),
+            ]);
+
+            throw new PaymentProviderException($friendlyMessage, previous: $exception);
+        }
     }
 }
