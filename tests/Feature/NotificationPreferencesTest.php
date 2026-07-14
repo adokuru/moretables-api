@@ -4,6 +4,7 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\ExpoPushChannel;
+use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
 use App\Notifications\WaitlistOfferExpiredNotification;
@@ -103,6 +104,44 @@ it('excludes push channel when push notifications are disabled', function () {
     $channels = $notification->via($user);
 
     expect($channels)->toContain('mail')
+        ->and($channels)->not->toContain(ExpoPushChannel::class);
+});
+
+it('stores and pushes owner reservation lifecycle notifications when enabled', function () {
+    $owner = User::factory()->create([
+        'notify_push_notifications' => true,
+    ]);
+    $reservation = Reservation::factory()->create([
+        'party_size' => 4,
+    ])->load(['restaurant', 'table', 'user', 'guestContact']);
+
+    $notification = new OwnerReservationLifecycleNotification($reservation, 'cancelled');
+
+    expect($notification->via($owner))->toContain('mail', 'database', ExpoPushChannel::class)
+        ->and($notification->toArray($owner))->toMatchArray([
+            'type' => 'reservation_lifecycle',
+            'title' => 'Reservation cancelled',
+            'action' => 'cancelled',
+            'reservation_id' => $reservation->id,
+            'restaurant_id' => $reservation->restaurant_id,
+            'party_size' => 4,
+        ])
+        ->and($notification->toExpoPush($owner)->data)->toMatchArray([
+            'reservation_id' => $reservation->id,
+            'restaurant_id' => $reservation->restaurant_id,
+            'action' => 'cancelled',
+        ]);
+});
+
+it('keeps owner reservation push disabled when the owner opts out', function () {
+    $owner = User::factory()->create([
+        'notify_push_notifications' => false,
+    ]);
+    $reservation = Reservation::factory()->create();
+
+    $channels = (new OwnerReservationLifecycleNotification($reservation, 'created'))->via($owner);
+
+    expect($channels)->toContain('mail', 'database')
         ->and($channels)->not->toContain(ExpoPushChannel::class);
 });
 

@@ -23,7 +23,29 @@ class OwnerReservationLifecycleNotification extends Notification implements Shou
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        $channels = ['mail', 'database'];
+
+        if ($notifiable->notify_push_notifications) {
+            $channels[] = ExpoPushChannel::class;
+        }
+
+        return $channels;
+    }
+
+    public function toExpoPush(object $notifiable): ExpoPushMessage
+    {
+        return ExpoPushMessage::make(
+            title: $this->pushTitle(),
+            body: $this->pushBody(),
+        )->data($this->notificationData());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return $this->notificationData();
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -50,6 +72,59 @@ class OwnerReservationLifecycleNotification extends Notification implements Shou
             'cancelled' => 'Reservation cancelled - '.$this->reservation->restaurant->name,
             default => 'Reservation update - '.$this->reservation->restaurant->name,
         };
+    }
+
+    protected function pushTitle(): string
+    {
+        return match ($this->action) {
+            'created' => 'New reservation',
+            'updated' => 'Reservation modified',
+            'cancelled' => 'Reservation cancelled',
+            default => 'Reservation update',
+        };
+    }
+
+    protected function pushBody(): string
+    {
+        $action = match ($this->action) {
+            'created' => 'booked',
+            'updated' => 'modified',
+            'cancelled' => 'cancelled',
+            default => 'updated',
+        };
+
+        return sprintf(
+            '%s %s a reservation for %d %s at %s.',
+            $this->guestName(),
+            $action,
+            $this->reservation->party_size,
+            $this->reservation->party_size === 1 ? 'guest' : 'guests',
+            $this->reservation->starts_at?->copy()->timezone($this->reservation->restaurant->timezone ?: config('app.timezone'))->format('g:i A') ?? 'an upcoming service',
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function notificationData(): array
+    {
+        $this->reservation->loadMissing(['restaurant', 'table', 'user', 'guestContact']);
+
+        return [
+            'type' => 'reservation_lifecycle',
+            'title' => $this->pushTitle(),
+            'message' => $this->pushBody(),
+            'action' => $this->action,
+            'reservation_id' => $this->reservation->id,
+            'restaurant_id' => $this->reservation->restaurant_id,
+            'restaurant_name' => $this->reservation->restaurant->name,
+            'restaurant_slug' => $this->reservation->restaurant->slug,
+            'guest_name' => $this->guestName(),
+            'party_size' => $this->reservation->party_size,
+            'reference' => $this->reservation->reservation_reference,
+            'status' => $this->reservation->status?->value,
+            'starts_at' => $this->reservation->starts_at?->toIso8601String(),
+        ];
     }
 
     protected function headline(): string

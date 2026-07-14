@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DiningAreaResource;
 use App\Http\Resources\RestaurantTableResource;
 use App\Models\DiningArea;
+use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\ReservationStatus;
 use App\Services\AvailabilityService;
@@ -45,6 +46,12 @@ class FrontOfHouseFloorPlanController extends Controller
             'ends_at' => ['nullable', 'date_format:H:i', 'required_with:starts_at'],
             'meal_type_id' => ['nullable', 'integer', 'exists:restaurant_meal_types,id'],
         ]);
+    }
+
+    private function isSeatedReservation(Reservation $reservation): bool
+    {
+        return $reservation->status === ReservationStatus::Seated
+            || $reservation->status === ReservationStatus::Seated->value;
     }
 
     private function resolveWindow(Request $request, Restaurant $restaurant, Carbon $date): array
@@ -141,8 +148,15 @@ class FrontOfHouseFloorPlanController extends Controller
         $reservationQuery = $restaurant->reservations()
             ->with(['user', 'guestContact'])
             ->whereIn('restaurant_table_id', $tableIds)
-            ->where('starts_at', '>=', $dateRange['start'])
-            ->where('starts_at', '<', $dateRange['end'])
+            ->where(function ($query) use ($dateRange) {
+                // A party that is still seated owns the table even when its
+                // booking began just outside the selected service/date window.
+                $query->where('status', ReservationStatus::Seated)
+                    ->orWhere(function ($query) use ($dateRange) {
+                        $query->where('starts_at', '>=', $dateRange['start'])
+                            ->where('starts_at', '<', $dateRange['end']);
+                    });
+            })
             ->whereIn('status', [
                 ReservationStatus::Booked,
                 ReservationStatus::Confirmed,
@@ -159,7 +173,7 @@ class FrontOfHouseFloorPlanController extends Controller
             ->get()
             ->groupBy('restaurant_table_id')
             ->map(fn ($reservations) => $reservations->first(
-                fn ($reservation): bool => $reservation->status === ReservationStatus::Seated,
+                fn ($reservation): bool => $this->isSeatedReservation($reservation),
             ) ?? $reservations->sortBy('starts_at')->first());
 
         // Build enriched table list
@@ -173,7 +187,7 @@ class FrontOfHouseFloorPlanController extends Controller
                 $liveStatus = 'unavailable';
             } elseif (! $reservation) {
                 $liveStatus = 'available';
-            } elseif ($reservation->status === ReservationStatus::Seated) {
+            } elseif ($this->isSeatedReservation($reservation)) {
                 $liveStatus = 'occupied';
             } else {
                 $liveStatus = 'reserved';

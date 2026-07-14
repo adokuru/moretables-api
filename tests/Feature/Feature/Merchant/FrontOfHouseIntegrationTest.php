@@ -5,6 +5,7 @@ use App\Events\RestaurantShiftNoteUpdated;
 use App\Models\DiningArea;
 use App\Models\Reservation;
 use App\Models\RestaurantShiftNote;
+use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
@@ -272,6 +273,39 @@ it('preassigns a reservation table without seating or changing its status', func
         ->restaurant_table_id->toBe($data['table']->id)
         ->status->toBe(ReservationStatus::Arrived)
         ->seated_at->toBeNull();
+});
+
+it('moves a seated reservation to another table and updates both table states', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $data['table']->update(['status' => TableStatus::Occupied]);
+    $newTable = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => $data['table']->dining_area_id,
+        'name' => 'New table',
+        'status' => TableStatus::Available,
+    ]);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'service_stage' => ReservationServiceStage::Seated,
+        'starts_at' => now(),
+        'ends_at' => now()->addHours(2),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/assign-table'), [
+        'restaurant_table_id' => $newTable->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.table.id', $newTable->id)
+        ->assertJsonPath('reservation.status', ReservationStatus::Seated->value)
+        ->assertJsonPath('reservation.service_stage', ReservationServiceStage::Seated->value);
+
+    expect($reservation->refresh()->restaurant_table_id)->toBe($newTable->id)
+        ->and($data['table']->refresh()->status)->toBe(TableStatus::Available)
+        ->and($newTable->refresh()->status)->toBe(TableStatus::Occupied);
 });
 
 it('sends a review request to the guest when a reservation is completed', function () {

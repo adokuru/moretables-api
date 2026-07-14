@@ -489,6 +489,16 @@ class ReservationService
     {
         return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $table, $actor): Reservation {
             return DB::transaction(function () use ($reservation, $table, $actor): Reservation {
+                $reservation = Reservation::query()
+                    ->with(['restaurant', 'table'])
+                    ->lockForUpdate()
+                    ->findOrFail($reservation->id);
+                $previousTable = $reservation->table;
+
+                if ($previousTable?->id === $table->id) {
+                    return $reservation->load(['user', 'guestContact', 'reservationGuests']);
+                }
+
                 if (! $this->availabilityService->isTableAvailable(
                     restaurant: $reservation->restaurant,
                     table: $table,
@@ -502,6 +512,16 @@ class ReservationService
                 }
 
                 $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
+
+                if ($reservation->status === ReservationStatus::Seated) {
+                    if ($previousTable) {
+                        $previousTable->update(['status' => TableStatus::Available]);
+                        event(new TableStatusUpdated($previousTable, 'available'));
+                    }
+                    $table->update(['status' => TableStatus::Occupied]);
+                    event(new TableStatusUpdated($table, 'occupied'));
+                }
+
                 $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
                 $this->auditLogService->log(
