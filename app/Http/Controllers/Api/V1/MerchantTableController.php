@@ -11,6 +11,7 @@ use App\Http\Requests\Merchant\UpdateTableStatusRequest;
 use App\Http\Resources\RestaurantServerResource;
 use App\Http\Resources\RestaurantTableResource;
 use App\Models\Restaurant;
+use App\Models\RestaurantServerTableAssignment;
 use App\Models\RestaurantTable;
 use App\Services\AuditLogService;
 use Dedoc\Scramble\Attributes\Group;
@@ -78,48 +79,88 @@ class MerchantTableController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
         abort_unless($table->restaurant_id === $restaurant->id, 404);
 
-        $table->update(['assigned_server_id' => $request->validated('server_id')]);
+        $validated = $request->validated();
+        $assignment = RestaurantServerTableAssignment::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('restaurant_table_id', $table->id)
+            ->where('service_starts_at', $validated['service_starts_at'])
+            ->first();
+
+        if ($validated['server_id'] === null) {
+            $assignment?->delete();
+        } else {
+            $assignment = RestaurantServerTableAssignment::query()->updateOrCreate(
+                [
+                    'restaurant_table_id' => $table->id,
+                    'service_starts_at' => $validated['service_starts_at'],
+                ],
+                [
+                    'restaurant_id' => $restaurant->id,
+                    'restaurant_server_id' => $validated['server_id'],
+                    'service_ends_at' => $validated['service_ends_at'],
+                ],
+            );
+        }
+
+        // The legacy column represented a permanent assignment. Keep it empty;
+        // current assignments are resolved from the selected service period.
+        if ($table->assigned_server_id !== null) {
+            $table->update(['assigned_server_id' => null]);
+        }
+        $table->refresh()->setAttribute('assigned_server_id', $assignment?->restaurant_server_id);
 
         return response()->json([
-            'message' => $request->validated('server_id')
+            'message' => $validated['server_id']
                 ? 'Server assigned successfully.'
                 : 'Server unassigned successfully.',
-            'table' => RestaurantTableResource::make($table->refresh()),
+            'table' => RestaurantTableResource::make($table),
+            'assignment' => $assignment ? [
+                'server_id' => $assignment->restaurant_server_id,
+                'table_id' => $assignment->restaurant_table_id,
+                'service_starts_at' => $assignment->service_starts_at?->toIso8601String(),
+                'service_ends_at' => $assignment->service_ends_at?->toIso8601String(),
+            ] : null,
         ]);
     }
 
-    // Powers the guest-detail panel's "Assigned servers" section: if a
-    // `table_id` is given and that table already has a server, that's the
-    // only one returned; otherwise (no table yet, or the table is free) the
-    // pool of servers with no table assigned anywhere — both computed as
-    // real DB queries, not by shipping the whole roster to the client.
-    // `table_id` is optional so guests without a table yet (waitlist/
-    // reservation, not in seat mode) can still see who's free to staff them.
+    // Powers the guest-detail panel's "Assigned servers" section for one
+    // dated service period. Servers may cover multiple tables in a section,
+    // so an unassigned table receives the full shift roster.
     public function availableServers(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('tables.manage', $restaurant), 403);
 
-        $request->validate(['table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id']]);
+        $validated = $request->validate([
+            'table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
+            'service_starts_at' => ['required', 'date'],
+            'service_ends_at' => ['required', 'date', 'after:service_starts_at'],
+        ]);
 
-        $tableId = $request->integer('table_id') ?: null;
+        $tableId = isset($validated['table_id']) ? (int) $validated['table_id'] : null;
         if ($tableId) {
             $table = RestaurantTable::where('restaurant_id', $restaurant->id)->findOrFail($tableId);
-            if ($table->assigned_server_id) {
+            $assignment = RestaurantServerTableAssignment::query()
+                ->with('server')
+                ->where('restaurant_id', $restaurant->id)
+                ->where('restaurant_table_id', $table->id)
+                ->where('service_starts_at', $validated['service_starts_at'])
+                ->where('service_ends_at', $validated['service_ends_at'])
+                ->first();
+            if ($assignment) {
                 return response()->json([
-                    'assigned_server' => RestaurantServerResource::make($table->assignedServer),
+                    'assigned_server' => RestaurantServerResource::make($assignment->server),
                     'servers' => [],
                 ]);
             }
         }
 
-        $unassigned = $restaurant->servers()
-            ->whereDoesntHave('assignedTables')
+        $servers = $restaurant->servers()
             ->orderBy('name')
             ->get();
 
         return response()->json([
             'assigned_server' => null,
-            'servers' => RestaurantServerResource::collection($unassigned),
+            'servers' => RestaurantServerResource::collection($servers),
         ]);
     }
 

@@ -14,7 +14,7 @@ class RestaurantServerResource extends JsonResource
             'restaurant_id' => $this->restaurant_id,
             'name' => $this->name,
             'color' => $this->color,
-            'assigned_table_ids' => $this->whenLoaded('assignedTables', fn () => $this->assignedTables->pluck('id')),
+            'assigned_table_ids' => $this->whenLoaded('tableAssignments', fn () => $this->tableAssignments->pluck('restaurant_table_id')->values()),
         ];
     }
 }

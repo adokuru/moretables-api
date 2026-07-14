@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\ListRestaurantServersRequest;
 use App\Http\Requests\Merchant\StoreRestaurantServerRequest;
 use App\Http\Resources\RestaurantServerResource;
 use App\Models\Restaurant;
@@ -13,13 +14,19 @@ use Illuminate\Http\Request;
 #[Group('Front of House / Servers', weight: 38)]
 class MerchantRestaurantServerController extends Controller
 {
-    public function index(Request $request, Restaurant $restaurant): JsonResponse
+    public function index(ListRestaurantServersRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+        $validated = $request->validated();
 
         return response()->json([
             'servers' => RestaurantServerResource::collection(
-                $restaurant->servers()->with('assignedTables:id,assigned_server_id')->orderBy('name')->get()
+                $restaurant->servers()
+                    ->with(['tableAssignments' => fn ($query) => $query
+                        ->where('service_starts_at', $validated['service_starts_at'])
+                        ->where('service_ends_at', $validated['service_ends_at'])
+                    ])
+                    ->orderBy('name')
+                    ->get()
             ),
         ]);
     }

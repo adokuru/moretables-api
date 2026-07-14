@@ -28,4 +28,9 @@ class RestaurantServer extends Model
     {
         return $this->hasMany(RestaurantTable::class, 'assigned_server_id');
     }
+
+    public function tableAssignments(): HasMany
+    {
+        return $this->hasMany(RestaurantServerTableAssignment::class, 'restaurant_server_id');
+    }
 }
