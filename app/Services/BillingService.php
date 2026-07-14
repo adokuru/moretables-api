@@ -31,7 +31,7 @@ class BillingService
     /**
      * @return array<string, mixed>
      */
-    public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan, bool $isUpgrade = false): array
+    public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan, bool $isUpgrade = false, ?string $requesterEmail = null): array
     {
         $invoice = MerchantInvoice::query()->create([
             'restaurant_id' => $restaurant->id,
@@ -48,7 +48,7 @@ class BillingService
             'metadata' => $isUpgrade ? ['is_upgrade' => true] : null,
         ]);
 
-        $providerResponse = $this->provider->initializeSubscriptionCheckout($restaurant, $plan, $invoice);
+        $providerResponse = $this->provider->initializeSubscriptionCheckout($restaurant, $plan, $invoice, $requesterEmail);
 
         return [
             'reference' => $invoice->provider_reference,
@@ -313,9 +313,7 @@ class BillingService
 
         if ($status === MerchantPaymentStatus::Success) {
             $invoice->refresh()->loadMissing(['restaurant.organization', 'plan']);
-            $billingEmail = $invoice->restaurant->organization?->billing_email
-                ?? $invoice->restaurant->organization?->business_email
-                ?? $invoice->restaurant->email;
+            $billingEmail = $invoice->restaurant->billingEmail();
 
             if ($billingEmail) {
                 Notification::route('mail', $billingEmail)

@@ -257,6 +257,26 @@ class Restaurant extends Model implements HasMedia
         return $this->hasMany(MerchantPaymentMethod::class);
     }
 
+    /**
+     * The best-known billing contact email for this restaurant, skipping blank
+     * (not just null) values so a stray empty string doesn't block the fallback chain.
+     */
+    public function billingEmail(): ?string
+    {
+        foreach ([
+            $this->organization?->billing_email,
+            $this->organization?->business_email,
+            $this->email,
+            $this->organization?->primary_contact_email,
+        ] as $candidate) {
+            if (filled($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
     public function defaultPaymentMethod(): HasOne
     {
         return $this->hasOne(MerchantPaymentMethod::class)

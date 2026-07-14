@@ -61,12 +61,9 @@ class MerchantBillingController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $checkout = $this->billingService->initializeCheckout($restaurant, $plan);
+        $checkout = $this->billingService->initializeCheckout($restaurant, $plan, requesterEmail: $request->user()->email);
 
-        $email = $restaurant->organization?->billing_email
-            ?? $restaurant->organization?->business_email
-            ?? $restaurant->email
-            ?? 'billing@moretables.local';
+        $email = $restaurant->billingEmail() ?? $request->user()->email;
 
         return response()->json([
             'message' => 'Billing checkout initialized successfully.',
@@ -90,12 +87,9 @@ class MerchantBillingController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $checkout = $this->billingService->initializeCheckout($restaurant, $plan, isUpgrade: true);
+        $checkout = $this->billingService->initializeCheckout($restaurant, $plan, isUpgrade: true, requesterEmail: $request->user()->email);
 
-        $email = $restaurant->organization?->billing_email
-            ?? $restaurant->organization?->business_email
-            ?? $restaurant->email
-            ?? 'billing@moretables.local';
+        $email = $restaurant->billingEmail() ?? $request->user()->email;
 
         return response()->json([
             'message' => 'Billing upgrade initialized successfully.',

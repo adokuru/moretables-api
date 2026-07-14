@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\PaymentProviderException;
 use App\Http\Middleware\EnsureAdminAccess;
 use App\Http\Middleware\EnsureMerchantAccess;
 use App\Http\Middleware\EnsureMerchantBillingActive;
@@ -41,6 +42,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => 'Unauthenticated.',
                 ], 401);
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (PaymentProviderException $exception, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                ], 502);
             }
 
             return null;
