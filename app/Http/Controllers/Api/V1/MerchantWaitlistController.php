@@ -75,6 +75,14 @@ class MerchantWaitlistController extends Controller
         ], 201);
     }
 
+    public function show(Request $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): WaitlistEntryResource
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'user', 'guestContact']));
+    }
+
     public function notify(NotifyWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
@@ -101,6 +109,19 @@ class MerchantWaitlistController extends Controller
 
         return response()->json([
             'message' => 'Waitlist guest marked arrived.',
+            'waitlist_entry' => WaitlistEntryResource::make($entry),
+        ]);
+    }
+
+    public function partiallyArrive(Request $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        $entry = $this->reservationService->partiallyArriveWaitlistEntry($waitlistEntry, $request->user());
+
+        return response()->json([
+            'message' => 'Waitlist guest marked partially arrived.',
             'waitlist_entry' => WaitlistEntryResource::make($entry),
         ]);
     }

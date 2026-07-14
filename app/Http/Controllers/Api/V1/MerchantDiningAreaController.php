@@ -116,22 +116,25 @@ class MerchantDiningAreaController extends Controller
             $placed[] = [$x1, $y1, $x2, $y2, $table['table_label']];
         }
 
-        $existingTables = $diningArea->tables()->get()->keyBy('name');
-        $incomingLabels = collect($tables)->pluck('table_label')->all();
+        $existingTables = $diningArea->tables()->get()->keyBy('id');
+        $incomingIds = collect($tables)->pluck('id')->filter()->map(fn ($id) => (int) $id)->all();
 
         $deletedTableIds = $existingTables
-            ->reject(fn (RestaurantTable $table, string $label) => in_array($label, $incomingLabels, true))
+            ->reject(fn (RestaurantTable $table) => in_array($table->id, $incomingIds, true))
             ->pluck('id');
 
-        if ($incomingLabels === []) {
+        if ($incomingIds === []) {
             $diningArea->tables()->delete();
         } else {
-            $diningArea->tables()->whereNotIn('name', $incomingLabels)->delete();
+            $diningArea->tables()->whereNotIn('id', $incomingIds)->delete();
         }
 
         foreach ($tables as $index => $table) {
+            $existingTable = isset($table['id']) ? $existingTables->get((int) $table['id']) : null;
+
             $tableData = [
                 'restaurant_id' => $restaurant->id,
+                'name' => $table['table_label'],
                 'layout_type' => $table['layout_type'],
                 'x_position' => $table['x_position'],
                 'y_position' => $table['y_position'],
@@ -147,15 +150,10 @@ class MerchantDiningAreaController extends Controller
                 'table_type' => $existingTable?->table_type ?? 'regular',
             ];
 
-            $existingTable = $existingTables->get($table['table_label']);
-
             if ($existingTable) {
                 $existingTable->update($tableData);
             } else {
-                $diningArea->tables()->create([
-                    ...$tableData,
-                    'name' => $table['table_label'],
-                ]);
+                $diningArea->tables()->create($tableData);
             }
         }
 

@@ -33,6 +33,7 @@ class UserResource extends JsonResource
             'account_type' => $this->accountType(),
             'email_verified_at' => optional($this->email_verified_at)?->toIso8601String(),
             'last_active_at' => optional($this->last_active_at)?->toIso8601String(),
+            'has_completed_product_tour' => (bool) $this->has_completed_product_tour,
             'notification_preferences' => [
                 'dining_rating_emails' => (bool) $this->notify_dining_rating_emails,
                 'marketing_emails' => (bool) $this->notify_marketing_emails,

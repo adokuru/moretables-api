@@ -153,6 +153,21 @@ class AuthController extends Controller
         ]);
     }
 
+    public function completeTour(): JsonResponse
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        abort_unless($user->requiresStaffLogin() && ! $user->requiresAdminLogin(), 403);
+
+        $user->update(['has_completed_product_tour' => true]);
+
+        return response()->json([
+            'message' => 'Product tour marked as completed.',
+            'user' => UserResource::make($user->refresh()->load('roles')),
+        ]);
+    }
+
     public function changeStaffPassword(ChangePasswordRequest $request): JsonResponse
     {
         /** @var User $user */

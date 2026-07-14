@@ -325,6 +325,75 @@ it('rejects arriving a waitlist entry that is not waiting or notified', function
         ->assertUnprocessable();
 });
 
+it('marks a waitlist entry partially arrived without moving it out of the waitlist bucket, then still allows seating it', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Waiting,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/partially-arrive'))
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.status', WaitlistStatus::PartiallyArrived->value);
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::PartiallyArrived);
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/waitlist'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $entry->id);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/assign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.status', ReservationStatus::Seated->value);
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated);
+});
+
+it('rejects partially-arriving a waitlist entry that is not waiting, notified, or arrived', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Cancelled,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/partially-arrive'))
+        ->assertUnprocessable();
+});
+
+it('allows toggling a waitlist entry between arrived and partially arrived', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Waiting,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/arrive'))
+        ->assertOk();
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Arrived);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/partially-arrive'))
+        ->assertOk();
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::PartiallyArrived);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/arrive'))
+        ->assertOk();
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Arrived);
+});
+
 it('cancels waitlist entries and enforces author-or-manager shift-note mutation rights', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
