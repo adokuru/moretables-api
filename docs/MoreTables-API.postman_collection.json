@@ -196,6 +196,20 @@
      }
     },
     {
+     "name": "Front-of-house floor detail",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/floors/{{dining_area_id}}?date=2026-06-20&starts_at=18:00&ends_at=23:59",
+      "description": "Returns live table state. A seated reservation takes precedence over upcoming bookings on the same table, and current_reservation.service_stage drives the floor table colour and icon."
+     }
+    },
+    {
      "name": "Removed Reservations",
      "request": {
       "method": "GET",
@@ -4882,7 +4896,7 @@
        "mode": "raw",
        "raw": "{}"
       },
-      "description": "Marks the reservation seated and records seated_at."
+      "description": "Marks the reservation seated and records seated_at only when its assigned table is still available. A table clash returns 422 with errors.restaurant_table_id so front-of-house clients can prompt for reassignment."
      }
     },
     {

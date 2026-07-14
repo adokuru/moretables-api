@@ -216,6 +216,37 @@ it('requires a table before seating and moves completed tables through cleaning 
         ->and($staff->canAccessRestaurant($data['restaurant']))->toBeTrue();
 });
 
+it('rejects seating at a table occupied by another party and requests reassignment', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'service_stage' => ReservationServiceStage::Appetizer,
+        'starts_at' => now()->subHours(3),
+        'ends_at' => now()->subHour(),
+        'seated_at' => now()->subHours(3),
+    ]);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Arrived,
+        'starts_at' => now(),
+        'ends_at' => now()->addHours(2),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/seat'))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('restaurant_table_id')
+        ->assertJsonPath('errors.restaurant_table_id.0', 'The assigned table is no longer available. Assign a new table before seating this reservation.');
+
+    expect($reservation->refresh())
+        ->status->toBe(ReservationStatus::Arrived)
+        ->seated_at->toBeNull();
+});
+
 it('preassigns a reservation table without seating or changing its status', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);

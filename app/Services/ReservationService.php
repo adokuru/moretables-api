@@ -522,40 +522,66 @@ class ReservationService
 
     public function seatReservation(Reservation $reservation, User $actor): Reservation
     {
-        if (! in_array($reservation->status, [
-            ReservationStatus::Booked,
-            ReservationStatus::Confirmed,
-            ReservationStatus::Arrived,
-            ReservationStatus::PartiallyArrived,
-            ReservationStatus::LeftMessage,
-            ReservationStatus::RunningLate,
-        ], true)) {
-            throw ValidationException::withMessages([
-                'status' => ['Only an active reservation can be seated.'],
-            ]);
-        }
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation): Reservation {
+            return DB::transaction(function () use ($reservation): Reservation {
+                $reservation = Reservation::query()
+                    ->with(['restaurant', 'table'])
+                    ->lockForUpdate()
+                    ->findOrFail($reservation->id);
 
-        if (! $reservation->restaurant_table_id) {
-            throw ValidationException::withMessages([
-                'restaurant_table_id' => ['Assign an available table before seating this reservation.'],
-            ]);
-        }
+                if (! in_array($reservation->status, [
+                    ReservationStatus::Booked,
+                    ReservationStatus::Confirmed,
+                    ReservationStatus::Arrived,
+                    ReservationStatus::PartiallyArrived,
+                    ReservationStatus::LeftMessage,
+                    ReservationStatus::RunningLate,
+                ], true)) {
+                    throw ValidationException::withMessages([
+                        'status' => ['Only an active reservation can be seated.'],
+                    ]);
+                }
 
-        $reservation->forceFill([
-            'status' => ReservationStatus::Seated,
-            'service_stage' => ReservationServiceStage::Seated,
-            'seated_at' => now(),
-        ])->save();
+                if (! $reservation->restaurant_table_id || ! $reservation->table) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['Assign an available table before seating this reservation.'],
+                    ]);
+                }
 
-        if ($reservation->table) {
-            $reservation->table->update(['status' => TableStatus::Occupied]);
-            event(new TableStatusUpdated($reservation->table, 'occupied'));
-        }
+                $tableHasSeatedParty = Reservation::query()
+                    ->where('restaurant_table_id', $reservation->restaurant_table_id)
+                    ->where('status', ReservationStatus::Seated)
+                    ->whereKeyNot($reservation->id)
+                    ->exists();
+                $tableIsAvailable = $this->availabilityService->isTableAvailable(
+                    restaurant: $reservation->restaurant,
+                    table: $reservation->table,
+                    startsAt: $reservation->starts_at,
+                    partySize: $reservation->party_size,
+                    excludingReservationId: $reservation->id,
+                );
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'seated'));
+                if ($tableHasSeatedParty || ! $tableIsAvailable) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['The assigned table is no longer available. Assign a new table before seating this reservation.'],
+                    ]);
+                }
 
-        return $reservation;
+                $reservation->forceFill([
+                    'status' => ReservationStatus::Seated,
+                    'service_stage' => ReservationServiceStage::Seated,
+                    'seated_at' => now(),
+                ])->save();
+
+                $reservation->table->update(['status' => TableStatus::Occupied]);
+                event(new TableStatusUpdated($reservation->table, 'occupied'));
+
+                $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                event(new ReservationUpdated($reservation, 'seated'));
+
+                return $reservation;
+            });
+        });
     }
 
     public function completeReservation(Reservation $reservation, User $actor): Reservation

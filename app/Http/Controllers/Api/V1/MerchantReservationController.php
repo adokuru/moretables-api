@@ -107,6 +107,13 @@ class MerchantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Seat a reservation at its assigned table.
+     *
+     * Returns a retryable 422 on `restaurant_table_id` when another party is
+     * seated there or the table now conflicts with another active reservation.
+     */
+    #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function seat(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);

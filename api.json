@@ -16199,6 +16199,8 @@
         "/merchant/restaurants/{restaurant}/reservations/{reservation}/seat": {
             "post": {
                 "operationId": "merchantReservation.seat",
+                "description": "Returns a retryable 422 on `restaurant_table_id` when another party is\nseated there or the table now conflicts with another active reservation.",
+                "summary": "Seat a reservation at its assigned table",
                 "tags": [
                     "Merchant Reservations"
                 ],
@@ -16271,6 +16273,34 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "errors"
+                                    ]
+                                }
+                            }
+                        }
                     }
                 }
             }
