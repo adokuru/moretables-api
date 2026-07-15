@@ -3,6 +3,7 @@
 use App\Events\ReservationUpdated;
 use App\Events\RestaurantShiftNoteUpdated;
 use App\Models\DiningArea;
+use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\RestaurantShiftNote;
 use App\Models\RestaurantTable;
@@ -758,4 +759,89 @@ it('cancels waitlist entries and enforces author-or-manager shift-note mutation 
         'restaurant_id' => $data['restaurant']->id,
         'action' => 'deleted',
     ])->and($event->broadcastOn()[0]->name)->toBe('private-restaurant.'.$data['restaurant']->id);
+});
+
+it('assigns and partially seats a reservation atomically', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => null,
+        'status' => ReservationStatus::Arrived,
+        'starts_at' => now(),
+        'ends_at' => now()->addHours(2),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/seat'), [
+        'restaurant_table_id' => $data['table']->id,
+        'service_stage' => ReservationServiceStage::PartiallySeated->value,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.table.id', $data['table']->id)
+        ->assertJsonPath('reservation.status', ReservationStatus::Seated->value)
+        ->assertJsonPath('reservation.service_stage', ReservationServiceStage::PartiallySeated->value);
+
+    expect($reservation->refresh())
+        ->restaurant_table_id->toBe($data['table']->id)
+        ->service_stage->toBe(ReservationServiceStage::PartiallySeated);
+});
+
+it('moves a reservation time and table in one request', function () {
+    Carbon::setTestNow('2026-07-14 12:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $newTable = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => $data['table']->dining_area_id,
+    ]);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Confirmed,
+        'starts_at' => Carbon::parse('2026-07-14 18:00:00'),
+        'ends_at' => Carbon::parse('2026-07-14 20:00:00'),
+    ]);
+
+    $this->patchJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/move'), [
+        'starts_at' => '2026-07-14T19:00:00Z',
+        'restaurant_table_id' => $newTable->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('reservation.table.id', $newTable->id)
+        ->assertJsonPath('reservation.starts_at', '2026-07-14T19:00:00+00:00');
+
+    expect($reservation->refresh())
+        ->restaurant_table_id->toBe($newTable->id)
+        ->starts_at->toIso8601String()->toBe('2026-07-14T19:00:00+00:00');
+});
+
+it('updates waitlist details and persists the guest seating preference', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $guest = GuestContact::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'first_name' => 'Ada',
+    ]);
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'guest_contact_id' => $guest->id,
+        'party_size' => 2,
+    ]);
+
+    $this->patchJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id), [
+        'party_size' => 4,
+        'guest_contact' => [
+            'first_name' => 'Adanna',
+            'seating_preference' => 'window',
+        ],
+    ])
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.party_size', 4);
+
+    expect($entry->refresh()->party_size)->toBe(4)
+        ->and($guest->refresh()->first_name)->toBe('Adanna')
+        ->and($guest->preferences['seating_preference'])->toBe('window');
 });

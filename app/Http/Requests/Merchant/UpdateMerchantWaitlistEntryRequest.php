@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests\Merchant;
 
-use App\ReservationStatus;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class UpdateMerchantReservationRequest extends FormRequest
+class UpdateMerchantWaitlistEntryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,13 +14,11 @@ class UpdateMerchantReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'restaurant_table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
-            'starts_at' => ['sometimes', 'date'],
+            'preferred_starts_at' => ['sometimes', 'date'],
+            'preferred_ends_at' => ['nullable', 'date', 'after:preferred_starts_at'],
             'party_size' => ['sometimes', 'integer', 'min:1'],
-            'status' => ['nullable', Rule::enum(ReservationStatus::class)],
             'notes' => ['nullable', 'string', 'max:500'],
             'occasion' => ['nullable', 'string', 'max:100'],
-            'internal_notes' => ['nullable', 'string', 'max:500'],
             'guest_contact' => ['nullable', 'array'],
             'guest_contact.first_name' => ['nullable', 'string', 'max:120'],
             'guest_contact.last_name' => ['nullable', 'string', 'max:120'],

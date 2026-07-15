@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\WaitlistEntryUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\AssignReservationTableRequest;
 use App\Http\Requests\Merchant\NotifyWaitlistEntryRequest;
 use App\Http\Requests\Merchant\StoreMerchantWaitlistEntryRequest;
+use App\Http\Requests\Merchant\UpdateMerchantWaitlistEntryRequest;
 use App\Http\Resources\ReservationResource;
 use App\Http\Resources\WaitlistEntryResource;
 use App\Models\GuestContact;
@@ -63,6 +65,8 @@ class MerchantWaitlistController extends Controller
                     'is_temporary' => false,
                 ]);
             }
+
+            $this->updateGuestContact($guestContact, $request->validated('guest_contact'));
         }
 
         $entry = $this->reservationService->createWaitlistEntry(
@@ -85,6 +89,29 @@ class MerchantWaitlistController extends Controller
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
         return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'table', 'user', 'guestContact']));
+    }
+
+    public function update(UpdateMerchantWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
+        abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
+
+        $validated = $request->validated();
+        $guestContact = $validated['guest_contact'] ?? null;
+        unset($validated['guest_contact']);
+
+        if ($guestContact && $waitlistEntry->guestContact) {
+            $this->updateGuestContact($waitlistEntry->guestContact, $guestContact);
+        }
+
+        $waitlistEntry->update($validated);
+        $waitlistEntry->refresh()->load(['restaurant', 'reservation', 'table', 'user', 'guestContact']);
+        event(new WaitlistEntryUpdated($waitlistEntry, 'updated'));
+
+        return response()->json([
+            'message' => 'Waitlist entry updated successfully.',
+            'waitlist_entry' => WaitlistEntryResource::make($waitlistEntry),
+        ]);
     }
 
     public function notify(NotifyWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
@@ -185,5 +212,19 @@ class MerchantWaitlistController extends Controller
             'message' => 'Waitlist entry cancelled successfully.',
             'waitlist_entry' => WaitlistEntryResource::make($entry),
         ]);
+    }
+
+    private function updateGuestContact(GuestContact $guestContact, array $contact): void
+    {
+        $seatingPreference = $contact['seating_preference'] ?? null;
+        unset($contact['seating_preference']);
+        $guestContact->fill(array_filter($contact, fn ($value) => $value !== null));
+        if ($seatingPreference !== null) {
+            $guestContact->preferences = [
+                ...($guestContact->preferences ?? []),
+                'seating_preference' => $seatingPreference,
+            ];
+        }
+        $guestContact->save();
     }
 }

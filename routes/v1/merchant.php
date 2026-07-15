@@ -198,6 +198,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('reservations', [MerchantReservationController::class, 'store']);
         Route::get('reservations/{reservation}', [MerchantReservationController::class, 'show']);
         Route::patch('reservations/{reservation}', [MerchantReservationController::class, 'update']);
+        Route::patch('reservations/{reservation}/move', [MerchantReservationController::class, 'move']);
         Route::post('reservations/{reservation}/assign-table', [MerchantReservationController::class, 'assignTable']);
         Route::post('reservations/{reservation}/seat', [MerchantReservationController::class, 'seat']);
         Route::post('reservations/{reservation}/complete', [MerchantReservationController::class, 'complete']);
@@ -210,6 +211,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::get('waitlist-entries', [MerchantWaitlistController::class, 'index']);
         Route::post('waitlist-entries', [MerchantWaitlistController::class, 'store']);
         Route::get('waitlist-entries/{waitlistEntry}', [MerchantWaitlistController::class, 'show']);
+        Route::patch('waitlist-entries/{waitlistEntry}', [MerchantWaitlistController::class, 'update']);
         Route::post('waitlist-entries/{waitlistEntry}/notify', [MerchantWaitlistController::class, 'notify']);
         Route::post('waitlist-entries/{waitlistEntry}/arrive', [MerchantWaitlistController::class, 'arrive']);
         Route::post('waitlist-entries/{waitlistEntry}/partially-arrive', [MerchantWaitlistController::class, 'partiallyArrive']);

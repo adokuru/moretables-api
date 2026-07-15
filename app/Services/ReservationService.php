@@ -183,6 +183,8 @@ class ReservationService
                     'is_temporary' => false,
                 ]);
             }
+
+            $this->updateGuestContactFromBooking($guestContact, $contact);
         }
 
         return $this->createReservation(
@@ -200,7 +202,10 @@ class ReservationService
      */
     public function updateReservation(Reservation $reservation, User $actor, array $attributes): Reservation
     {
-        return $this->withRestaurantReservationLock($reservation->restaurant, fn (): Reservation => DB::transaction(function () use ($reservation, $actor, $attributes): Reservation {
+        $guestContact = $attributes['guest_contact'] ?? null;
+        unset($attributes['guest_contact']);
+
+        return $this->withRestaurantReservationLock($reservation->restaurant, fn (): Reservation => DB::transaction(function () use ($reservation, $actor, $attributes, $guestContact): Reservation {
             $oldValues = $reservation->only([
                 'starts_at',
                 'ends_at',
@@ -246,6 +251,9 @@ class ReservationService
 
             $reservation->fill($attributes);
             $reservation->save();
+            if ($guestContact && $reservation->guestContact) {
+                $this->updateGuestContactFromBooking($reservation->guestContact, $guestContact);
+            }
             $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
             $this->auditLogService->log(
@@ -550,14 +558,24 @@ class ReservationService
         });
     }
 
-    public function seatReservation(Reservation $reservation, User $actor): Reservation
-    {
-        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation): Reservation {
-            return DB::transaction(function () use ($reservation): Reservation {
+    public function seatReservation(
+        Reservation $reservation,
+        User $actor,
+        ?RestaurantTable $requestedTable = null,
+        ?ReservationServiceStage $serviceStage = null,
+    ): Reservation {
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $actor, $requestedTable, $serviceStage): Reservation {
+            return DB::transaction(function () use ($reservation, $actor, $requestedTable, $serviceStage): Reservation {
                 $reservation = Reservation::query()
                     ->with(['restaurant', 'table'])
                     ->lockForUpdate()
                     ->findOrFail($reservation->id);
+
+                if ($requestedTable) {
+                    abort_unless($requestedTable->restaurant_id === $reservation->restaurant_id, 404);
+                    $reservation->forceFill(['restaurant_table_id' => $requestedTable->id]);
+                    $reservation->setRelation('table', $requestedTable);
+                }
 
                 if (! in_array($reservation->status, [
                     ReservationStatus::Booked,
@@ -599,7 +617,7 @@ class ReservationService
 
                 $reservation->forceFill([
                     'status' => ReservationStatus::Seated,
-                    'service_stage' => ReservationServiceStage::Seated,
+                    'service_stage' => $serviceStage ?? ReservationServiceStage::Seated,
                     'seated_at' => now(),
                 ])->save();
 
@@ -607,7 +625,98 @@ class ReservationService
                 event(new TableStatusUpdated($reservation->table, 'occupied'));
 
                 $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                $this->auditLogService->log(
+                    action: 'reservation.seated',
+                    actor: $actor,
+                    auditable: $reservation,
+                    restaurant: $reservation->restaurant,
+                    organization: $reservation->restaurant->organization,
+                    description: 'Reservation seated',
+                );
                 event(new ReservationUpdated($reservation, 'seated'));
+
+                return $reservation;
+            });
+        });
+    }
+
+    public function moveReservation(
+        Reservation $reservation,
+        User $actor,
+        ?string $requestedStartsAt = null,
+        ?RestaurantTable $requestedTable = null,
+    ): Reservation {
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $actor, $requestedStartsAt, $requestedTable): Reservation {
+            return DB::transaction(function () use ($reservation, $actor, $requestedStartsAt, $requestedTable): Reservation {
+                $reservation = Reservation::query()
+                    ->with(['restaurant', 'table'])
+                    ->lockForUpdate()
+                    ->findOrFail($reservation->id);
+                $previousTable = $reservation->table;
+                $startsAt = $requestedStartsAt ? Carbon::parse($requestedStartsAt) : $reservation->starts_at;
+                $table = $requestedTable ?? $reservation->table;
+
+                $this->ensureBookableTime($reservation->restaurant, $startsAt);
+
+                if (! $table) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['Assign an available table before moving this reservation.'],
+                    ]);
+                }
+
+                abort_unless($table->restaurant_id === $reservation->restaurant_id, 404);
+
+                $tableHasSeatedParty = $reservation->status === ReservationStatus::Seated
+                    && Reservation::query()
+                        ->where('restaurant_table_id', $table->id)
+                        ->where('status', ReservationStatus::Seated)
+                        ->whereKeyNot($reservation->id)
+                        ->exists();
+
+                if ($tableHasSeatedParty || ! $this->availabilityService->isTableAvailable(
+                    restaurant: $reservation->restaurant,
+                    table: $table,
+                    startsAt: $startsAt,
+                    partySize: $reservation->party_size,
+                    excludingReservationId: $reservation->id,
+                )) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                    ]);
+                }
+
+                $oldValues = $reservation->only(['starts_at', 'ends_at', 'restaurant_table_id']);
+                $reservation->forceFill([
+                    'starts_at' => $startsAt,
+                    'ends_at' => $this->availabilityService->calculateEndTime(
+                        $reservation->restaurant,
+                        $startsAt,
+                        $reservation->party_size,
+                    ),
+                    'restaurant_table_id' => $table->id,
+                ])->save();
+
+                if ($reservation->status === ReservationStatus::Seated && $previousTable?->id !== $table->id) {
+                    $previousTable?->update(['status' => TableStatus::Available]);
+                    if ($previousTable) {
+                        event(new TableStatusUpdated($previousTable, 'available'));
+                    }
+                    $table->update(['status' => TableStatus::Occupied]);
+                    event(new TableStatusUpdated($table, 'occupied'));
+                }
+
+                $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                $this->auditLogService->log(
+                    action: 'reservation.moved',
+                    actor: $actor,
+                    auditable: $reservation,
+                    oldValues: $oldValues,
+                    newValues: $reservation->only(array_keys($oldValues)),
+                    restaurant: $reservation->restaurant,
+                    organization: $reservation->restaurant->organization,
+                    description: 'Reservation moved',
+                );
+                event(new ReservationUpdated($reservation, 'moved'));
 
                 return $reservation;
             });
@@ -1240,6 +1349,26 @@ class ReservationService
             ->unique('email');
 
         Notification::send($owners, new OwnerReservationLifecycleNotification($reservation, $action));
+    }
+
+    /**
+     * @param  array<string, mixed>  $contact
+     */
+    private function updateGuestContactFromBooking(GuestContact $guestContact, array $contact): void
+    {
+        $seatingPreference = $contact['seating_preference'] ?? null;
+        unset($contact['full_name'], $contact['seating_preference']);
+
+        $guestContact->fill(array_filter($contact, fn ($value) => $value !== null));
+
+        if ($seatingPreference !== null) {
+            $guestContact->preferences = [
+                ...($guestContact->preferences ?? []),
+                'seating_preference' => $seatingPreference,
+            ];
+        }
+
+        $guestContact->save();
     }
 
     private function ensureBookableTime(Restaurant $restaurant, CarbonInterface $startsAt): void
