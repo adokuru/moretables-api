@@ -1261,7 +1261,7 @@
         "campaign-waitlist"
        ]
       },
-      "description": "Add an email address to the campaign Google Sheet and queue a confirmation email.",
+      "description": "Queue an email address for background processing. The job appends it to the campaign Google Sheet and then queues a confirmation email.",
       "body": {
        "mode": "raw",
        "raw": "{\n  \"email\": \"subscriber@example.com\"\n}",

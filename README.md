@@ -55,10 +55,10 @@ php artisan serve
 
 For full local setup (including frontend assets if you use them), see `composer run-script setup` in `composer.json`.
 
-Run a queue worker so mail/push jobs are processed:
+Run a queue worker for the realtime, notification, and default queues so reservation actions, mail, and push jobs are processed:
 
 ```bash
-php artisan queue:work
+php artisan queue:work --queue=realtime,notifications,default
 ```
 
 ## Production baseline

@@ -83,6 +83,8 @@ it('serves the generated api specification route', function () {
     expect($specification['paths']['/admin/auth/login']['post']['tags'][0])->toBe('Admin Auth');
     expect($specification['paths']['/search']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/campaign-waitlist']['post']['tags'][0])->toBe('Campaign Waitlist');
+    expect($specification['paths']['/campaign-waitlist']['post']['responses'])->toHaveKey('202')
+        ->not->toHaveKey('503');
     expect($specification['paths']['/reviews/random']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants']['get']['tags'][0])->toBe('Public Restaurants');
     expect($specification['paths']['/restaurants/discovery']['get']['tags'][0])->toBe('Public Restaurants');

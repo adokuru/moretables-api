@@ -1,12 +1,16 @@
 <?php
 
+use App\Exceptions\GoogleSheetsWaitlistException;
+use App\Jobs\AppendCampaignWaitlistSignup;
 use App\Notifications\CampaignWaitlistConfirmationNotification;
+use App\Services\GoogleSheetsWaitlistService;
 use Illuminate\Http\Client\Request;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Cache::flush();
@@ -47,7 +51,27 @@ afterEach(function () {
     Carbon::setTestNow();
 });
 
-it('adds an email to google sheets and queues a confirmation email', function () {
+it('queues a normalized waitlist signup for background processing', function () {
+    Queue::fake();
+
+    $response = $this->postJson('/api/v1/campaign-waitlist', [
+        'email' => '  Subscriber@Example.com ',
+    ]);
+
+    $response->assertAccepted()
+        ->assertJsonPath('message', 'Your waitlist signup has been accepted and will be processed shortly.');
+
+    Queue::assertPushedOn('notifications', AppendCampaignWaitlistSignup::class);
+    Queue::assertPushed(
+        AppendCampaignWaitlistSignup::class,
+        fn (AppendCampaignWaitlistSignup $job): bool => $job->email === 'subscriber@example.com'
+            && $job->joinedAt->equalTo(now()),
+    );
+    Http::assertNothingSent();
+    Notification::assertNothingSent();
+});
+
+it('appends the signup and queues a confirmation email when the job runs', function () {
     Http::fake([
         'oauth2.googleapis.com/token' => Http::response([
             'access_token' => 'google-access-token',
@@ -58,12 +82,8 @@ it('adds an email to google sheets and queues a confirmation email', function ()
         ]),
     ]);
 
-    $response = $this->postJson('/api/v1/campaign-waitlist', [
-        'email' => '  Subscriber@Example.com ',
-    ]);
-
-    $response->assertCreated()
-        ->assertJsonPath('message', 'You have joined the waitlist. Please check your email for confirmation.');
+    $job = new AppendCampaignWaitlistSignup('subscriber@example.com', now());
+    $job->handle(app(GoogleSheetsWaitlistService::class));
 
     $recordedSheetRequest = Http::recorded()
         ->first(fn (array $recorded): bool => str_contains(
@@ -96,6 +116,7 @@ it('adds an email to google sheets and queues a confirmation email', function ()
 });
 
 it('validates the email before calling google', function (mixed $email) {
+    Queue::fake();
     Http::fake();
 
     $this->postJson('/api/v1/campaign-waitlist', ['email' => $email])
@@ -104,12 +125,13 @@ it('validates the email before calling google', function (mixed $email) {
 
     Http::assertNothingSent();
     Notification::assertNothingSent();
+    Queue::assertNothingPushed();
 })->with([
     'missing' => null,
     'invalid' => 'not-an-email',
 ]);
 
-it('returns service unavailable and does not send email when google rejects the append', function () {
+it('lets the queue retry and does not send email when google rejects the append', function () {
     Http::fake([
         'oauth2.googleapis.com/token' => Http::response([
             'access_token' => 'google-access-token',
@@ -120,10 +142,10 @@ it('returns service unavailable and does not send email when google rejects the 
         ], 403),
     ]);
 
-    $this->postJson('/api/v1/campaign-waitlist', [
-        'email' => 'subscriber@example.com',
-    ])->assertServiceUnavailable()
-        ->assertJsonPath('message', 'We could not add you to the waitlist right now. Please try again shortly.');
+    $job = new AppendCampaignWaitlistSignup('subscriber@example.com', now());
+
+    expect(fn () => $job->handle(app(GoogleSheetsWaitlistService::class)))
+        ->toThrow(GoogleSheetsWaitlistException::class);
 
     Notification::assertNothingSent();
 });
