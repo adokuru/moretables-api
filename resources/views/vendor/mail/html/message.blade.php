@@ -21,8 +21,7 @@
 {{-- Footer --}}
 <x-slot:footer>
 <x-mail::footer>
-Sent from MoreTables
-MoreTables Ltd., Lagos Nigeria
+Sent from MoreTables &middot; MoreTables Ltd., Lagos Nigeria
 
 [Earn rewards]({{ config('app.url') }})
 

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\MerchantBillingController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
+use App\Http\Controllers\Api\V1\MerchantGuestSurveyController;
 use App\Http\Controllers\Api\V1\MerchantMenuCategoryController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemController;
 use App\Http\Controllers\Api\V1\MerchantMenuItemMediaController;
@@ -108,6 +109,15 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::get('guest-communication', [MerchantGuestCommunicationController::class, 'show']);
         Route::patch('guest-communication/automated-messaging', [MerchantGuestCommunicationController::class, 'updateAutomatedMessaging']);
         Route::patch('guest-communication/reservation-messaging', [MerchantGuestCommunicationController::class, 'updateReservationMessaging']);
+
+        Route::get('guest-surveys/templates', [MerchantGuestSurveyController::class, 'templates']);
+        Route::get('guest-surveys', [MerchantGuestSurveyController::class, 'index']);
+        Route::post('guest-surveys', [MerchantGuestSurveyController::class, 'store']);
+        Route::get('guest-surveys/{survey}', [MerchantGuestSurveyController::class, 'show']);
+        Route::patch('guest-surveys/{survey}', [MerchantGuestSurveyController::class, 'update']);
+        Route::delete('guest-surveys/{survey}', [MerchantGuestSurveyController::class, 'destroy']);
+        Route::post('guest-surveys/{survey}/publish', [MerchantGuestSurveyController::class, 'publish']);
+        Route::get('guest-surveys/{survey}/responses', [MerchantGuestSurveyController::class, 'responses']);
 
         Route::prefix('onboarding')->group(function (): void {
             Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);

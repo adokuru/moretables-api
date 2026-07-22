@@ -23,6 +23,14 @@
    "value": "1"
   },
   {
+   "key": "survey_id",
+   "value": "1"
+  },
+  {
+   "key": "survey_token",
+   "value": ""
+  },
+  {
    "key": "waitlist_entry_id",
    "value": "1"
   },
@@ -1204,6 +1212,14 @@
   {
    "name": "02 - Public (no auth)",
    "item": [
+    {
+     "name": "Guest survey - load",
+     "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/guest-surveys/{{survey_token}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "guest-surveys", "{{survey_token}}"]}, "description": "Loads an immutable survey snapshot for a valid, unexpired opaque invitation token."}
+    },
+    {
+     "name": "Guest survey - submit response",
+     "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"answers\": [\n    {\"question_id\": \"food\", \"value\": 5},\n    {\"question_id\": \"clean\", \"value\": true},\n    {\"question_id\": \"nps\", \"value\": 9}\n  ]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/guest-surveys/{{survey_token}}/responses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "guest-surveys", "{{survey_token}}", "responses"]}, "description": "Submits one type-validated response for a single-use invitation."}
+    },
     {
      "name": "Onboarding request",
      "request": {
@@ -2949,6 +2965,19 @@
   {
    "name": "04 - Merchant (Sanctum)",
    "item": [
+    {
+     "name": "Guest Surveys",
+     "item": [
+      {"name": "List templates", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/templates", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "templates"]}}},
+      {"name": "List surveys", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys"]}}},
+      {"name": "Create survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"template_key\": \"post_dining\",\n  \"title\": \"Post Dining Questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys"]}}},
+      {"name": "Show survey", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}},
+      {"name": "Update draft survey", "request": {"method": "PATCH", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}},
+      {"name": "Publish survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}", "publish"]}}},
+      {"name": "List survey responses", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}/responses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}", "responses"]}}},
+      {"name": "Delete draft survey", "request": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}}
+     ]
+    },
     {
      "name": "Billing plans",
      "request": {

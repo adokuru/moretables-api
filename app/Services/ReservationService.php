@@ -744,8 +744,10 @@ class ReservationService
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, 'completed'));
 
-        foreach ($reservation->notifiableParticipants() as $participant) {
-            $participant->notify(new ReservationLifecycleNotification($reservation, 'review_request'));
+        if (! $reservation->restaurant->guestSurveys()->where('status', 'published')->exists()) {
+            foreach ($reservation->notifiableParticipants() as $participant) {
+                $participant->notify(new ReservationLifecycleNotification($reservation, 'review_request'));
+            }
         }
 
         $this->maybeAwardReservationPoints($reservation);

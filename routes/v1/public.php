@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\CustomerWaitlistController;
 use App\Http\Controllers\Api\V1\ExpoPushTokenController;
 use App\Http\Controllers\Api\V1\OnboardingRequestController;
 use App\Http\Controllers\Api\V1\PublicCuisineOptionController;
+use App\Http\Controllers\Api\V1\PublicGuestSurveyController;
 use App\Http\Controllers\Api\V1\PublicMoretableLineupController;
 use App\Http\Controllers\Api\V1\PublicRestaurantController;
 use App\Http\Controllers\Api\V1\PublicRestaurantDiscoveryController;
@@ -25,6 +26,9 @@ Route::post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle']);
 
 Route::post('onboarding-requests', [OnboardingRequestController::class, 'store'])->middleware('throttle:public-write');
 Route::post('campaign-waitlist', [CampaignWaitlistController::class, 'store'])->middleware('throttle:public-write');
+
+Route::get('guest-surveys/{token}', [PublicGuestSurveyController::class, 'show'])->middleware('throttle:public-read');
+Route::post('guest-surveys/{token}/responses', [PublicGuestSurveyController::class, 'store'])->middleware('throttle:public-write');
 
 Route::get('cuisine-options', [PublicCuisineOptionController::class, 'index'])->middleware('throttle:public-read');
 

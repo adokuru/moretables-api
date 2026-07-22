@@ -98,6 +98,11 @@ class Reservation extends Model
         return $this->hasOne(ReservationCardHold::class);
     }
 
+    public function guestSurveyInvitation(): HasOne
+    {
+        return $this->hasOne(GuestSurveyInvitation::class);
+    }
+
     /**
      * Additional attendees for the reservation: DB rows if present, otherwise legacy `metadata.guests`.
      *
