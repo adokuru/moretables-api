@@ -524,6 +524,87 @@ it('validates closes_at must be after opens_at in business hours', function () {
         ->assertJsonValidationErrors('schedules.0.closes_at');
 });
 
+it('deletes schedules by id without touching other schedules', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $lunch = RestaurantAvailabilityPeriod::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'name' => 'Lunch',
+    ]);
+
+    $toDelete = RestaurantAvailabilitySchedule::create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_meal_type_id' => $lunch->id,
+        'day_of_week' => 1,
+        'opens_at' => '12:00',
+        'closes_at' => '15:00',
+    ]);
+    $toKeep = RestaurantAvailabilitySchedule::create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_meal_type_id' => $lunch->id,
+        'day_of_week' => 2,
+        'opens_at' => '12:00',
+        'closes_at' => '15:00',
+    ]);
+
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->deleteJson(obUrl($data['restaurant']->id, '/schedules'), [
+        'ids' => [$toDelete->id],
+    ])->assertOk()
+        ->assertJsonPath('message', 'Schedule deleted successfully.');
+
+    $this->assertDatabaseMissing('restaurant_meal_schedules', ['id' => $toDelete->id]);
+    $this->assertDatabaseHas('restaurant_meal_schedules', ['id' => $toKeep->id]);
+});
+
+it('does not delete schedules belonging to another restaurant', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $other = createBookableRestaurant();
+    $foreignMealType = RestaurantAvailabilityPeriod::factory()->create([
+        'restaurant_id' => $other['restaurant']->id,
+        'name' => 'Dinner',
+    ]);
+    $foreignSchedule = RestaurantAvailabilitySchedule::create([
+        'restaurant_id' => $other['restaurant']->id,
+        'restaurant_meal_type_id' => $foreignMealType->id,
+        'day_of_week' => 1,
+        'opens_at' => '18:00',
+        'closes_at' => '22:00',
+    ]);
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->deleteJson(obUrl($data['restaurant']->id, '/schedules'), [
+        'ids' => [$foreignSchedule->id],
+    ])->assertOk();
+
+    $this->assertDatabaseHas('restaurant_meal_schedules', ['id' => $foreignSchedule->id]);
+});
+
+it('rejects an empty ids array when deleting schedules', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->deleteJson(obUrl($data['restaurant']->id, '/schedules'), [
+        'ids' => [],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('ids');
+});
+
+it('forbids operations staff from deleting schedules', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    $ops = User::factory()->create();
+    assignScopedRole($ops, Role::Operations, $data['organization'], $data['restaurant']);
+    Sanctum::actingAs($ops);
+
+    $this->deleteJson(obUrl($data['restaurant']->id, '/schedules'), [
+        'ids' => [1],
+    ])->assertForbidden();
+});
+
 // ── Onboarding Status ─────────────────────────────────────────────────────────
 
 it('returns onboarding status calculated from saved restaurant data', function () {

@@ -5912,6 +5912,56 @@
          }
         }
        }
+      },
+      {
+       "name": "Onboarding schedules delete",
+       "request": {
+        "method": "DELETE",
+        "header": [
+         {
+          "key": "Accept",
+          "value": "application/json"
+         },
+         {
+          "key": "Content-Type",
+          "value": "application/json"
+         }
+        ],
+        "url": {
+         "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/onboarding/schedules",
+         "host": [
+          "{{baseUrl}}"
+         ],
+         "path": [
+          "api",
+          "v1",
+          "merchant",
+          "restaurants",
+          "{{restaurant_id}}",
+          "onboarding",
+          "schedules"
+         ]
+        },
+        "auth": {
+         "type": "bearer",
+         "bearer": [
+          {
+           "key": "token",
+           "value": "{{token}}",
+           "type": "string"
+          }
+         ]
+        },
+        "body": {
+         "mode": "raw",
+         "raw": "{\n  \"ids\": [1, 2]\n}",
+         "options": {
+          "raw": {
+           "language": "json"
+          }
+         }
+        }
+       }
       }
      ]
     },

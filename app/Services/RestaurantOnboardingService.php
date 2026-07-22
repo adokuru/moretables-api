@@ -81,6 +81,14 @@ class RestaurantOnboardingService
         }
     }
 
+    /**
+     * @param  list<int>  $ids
+     */
+    public function deleteSchedules(Restaurant $restaurant, array $ids): void
+    {
+        $restaurant->availabilitySchedules()->whereIn('id', $ids)->delete();
+    }
+
     public function getStatus(Restaurant $restaurant): array
     {
         return $this->buildStatus($restaurant);
