@@ -155,5 +155,7 @@ it('renders the confirmation email content', function () {
         ->toMail(new AnonymousNotifiable);
 
     expect($mail->subject)->toBe("You're on the MoreTables waitlist")
-        ->and((string) $mail->render())->toContain('Thanks for joining the MoreTables waitlist.');
+        ->and(config('mail.from.name'))->toBe('MoreTables')
+        ->and((string) $mail->render())->toContain('Thanks for joining the MoreTables waitlist.')
+        ->not->toContain('Moretables');
 });
