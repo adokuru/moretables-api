@@ -119,6 +119,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
             Route::patch('internal-notes/{internalNote}', [MerchantRestaurantInternalNoteController::class, 'update']);
             Route::delete('internal-notes/{internalNote}', [MerchantRestaurantInternalNoteController::class, 'destroy']);
             Route::put('business-hours', [MerchantRestaurantOnboardingController::class, 'updateBusinessHours']);
+            Route::delete('schedules', [MerchantRestaurantOnboardingController::class, 'destroySchedules']);
             Route::get('meal-types', [MerchantRestaurantOnboardingController::class, 'indexMealTypes']);
             Route::post('meal-types', [MerchantRestaurantOnboardingController::class, 'storeMealType']);
             Route::patch('meal-types/{availabilityPeriod}', [MerchantRestaurantOnboardingController::class, 'updateMealType']);

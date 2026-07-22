@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\DestroyRestaurantOnboardingScheduleRequest;
 use App\Http\Requests\Merchant\SendRestaurantEmailVerificationRequest;
 use App\Http\Requests\Merchant\StoreRestaurantOnboardingMealTypeRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantOnboardingContactRequest;
@@ -142,22 +143,10 @@ class MerchantRestaurantOnboardingController extends Controller
         $this->shiftService->seedFromSchedules($restaurant);
         $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
-        $restaurant->load(['availabilityPeriods.schedules']);
-
         return response()->json([
             'message' => 'Business hours updated successfully.',
             'onboarding_status' => $onboardingStatus,
-            'meal_types' => $restaurant->availabilityPeriods->map(fn ($type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-                'sort_order' => $type->sort_order,
-                'schedules' => $type->schedules->map(fn ($s) => [
-                    'id' => $s->id,
-                    'day_of_week' => $s->day_of_week,
-                    'opens_at' => $s->opens_at,
-                    'closes_at' => $s->closes_at,
-                ])->values(),
-            ])->values(),
+            'meal_types' => $this->mealTypesPayload($restaurant),
         ]);
     }
 
@@ -165,20 +154,20 @@ class MerchantRestaurantOnboardingController extends Controller
     {
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
-        $restaurant->load(['availabilityPeriods.schedules']);
+        return response()->json([
+            'meal_types' => $this->mealTypesPayload($restaurant),
+        ]);
+    }
+
+    public function destroySchedules(DestroyRestaurantOnboardingScheduleRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        $this->onboardingService->deleteSchedules($restaurant, $request->validated('ids'));
+        $onboardingStatus = $this->onboardingService->syncStatus($restaurant);
 
         return response()->json([
-            'meal_types' => $restaurant->availabilityPeriods->map(fn ($type) => [
-                'id' => $type->id,
-                'name' => $type->name,
-                'sort_order' => $type->sort_order,
-                'schedules' => $type->schedules->map(fn ($s) => [
-                    'id' => $s->id,
-                    'day_of_week' => $s->day_of_week,
-                    'opens_at' => $s->opens_at,
-                    'closes_at' => $s->closes_at,
-                ])->values(),
-            ])->values(),
+            'message' => 'Schedule deleted successfully.',
+            'onboarding_status' => $onboardingStatus,
+            'meal_types' => $this->mealTypesPayload($restaurant),
         ]);
     }
 
@@ -341,5 +330,25 @@ class MerchantRestaurantOnboardingController extends Controller
             'message' => 'Onboarding status updated.',
             ...$status,
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function mealTypesPayload(Restaurant $restaurant): array
+    {
+        $restaurant->load(['availabilityPeriods.schedules']);
+
+        return $restaurant->availabilityPeriods->map(fn ($type) => [
+            'id' => $type->id,
+            'name' => $type->name,
+            'sort_order' => $type->sort_order,
+            'schedules' => $type->schedules->map(fn ($s) => [
+                'id' => $s->id,
+                'day_of_week' => $s->day_of_week,
+                'opens_at' => $s->opens_at,
+                'closes_at' => $s->closes_at,
+            ])->values(),
+        ])->values()->all();
     }
 }
