@@ -18,8 +18,12 @@ class UpdateRestaurantTableRequest extends FormRequest
     {
         return [
             'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
+            // Scoped to the whole restaurant, not just the table's own dining
+            // area — table labels must be unique restaurant-wide so a label
+            // unambiguously identifies one table regardless of which floor
+            // it's on.
             'name' => ['sometimes', 'string', 'max:120', Rule::unique('restaurant_tables', 'name')
-                ->where('dining_area_id', $this->table->dining_area_id)
+                ->where('restaurant_id', $this->table->restaurant_id)
                 ->ignore($this->table->id)],
             'min_capacity' => ['nullable', 'integer', 'min:1'],
             'max_capacity' => ['sometimes', 'integer', 'min:1', 'gte:min_capacity'],

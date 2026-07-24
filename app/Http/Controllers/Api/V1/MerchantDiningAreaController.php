@@ -116,6 +116,30 @@ class MerchantDiningAreaController extends Controller
             $placed[] = [$x1, $y1, $x2, $y2, $table['table_label']];
         }
 
+        // Table labels must be unique across the whole restaurant, not just this
+        // dining area — otherwise "Table 1" on two different floors is ambiguous
+        // for reservations/status to resolve against. Check both within this
+        // submitted batch (two tables on this floor sharing a label) and against
+        // every other floor's already-persisted tables.
+        $seenLabels = [];
+        foreach ($tables as $table) {
+            $label = $table['table_label'];
+            if (isset($seenLabels[$label])) {
+                abort(422, "Table label \"{$label}\" is used more than once — table labels must be unique across the whole restaurant.");
+            }
+            $seenLabels[$label] = true;
+        }
+
+        $labelConflict = $restaurant->tables()
+            ->where('dining_area_id', '!=', $diningArea->id)
+            ->whereIn('name', array_keys($seenLabels))
+            ->first();
+
+        if ($labelConflict) {
+            $conflictArea = $labelConflict->diningArea?->name ?? 'another floor';
+            abort(422, "Table label \"{$labelConflict->name}\" is already used on \"{$conflictArea}\" — table labels must be unique across the whole restaurant.");
+        }
+
         $existingTables = $diningArea->tables()->get()->keyBy('id');
         $incomingIds = collect($tables)->pluck('id')->filter()->map(fn ($id) => (int) $id)->all();
 
