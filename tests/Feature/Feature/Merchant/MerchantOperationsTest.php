@@ -234,6 +234,89 @@ it('rejects an out-of-range rotation on the layout sync endpoint', function () {
     ])->assertUnprocessable();
 });
 
+it('rejects syncing a table label onto a floor when another floor already uses it', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $floorA = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Floor A',
+    ])->json('dining_area.id');
+
+    $floorB = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Floor B',
+    ])->json('dining_area.id');
+
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorA.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '1'],
+        ],
+    ])->assertOk();
+
+    // Floor B trying to also claim "1" must be rejected — it already
+    // belongs to a table on Floor A.
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorB.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '1'],
+        ],
+    ])->assertUnprocessable();
+
+    // Two tables within the same save sharing a label must also be rejected.
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorB.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '2'],
+            ['layout_type' => 'square-2-tb', 'x_position' => 3, 'y_position' => 0, 'table_label' => '2'],
+        ],
+    ])->assertUnprocessable();
+
+    // A genuinely free label still saves fine on Floor B.
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorB.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '2'],
+        ],
+    ])->assertOk();
+
+    $this->assertDatabaseHas('restaurant_tables', ['dining_area_id' => $floorA, 'name' => '1']);
+    $this->assertDatabaseHas('restaurant_tables', ['dining_area_id' => $floorB, 'name' => '2']);
+});
+
+it('rejects renaming a table to a label already used on a different floor', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $floorA = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Floor A',
+    ])->json('dining_area.id');
+
+    $floorB = $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas', [
+        'name' => 'Floor B',
+    ])->json('dining_area.id');
+
+    $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorA.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '1'],
+        ],
+    ])->assertOk();
+
+    $tableB = $this->putJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/dining-areas/'.$floorB.'/layout', [
+        'tables' => [
+            ['layout_type' => 'square-2-tb', 'x_position' => 0, 'y_position' => 0, 'table_label' => '2'],
+        ],
+    ])->json('dining_area.tables.0.id');
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables/'.$tableB, [
+        'name' => '1',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['name']);
+});
+
 it('allows restaurant managers to configure guest communication messaging', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
