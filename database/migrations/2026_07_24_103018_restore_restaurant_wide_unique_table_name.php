@@ -22,13 +22,29 @@ return new class extends Migration
     {
         $this->deduplicateLabelsWithinRestaurant();
 
-        $indexNames = collect(Schema::getIndexes('restaurant_tables'))->pluck('name');
-        $hasRestaurantFk = collect(Schema::getForeignKeys('restaurant_tables'))
+        $indexes = collect(Schema::getIndexes('restaurant_tables'));
+        $indexNames = $indexes->pluck('name');
+        $foreignKeys = collect(Schema::getForeignKeys('restaurant_tables'));
+        $hasRestaurantFk = $foreignKeys
             ->contains(fn ($fk) => $fk['columns'] === ['restaurant_id']);
+        $hasDiningAreaFk = $foreignKeys
+            ->contains(fn ($fk) => $fk['columns'] === ['dining_area_id']);
+        $hasDiningAreaIndex = $indexes
+            ->contains(fn (array $index): bool => $index['columns'] === ['dining_area_id']);
 
-        Schema::table('restaurant_tables', function (Blueprint $table) use ($indexNames, $hasRestaurantFk) {
+        Schema::table('restaurant_tables', function (Blueprint $table) use ($hasDiningAreaFk, $hasDiningAreaIndex, $hasRestaurantFk, $indexNames): void {
+            // MySQL may use the composite unique index to back the dining area
+            // foreign key, so remove that FK before changing the index.
+            if ($hasDiningAreaFk) {
+                $table->dropForeign(['dining_area_id']);
+            }
+
             if ($indexNames->contains('restaurant_tables_dining_area_id_name_unique')) {
                 $table->dropUnique(['dining_area_id', 'name']);
+            }
+
+            if (! $hasDiningAreaIndex) {
+                $table->index('dining_area_id');
             }
 
             // MySQL can't drop a unique index that's the sole backing index
@@ -43,6 +59,10 @@ return new class extends Migration
 
             if (! $indexNames->contains('restaurant_tables_restaurant_id_name_unique')) {
                 $table->unique(['restaurant_id', 'name']);
+            }
+
+            if ($hasDiningAreaFk) {
+                $table->foreign('dining_area_id')->references('id')->on('dining_areas')->nullOnDelete();
             }
 
             $table->foreign('restaurant_id')->references('id')->on('restaurants')->cascadeOnDelete();
