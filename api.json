@@ -38466,11 +38466,12 @@
                             "type": "string",
                             "enum": [
                                 "email",
-                                "push"
+                                "push",
+                                "whatsapp"
                             ]
                         },
                         "minItems": 1,
-                        "maxItems": 2
+                        "maxItems": 3
                     },
                     "questions": {
                         "type": "array",
@@ -40982,11 +40983,12 @@
                             "type": "string",
                             "enum": [
                                 "email",
-                                "push"
+                                "push",
+                                "whatsapp"
                             ]
                         },
                         "minItems": 1,
-                        "maxItems": 2
+                        "maxItems": 3
                     },
                     "questions": {
                         "type": "array",

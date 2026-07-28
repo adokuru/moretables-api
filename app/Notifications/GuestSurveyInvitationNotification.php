@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\GuestSurvey;
 use App\Models\GuestSurveyInvitation;
 use App\Models\User;
+use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\Concerns\BuildsFrontendUrls;
 use App\Notifications\Concerns\UsesNotificationQueues;
 use App\Notifications\Contracts\Unsubscribable;
@@ -49,6 +50,12 @@ class GuestSurveyInvitationNotification extends Notification implements ShouldBe
             $channels[] = ExpoPushChannel::class;
         }
 
+        if (in_array('whatsapp', $configured, true)
+            && filled($notifiable->phone)
+            && (! $notifiable instanceof User || $notifiable->notify_sms_alerts)) {
+            $channels[] = WhatsAppChannel::class;
+        }
+
         return $channels;
     }
 
@@ -78,6 +85,14 @@ class GuestSurveyInvitationNotification extends Notification implements ShouldBe
             'restaurant_id' => $restaurant->id,
             'survey_url' => $this->surveyUrl(),
         ]);
+    }
+
+    public function toWhatsApp(object $notifiable): WhatsAppMessage
+    {
+        return WhatsAppMessage::template(
+            (string) config('services.whatsapp.guest_survey_invitation_template'),
+            [$this->invitation->survey->restaurant->name],
+        )->urlButton($this->token);
     }
 
     private function surveyUrl(): string

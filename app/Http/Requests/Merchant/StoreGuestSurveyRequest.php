@@ -29,8 +29,8 @@ class StoreGuestSurveyRequest extends FormRequest
             'questions.*.options' => ['present', 'array', 'max:10'],
             'questions.*.options.*' => ['string', 'max:160', 'distinct'],
             'send_delay_minutes' => ['sometimes', 'integer', 'min:0', 'max:10080'],
-            'channels' => ['sometimes', 'array', 'min:1', 'max:2'],
-            'channels.*' => ['string', 'distinct', Rule::in(['email', 'push'])],
+            'channels' => ['sometimes', 'array', 'min:1', 'max:3'],
+            'channels.*' => ['string', 'distinct', Rule::in(['email', 'push', 'whatsapp'])],
         ];
     }
 

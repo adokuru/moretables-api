@@ -10,6 +10,7 @@ use App\Models\Reservation;
 use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\Channels\WhatsAppChannel;
 use App\Notifications\GuestSurveyInvitationNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
@@ -17,6 +18,7 @@ use App\Services\ReservationService;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
@@ -40,12 +42,13 @@ it('creates the post dining template with delivery settings', function (): void 
         'template_key' => 'post_dining',
         'title' => 'Post Dining Questions',
         'send_delay_minutes' => 120,
-        'channels' => ['push', 'email'],
+        'channels' => ['push', 'email', 'whatsapp'],
     ]);
 
     $response->assertCreated()
         ->assertJsonPath('survey.status', 'draft')
         ->assertJsonPath('survey.settings.send_delay_minutes', 120)
+        ->assertJsonPath('survey.settings.channels.2', 'whatsapp')
         ->assertJsonPath('survey.questions.0.id', 'food')
         ->assertJsonPath('survey.questions.3.type', 'nps');
 
@@ -458,4 +461,52 @@ it('honors global email suppression for survey invitations', function (): void {
     $guest->notifyNow(new GuestSurveyInvitationNotification($invitation->load('survey.restaurant'), str_repeat('e', 64)));
 
     expect($transport->messages())->toHaveCount(0);
+});
+
+it('sends survey invitation links through WhatsApp', function (): void {
+    config()->set('services.whatsapp.base_url', 'https://graph.test');
+    config()->set('services.whatsapp.api_version', 'v21.0');
+    config()->set('services.whatsapp.phone_number_id', '123456');
+    config()->set('services.whatsapp.token', 'test-token');
+    config()->set('services.whatsapp.guest_survey_invitation_template', 'guest_survey_invitation');
+    Http::fake();
+
+    $token = str_repeat('f', 64);
+    $guest = GuestContact::factory()->for($this->restaurant)->create(['phone' => '0801 234 5678']);
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create(['channels' => ['whatsapp']]);
+    $reservation = Reservation::factory()->for($this->restaurant)->for($guest, 'guestContact')->create([
+        'user_id' => null,
+        'restaurant_table_id' => null,
+    ]);
+    $invitation = GuestSurveyInvitation::factory()->for($survey, 'survey')->for($reservation)->create();
+    $notification = new GuestSurveyInvitationNotification($invitation->load('survey.restaurant'), $token);
+
+    expect($notification->via($guest))->toBe([WhatsAppChannel::class])
+        ->and($notification->toWhatsApp($guest)->templateName)->toBe('guest_survey_invitation')
+        ->and($notification->toWhatsApp($guest)->bodyParameters)->toBe([$this->restaurant->name])
+        ->and($notification->toWhatsApp($guest)->urlButtonSuffix)->toBe($token);
+
+    app(WhatsAppChannel::class)->send($guest, $notification);
+
+    Http::assertSent(function ($request) use ($token): bool {
+        return $request->url() === 'https://graph.test/v21.0/123456/messages'
+            && $request['to'] === '2348012345678'
+            && $request['template']['name'] === 'guest_survey_invitation'
+            && $request['template']['components'][0]['parameters'][0]['text'] === $this->restaurant->name
+            && $request['template']['components'][1] === [
+                'type' => 'button',
+                'sub_type' => 'url',
+                'index' => '0',
+                'parameters' => [['type' => 'text', 'text' => $token]],
+            ];
+    });
+});
+
+it('respects a registered user’s WhatsApp notification preference for surveys', function (): void {
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create(['channels' => ['whatsapp']]);
+    $optedIn = User::factory()->make(['phone' => '+2348012345678', 'notify_sms_alerts' => true]);
+    $optedOut = User::factory()->make(['phone' => '+2348012345678', 'notify_sms_alerts' => false]);
+
+    expect(GuestSurveyInvitationNotification::deliveryChannels($survey, $optedIn))->toBe([WhatsAppChannel::class])
+        ->and(GuestSurveyInvitationNotification::deliveryChannels($survey, $optedOut))->toBe([]);
 });

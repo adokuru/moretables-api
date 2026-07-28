@@ -81,6 +81,7 @@ return [
         'app_secret' => env('WHATSAPP_APP_SECRET'),
         'webhook_verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
         'availability_alert_template' => env('WHATSAPP_AVAILABILITY_ALERT_TEMPLATE', 'table_availability_alert'),
+        'guest_survey_invitation_template' => env('WHATSAPP_GUEST_SURVEY_INVITATION_TEMPLATE', 'guest_survey_invitation'),
         'reservation_created_template' => env('WHATSAPP_RESERVATION_CREATED_TEMPLATE', 'reservation_created'),
         'reservation_updated_template' => env('WHATSAPP_RESERVATION_UPDATED_TEMPLATE', 'reservation_updated'),
         'reservation_cancelled_template' => env('WHATSAPP_RESERVATION_CANCELLED_TEMPLATE', 'reservation_cancelled'),
