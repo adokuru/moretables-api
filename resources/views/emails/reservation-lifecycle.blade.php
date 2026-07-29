@@ -196,7 +196,7 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 {{-- Footer (on gray, centered) --}}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;">
 <tr><td align="center" style="padding:28px 50px 40px 50px;">
-<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-size:13px;color:#888A8C;text-align:center;mso-line-height-rule:exactly;">Sent from MoreTables &middot; MoreTables Ltd., Lagos Nigeria</p>
+<p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-size:13px;color:#888A8C;text-align:center;mso-line-height-rule:exactly;">MoreTables Ltd. &middot; Lagos, Nigeria</p>
 <div style="mso-line-height-rule:exactly;line-height:10px;font-size:1px;display:block;">&nbsp;</div>
 <p style="margin:0;Margin:0;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;line-height:22px;font-size:13px;text-align:center;mso-line-height-rule:exactly;">
 <a href="{{ $footerLink1Url }}" style="font-size:13px;text-decoration:underline;color:#888A8C;" target="_blank">{{ $footerLink1Label }}</a>

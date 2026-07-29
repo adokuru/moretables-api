@@ -15,5 +15,8 @@ it('renders tabular layout with Nantes greeting, Avenir body, and logo asset url
         ->toContain("'Avenir Next'")
         ->toContain('Hi Max,')
         ->toContain('Primary copy.')
+        ->toContain('MoreTables Ltd.')
+        ->toContain('Lagos, Nigeria')
+        ->not->toContain('Sent from MoreTables')
         ->toContain(parse_url(asset('logo.png'), PHP_URL_PATH) ?? '/logo.png');
 });
