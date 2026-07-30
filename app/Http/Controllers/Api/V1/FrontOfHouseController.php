@@ -246,25 +246,49 @@ class FrontOfHouseController extends Controller
      *
      * Returns paginated reservations with a status of `booked` or `confirmed` —
      * guests expected but not yet arrived — for the requested date and optional
-     * service window.
+     * service window. Pass `include_arrived=1` to also include `arrived`/
+     * `partially_arrived` in the same, single `starts_at`-ordered list — this is
+     * what merges "Reservations" and "Arrived" into one correctly time-ordered
+     * column on the frontend, instead of the frontend concatenating two
+     * separately-fetched lists (which loses chronological order across the
+     * bucket boundary). Omit it and every other existing caller of this
+     * endpoint is unaffected.
      */
     public function reservations(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $this->validateCommonParams($request);
+        // Query-string booleans arrive as the literal string "true"/"false"
+        // (e.g. axios serializing a JS boolean into a GET param), which the
+        // strict `boolean` validation rule rejects even though $request->
+        // boolean() itself parses it fine — normalize via that same lenient
+        // parser before validating, so both agree on what's valid.
+        if ($request->has('include_arrived')) {
+            $request->merge(['include_arrived' => $request->boolean('include_arrived')]);
+        }
+        $request->validate([
+            'include_arrived' => ['sometimes', 'boolean'],
+        ]);
 
         $date = $this->resolveDate($request, $restaurant);
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
+        $statuses = [
+            ReservationStatus::Booked,
+            ReservationStatus::Confirmed,
+            ReservationStatus::LeftMessage,
+            ReservationStatus::RunningLate,
+        ];
+
+        if ($request->boolean('include_arrived')) {
+            $statuses[] = ReservationStatus::Arrived;
+            $statuses[] = ReservationStatus::PartiallyArrived;
+        }
+
         $query = $restaurant->reservations()
             ->with(['table', 'user', 'guestContact', 'reservationGuests'])
-            ->whereIn('status', [
-                ReservationStatus::Booked,
-                ReservationStatus::Confirmed,
-                ReservationStatus::LeftMessage,
-                ReservationStatus::RunningLate,
-            ])
+            ->whereIn('status', $statuses)
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
 
