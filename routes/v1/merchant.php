@@ -118,6 +118,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::delete('guest-surveys/{survey}', [MerchantGuestSurveyController::class, 'destroy']);
         Route::post('guest-surveys/{survey}/publish', [MerchantGuestSurveyController::class, 'publish']);
         Route::get('guest-surveys/{survey}/responses', [MerchantGuestSurveyController::class, 'responses']);
+        Route::get('guest-surveys/{survey}/responses/export', [MerchantGuestSurveyController::class, 'exportResponses']);
 
         Route::prefix('onboarding')->group(function (): void {
             Route::patch('contact-cuisine-price', [MerchantRestaurantOnboardingController::class, 'updateContactCuisinePrice']);
