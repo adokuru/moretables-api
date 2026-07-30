@@ -315,6 +315,41 @@ it('rejects invalid single choice options and deletes only drafts', function ():
     expect(GuestSurvey::query()->find($draft->id))->toBeNull();
 });
 
+it('exports survey responses as csv with one column per question', function (): void {
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create([
+        'questions' => [
+            ['id' => 'food', 'type' => 'rating', 'prompt' => 'How would you rate your meal?', 'required' => true, 'options' => []],
+            ['id' => 'clean', 'type' => 'yes_no', 'prompt' => 'Was the restaurant clean?', 'required' => true, 'options' => []],
+        ],
+    ]);
+    $guest = GuestContact::factory()->for($this->restaurant)->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+    $reservation = Reservation::factory()->for($this->restaurant)->for($guest, 'guestContact')->create([
+        'user_id' => null,
+        'starts_at' => '2026-01-05 19:00:00',
+    ]);
+    $invitation = GuestSurveyInvitation::factory()->for($survey, 'survey')->for($reservation)->create();
+    GuestSurveyResponse::factory()->for($invitation, 'invitation')->create([
+        'answers' => [
+            ['question_id' => 'food', 'value' => 5],
+            ['question_id' => 'clean', 'value' => true],
+        ],
+    ]);
+
+    $response = $this->get("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$survey->id}/responses/export");
+
+    $response->assertSuccessful();
+    expect($response->headers->get('Content-Type'))->toContain('text/csv');
+
+    $lines = array_filter(explode("\n", trim($response->streamedContent())));
+    $rows = array_map(fn (string $line): array => str_getcsv($line), $lines);
+
+    expect($rows[0])->toBe(['Diner', 'Visit Date', 'How would you rate your meal?', 'Was the restaurant clean?', 'Submitted At']);
+    expect($rows[1][0])->toBe('Ada Lovelace')
+        ->and($rows[1][1])->toBe('2026-01-05')
+        ->and($rows[1][2])->toBe('5')
+        ->and($rows[1][3])->toBe('Yes');
+});
+
 it('denies survey management to users without restaurant permission', function (): void {
     Sanctum::actingAs(User::factory()->create());
 

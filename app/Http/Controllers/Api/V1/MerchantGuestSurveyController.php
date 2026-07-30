@@ -15,7 +15,9 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Group('Merchant Guest Surveys', weight: 39)]
 class MerchantGuestSurveyController extends Controller
@@ -148,6 +150,25 @@ class MerchantGuestSurveyController extends Controller
         ]);
     }
 
+    public function exportResponses(Request $request, Restaurant $restaurant, GuestSurvey $survey): StreamedResponse
+    {
+        $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+
+        $responses = GuestSurveyResponse::query()
+            ->whereHas('invitation', fn ($query) => $query->where('guest_survey_id', $survey->id))
+            ->with(['invitation.reservation.user', 'invitation.reservation.guestContact'])
+            ->latest('submitted_at')
+            ->get();
+
+        $rows = GuestSurveyResponseResource::collection($responses)->resolve($request);
+
+        return $this->csvResponse(
+            Str::slug($survey->title ?: 'survey').'-responses.csv',
+            $this->responseRowsToCsv($survey->questions, $rows),
+        );
+    }
+
     public function destroy(Request $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
@@ -177,6 +198,73 @@ class MerchantGuestSurveyController extends Controller
             ['id' => 'nps', 'type' => 'nps', 'prompt' => 'How likely are you to recommend us?', 'required' => true, 'options' => []],
             ['id' => 'comments', 'type' => 'long_text', 'prompt' => 'Is there anything else we could improve?', 'required' => false, 'options' => []],
         ];
+    }
+
+    private function csvResponse(string $filename, string $content): StreamedResponse
+    {
+        return response()->streamDownload(
+            static function () use ($content): void {
+                echo $content;
+            },
+            $filename,
+            ['Content-Type' => 'text/csv'],
+        );
+    }
+
+    /**
+     * @param  list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>  $questions
+     * @param  array<int, array{id: int, diner: string, visit_date: string|null, reservation_id: int, answers: list<array{question_id: string, value: mixed}>, submitted_at: string|null}>  $rows
+     */
+    private function responseRowsToCsv(array $questions, array $rows): string
+    {
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, [
+            'Diner',
+            'Visit Date',
+            ...array_map(fn (array $question): string => $question['prompt'], $questions),
+            'Submitted At',
+        ]);
+
+        foreach ($rows as $row) {
+            $answersByQuestion = collect($row['answers'])->keyBy('question_id');
+
+            fputcsv($handle, [
+                $row['diner'],
+                $row['visit_date'] ?? '',
+                ...array_map(
+                    fn (array $question): string => $this->formatSurveyAnswerForCsv(
+                        $question['type'],
+                        $answersByQuestion->get($question['id'])['value'] ?? null,
+                    ),
+                    $questions,
+                ),
+                $row['submitted_at'] ?? '',
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle) ?: '';
+        fclose($handle);
+
+        return $csv;
+    }
+
+    private function formatSurveyAnswerForCsv(string $questionType, mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if ($questionType === 'yes_no') {
+            if (in_array($value, [true, 1, '1', 'true', 'Yes'], true)) {
+                return 'Yes';
+            }
+            if (in_array($value, [false, 0, '0', 'false', 'No'], true)) {
+                return 'No';
+            }
+        }
+
+        return is_scalar($value) ? (string) $value : json_encode($value);
     }
 
     private function assertSurveyBelongsToRestaurant(GuestSurvey $survey, Restaurant $restaurant): void
