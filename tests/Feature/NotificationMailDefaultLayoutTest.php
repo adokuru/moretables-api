@@ -21,7 +21,8 @@ it('renders notification html with moretables tabular layout', function (): void
         ->and($html)->toContain('logo.png')
         ->and($html)->toContain('First paragraph.')
         ->and($html)->toContain('Continue')
-        ->and($html)->toContain('https://example.com/cta');
+        ->and($html)->toContain('https://example.com/cta')
+        ->and($html)->toMatch('/<table[^>]*align="center"[^>]*border="0"[^>]*>/');
 });
 
 it('renders plain text notification without html document boilerplate', function (): void {
