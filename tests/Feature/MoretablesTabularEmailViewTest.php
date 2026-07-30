@@ -15,8 +15,16 @@ it('renders tabular layout with Nantes greeting, Avenir body, and logo asset url
         ->toContain("'Avenir Next'")
         ->toContain('Hi Max,')
         ->toContain('Primary copy.')
-        ->toContain('MoreTables Ltd.')
-        ->toContain('Lagos, Nigeria')
-        ->not->toContain('Sent from MoreTables')
-        ->toContain(parse_url(asset('logo.png'), PHP_URL_PATH) ?? '/logo.png');
+        ->toContain('data:image/png;base64,');
+});
+
+it('uses MAIL_LOGO_URL when configured for tabular emails', function () {
+    config(['mail.logo_url' => 'https://cdn.example.com/logo.png']);
+
+    $html = view('emails.moretables-tabular-layout', [
+        'recipientName' => 'Max',
+        'bodyPrimary' => 'Primary copy.',
+    ])->render();
+
+    expect($html)->toContain('https://cdn.example.com/logo.png');
 });

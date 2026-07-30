@@ -12,12 +12,13 @@ class GuestSurveyResource extends JsonResource
     {
         $logoUrl = $this->logo_url;
 
-        if (! $logoUrl && $this->relationLoaded('restaurant')) {
+        if (! $logoUrl && $this->relationLoaded('restaurant') && $this->restaurant !== null) {
             $logoUrl = $this->restaurant->getFirstMediaUrl('featured', 'thumb') ?: null;
         }
 
         return [
             'id' => $this->id,
+            'scope' => $this->scope,
             'version' => $this->version,
             'publication_sequence' => $this->publication_sequence,
             'title' => $this->title,
@@ -29,11 +30,26 @@ class GuestSurveyResource extends JsonResource
                 'send_delay_minutes' => $this->send_delay_minutes,
                 'channels' => $this->channels,
             ],
-            'restaurant' => $this->whenLoaded('restaurant', fn () => [
-                'id' => $this->restaurant->id,
-                'name' => $this->restaurant->name,
-                'slug' => $this->restaurant->slug,
-            ]),
+            'restaurant' => $this->when(
+                $this->relationLoaded('restaurant'),
+                fn () => $this->restaurant === null ? null : [
+                    'id' => $this->restaurant->id,
+                    'name' => $this->restaurant->name,
+                    'slug' => $this->restaurant->slug,
+                ],
+            ),
+            'dispatches' => $this->whenLoaded('adminDispatches', fn () => $this->adminDispatches
+                ->sortByDesc('id')
+                ->values()
+                ->map(fn ($dispatch) => [
+                    'id' => $dispatch->id,
+                    'status' => $dispatch->status,
+                    'recipients_count' => $dispatch->recipients_count,
+                    'scheduled_at' => $dispatch->scheduled_at?->toIso8601String(),
+                    'dispatched_at' => $dispatch->dispatched_at?->toIso8601String(),
+                    'created_at' => $dispatch->created_at?->toIso8601String(),
+                ])
+                ->all()),
             'published_at' => $this->published_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

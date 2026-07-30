@@ -26,17 +26,22 @@ class GuestSurveyInvitationNotification extends Notification implements ShouldBe
         $this->afterCommit();
     }
 
+    public function guestSurveyInvitation(): GuestSurveyInvitation
+    {
+        return $this->invitation;
+    }
+
     /** @return list<string> */
     public function via(object $notifiable): array
     {
-        return self::deliveryChannels($this->invitation->survey, $notifiable);
+        return self::deliveryChannels($this->survey(), $notifiable);
     }
 
     /** @return list<string> */
     public static function deliveryChannels(GuestSurvey $survey, object $notifiable): array
     {
         $channels = [];
-        $configured = $survey->channels;
+        $configured = $survey->channels ?? [];
 
         if (in_array('email', $configured, true) && filled($notifiable->email)
             && (! $notifiable instanceof User || $notifiable->notify_dining_rating_emails)) {
@@ -61,38 +66,58 @@ class GuestSurveyInvitationNotification extends Notification implements ShouldBe
 
     public function toMail(object $notifiable): MailMessage
     {
-        $restaurant = $this->invitation->survey->restaurant;
+        $survey = $this->survey();
+        $restaurant = $survey->restaurant;
 
-        $message = (new MailMessage)
-            ->subject("How was your visit to {$restaurant->name}?")
-            ->greeting('We would love your feedback')
-            ->line("Tell us about your recent visit to {$restaurant->name}.")
-            ->action('Take the survey', $this->surveyUrl())
-            ->line('Your feedback helps the restaurant improve.');
+        if ($restaurant !== null) {
+            $message = (new MailMessage)
+                ->subject("How was your visit to {$restaurant->name}?")
+                ->greeting('We would love your feedback')
+                ->line("Tell us about your recent visit to {$restaurant->name}.")
+                ->action('Take the survey', $this->surveyUrl())
+                ->line('Your feedback helps the restaurant improve.');
+        } else {
+            $message = (new MailMessage)
+                ->subject($survey->title)
+                ->greeting('We would love your feedback')
+                ->line("Please take a moment to complete: {$survey->title}.")
+                ->action('Take the survey', $this->surveyUrl())
+                ->line('Your feedback helps us improve.');
+        }
 
         return $this->withUnsubscribeHeaders($message, is_string($notifiable->email ?? null) ? $notifiable->email : null);
     }
 
     public function toExpoPush(object $notifiable): ExpoPushMessage
     {
-        $restaurant = $this->invitation->survey->restaurant;
+        $survey = $this->survey();
+        $restaurant = $survey->restaurant;
 
         return ExpoPushMessage::make(
-            title: 'How was your visit?',
-            body: "Tell {$restaurant->name} how they did.",
+            title: $restaurant !== null ? 'How was your visit?' : $survey->title,
+            body: $restaurant !== null
+                ? "Tell {$restaurant->name} how they did."
+                : 'We would love your feedback.',
         )->data([
             'type' => 'guest_survey_invitation',
-            'restaurant_id' => $restaurant->id,
+            'restaurant_id' => $restaurant?->id,
             'survey_url' => $this->surveyUrl(),
         ]);
     }
 
     public function toWhatsApp(object $notifiable): WhatsAppMessage
     {
+        $restaurantName = $this->survey()->restaurant?->name ?? 'MoreTables';
+
         return WhatsAppMessage::template(
             (string) config('services.whatsapp.guest_survey_invitation_template'),
-            [$this->invitation->survey->restaurant->name],
+            [$restaurantName],
         )->urlButton($this->token);
+    }
+
+    private function survey(): GuestSurvey
+    {
+        return $this->invitation->loadMissing('survey.restaurant')->survey;
     }
 
     private function surveyUrl(): string

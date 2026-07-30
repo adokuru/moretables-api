@@ -3,7 +3,19 @@
     Fonts: Nantes (greeting); Avenir (body/footer). Logo: public/logo.png via absolute URL.
 --}}
 @php
-    $logoUrl = asset('logo.png');
+    $configuredLogoUrl = config('mail.logo_url');
+    $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+    $isLocalAppUrl = in_array($appHost, ['localhost', '127.0.0.1', '::1'], true);
+    $logoPath = public_path('logo.png');
+
+    if (filled($configuredLogoUrl)) {
+        $logoUrl = $configuredLogoUrl;
+    } elseif ($isLocalAppUrl && is_file($logoPath)) {
+        $logoUrl = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
+    } else {
+        $logoUrl = asset('logo.png');
+    }
+
     $recipientName = $recipientName ?? 'there';
     $greeting = $greeting ?? "Hi {$recipientName},";
     $bodyPrimary = $bodyPrimary ?? '';

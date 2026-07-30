@@ -168,6 +168,9 @@
             "name": "Admin Organizations"
         },
         {
+            "name": "Admin Surveys"
+        },
+        {
             "name": "Admin Cuisines"
         },
         {
@@ -8544,10 +8547,10 @@
                                             ],
                                             "properties": {
                                                 "server_id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "table_id": {
-                                                    "type": "string"
+                                                    "type": "integer"
                                                 },
                                                 "service_starts_at": {
                                                     "type": "string"
@@ -25743,6 +25746,437 @@
                 }
             }
         },
+        "/admin/surveys": {
+            "get": {
+                "operationId": "adminSurvey.index",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "Filter by scope: platform or restaurant",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by status: draft, published, archived",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "scope": {
+                                                        "type": "string"
+                                                    },
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "status": {
+                                                        "type": "string"
+                                                    },
+                                                    "questions": {
+                                                        "type": "array",
+                                                        "items": {}
+                                                    },
+                                                    "published_at": {
+                                                        "type": [
+                                                            "string",
+                                                            "null"
+                                                        ]
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "scope",
+                                                    "title",
+                                                    "status",
+                                                    "questions",
+                                                    "published_at",
+                                                    "created_at"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "adminSurvey.store",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreAdminSurveyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Survey created successfully."
+                                        },
+                                        "survey": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "survey"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/admin/surveys/{survey}": {
+            "get": {
+                "operationId": "adminSurvey.show",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "survey": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "survey"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "adminSurvey.update",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAdminSurveyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Survey updated successfully."
+                                        },
+                                        "survey": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "survey"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "adminSurvey.destroy",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Survey deleted successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/surveys/{survey}/publish": {
+            "post": {
+                "operationId": "adminSurvey.publish",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Survey published successfully."
+                                        },
+                                        "survey": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "survey"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/surveys/{survey}/send": {
+            "post": {
+                "operationId": "adminSurvey.send",
+                "description": "Platform surveys go to all active users.\nRestaurant surveys go to guests with reservations at that restaurant.",
+                "summary": "Send the survey immediately or schedule for later",
+                "tags": [
+                    "Admin Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendAdminSurveyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Survey scheduled for dispatch.",
+                                                "Survey dispatch queued."
+                                            ]
+                                        },
+                                        "dispatch": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "scheduled_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "status",
+                                                "scheduled_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "dispatch"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/admin/organizations/onboard": {
             "post": {
                 "operationId": "adminBusinessOnboarding.store",
@@ -33632,6 +34066,18 @@
                     "name": {
                         "type": "string"
                     },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -33664,32 +34110,20 @@
                             "null"
                         ],
                         "format": "date-time"
-                    },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
+                    "category",
+                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at",
-                    "category",
-                    "floor_type"
+                    "updated_at"
                 ],
                 "title": "DiningArea"
             },
@@ -33923,7 +34357,10 @@
                         ]
                     },
                     "phone": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
@@ -34641,7 +35078,10 @@
                         "type": "string"
                     },
                     "organization_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reviewed_at": {
                         "type": "string"
@@ -34770,7 +35210,10 @@
                         ]
                     },
                     "planned_restaurants_count": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "restaurants_count": {
                         "type": "integer"
@@ -34891,37 +35334,57 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "reservation_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "reference": {
                         "type": "string"
                     },
                     "status": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/ReservationCardHoldStatus"
                     },
                     "amount": {
-                        "type": "string"
+                        "type": "integer"
                     },
                     "currency": {
                         "type": "string"
                     },
                     "brand": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "last4": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "charged_amount": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "charged_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
                     },
                     "created_at": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
                     }
                 },
                 "required": [
@@ -34938,6 +35401,17 @@
                     "created_at"
                 ],
                 "title": "ReservationCardHoldResource"
+            },
+            "ReservationCardHoldStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "authorized",
+                    "verification_failed",
+                    "charged",
+                    "charge_failed"
+                ],
+                "title": "ReservationCardHoldStatus"
             },
             "ReservationResource": {
                 "type": "object",
@@ -36263,7 +36737,10 @@
                         "type": "string"
                     },
                     "color": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "assigned_table_ids": {
                         "anyOf": [
@@ -36744,7 +37221,10 @@
                         ]
                     },
                     "assigned_server_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
@@ -36813,6 +37293,19 @@
                     "description"
                 ],
                 "title": "RoleResource"
+            },
+            "SendAdminSurveyRequest": {
+                "type": "object",
+                "properties": {
+                    "scheduled_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date-time"
+                    }
+                },
+                "title": "SendAdminSurveyRequest"
             },
             "SendRestaurantBroadcastRequest": {
                 "type": "object",
@@ -38151,6 +38644,106 @@
                     "name"
                 ],
                 "title": "StoreAdminRoleRequest"
+            },
+            "StoreAdminSurveyRequest": {
+                "type": "object",
+                "properties": {
+                    "scope": {
+                        "type": "string",
+                        "enum": [
+                            "platform",
+                            "restaurant"
+                        ]
+                    },
+                    "restaurant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "logo_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "email",
+                                "push",
+                                "whatsapp"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 3
+                    },
+                    "questions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "maxLength": 50
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "rating",
+                                        "yes_no",
+                                        "nps",
+                                        "single_choice",
+                                        "long_text"
+                                    ]
+                                },
+                                "prompt": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                },
+                                "required": {
+                                    "type": "boolean"
+                                },
+                                "options": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    },
+                                    "maxItems": 10
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "type",
+                                "prompt",
+                                "required",
+                                "options"
+                            ]
+                        },
+                        "maxItems": 50
+                    }
+                },
+                "required": [
+                    "scope",
+                    "title"
+                ],
+                "title": "StoreAdminSurveyRequest"
             },
             "StoreAdminUserRequest": {
                 "type": "object",
@@ -40767,6 +41360,102 @@
                 },
                 "title": "UpdateAdminRoleRequest"
             },
+            "UpdateAdminSurveyRequest": {
+                "type": "object",
+                "properties": {
+                    "scope": {
+                        "type": "string",
+                        "enum": [
+                            "platform",
+                            "restaurant"
+                        ]
+                    },
+                    "restaurant_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 1000
+                    },
+                    "logo_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "email",
+                                "push",
+                                "whatsapp"
+                            ]
+                        },
+                        "minItems": 1,
+                        "maxItems": 3
+                    },
+                    "questions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "maxLength": 50
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "rating",
+                                        "yes_no",
+                                        "nps",
+                                        "single_choice",
+                                        "long_text"
+                                    ]
+                                },
+                                "prompt": {
+                                    "type": "string",
+                                    "maxLength": 500
+                                },
+                                "required": {
+                                    "type": "boolean"
+                                },
+                                "options": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 160
+                                    },
+                                    "maxItems": 10
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "type",
+                                "prompt",
+                                "required",
+                                "options"
+                            ]
+                        },
+                        "maxItems": 50
+                    }
+                },
+                "title": "UpdateAdminSurveyRequest"
+            },
             "UpdateAdminUserRequest": {
                 "type": "object",
                 "properties": {
@@ -42765,6 +43454,7 @@
                     },
                     "name": {
                         "type": "string",
+                        "description": "Scoped to the whole restaurant, not just the table's own dining\narea \u2014 table labels must be unique restaurant-wide so a label\nunambiguously identifies one table regardless of which floor\nit's on.",
                         "maxLength": 120
                     },
                     "min_capacity": {
@@ -43405,7 +44095,10 @@
                         ]
                     },
                     "restaurant_table_id": {
-                        "type": "string"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "status": {
                         "type": "string"
@@ -43429,7 +44122,10 @@
                         ]
                     },
                     "occasion": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "notified_at": {
                         "type": "string"
