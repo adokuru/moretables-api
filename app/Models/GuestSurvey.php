@@ -13,11 +13,41 @@ class GuestSurvey extends Model
     /** @use HasFactory<GuestSurveyFactory> */
     use HasFactory;
 
-    protected $fillable = ['restaurant_id', 'version', 'publication_sequence', 'title', 'description', 'logo_url', 'status', 'questions', 'send_delay_minutes', 'channels', 'published_at'];
+    protected $fillable = [
+        'scope',
+        'restaurant_id',
+        'version',
+        'publication_sequence',
+        'title',
+        'description',
+        'logo_url',
+        'status',
+        'questions',
+        'send_delay_minutes',
+        'channels',
+        'published_at',
+        'scheduled_at',
+    ];
 
     protected function casts(): array
     {
-        return ['publication_sequence' => 'integer', 'questions' => 'array', 'channels' => 'array', 'published_at' => 'datetime'];
+        return [
+            'publication_sequence' => 'integer',
+            'questions' => 'array',
+            'channels' => 'array',
+            'published_at' => 'datetime',
+            'scheduled_at' => 'datetime',
+        ];
+    }
+
+    public function isPlatformScoped(): bool
+    {
+        return $this->scope === 'platform';
+    }
+
+    public function isRestaurantScoped(): bool
+    {
+        return $this->scope === 'restaurant';
     }
 
     public function restaurant(): BelongsTo
@@ -28,5 +58,10 @@ class GuestSurvey extends Model
     public function invitations(): HasMany
     {
         return $this->hasMany(GuestSurveyInvitation::class);
+    }
+
+    public function adminDispatches(): HasMany
+    {
+        return $this->hasMany(AdminSurveyDispatch::class);
     }
 }

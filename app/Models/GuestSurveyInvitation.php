@@ -13,7 +13,7 @@ class GuestSurveyInvitation extends Model
     /** @use HasFactory<GuestSurveyInvitationFactory> */
     use HasFactory;
 
-    protected $fillable = ['guest_survey_id', 'reservation_id', 'token_hash', 'expires_at', 'delivery_claimed_at', 'sent_at'];
+    protected $fillable = ['guest_survey_id', 'user_id', 'reservation_id', 'token_hash', 'expires_at', 'delivery_claimed_at', 'sent_at'];
 
     protected $hidden = ['token_hash'];
 
@@ -30,6 +30,11 @@ class GuestSurveyInvitation extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function response(): HasOne

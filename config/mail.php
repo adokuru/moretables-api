@@ -119,4 +119,17 @@ return [
         'name' => 'MoreTables',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Email Logo URL
+    |--------------------------------------------------------------------------
+    |
+    | Absolute URL used in transactional email headers. Email clients cannot
+    | load localhost asset URLs, so set this to a publicly reachable HTTPS
+    | image in production (CDN / frontend hosted logo).
+    |
+    */
+
+    'logo_url' => env('MAIL_LOGO_URL'),
+
 ];

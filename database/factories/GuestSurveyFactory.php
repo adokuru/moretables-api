@@ -19,6 +19,7 @@ class GuestSurveyFactory extends Factory
     public function definition(): array
     {
         return [
+            'scope' => 'restaurant',
             'restaurant_id' => Restaurant::factory(),
             'version' => 1,
             'publication_sequence' => null,
@@ -34,5 +35,13 @@ class GuestSurveyFactory extends Factory
             'channels' => ['push', 'email'],
             'published_at' => null,
         ];
+    }
+
+    public function platform(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'scope' => 'platform',
+            'restaurant_id' => null,
+        ]);
     }
 }

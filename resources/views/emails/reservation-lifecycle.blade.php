@@ -3,7 +3,19 @@
     Centered card layout. Fonts: Nantes (heading); Avenir (body/details/footer).
 --}}
 @php
-    $logoUrl = asset('logo.png');
+    $configuredLogoUrl = config('mail.logo_url');
+    $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+    $isLocalAppUrl = in_array($appHost, ['localhost', '127.0.0.1', '::1'], true);
+    $logoPath = public_path('logo.png');
+
+    if (filled($configuredLogoUrl)) {
+        $logoUrl = $configuredLogoUrl;
+    } elseif ($isLocalAppUrl && is_file($logoPath)) {
+        $logoUrl = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
+    } else {
+        $logoUrl = asset('logo.png');
+    }
+
     $brandColor = '#A8442A';
     $restaurantImageUrl = $restaurantImageUrl ?? null;
     $footerLink1Url = $footerLink1Url ?? config('app.url');

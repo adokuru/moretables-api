@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\AdminRestaurantController;
 use App\Http\Controllers\Api\V1\AdminRestaurantReviewController;
 use App\Http\Controllers\Api\V1\AdminRewardProgramController;
 use App\Http\Controllers\Api\V1\AdminRoleController;
+use App\Http\Controllers\Api\V1\AdminSurveyController;
 use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\AdminUserRoleController;
 use Illuminate\Support\Facades\Route;
@@ -109,6 +110,14 @@ Route::middleware(['auth:sanctum', 'admin.access', 'throttle:admin-api'])->prefi
     Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
 
     Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
+
+    Route::get('surveys', [AdminSurveyController::class, 'index']);
+    Route::post('surveys', [AdminSurveyController::class, 'store']);
+    Route::get('surveys/{survey}', [AdminSurveyController::class, 'show']);
+    Route::patch('surveys/{survey}', [AdminSurveyController::class, 'update']);
+    Route::post('surveys/{survey}/publish', [AdminSurveyController::class, 'publish']);
+    Route::post('surveys/{survey}/send', [AdminSurveyController::class, 'send']);
+    Route::delete('surveys/{survey}', [AdminSurveyController::class, 'destroy']);
 
     Route::get('notifications', [AdminNotificationController::class, 'index']);
     Route::patch('notifications/read-all', [AdminNotificationController::class, 'markAllAsRead']);
