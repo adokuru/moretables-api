@@ -139,7 +139,8 @@ it('includes billing plan on admin restaurant index without extra requests', fun
         ->assertJsonPath('data.0.billing.plan.slug', 'foundation')
         ->assertJsonPath('data.0.plan.slug', 'foundation')
         ->assertJsonPath('data.0.is_subscribed', true)
-        ->assertJsonPath('data.0.subscription_type', 'foundation');
+        ->assertJsonPath('data.0.subscription_type', 'foundation')
+        ->assertJsonStructure(['data' => [['created_at', 'updated_at']]]);
 });
 
 it('replaces an existing active subscription when admin assigns a new plan', function (): void {

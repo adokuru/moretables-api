@@ -189,6 +189,8 @@ class RestaurantDetailResource extends JsonResource
                 $this->relationLoaded('activeBillingSubscription') || $this->relationLoaded('latestBillingSubscription'),
                 fn () => RestaurantBillingSummaryResource::make($this->resource)->resolve($request)['plan'],
             ),
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 
