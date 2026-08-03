@@ -217,6 +217,50 @@ it('allows business admins to onboard a business with the minimal restaurant upl
     expect((float) $restaurant->longitude)->toBe(3.3947);
 });
 
+it('accepts long tracked business website urls during onboarding', function (): void {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+    Sanctum::actingAs($admin);
+
+    $longWebsite = 'https://theburgundyrestaurant.com/?utm_source=google&utm_medium=wix-pmax-leads-campaign&utm_campaign=google-ads-campaign-2026-3-14-d95c2344&gad_source=1&gad_campaignid=23659882525&gbraid=0AAAABDHOIsNXES6lE4cGPQcXlCSTeDWhc&gclid=CjwKCAjw1bvTBhBbEiwAzbP8L_ALNty_mrrX6HbIiTKPav4MjTeO3Na4v6lqbglZpfI3mye2Rf2aOBoCdU8QAvD_BwE';
+
+    expect(strlen($longWebsite))->toBeGreaterThan(255);
+
+    $response = $this->postJson('/api/v1/admin/organizations/onboard', [
+        'business_name' => 'Long Website Group',
+        'business_phone' => '+2348000000600',
+        'owner_name' => 'Long Website Owner',
+        'owner_phone' => '+2348000000601',
+        'owner_email' => 'long-website-owner@example.com',
+        'business_email' => 'long-website@example.com',
+        'business_website' => $longWebsite,
+        'restaurants_count' => 1,
+        'restaurants' => [
+            [
+                'name' => 'Long Website Bistro',
+                'email' => 'hello@long-website-bistro.example.com',
+                'cuisine_type' => 'Nigerian',
+                'average_price_range' => '50k and above',
+                'dining_style' => 'fine',
+                'dress_code' => 'smart',
+                'phone' => '+2348000000602',
+                'address_line_1' => '1 Kapital Road',
+                'latitude' => 9.0475458,
+                'longitude' => 7.502173,
+            ],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('organization.website', $longWebsite);
+
+    expect(Organization::query()->where('name', 'Long Website Group')->value('website'))
+        ->toBe($longWebsite);
+});
+
 it('accepts the current admin onboarding form without optional sections', function () {
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
