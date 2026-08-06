@@ -42,6 +42,7 @@ class ReservationResource extends JsonResource
                 'last_name' => $this->guestContact?->last_name,
                 'email' => $this->guestContact?->email,
                 'phone' => $this->guestContact?->phone,
+                'preferences' => $this->guestContact?->preferences ?? [],
             ]),
             'guest' => [
                 'name' => $this->user?->fullName()
