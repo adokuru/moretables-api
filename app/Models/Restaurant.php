@@ -73,6 +73,7 @@ class Restaurant extends Model implements HasMedia
         'contact_email_verified_at',
         'contact_phone_verified_at',
         'widget_settings',
+        'display_recommended_table_assignment',
     ];
 
     /**
@@ -122,6 +123,7 @@ class Restaurant extends Model implements HasMedia
             'accessibility_features' => 'array',
             'onboarding_progress' => 'array',
             'widget_settings' => 'array',
+            'display_recommended_table_assignment' => 'boolean',
             'is_profile_published' => 'boolean',
             'contact_email_verified_at' => 'datetime',
             'contact_phone_verified_at' => 'datetime',

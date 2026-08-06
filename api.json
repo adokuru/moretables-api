@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000/api/v1"
+            "url": "http://localhost/api/v1"
         }
     ],
     "tags": [
@@ -6960,6 +6960,167 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/dashboard-preferences": {
+            "get": {
+                "operationId": "merchantDashboardPreferences.show",
+                "tags": [
+                    "Merchant Restaurant Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "preferences": {
+                                            "type": "object",
+                                            "properties": {
+                                                "display_recommended_table_assignment": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "display_recommended_table_assignment"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "preferences"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "merchantDashboardPreferences.update",
+                "tags": [
+                    "Merchant Restaurant Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDashboardPreferencesRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Preferences updated successfully."
+                                        },
+                                        "preferences": {
+                                            "type": "object",
+                                            "properties": {
+                                                "display_recommended_table_assignment": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "required": [
+                                                "display_recommended_table_assignment"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "preferences"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/staff": {
             "get": {
                 "operationId": "merchantRestaurantStaff.index",
@@ -10150,7 +10311,7 @@
         "/merchant/restaurants/{restaurant}/front-of-house/reservations": {
             "get": {
                 "operationId": "frontOfHouse.reservations",
-                "description": "Returns paginated reservations with a status of `booked` or `confirmed` \u2014\nguests expected but not yet arrived \u2014 for the requested date and optional\nservice window.",
+                "description": "Returns paginated reservations with a status of `booked` or `confirmed` \u2014\nguests expected but not yet arrived \u2014 for the requested date and optional\nservice window. Pass `include_arrived=1` to also include `arrived`/\n`partially_arrived` in the same, single `starts_at`-ordered list \u2014 this is\nwhat merges \"Reservations\" and \"Arrived\" into one correctly time-ordered\ncolumn on the frontend, instead of the frontend concatenating two\nseparately-fetched lists (which loses chronological order across the\nbucket boundary). Omit it and every other existing caller of this\nendpoint is unaffected.",
                 "summary": "List upcoming reservations",
                 "tags": [
                     "Front of House / Dashboard"
@@ -10163,6 +10324,13 @@
                         "description": "The restaurant ID",
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "include_arrived",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -10241,6 +10409,9 @@
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
@@ -22764,6 +22935,83 @@
                 }
             }
         },
+        "/merchant/restaurants/{restaurant}/guest-surveys/{survey}/responses/export": {
+            "get": {
+                "operationId": "merchantGuestSurvey.exportResponses",
+                "tags": [
+                    "Merchant Guest Surveys"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "required": true,
+                        "description": "The survey ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Transfer-Encoding": {
+                                "required": true,
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "chunked"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/merchant/restaurants/{restaurant}/guestbook": {
             "get": {
                 "operationId": "guestbook.index",
@@ -33193,6 +33441,12 @@
                         "items": {}
                     },
                     "plan": {},
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    },
                     "rewards_enabled": {
                         "type": "boolean"
                     },
@@ -33206,12 +33460,6 @@
                         "type": "string"
                     },
                     "onboarding_last_step": {
-                        "type": "string"
-                    },
-                    "created_at": {
-                        "type": "string"
-                    },
-                    "updated_at": {
                         "type": "string"
                     },
                     "cuisine_options": {
@@ -33593,14 +33841,14 @@
                     "discovery_metrics",
                     "widget_settings",
                     "plan",
+                    "created_at",
+                    "updated_at",
                     "internal_notes",
                     "rewards_enabled",
                     "reservation_reward_points",
                     "contact_email_verified_at",
                     "contact_phone_verified_at",
-                    "onboarding_last_step",
-                    "created_at",
-                    "updated_at"
+                    "onboarding_last_step"
                 ],
                 "title": "AdminRestaurantDetailResource"
             },
@@ -34066,18 +34314,6 @@
                     "name": {
                         "type": "string"
                     },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
                     "description": {
                         "type": [
                             "string",
@@ -34110,20 +34346,32 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
-                    "category",
-                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
+                    "category",
+                    "floor_type"
                 ],
                 "title": "DiningArea"
             },
@@ -35532,6 +35780,22 @@
                             },
                             "phone": {
                                 "type": "string"
+                            },
+                            "preferences": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "minItems": 0,
+                                        "maxItems": 0,
+                                        "additionalItems": false
+                                    }
+                                ]
                             }
                         },
                         "required": [
@@ -35539,7 +35803,8 @@
                             "first_name",
                             "last_name",
                             "email",
-                            "phone"
+                            "phone",
+                            "preferences"
                         ]
                     },
                     "guest": {
@@ -36437,7 +36702,13 @@
                         "type": "array",
                         "items": {}
                     },
-                    "plan": {}
+                    "plan": {},
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
                 },
                 "required": [
                     "id",
@@ -36485,7 +36756,9 @@
                     "summary",
                     "discovery_metrics",
                     "widget_settings",
-                    "plan"
+                    "plan",
+                    "created_at",
+                    "updated_at"
                 ],
                 "title": "RestaurantDetailResource"
             },
@@ -41526,6 +41799,15 @@
                     }
                 },
                 "title": "UpdateAdminUserRequest"
+            },
+            "UpdateDashboardPreferencesRequest": {
+                "type": "object",
+                "properties": {
+                    "display_recommended_table_assignment": {
+                        "type": "boolean"
+                    }
+                },
+                "title": "UpdateDashboardPreferencesRequest"
             },
             "UpdateDiningAreaRequest": {
                 "type": "object",
