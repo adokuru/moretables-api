@@ -3479,7 +3479,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"display_recommended_table_assignment\": true\n}"
+       "raw": "{\n  \"display_recommended_table_assignment\": true,\n  \"display_guest_full_name\": false,\n  \"show_guest_preferences\": true\n}"
       }
      }
     },

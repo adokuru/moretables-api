@@ -6990,10 +6990,18 @@
                                             "properties": {
                                                 "display_recommended_table_assignment": {
                                                     "type": "boolean"
+                                                },
+                                                "display_guest_full_name": {
+                                                    "type": "boolean"
+                                                },
+                                                "show_guest_preferences": {
+                                                    "type": "boolean"
                                                 }
                                             },
                                             "required": [
-                                                "display_recommended_table_assignment"
+                                                "display_recommended_table_assignment",
+                                                "display_guest_full_name",
+                                                "show_guest_preferences"
                                             ]
                                         }
                                     },
@@ -7074,10 +7082,18 @@
                                             "properties": {
                                                 "display_recommended_table_assignment": {
                                                     "type": "boolean"
+                                                },
+                                                "display_guest_full_name": {
+                                                    "type": "boolean"
+                                                },
+                                                "show_guest_preferences": {
+                                                    "type": "boolean"
                                                 }
                                             },
                                             "required": [
-                                                "display_recommended_table_assignment"
+                                                "display_recommended_table_assignment",
+                                                "display_guest_full_name",
+                                                "show_guest_preferences"
                                             ]
                                         }
                                     },
@@ -41804,6 +41820,12 @@
                 "type": "object",
                 "properties": {
                     "display_recommended_table_assignment": {
+                        "type": "boolean"
+                    },
+                    "display_guest_full_name": {
+                        "type": "boolean"
+                    },
+                    "show_guest_preferences": {
                         "type": "boolean"
                     }
                 },

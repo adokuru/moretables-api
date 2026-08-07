@@ -12,9 +12,10 @@ use Illuminate\Http\Request;
 /**
  * Display preferences for the front-of-house dashboard (Nav/Sidebar → Settings →
  * Preferences), as distinct from the business-facing restaurant settings served
- * by MerchantRestaurantSettingsController. One boolean today
- * (display_recommended_table_assignment); more dashboard toggles can be added
- * to the same resource later.
+ * by MerchantRestaurantSettingsController. Three booleans today
+ * (display_recommended_table_assignment, display_guest_full_name,
+ * show_guest_preferences); more dashboard toggles can be added to the same
+ * resource later.
  */
 #[Group('Merchant Restaurant Settings', weight: 31)]
 class MerchantDashboardPreferencesController extends Controller
@@ -24,9 +25,7 @@ class MerchantDashboardPreferencesController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         return response()->json([
-            'preferences' => [
-                'display_recommended_table_assignment' => $restaurant->display_recommended_table_assignment,
-            ],
+            'preferences' => $this->preferences($restaurant),
         ]);
     }
 
@@ -38,9 +37,19 @@ class MerchantDashboardPreferencesController extends Controller
 
         return response()->json([
             'message' => 'Preferences updated successfully.',
-            'preferences' => [
-                'display_recommended_table_assignment' => $restaurant->display_recommended_table_assignment,
-            ],
+            'preferences' => $this->preferences($restaurant),
         ]);
+    }
+
+    /**
+     * @return array{display_recommended_table_assignment: bool, display_guest_full_name: bool, show_guest_preferences: bool}
+     */
+    private function preferences(Restaurant $restaurant): array
+    {
+        return [
+            'display_recommended_table_assignment' => $restaurant->display_recommended_table_assignment,
+            'display_guest_full_name' => $restaurant->display_guest_full_name,
+            'show_guest_preferences' => $restaurant->show_guest_preferences,
+        ];
     }
 }
