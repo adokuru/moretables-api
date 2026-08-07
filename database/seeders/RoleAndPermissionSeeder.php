@@ -65,6 +65,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'reservations.manage',
                 'waitlist.manage',
                 'tables.manage',
+                'staff.manage',
             ],
             Role::AnalyticsReporting => [
                 'restaurants.view',
