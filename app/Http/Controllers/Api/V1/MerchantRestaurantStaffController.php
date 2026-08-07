@@ -20,7 +20,11 @@ class MerchantRestaurantStaffController extends Controller
 
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
+        // Any restaurant-scoped staff member can view the roster (surfaced in the
+        // FOH dashboard's Settings → User Management tab for everyone) — only
+        // store/update/destroy require staff.manage. Was staff.manage-gated here
+        // too until this was split out; see MerchantRestaurantStaffManagementTest.
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         return response()->json([
             'staff' => RestaurantStaffAssignmentResource::collection(
@@ -31,6 +35,8 @@ class MerchantRestaurantStaffController extends Controller
 
     public function store(StoreRestaurantStaffRequest $request, Restaurant $restaurant): JsonResponse
     {
+        abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
+
         $assignment = $this->restaurantStaffManagementService->invite(
             restaurant: $restaurant,
             payload: $request->validated(),
@@ -45,6 +51,7 @@ class MerchantRestaurantStaffController extends Controller
 
     public function update(UpdateRestaurantStaffRequest $request, Restaurant $restaurant, User $user): JsonResponse
     {
+        abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
         abort_if(
             $request->user()->id === $user->id && $request->has('status'),
             403,

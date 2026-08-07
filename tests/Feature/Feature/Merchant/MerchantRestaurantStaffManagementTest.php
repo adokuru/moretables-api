@@ -105,7 +105,8 @@ it('blocks suspended restaurant staff accounts from logging in', function () {
         ->assertJsonValidationErrors('identifier');
 });
 
-it('forbids operations staff from managing restaurant staff', function () {
+it('allows operations staff to view and manage restaurant staff', function () {
+    Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);
 
     $data = createBookableRestaurant();
@@ -113,10 +114,36 @@ it('forbids operations staff from managing restaurant staff', function () {
 
     assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
 
+    $guestRelationsConfig = RestaurantAccessConfig::query()
+        ->where('restaurant_id', $data['restaurant']->id)
+        ->where('slug', 'guest_relations')
+        ->firstOrFail();
+
     Sanctum::actingAs($operations);
 
     $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff')
-        ->assertForbidden();
+        ->assertOk();
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff', [
+        'first_name' => 'New',
+        'last_name' => 'Staff',
+        'email' => 'new.staff@example.com',
+        'access_config_id' => $guestRelationsConfig->id,
+    ])->assertCreated();
+});
+
+it('lets any restaurant-scoped staff view the staff roster, but only staff.manage roles can invite or remove', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $guestRelations = User::factory()->create();
+
+    assignScopedRole($guestRelations, Role::GuestRelations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($guestRelations);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff')
+        ->assertOk();
 
     $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff', [
         'first_name' => 'New',
@@ -124,6 +151,9 @@ it('forbids operations staff from managing restaurant staff', function () {
         'email' => 'new.staff@example.com',
         'access_config_id' => 999,
     ])->assertForbidden();
+
+    $this->deleteJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff/'.$guestRelations->id)
+        ->assertForbidden();
 });
 
 it('lets guest relations and analytics staff view reservations but not mutate merchant resources', function () {

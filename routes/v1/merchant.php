@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\FrontOfHouseTimelineController;
 use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\MerchantAccessConfigController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
+use App\Http\Controllers\Api\V1\MerchantDashboardPreferencesController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
@@ -69,6 +70,9 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         Route::get('settings', [MerchantRestaurantSettingsController::class, 'show']);
         Route::patch('settings', [MerchantRestaurantSettingsController::class, 'update']);
+
+        Route::get('dashboard-preferences', [MerchantDashboardPreferencesController::class, 'show']);
+        Route::patch('dashboard-preferences', [MerchantDashboardPreferencesController::class, 'update']);
 
         Route::get('special-days', [MerchantRestaurantSpecialDayController::class, 'index']);
         Route::post('special-days', [MerchantRestaurantSpecialDayController::class, 'store']);
