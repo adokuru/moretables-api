@@ -10,6 +10,7 @@ use App\Models\RestaurantSpecialDay;
 use App\Models\RestaurantTable;
 use App\RestaurantStatus;
 use App\Services\AvailabilityService;
+use App\Services\RestaurantShiftService;
 use Carbon\Carbon;
 
 beforeEach(function (): void {
@@ -160,4 +161,45 @@ it('returns no slots when a weekly shift marks all tables as not reservable', fu
     );
 
     expect($slots)->toBeEmpty();
+});
+
+it('does not silently block a larger party when shifts are auto-seeded from availability schedules on onboarding', function (): void {
+    // Regression test — RestaurantShift::flow_default_max_covers used to
+    // default to a hardcoded 3 (both at the DB column level and in
+    // RestaurantShiftService), which meant a party of 4+ was rejected at
+    // every single slot on an otherwise completely empty day, even when the
+    // restaurant's own tables could easily seat them. seedFromSchedules() —
+    // the actual path real restaurants' shifts get created through on
+    // onboarding — now derives the default from the restaurant's table
+    // capacity instead.
+    $restaurant = Restaurant::factory()->create(['timezone' => 'UTC', 'total_seating_capacity' => null]);
+    RestaurantTable::factory()->for($restaurant)->create(['min_capacity' => 1, 'max_capacity' => 8]);
+    RestaurantTable::factory()->for($restaurant)->create(['min_capacity' => 1, 'max_capacity' => 8]);
+
+    $tomorrow = Carbon::tomorrow('UTC');
+
+    $availabilityPeriod = RestaurantAvailabilityPeriod::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Dinner',
+    ]);
+    RestaurantAvailabilitySchedule::create([
+        'restaurant_id' => $restaurant->id,
+        'restaurant_meal_type_id' => $availabilityPeriod->id,
+        'day_of_week' => $tomorrow->dayOfWeek,
+        'opens_at' => '18:00',
+        'closes_at' => '21:00',
+    ]);
+
+    app(RestaurantShiftService::class)->seedFromSchedules($restaurant);
+
+    $shift = RestaurantShift::query()->where('restaurant_id', $restaurant->id)->firstOrFail();
+    expect($shift->flow_default_max_covers)->toBe(16);
+
+    $slots = $this->service->listAvailableSlots(
+        restaurant: $restaurant->fresh(),
+        date: $tomorrow->format('Y-m-d'),
+        partySize: 4,
+    );
+
+    expect($slots)->not->toBeEmpty();
 });

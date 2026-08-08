@@ -24,6 +24,7 @@ class RestaurantShiftService
 
         $defaultDuration = $restaurant->policy?->reservation_duration_minutes ?? 120;
         $maxPartySize = $restaurant->policy?->max_party_size ?? 12;
+        $defaultMaxCovers = $this->defaultMaxCovers($restaurant);
 
         foreach ($restaurant->availabilitySchedules as $schedule) {
             $shift = $restaurant->shifts()->create([
@@ -33,6 +34,7 @@ class RestaurantShiftService
                 'starts_at' => $schedule->opens_at,
                 'ends_at' => $schedule->closes_at,
                 'sort_order' => $schedule->availabilityPeriod?->sort_order ?? 0,
+                'flow_default_max_covers' => $defaultMaxCovers,
             ]);
 
             $this->syncDefaultTurnTimes($shift, $maxPartySize, $defaultDuration);
@@ -41,12 +43,35 @@ class RestaurantShiftService
     }
 
     /**
+     * Fallback cap on covers allowed to *start* within one flow interval
+     * (AvailabilityService::generateSlots) when a shift doesn't specify its
+     * own — must be at least large enough that a single legitimate party
+     * booking this restaurant's own largest table can never be silently
+     * rejected on an otherwise-empty day. Prefers the restaurant's declared
+     * total_seating_capacity; falls back to summing its actual tables' own
+     * max_capacity (total_seating_capacity is a free-text-ish onboarding
+     * field, often left unset); falls back to a generous flat number only
+     * when neither is available yet (e.g. a shift seeded before any floor
+     * plan exists).
+     */
+    private function defaultMaxCovers(Restaurant $restaurant): int
+    {
+        if ($restaurant->total_seating_capacity) {
+            return max(1, (int) $restaurant->total_seating_capacity);
+        }
+
+        $tableCapacity = (int) $restaurant->tables()->sum('max_capacity');
+
+        return $tableCapacity > 0 ? $tableCapacity : 20;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(Restaurant $restaurant, array $data): RestaurantShift
     {
         return DB::transaction(function () use ($restaurant, $data): RestaurantShift {
-            $shift = $restaurant->shifts()->create($this->shiftAttributes($data));
+            $shift = $restaurant->shifts()->create($this->shiftAttributes($data, restaurant: $restaurant));
 
             $this->syncNestedSettings($restaurant, $shift, $data);
 
@@ -180,7 +205,7 @@ class RestaurantShiftService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function shiftAttributes(array $data, bool $onlyPresent = false): array
+    private function shiftAttributes(array $data, bool $onlyPresent = false, ?Restaurant $restaurant = null): array
     {
         $attributes = [];
 
@@ -226,7 +251,7 @@ class RestaurantShiftService
             'is_active' => true,
             'turn_control_release_policy' => RestaurantShiftTurnControlReleasePolicy::DontRelease,
             'flow_interval_minutes' => 15,
-            'flow_default_max_covers' => 3,
+            'flow_default_max_covers' => $restaurant ? $this->defaultMaxCovers($restaurant) : 20,
             'sort_order' => 0,
         ], $attributes);
     }

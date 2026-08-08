@@ -72,6 +72,52 @@ it('creates a weekly shift with nested settings', function (): void {
     expect($this->restaurant->shifts()->count())->toBe(1);
 });
 
+it('defaults flow_default_max_covers to the sum of the restaurant\'s table capacities when not specified', function (): void {
+    $this->restaurant->update(['total_seating_capacity' => null]);
+    $mainFloor = DiningArea::factory()->for($this->restaurant)->create(['name' => 'Main']);
+    RestaurantTable::factory()->for($this->restaurant)->create(['dining_area_id' => $mainFloor->id, 'max_capacity' => 10]);
+    RestaurantTable::factory()->for($this->restaurant)->create(['dining_area_id' => $mainFloor->id, 'max_capacity' => 6]);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [
+        'name' => 'No Flow Controls',
+        'day_of_week' => 4,
+        'starts_at' => '12:00',
+        'ends_at' => '15:00',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.flow_controls.default_max_covers', 16);
+});
+
+it('prefers the restaurant\'s declared total_seating_capacity over summed table capacity for the flow_default_max_covers default', function (): void {
+    $this->restaurant->update(['total_seating_capacity' => 50]);
+    RestaurantTable::factory()->for($this->restaurant)->create(['max_capacity' => 4]);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [
+        'name' => 'No Flow Controls',
+        'day_of_week' => 4,
+        'starts_at' => '12:00',
+        'ends_at' => '15:00',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.flow_controls.default_max_covers', 50);
+});
+
+it('falls back to a generous flat flow_default_max_covers when the restaurant has no capacity data yet', function (): void {
+    $this->restaurant->update(['total_seating_capacity' => null]);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [
+        'name' => 'No Tables Yet',
+        'day_of_week' => 4,
+        'starts_at' => '12:00',
+        'ends_at' => '15:00',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.flow_controls.default_max_covers', 20);
+});
+
 it('validates required fields when creating a shift', function (): void {
     postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/shifts", [])
         ->assertUnprocessable()
