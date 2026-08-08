@@ -7,6 +7,7 @@ use App\Models\User;
 use App\UserStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -103,6 +104,52 @@ it('blocks suspended restaurant staff accounts from logging in', function () {
 
     $loginResponse->assertUnprocessable()
         ->assertJsonValidationErrors('identifier');
+    expect($loginResponse->json('errors.identifier.0'))
+        ->toBe("Your account has been disabled. Please reach out to your restaurant's management.");
+});
+
+it('revokes an already-issued token when a staff member is suspended, immediately ending their session', function () {
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $principalAdmin = User::factory()->create();
+    $staffMember = User::factory()->create([
+        'email' => 'staff.member@example.com',
+        'password' => 'Secret123!',
+    ]);
+
+    assignScopedRole($principalAdmin, Role::PrincipalAdmin, $data['organization'], $data['restaurant']);
+    assignScopedRole($staffMember, Role::GuestRelations, $data['organization'], $data['restaurant']);
+
+    // Deliberately real bearer tokens (not Sanctum::actingAs, which just stubs
+    // the guard rather than exercising the actual token lifecycle) — this needs
+    // to prove a genuinely-issued token stops working. Auth::forgetGuards()
+    // between calls that switch identity is required here: Laravel caches the
+    // resolved user on the guard instance for the lifetime of the test's
+    // container, so a later call with a *different* bearer token would
+    // otherwise still authenticate as whoever resolved first — a test-harness
+    // quirk, not app behavior (a real request only ever resolves one user).
+    $adminToken = $principalAdmin->createToken('session')->plainTextToken;
+    $staffToken = $staffMember->createToken('session')->plainTextToken;
+
+    $this->withHeader('Authorization', "Bearer {$staffToken}")
+        ->getJson('/api/v1/merchant/restaurants')
+        ->assertOk();
+
+    Auth::forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$adminToken}")
+        ->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/staff/'.$staffMember->id, [
+            'status' => UserStatus::Suspended->value,
+        ])->assertOk();
+
+    expect($staffMember->tokens()->count())->toBe(0);
+
+    Auth::forgetGuards();
+
+    $this->withHeader('Authorization', "Bearer {$staffToken}")
+        ->getJson('/api/v1/merchant/restaurants')
+        ->assertUnauthorized();
 });
 
 it('allows operations staff to view and manage restaurant staff', function () {

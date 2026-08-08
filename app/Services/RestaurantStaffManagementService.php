@@ -71,6 +71,17 @@ class RestaurantStaffManagementService
             $staffMember->forceFill([
                 'status' => $payload['status'],
             ])->save();
+
+            // Suspending doesn't just block future logins — it must end whatever
+            // session they're already in. Nothing else re-checks account status on
+            // an already-issued Sanctum token, so without this a suspended user
+            // keeps full access until their token naturally expires (up to 30
+            // days, config('sanctum.expiration')). Revoking here means their very
+            // next request 401s, which the frontend already treats as "log out
+            // and redirect to /auth/login" — no separate signal needed.
+            if ($payload['status'] !== UserStatus::Active->value) {
+                $staffMember->tokens()->delete();
+            }
         }
 
         if (! array_key_exists('access_config_id', $payload)) {

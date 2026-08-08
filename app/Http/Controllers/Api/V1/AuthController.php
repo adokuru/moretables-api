@@ -43,8 +43,15 @@ class AuthController extends Controller
         }
 
         if (! $user->isActive()) {
+            // Staff accounts are only ever Active or Suspended (RestaurantStaffManagementService
+            // creates them Active; the only other value UpdateRestaurantStaffRequest allows is
+            // Suspended) — the generic fallback covers it if that ever changes.
+            $message = $user->status === UserStatus::Suspended
+                ? "Your account has been disabled. Please reach out to your restaurant's management."
+                : 'This staff account is not currently active.';
+
             throw ValidationException::withMessages([
-                'identifier' => ['This staff account is not currently active.'],
+                'identifier' => [$message],
             ]);
         }
 
