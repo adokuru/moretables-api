@@ -250,6 +250,20 @@ class User extends Authenticatable implements HasMedia
         );
     }
 
+    /**
+     * @param  list<string>  $permissionNames
+     */
+    public function hasAnyRestaurantPermission(array $permissionNames, Restaurant $restaurant): bool
+    {
+        foreach ($permissionNames as $permissionName) {
+            if ($this->hasRestaurantPermission($permissionName, $restaurant)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function canAccessRestaurant(Restaurant $restaurant): bool
     {
         $cache = app(PerformanceCacheService::class);
