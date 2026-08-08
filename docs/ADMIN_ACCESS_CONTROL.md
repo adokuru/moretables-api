@@ -161,3 +161,7 @@ Frontend counterpart: `moretable-web-app/docs/access-control.md` — how
 `canAccessAdmin`/`restaurantPermissions` from this doc actually get consumed
 (`AuthProvider`, `Sidebar.tsx`, `admin/layout.tsx`, `UserDropDown.tsx`,
 `user-management-section.tsx`, `useVerify2FA.ts`).
+
+`docs/PERMISSION_MATRIX.md` — the full picture, one row per assignable
+permission: what it unlocks in `/dashboard` vs `/admin`, read vs write, and
+(important) which ones aren't actually enforced by any endpoint yet.
