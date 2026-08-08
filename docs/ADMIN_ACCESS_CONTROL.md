@@ -148,3 +148,16 @@ through `setRestaurant()`'s existing optional-param pattern.
   created from now on — an already-existing restaurant's Operations config
   keeps whatever permissions it already has (an owner can add `staff.manage`
   themselves via the existing Access Config editor).
+
+## See also
+
+`docs/ERROR_MESSAGES_AND_SESSION_TERMINATION.md` — what happens once access
+is denied or withdrawn: every `abort()` with no message now gets a real
+fallback instead of an empty string, and suspending a staff member now
+revokes their already-issued token instead of leaving it valid for up to 30
+days.
+
+Frontend counterpart: `moretable-web-app/docs/access-control.md` — how
+`canAccessAdmin`/`restaurantPermissions` from this doc actually get consumed
+(`AuthProvider`, `Sidebar.tsx`, `admin/layout.tsx`, `UserDropDown.tsx`,
+`user-management-section.tsx`, `useVerify2FA.ts`).
