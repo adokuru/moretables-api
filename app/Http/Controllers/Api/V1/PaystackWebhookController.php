@@ -17,6 +17,14 @@ class PaystackWebhookController extends Controller
         protected PaymentProvider $paymentProvider,
     ) {}
 
+    /**
+     * Receive Paystack webhooks. Requires a valid `x-paystack-signature` header. Handled events:
+     * `charge.success` (checkout payments and reservation card holds), `invoice.update` (subscription
+     * renewal charges — this is what moves a subscription into its next billing period),
+     * `invoice.payment_failed` (declined renewal, marks the subscription past due), and
+     * `subscription.create` / `subscription.enable` / `subscription.not_renew` / `subscription.disable`.
+     * Any other event is acknowledged and ignored.
+     */
     public function __invoke(Request $request): JsonResponse
     {
         $payload = $request->getContent();

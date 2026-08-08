@@ -17,6 +17,7 @@ class StoreReservationRequest extends FormRequest
             'restaurant_id' => ['required', 'integer', 'exists:restaurants,id'],
             'starts_at' => ['required', 'date', 'after:now'],
             'party_size' => ['required', 'integer', 'min:1'],
+            'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],
             'notes' => ['nullable', 'string'],
             'occasion' => ['nullable', 'string', 'max:100'],
             'accept_points' => ['nullable', 'boolean'],

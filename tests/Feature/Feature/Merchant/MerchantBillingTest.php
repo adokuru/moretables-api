@@ -191,6 +191,147 @@ it('processes signed paystack charge success webhooks', function (): void {
     ]);
 });
 
+it('renews a subscription from a paystack invoice.update webhook', function (): void {
+    $data = createBookableRestaurant();
+    $plan = BillingPlan::query()->where('slug', 'foundation')->firstOrFail();
+
+    $subscription = MerchantSubscription::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'status' => MerchantSubscriptionStatus::Active,
+        'provider_subscription_code' => 'SUB_renewal',
+        'current_period_end' => now()->addDay(),
+        'next_payment_at' => now()->addDay(),
+    ]);
+
+    $nextPaymentDate = now()->addMonth()->addDay();
+
+    $payload = json_encode([
+        'event' => 'invoice.update',
+        'data' => [
+            'invoice_code' => 'INV_renewal',
+            'amount' => $plan->amount,
+            'currency' => 'NGN',
+            'status' => 'success',
+            'paid' => true,
+            'paid_at' => now()->toISOString(),
+            'customer' => ['customer_code' => 'CUS_card', 'email' => 'billing@example.com'],
+            'authorization' => ['authorization_code' => 'AUTH_card', 'reusable' => true, 'last4' => '4081'],
+            'subscription' => [
+                'subscription_code' => 'SUB_renewal',
+                'email_token' => 'email-token',
+                'next_payment_date' => $nextPaymentDate->toISOString(),
+            ],
+            'transaction' => ['reference' => 'renewal_ref_1', 'status' => 'success'],
+        ],
+    ], JSON_THROW_ON_ERROR);
+
+    $this->withHeader('x-paystack-signature', hash_hmac('sha512', $payload, 'test-secret'))
+        ->postJson('/api/v1/billing/paystack/webhook', json_decode($payload, true, 512, JSON_THROW_ON_ERROR))
+        ->assertOk();
+
+    $subscription->refresh();
+
+    expect($subscription->status)->toBe(MerchantSubscriptionStatus::Active)
+        ->and($subscription->current_period_end->toDateString())->toBe($nextPaymentDate->toDateString())
+        ->and($subscription->next_payment_at->toDateString())->toBe($nextPaymentDate->toDateString());
+
+    $this->assertDatabaseHas('merchant_invoices', [
+        'provider_reference' => 'renewal_ref_1',
+        'merchant_subscription_id' => $subscription->id,
+        'status' => MerchantInvoiceStatus::Paid->value,
+    ]);
+
+    $this->assertDatabaseHas('merchant_payments', [
+        'reference' => 'renewal_ref_1',
+        'merchant_subscription_id' => $subscription->id,
+        'status' => 'success',
+    ]);
+});
+
+it('marks a subscription past due when the renewal charge is declined', function (): void {
+    $data = createBookableRestaurant();
+    $plan = BillingPlan::query()->where('slug', 'foundation')->firstOrFail();
+
+    $subscription = MerchantSubscription::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'status' => MerchantSubscriptionStatus::Active,
+        'provider_subscription_code' => 'SUB_failed',
+    ]);
+
+    $payload = json_encode([
+        'event' => 'invoice.update',
+        'data' => [
+            'invoice_code' => 'INV_failed',
+            'status' => 'failed',
+            'paid' => false,
+            'subscription' => ['subscription_code' => 'SUB_failed'],
+            'transaction' => ['reference' => 'renewal_ref_failed', 'status' => 'failed'],
+        ],
+    ], JSON_THROW_ON_ERROR);
+
+    $this->withHeader('x-paystack-signature', hash_hmac('sha512', $payload, 'test-secret'))
+        ->postJson('/api/v1/billing/paystack/webhook', json_decode($payload, true, 512, JSON_THROW_ON_ERROR))
+        ->assertOk();
+
+    $this->assertDatabaseMissing('merchant_invoices', ['provider_reference' => 'renewal_ref_failed']);
+
+    expect($subscription->refresh()->status)->toBe(MerchantSubscriptionStatus::PastDue);
+});
+
+it('repairs a lapsed subscription from the provider when syncing', function (): void {
+    $data = createBookableRestaurant();
+    $plan = BillingPlan::query()->where('slug', 'foundation')->firstOrFail();
+
+    $subscription = MerchantSubscription::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'status' => MerchantSubscriptionStatus::Expired,
+        'provider_subscription_code' => 'SUB_lapsed',
+        'current_period_end' => now()->subWeek(),
+    ]);
+
+    $nextPaymentDate = now()->addMonth();
+
+    Http::fake([
+        'https://api.paystack.co/subscription/SUB_lapsed' => Http::response([
+            'status' => true,
+            'data' => [
+                'subscription_code' => 'SUB_lapsed',
+                'status' => 'active',
+                'next_payment_date' => $nextPaymentDate->toISOString(),
+            ],
+        ]),
+    ]);
+
+    $this->artisan('billing:sync-subscriptions')->assertSuccessful();
+
+    $subscription->refresh();
+
+    expect($subscription->status)->toBe(MerchantSubscriptionStatus::Active)
+        ->and($subscription->current_period_end->toDateString())->toBe($nextPaymentDate->toDateString());
+});
+
+it('leaves admin assigned subscriptions alone when syncing', function (): void {
+    $data = createBookableRestaurant();
+    $plan = BillingPlan::query()->where('slug', 'foundation')->firstOrFail();
+
+    $subscription = MerchantSubscription::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'status' => MerchantSubscriptionStatus::Active,
+        'provider_subscription_code' => 'admin_manual',
+    ]);
+
+    Http::fake();
+
+    $this->artisan('billing:sync-subscriptions')->assertSuccessful();
+
+    Http::assertNothingSent();
+    expect($subscription->refresh()->status)->toBe(MerchantSubscriptionStatus::Active);
+});
+
 function actingRestaurantManager(array $data): User
 {
     $manager = User::factory()->create();

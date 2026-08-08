@@ -11,7 +11,9 @@ Artisan::command('inspire', function () {
 Schedule::command('app:send-upcoming-reservation-reminders')->hourly()->onOneServer()->withoutOverlapping();
 Schedule::command('app:process-availability-alerts')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('app:mark-no-show-reservations')->everyTenMinutes()->onOneServer()->withoutOverlapping();
-Schedule::command('billing:expire-subscriptions')->daily()->onOneServer()->withoutOverlapping();
+// Sync before expiring, so a renewal whose webhook never arrived is repaired rather than expired.
+Schedule::command('billing:sync-subscriptions')->daily()->onOneServer()->withoutOverlapping();
+Schedule::command('billing:expire-subscriptions')->dailyAt('01:00')->onOneServer()->withoutOverlapping();
 Schedule::command('app:expire-reward-points')->daily()->onOneServer()->withoutOverlapping();
 Schedule::command('guest-surveys:send-due')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();

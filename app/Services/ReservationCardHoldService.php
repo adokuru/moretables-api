@@ -55,26 +55,19 @@ class ReservationCardHoldService
             return ['card_hold' => $existing, 'provider_response' => []];
         }
 
-        $cardHold = ReservationCardHold::query()->updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'restaurant_id' => $restaurant->id,
-                'reservation_id' => null,
-                'status' => ReservationCardHoldStatus::Pending,
-            ],
-            [
-                'provider' => 'paystack',
-                'reference' => 'rch_'.strtolower((string) Str::ulid()),
-                'authorization_code' => null,
-                'email' => $user->email,
-                'amount' => (int) $policy->hold_charge_amount,
-                'currency' => config('billing.card_hold.currency', 'NGN'),
-                'charge_reference' => null,
-                'charged_amount' => null,
-                'charged_at' => null,
-                'failure_reason' => null,
-            ],
-        );
+        // A new row per attempt, so re-opening checkout never reassigns the reference of a
+        // transaction the guest may still complete — the webhook has to be able to find it.
+        $cardHold = ReservationCardHold::query()->create([
+            'user_id' => $user->id,
+            'restaurant_id' => $restaurant->id,
+            'reservation_id' => null,
+            'status' => ReservationCardHoldStatus::Pending,
+            'provider' => 'paystack',
+            'reference' => 'rch_'.strtolower((string) Str::ulid()),
+            'email' => $user->email,
+            'amount' => (int) $policy->hold_charge_amount,
+            'currency' => config('billing.card_hold.currency', 'NGN'),
+        ]);
 
         $response = $this->provider->initializeCardAuthorization(
             $user->email,
@@ -121,6 +114,12 @@ class ReservationCardHoldService
             ->latest('id')
             ->first();
 
+        // The frontend can run the Paystack checkout itself with its own reference, in which case
+        // nothing exists locally yet — verify the transaction and save the card authorization now.
+        if (! $cardHold && $reference) {
+            $cardHold = $this->captureAuthorization($user, $restaurant, $reference, (int) $policy->hold_charge_amount);
+        }
+
         if (! $cardHold) {
             throw ValidationException::withMessages([
                 'card_hold_reference' => ['Please verify a card to secure this reservation before booking.'],
@@ -132,12 +131,88 @@ class ReservationCardHoldService
         return $cardHold;
     }
 
+    /**
+     * Verify a provider transaction the frontend collected itself and persist the saved card, so a
+     * booking can be secured without going through initializeVerification().
+     */
+    protected function captureAuthorization(User $user, Restaurant $restaurant, string $reference, int $amount): ReservationCardHold
+    {
+        if (ReservationCardHold::query()->where('reference', $reference)->exists()) {
+            throw ValidationException::withMessages([
+                'card_hold_reference' => ['This card verification has already been used.'],
+            ]);
+        }
+
+        try {
+            $response = $this->provider->verifyTransaction($reference);
+        } catch (\Throwable $e) {
+            Log::warning('Card hold verification lookup failed.', [
+                'reference' => $reference,
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'card_hold_reference' => ["We couldn't confirm your card verification. Please try again."],
+            ]);
+        }
+
+        $data = is_array(Arr::get($response, 'data')) ? $response['data'] : [];
+        $authorization = is_array(Arr::get($data, 'authorization')) ? $data['authorization'] : [];
+        $authorizationCode = Arr::get($authorization, 'authorization_code');
+        $email = Arr::get($data, 'customer.email') ?: $user->email;
+
+        if (Arr::get($data, 'status') !== 'success' || ! $authorizationCode || Arr::get($authorization, 'reusable') === false || ! $email) {
+            throw ValidationException::withMessages([
+                'card_hold_reference' => ['This card could not be saved to secure your reservation. Please verify a card again.'],
+            ]);
+        }
+
+        $cardHold = ReservationCardHold::query()->create([
+            'user_id' => $user->id,
+            'restaurant_id' => $restaurant->id,
+            'reservation_id' => null,
+            'provider' => 'paystack',
+            'reference' => $reference,
+            'authorization_code' => $authorizationCode,
+            'email' => $email,
+            'brand' => Arr::get($authorization, 'brand'),
+            'last4' => Arr::get($authorization, 'last4'),
+            'status' => ReservationCardHoldStatus::Authorized,
+            'amount' => $amount,
+            'currency' => Arr::get($data, 'currency') ?: config('billing.card_hold.currency', 'NGN'),
+            'metadata' => $data,
+        ]);
+
+        $this->refundVerificationCharge($cardHold);
+
+        return $cardHold->refresh();
+    }
+
+    /**
+     * Claim the hold for this reservation, but never take one another reservation already holds —
+     * two bookings racing for the same verified card would otherwise leave the first uncovered.
+     */
     public function linkToReservation(ReservationCardHold $cardHold, Reservation $reservation): void
     {
-        $cardHold->update([
-            'reservation_id' => $reservation->id,
-            'amount' => $cardHold->amount,
-        ]);
+        $claimed = ReservationCardHold::query()
+            ->whereKey($cardHold->id)
+            ->whereNull('reservation_id')
+            ->update([
+                'reservation_id' => $reservation->id,
+                'amount' => $cardHold->amount,
+            ]);
+
+        if ($claimed === 0) {
+            Log::warning('Card hold was already claimed by another reservation.', [
+                'card_hold_id' => $cardHold->id,
+                'reservation_id' => $reservation->id,
+            ]);
+
+            return;
+        }
+
+        $cardHold->refresh();
     }
 
     /**
@@ -154,13 +229,17 @@ class ReservationCardHoldService
         $data = is_array($payload['data'] ?? null) ? $payload['data'] : [];
         $reference = Arr::get($data, 'reference');
 
-        if (! is_string($reference) || ! str_starts_with($reference, 'rch_')) {
+        if (! is_string($reference) || $reference === '') {
             return;
         }
 
+        // The reference alone decides whether this charge is ours — a prefix check would skip
+        // holds captured from a checkout the frontend ran under its own reference.
         $cardHold = ReservationCardHold::query()->where('reference', $reference)->first();
 
-        if (! $cardHold) {
+        // An existing authorization means this hold is already captured (and its verification charge
+        // already refunded) — a webhook retry must not refund it a second time.
+        if (! $cardHold || $cardHold->authorization_code !== null) {
             return;
         }
 

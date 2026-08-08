@@ -155,6 +155,160 @@ it('links the verified card to the reservation when booking a card-hold slot', f
         ->and($cardHold->amount)->toBe(15000);
 });
 
+it('saves the card authorization when booking with a frontend-collected reference', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $user = User::factory()->create(['email' => 'guest@example.com']);
+    Sanctum::actingAs($user);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'status' => true,
+            'data' => [
+                'status' => 'success',
+                'currency' => 'NGN',
+                'customer' => ['email' => 'guest@example.com'],
+                'authorization' => [
+                    'authorization_code' => 'AUTH_inline',
+                    'brand' => 'visa',
+                    'last4' => '4081',
+                    'reusable' => true,
+                ],
+            ],
+        ]),
+        'https://api.paystack.co/refund' => Http::response(['status' => true]),
+    ]);
+
+    $response = $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $restaurant->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'card_hold_reference' => 'mt_hold_1786104440028_dc8oyzqf',
+    ])->assertCreated();
+
+    $cardHold = ReservationCardHold::query()->where('reference', 'mt_hold_1786104440028_dc8oyzqf')->sole();
+
+    expect($cardHold->status)->toBe(ReservationCardHoldStatus::Authorized)
+        ->and($cardHold->authorization_code)->toBe('AUTH_inline')
+        ->and($cardHold->last4)->toBe('4081')
+        ->and($cardHold->amount)->toBe(15000)
+        ->and($cardHold->reservation_id)->toBe($response->json('reservation.id'))
+        ->and($cardHold->metadata['verification_refunded_at'] ?? null)->not->toBeNull();
+});
+
+it('rejects booking when the frontend-collected transaction did not succeed', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $user = User::factory()->create(['email' => 'guest@example.com']);
+    Sanctum::actingAs($user);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/verify/*' => Http::response([
+            'status' => true,
+            'data' => ['status' => 'failed', 'authorization' => []],
+        ]),
+    ]);
+
+    $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $restaurant->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'card_hold_reference' => 'mt_hold_failed',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('card_hold_reference');
+
+    $this->assertDatabaseMissing('reservation_card_holds', ['reference' => 'mt_hold_failed']);
+});
+
+it('rejects reusing a card hold reference that is already linked to a reservation', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $cardHold = ReservationCardHold::factory()->authorized()->create([
+        'user_id' => $user->id,
+        'restaurant_id' => $restaurant->id,
+        'reservation_id' => Reservation::factory()->create(['restaurant_id' => $restaurant->id])->id,
+    ]);
+
+    $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $restaurant->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'card_hold_reference' => $cardHold->reference,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('card_hold_reference');
+});
+
+it('keeps a separate reference per card capture attempt', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $user = User::factory()->create(['email' => 'guest@example.com']);
+    Sanctum::actingAs($user);
+
+    Http::fake([
+        'https://api.paystack.co/transaction/initialize' => Http::response([
+            'status' => true,
+            'data' => ['authorization_url' => 'https://checkout.paystack.com/hold', 'access_code' => 'ac_1'],
+        ]),
+    ]);
+
+    $payload = [
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+    ];
+
+    $first = $this->postJson("/api/v1/restaurants/{$restaurant->slug}/card-hold", $payload)->json('reference');
+    $second = $this->postJson("/api/v1/restaurants/{$restaurant->slug}/card-hold", $payload)->json('reference');
+
+    // Reassigning the first attempt's reference would orphan a checkout the guest can still complete.
+    expect($second)->not->toBe($first);
+    expect(ReservationCardHold::query()->whereIn('reference', [$first, $second])->count())->toBe(2);
+});
+
+it('does not refund an already authorized card hold when the webhook is retried', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $cardHold = ReservationCardHold::factory()->authorized()->create([
+        'restaurant_id' => $restaurant->id,
+        'reference' => 'rch_retry',
+        'reservation_id' => null,
+    ]);
+
+    Http::fake();
+
+    $payload = json_encode([
+        'event' => 'charge.success',
+        'data' => [
+            'reference' => 'rch_retry',
+            'authorization' => ['authorization_code' => 'AUTH_other', 'brand' => 'visa', 'last4' => '1111'],
+        ],
+    ], JSON_THROW_ON_ERROR);
+
+    $this->withHeader('x-paystack-signature', hash_hmac('sha512', $payload, 'test-secret'))
+        ->postJson('/api/v1/billing/paystack/webhook', json_decode($payload, true, 512, JSON_THROW_ON_ERROR))
+        ->assertOk();
+
+    Http::assertNothingSent();
+    expect($cardHold->refresh()->authorization_code)->not->toBe('AUTH_other');
+});
+
+it('does not take a card hold that another reservation already claimed', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    $user = User::factory()->create();
+
+    $taken = Reservation::factory()->create(['restaurant_id' => $restaurant->id]);
+    $cardHold = ReservationCardHold::factory()->authorized()->create([
+        'user_id' => $user->id,
+        'restaurant_id' => $restaurant->id,
+        'reservation_id' => $taken->id,
+    ]);
+
+    $other = Reservation::factory()->create(['restaurant_id' => $restaurant->id]);
+
+    app(ReservationCardHoldService::class)->linkToReservation($cardHold, $other);
+
+    expect($cardHold->refresh()->reservation_id)->toBe($taken->id);
+});
+
 it('charges an authorized card and emails both parties on no-show', function (): void {
     Notification::fake();
     ['restaurant' => $restaurant] = cardHoldRestaurant();

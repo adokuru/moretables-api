@@ -18,6 +18,7 @@ use App\Notifications\MerchantPaymentConfirmationNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -33,6 +34,16 @@ class BillingService
      */
     public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan, bool $isUpgrade = false, ?string $requesterEmail = null): array
     {
+        // Without a plan code Paystack takes a one-off payment instead of creating a subscription,
+        // so nothing ever renews and the merchant silently lapses at the end of the period.
+        if (! $plan->provider_plan_code) {
+            Log::warning('Billing plan has no Paystack plan code; checkout will not create a renewable subscription.', [
+                'billing_plan_id' => $plan->id,
+                'plan_slug' => $plan->slug,
+                'restaurant_id' => $restaurant->id,
+            ]);
+        }
+
         $invoice = MerchantInvoice::query()->create([
             'restaurant_id' => $restaurant->id,
             'billing_plan_id' => $plan->id,
@@ -89,45 +100,20 @@ class BillingService
         $data = is_array($webhook['data'] ?? null) ? $webhook['data'] : [];
 
         if ($event === 'charge.success') {
-            $reference = Arr::get($data, 'reference');
-            $invoice = MerchantInvoice::query()
-                ->where('provider_reference', $reference)
-                ->first();
+            $this->recordSubscriptionCharge($data);
+        }
 
-            // No matching invoice means this is a subscription renewal charge.
-            // Create an invoice so the payment is recorded against the subscription.
-            if (! $invoice) {
-                $subscriptionCode = Arr::get($data, 'subscription.subscription_code')
-                    ?? Arr::get($data, 'subscription_code');
+        // Paystack bills renewals through invoices, and the renewal's charge.success carries no
+        // subscription code — invoice.update is the only event that ties the renewal payment back
+        // to the subscription, so without it a subscription never moves past its first period.
+        if ($event === 'invoice.update' && Arr::get($data, 'status') === 'success') {
+            $this->recordSubscriptionCharge($this->transactionFromInvoicePayload($data));
+        }
 
-                if ($subscriptionCode) {
-                    $subscription = MerchantSubscription::query()
-                        ->with('plan')
-                        ->where('provider_subscription_code', $subscriptionCode)
-                        ->first();
-
-                    if ($subscription) {
-                        $invoice = MerchantInvoice::query()->create([
-                            'restaurant_id' => $subscription->restaurant_id,
-                            'billing_plan_id' => $subscription->billing_plan_id,
-                            'merchant_subscription_id' => $subscription->id,
-                            'invoice_number' => $this->generateInvoiceNumber(),
-                            'provider' => BillingProvider::Paystack,
-                            'provider_reference' => $reference,
-                            'amount' => (int) Arr::get($data, 'amount', $subscription->plan?->amount ?? 0),
-                            'currency' => Arr::get($data, 'currency', $subscription->plan?->currency ?? 'NGN'),
-                            'status' => MerchantInvoiceStatus::Pending,
-                            'billing_period_start' => now(),
-                            'billing_period_end' => now()->addMonth(),
-                            'due_at' => now(),
-                        ]);
-                    }
-                }
-            }
-
-            if ($invoice) {
-                $this->recordTransaction($invoice, $data);
-            }
+        // A declined renewal leaves the subscription past due rather than silently running out its
+        // period and being expired by the scheduler with no record of why.
+        if ($event === 'invoice.payment_failed' || ($event === 'invoice.update' && Arr::get($data, 'status') === 'failed')) {
+            $this->markRenewalFailed($data);
         }
 
         if (in_array($event, ['subscription.create', 'subscription.enable'], true)) {
@@ -260,6 +246,141 @@ class BillingService
         );
     }
 
+    /**
+     * Repair a subscription from the provider's own record of it. Webhooks are the primary path;
+     * this is the fallback for the ones that never arrived or were dropped.
+     */
+    public function syncSubscriptionFromProvider(MerchantSubscription $subscription): void
+    {
+        $code = $subscription->provider_subscription_code;
+
+        // admin_ and local_ codes only exist here — the provider has nothing to compare against.
+        if (! $code || ! str_starts_with($code, 'SUB_')) {
+            return;
+        }
+
+        $data = Arr::get($this->provider->syncSubscription($code), 'data', []);
+
+        if (! is_array($data) || ! Arr::get($data, 'subscription_code')) {
+            return;
+        }
+
+        [$status, $cancelAtPeriodEnd] = match ((string) Arr::get($data, 'status')) {
+            'active' => [MerchantSubscriptionStatus::Active, false],
+            'non-renewing' => [MerchantSubscriptionStatus::Active, true],
+            'attention' => [MerchantSubscriptionStatus::PastDue, false],
+            default => [MerchantSubscriptionStatus::Canceled, false],
+        };
+
+        $this->syncSubscriptionPayload($data, $status, $cancelAtPeriodEnd);
+    }
+
+    /**
+     * Record a provider transaction against its invoice, creating one first when the charge is a
+     * subscription renewal the app never initiated a checkout for.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function recordSubscriptionCharge(array $data): void
+    {
+        $reference = Arr::get($data, 'reference');
+
+        if (! $reference) {
+            return;
+        }
+
+        $invoice = MerchantInvoice::query()
+            ->where('provider_reference', $reference)
+            ->first();
+
+        if (! $invoice) {
+            $subscriptionCode = Arr::get($data, 'subscription.subscription_code')
+                ?? Arr::get($data, 'subscription_code');
+
+            $subscription = $subscriptionCode
+                ? MerchantSubscription::query()
+                    ->with('plan')
+                    ->where('provider_subscription_code', $subscriptionCode)
+                    ->first()
+                : null;
+
+            if (! $subscription) {
+                return;
+            }
+
+            $invoice = MerchantInvoice::query()->create([
+                'restaurant_id' => $subscription->restaurant_id,
+                'billing_plan_id' => $subscription->billing_plan_id,
+                'merchant_subscription_id' => $subscription->id,
+                'invoice_number' => $this->generateInvoiceNumber(),
+                'provider' => BillingProvider::Paystack,
+                'provider_reference' => $reference,
+                'amount' => (int) Arr::get($data, 'amount', $subscription->plan?->amount ?? 0),
+                'currency' => Arr::get($data, 'currency', $subscription->plan?->currency ?? 'NGN'),
+                'status' => MerchantInvoiceStatus::Pending,
+                'billing_period_start' => now(),
+                'billing_period_end' => now()->addMonth(),
+                'due_at' => now(),
+            ]);
+        }
+
+        $this->recordTransaction($invoice, $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function markRenewalFailed(array $data): void
+    {
+        $subscriptionCode = Arr::get($data, 'subscription.subscription_code')
+            ?? Arr::get($data, 'subscription_code');
+
+        if (! $subscriptionCode) {
+            return;
+        }
+
+        $subscriptions = MerchantSubscription::query()
+            ->where('provider_subscription_code', $subscriptionCode)
+            ->whereIn('status', [
+                MerchantSubscriptionStatus::Active->value,
+                MerchantSubscriptionStatus::Trialing->value,
+            ])
+            ->get(['id', 'restaurant_id']);
+
+        MerchantSubscription::query()
+            ->whereKey($subscriptions->pluck('id'))
+            ->update([
+                'status' => MerchantSubscriptionStatus::PastDue,
+                'raw_provider_payload' => $data,
+            ]);
+
+        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->performanceCache
+            ->invalidateBillingEligibility($subscription->restaurant_id));
+    }
+
+    /**
+     * Flatten a Paystack subscription invoice payload into the transaction shape recordTransaction expects.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function transactionFromInvoicePayload(array $data): array
+    {
+        $transaction = is_array(Arr::get($data, 'transaction')) ? $data['transaction'] : [];
+
+        return [
+            ...$transaction,
+            'reference' => Arr::get($transaction, 'reference') ?: Arr::get($data, 'invoice_code'),
+            'status' => Arr::get($transaction, 'status') ?: Arr::get($data, 'status'),
+            'amount' => Arr::get($data, 'amount') ?? Arr::get($transaction, 'amount'),
+            'currency' => Arr::get($data, 'currency') ?? Arr::get($transaction, 'currency'),
+            'paid_at' => Arr::get($data, 'paid_at') ?: Arr::get($transaction, 'paid_at'),
+            'customer' => Arr::get($data, 'customer'),
+            'authorization' => Arr::get($data, 'authorization'),
+            'subscription' => Arr::get($data, 'subscription'),
+        ];
+    }
+
     protected function recordTransaction(MerchantInvoice $invoice, array $data): MerchantPayment
     {
         $isUpgrade = (bool) ($invoice->metadata['is_upgrade'] ?? false);
@@ -296,9 +417,7 @@ class BillingService
         $invoice->update([
             'merchant_subscription_id' => $subscription?->id ?? $invoice->merchant_subscription_id,
             'receipt_number' => Arr::get($data, 'id', $invoice->receipt_number),
-            'status' => $status === MerchantPaymentStatus::Success
-                ? MerchantInvoiceStatus::Paid
-                : MerchantInvoiceStatus::Failed,
+            'status' => $this->invoiceStatusFrom($status),
             'paid_at' => $paidAt ?? $invoice->paid_at,
             'due_at' => $paidAt ? $paidAt->addMonth() : $invoice->due_at,
             'billing_period_start' => $paidAt ?? $invoice->billing_period_start,
@@ -368,7 +487,9 @@ class BillingService
             ?? Arr::get($data, 'subscription_code')
             ?? 'local_'.$invoice->provider_reference;
 
-        $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'paid_at'))?->addMonth()
+        // Paystack knows when it will charge next; only guess when it doesn't say.
+        $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'subscription.next_payment_date'))
+            ?? $this->dateOrNull(Arr::get($data, 'paid_at'))?->addMonth()
             ?? now()->addMonth();
 
         MerchantSubscription::query()
@@ -417,15 +538,25 @@ class BillingService
             ->where('provider_subscription_code', $subscriptionCode)
             ->get(['id', 'restaurant_id']);
 
+        $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'next_payment_date'));
+
+        $attributes = [
+            'status' => $status,
+            'cancel_at_period_end' => $cancelAtPeriodEnd,
+            'next_payment_at' => $nextPaymentAt,
+            'canceled_at' => $status === MerchantSubscriptionStatus::Canceled ? now() : null,
+            'raw_provider_payload' => $data,
+        ];
+
+        // Eligibility and expiry both read current_period_end, so it has to track the date Paystack
+        // will next charge on — otherwise a live subscription still gets expired by the scheduler.
+        if ($nextPaymentAt && $status === MerchantSubscriptionStatus::Active) {
+            $attributes['current_period_end'] = $nextPaymentAt;
+        }
+
         MerchantSubscription::query()
             ->whereKey($subscriptions->pluck('id'))
-            ->update([
-                'status' => $status,
-                'cancel_at_period_end' => $cancelAtPeriodEnd,
-                'next_payment_at' => $this->dateOrNull(Arr::get($data, 'next_payment_date')),
-                'canceled_at' => $status === MerchantSubscriptionStatus::Canceled ? now() : null,
-                'raw_provider_payload' => $data,
-            ]);
+            ->update($attributes);
 
         $subscriptions->each(fn (MerchantSubscription $subscription) => $this->performanceCache
             ->invalidateBillingEligibility($subscription->restaurant_id));
@@ -438,6 +569,20 @@ class BillingService
             'failed' => MerchantPaymentStatus::Failed,
             'abandoned' => MerchantPaymentStatus::Abandoned,
             default => MerchantPaymentStatus::Pending,
+        };
+    }
+
+    /**
+     * A charge that has not resolved yet leaves the invoice pending — only a decline fails it,
+     * otherwise verifying a checkout before the guest pays would mark the invoice failed.
+     */
+    protected function invoiceStatusFrom(MerchantPaymentStatus $status): MerchantInvoiceStatus
+    {
+        return match ($status) {
+            MerchantPaymentStatus::Success => MerchantInvoiceStatus::Paid,
+            MerchantPaymentStatus::Failed => MerchantInvoiceStatus::Failed,
+            MerchantPaymentStatus::Abandoned => MerchantInvoiceStatus::Canceled,
+            MerchantPaymentStatus::Pending => MerchantInvoiceStatus::Pending,
         };
     }
 

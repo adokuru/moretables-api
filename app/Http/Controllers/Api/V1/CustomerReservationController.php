@@ -34,6 +34,8 @@ class CustomerReservationController extends Controller
 
     /**
      * Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing. The guest and restaurant owner are notified by email.
+     *
+     * Slots under a card-hold cancellation policy require `card_hold_reference`: either a `rch_` reference from the card-hold endpoint, or the reference of a Paystack transaction the frontend collected itself. In the latter case the transaction is verified here, the card authorization is saved, and the verification charge is refunded. A 422 is returned when the reference cannot be verified or has already been used.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreReservationRequest $request): JsonResponse
