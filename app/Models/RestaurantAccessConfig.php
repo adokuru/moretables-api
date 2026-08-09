@@ -56,13 +56,14 @@ class RestaurantAccessConfig extends Model
             [
                 'name' => 'Operations',
                 'slug' => 'operations',
-                'description' => 'Manage reservations, Manage waitlist, Seat guests / check-in, Edit floor plan & tables, Table status management, Basic restaurant settings, Shift-level overrides',
+                'description' => 'Manage reservations, Manage waitlist, Seat guests / check-in, Edit floor plan & tables, Table status management, Basic restaurant settings, Shift-level overrides, Manage staff',
                 'permissions' => [
                     'restaurants.view',
                     'reservations.view',
                     'reservations.manage',
                     'waitlist.manage',
                     'tables.manage',
+                    'staff.manage',
                 ],
             ],
             [

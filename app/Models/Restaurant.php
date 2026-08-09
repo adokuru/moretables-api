@@ -76,6 +76,7 @@ class Restaurant extends Model implements HasMedia
         'display_recommended_table_assignment',
         'display_guest_full_name',
         'show_guest_preferences',
+        'show_cleaned_tables',
     ];
 
     /**
@@ -128,6 +129,7 @@ class Restaurant extends Model implements HasMedia
             'display_recommended_table_assignment' => 'boolean',
             'display_guest_full_name' => 'boolean',
             'show_guest_preferences' => 'boolean',
+            'show_cleaned_tables' => 'boolean',
             'is_profile_published' => 'boolean',
             'contact_email_verified_at' => 'datetime',
             'contact_phone_verified_at' => 'datetime',

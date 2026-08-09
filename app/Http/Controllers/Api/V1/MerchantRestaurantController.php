@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantDetailResource;
+use App\Models\Permission;
 use App\Models\Restaurant;
 use App\Models\Role;
 use App\Services\AuditLogService;
@@ -69,14 +70,16 @@ class MerchantRestaurantController extends Controller
                     'timezone' => $restaurant->timezone ?: config('app.timezone'),
                     'permissions' => collect([
                         'restaurants.view',
-                        'restaurants.manage',
                         'reservations.view',
                         'reservations.manage',
                         'waitlist.manage',
-                        'tables.manage',
                         'staff.manage',
-                        'audit_logs.view',
-                    ])->filter(fn (string $permission): bool => $user->hasRestaurantPermission($permission, $restaurant))->values(),
+                        ...Permission::restaurantAccessConfigPermissions(),
+                    ])->unique()->filter(fn (string $permission): bool => $user->hasRestaurantPermission($permission, $restaurant))->values(),
+                    // Gates the merchant /admin back-office section (Restaurant Settings, Billing,
+                    // Accounts, Integrations, Marketing, Guest Communication, ...) as distinct from
+                    // day-to-day /dashboard front-of-house use — see Permission::adminSectionPermissions().
+                    'can_access_admin' => $user->hasAnyRestaurantPermission(Permission::adminSectionPermissions(), $restaurant),
                     'is_profile_published' => (bool) $restaurant->is_profile_published,
                     'onboarding_current_step' => $restaurant->onboarding_current_step,
                     'cuisines' => $restaurant->cuisines->pluck('name')->values(),

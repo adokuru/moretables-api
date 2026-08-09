@@ -27,7 +27,8 @@ it('shows the default dashboard preferences when none are stored', function (): 
         ->assertSuccessful()
         ->assertJsonPath('preferences.display_recommended_table_assignment', false)
         ->assertJsonPath('preferences.display_guest_full_name', true)
-        ->assertJsonPath('preferences.show_guest_preferences', false);
+        ->assertJsonPath('preferences.show_guest_preferences', false)
+        ->assertJsonPath('preferences.show_cleaned_tables', false);
 });
 
 it('updates the display_recommended_table_assignment preference', function (): void {
@@ -69,6 +70,20 @@ it('updates display_guest_full_name and show_guest_preferences independently of 
         ->and($restaurant->show_guest_preferences)->toBeTrue();
 });
 
+it('updates the show_cleaned_tables preference independently of the others', function (): void {
+    $staff = User::factory()->create();
+    assignScopedRole($staff, Role::RestaurantStaff, $this->organization, $this->restaurant);
+    Sanctum::actingAs($staff);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/dashboard-preferences", [
+        'show_cleaned_tables' => true,
+    ])->assertSuccessful()
+        ->assertJsonPath('preferences.show_cleaned_tables', true)
+        ->assertJsonPath('preferences.display_guest_full_name', true);
+
+    expect(Restaurant::query()->findOrFail($this->restaurant->id)->show_cleaned_tables)->toBeTrue();
+});
+
 it('validates the preference payload', function (): void {
     $staff = User::factory()->create();
     assignScopedRole($staff, Role::RestaurantStaff, $this->organization, $this->restaurant);
@@ -78,8 +93,9 @@ it('validates the preference payload', function (): void {
         'display_recommended_table_assignment' => 'not-a-boolean',
         'display_guest_full_name' => 'not-a-boolean',
         'show_guest_preferences' => 'not-a-boolean',
+        'show_cleaned_tables' => 'not-a-boolean',
     ])->assertUnprocessable()
-        ->assertJsonValidationErrors(['display_recommended_table_assignment', 'display_guest_full_name', 'show_guest_preferences']);
+        ->assertJsonValidationErrors(['display_recommended_table_assignment', 'display_guest_full_name', 'show_guest_preferences', 'show_cleaned_tables']);
 });
 
 it('forbids a role without tables.manage from updating dashboard preferences', function (): void {

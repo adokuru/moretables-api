@@ -6996,12 +6996,16 @@
                                                 },
                                                 "show_guest_preferences": {
                                                     "type": "boolean"
+                                                },
+                                                "show_cleaned_tables": {
+                                                    "type": "boolean"
                                                 }
                                             },
                                             "required": [
                                                 "display_recommended_table_assignment",
                                                 "display_guest_full_name",
-                                                "show_guest_preferences"
+                                                "show_guest_preferences",
+                                                "show_cleaned_tables"
                                             ]
                                         }
                                     },
@@ -7088,12 +7092,16 @@
                                                 },
                                                 "show_guest_preferences": {
                                                     "type": "boolean"
+                                                },
+                                                "show_cleaned_tables": {
+                                                    "type": "boolean"
                                                 }
                                             },
                                             "required": [
                                                 "display_recommended_table_assignment",
                                                 "display_guest_full_name",
-                                                "show_guest_preferences"
+                                                "show_guest_preferences",
+                                                "show_cleaned_tables"
                                             ]
                                         }
                                     },
@@ -41826,6 +41834,9 @@
                         "type": "boolean"
                     },
                     "show_guest_preferences": {
+                        "type": "boolean"
+                    },
+                    "show_cleaned_tables": {
                         "type": "boolean"
                     }
                 },
