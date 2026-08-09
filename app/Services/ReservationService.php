@@ -596,11 +596,24 @@ class ReservationService
                     ]);
                 }
 
-                $tableHasSeatedParty = Reservation::query()
+                $seatedOnTable = Reservation::query()
+                    ->with(['user', 'guestContact', 'restaurant'])
                     ->where('restaurant_table_id', $reservation->restaurant_table_id)
                     ->where('status', ReservationStatus::Seated)
                     ->whereKeyNot($reservation->id)
-                    ->exists();
+                    ->first();
+
+                if ($seatedOnTable !== null) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => [sprintf(
+                            'Table %s is still seated with %s\'s reservation from %s. Mark that reservation finished to free the table, or assign a different one.',
+                            $reservation->table->name,
+                            $this->guestDisplayName($seatedOnTable),
+                            $this->formatReservationWhen($seatedOnTable),
+                        )],
+                    ]);
+                }
+
                 $tableIsAvailable = $this->availabilityService->isTableAvailable(
                     restaurant: $reservation->restaurant,
                     table: $reservation->table,
@@ -609,9 +622,12 @@ class ReservationService
                     excludingReservationId: $reservation->id,
                 );
 
-                if ($tableHasSeatedParty || ! $tableIsAvailable) {
+                if (! $tableIsAvailable) {
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => ['The assigned table is no longer available. Assign a new table before seating this reservation.'],
+                        'restaurant_table_id' => [sprintf(
+                            'Table %s is not available for this reservation\'s time. Assign a different table.',
+                            $reservation->table->name,
+                        )],
                     ]);
                 }
 
@@ -1380,6 +1396,28 @@ class ReservationService
                 'starts_at' => ['The selected time is outside the restaurant booking hours.'],
             ]);
         }
+    }
+
+    private function guestDisplayName(Reservation $reservation): string
+    {
+        $name = $reservation->user?->fullName()
+            ?? trim(($reservation->guestContact?->first_name ?? '').' '.($reservation->guestContact?->last_name ?? ''));
+
+        return $name !== '' ? $name : 'a guest';
+    }
+
+    /**
+     * "Mon, Aug 10 at 6:00 PM" in the restaurant's own timezone.
+     */
+    private function formatReservationWhen(Reservation $reservation): string
+    {
+        if ($reservation->starts_at === null) {
+            return 'an unscheduled time';
+        }
+
+        $timezone = $reservation->restaurant?->timezone ?: config('app.timezone');
+
+        return $reservation->starts_at->copy()->timezone($timezone)->format('D, M j \a\t g:i A');
     }
 
     protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed
