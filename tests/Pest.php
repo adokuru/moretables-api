@@ -5,13 +5,16 @@ use App\Models\BillingPlan;
 use App\Models\MerchantSubscription;
 use App\Models\Organization;
 use App\Models\Restaurant;
+use App\Models\RestaurantAccessConfig;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
+use App\Services\ScopedRoleAssignmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /*
@@ -54,6 +57,33 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Grants a staff member exactly the given permissions for a restaurant via a
+ * fresh custom RestaurantAccessConfig (not one of the 5 named defaults) —
+ * used to test that a single specific permission alone (without the broader
+ * restaurants.manage/restaurants.view) is sufficient for a given check.
+ *
+ * @param  list<string>  $permissions
+ */
+function grantAccessConfigPermissions(User $user, Restaurant $restaurant, array $permissions): void
+{
+    $config = RestaurantAccessConfig::query()->create([
+        'restaurant_id' => $restaurant->id,
+        'name' => 'Test Config',
+        'slug' => 'test-config-'.Str::random(8),
+        'description' => 'Test-only access config.',
+        'permissions' => $permissions,
+        'is_default' => false,
+    ]);
+
+    app(ScopedRoleAssignmentService::class)->syncRestaurantAccessConfig(
+        user: $user,
+        restaurant: $restaurant,
+        accessConfig: $config,
+        assignedBy: $user->id,
+    );
+}
 
 function assignScopedRole(
     User $user,

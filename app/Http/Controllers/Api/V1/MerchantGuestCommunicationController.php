@@ -15,7 +15,10 @@ class MerchantGuestCommunicationController extends Controller
 {
     public function show(Restaurant $restaurant): JsonResponse
     {
-        abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless(request()->user()->hasAnyRestaurantPermission(
+            ['restaurants.view', 'communications.manage', 'messaging.manage'],
+            $restaurant,
+        ), 403);
 
         return response()->json([
             'guest_communication' => GuestCommunicationSettingResource::make($this->settingFor($restaurant)),
@@ -26,7 +29,7 @@ class MerchantGuestCommunicationController extends Controller
         UpdateGuestCommunicationSettingRequest $request,
         Restaurant $restaurant,
     ): JsonResponse {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'messaging.manage'], $restaurant), 403);
 
         $setting = $this->settingFor($restaurant);
         $setting->update([
@@ -43,7 +46,7 @@ class MerchantGuestCommunicationController extends Controller
         UpdateGuestCommunicationSettingRequest $request,
         Restaurant $restaurant,
     ): JsonResponse {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         $setting = $this->settingFor($restaurant);
         $setting->update([

@@ -27,6 +27,27 @@ beforeEach(function (): void {
     Sanctum::actingAs($this->owner);
 });
 
+it('allows a staff member with only marketing.manage (no restaurants.view/manage) to list and create reward rules', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['marketing.manage']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules")->assertSuccessful();
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules", [
+        'points' => 150,
+        'days' => [3],
+    ])->assertCreated();
+});
+
+it('forbids a staff member without marketing.manage or restaurants.view/manage from listing reward rules', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['reservations.view']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules")->assertForbidden();
+});
+
 it('creates a reward rule for days and times', function (): void {
     $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules", [
         'points' => 300,

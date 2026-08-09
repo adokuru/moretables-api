@@ -39,7 +39,7 @@ class MerchantBillingController extends Controller
 
     public function show(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'billing.manage'], $restaurant), 403);
 
         return response()->json([
             'billing' => MerchantBillingResource::make($this->billingPayload($restaurant)),
@@ -48,7 +48,7 @@ class MerchantBillingController extends Controller
 
     public function checkout(StartBillingCheckoutRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'billing.manage'], $restaurant), 403);
 
         if ($this->billingService->isRestaurantBillable($restaurant)) {
             return response()->json([
@@ -80,7 +80,7 @@ class MerchantBillingController extends Controller
 
     public function upgrade(StartBillingCheckoutRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'billing.manage'], $restaurant), 403);
 
         $plan = BillingPlan::query()
             ->where('slug', $request->validated('plan'))
@@ -106,7 +106,7 @@ class MerchantBillingController extends Controller
 
     public function verify(Request $request, Restaurant $restaurant, string $reference): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'billing.manage'], $restaurant), 403);
 
         $verification = $this->billingService->verifyCheckout($restaurant, $reference);
 
@@ -119,7 +119,7 @@ class MerchantBillingController extends Controller
 
     public function invoices(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'billing.manage'], $restaurant), 403);
 
         $invoices = $restaurant->invoices()
             ->with(['plan', 'restaurant.organization', 'payments'])
@@ -140,7 +140,7 @@ class MerchantBillingController extends Controller
 
     public function downloadInvoice(Request $request, Restaurant $restaurant, MerchantInvoice $invoice): Response
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'billing.manage'], $restaurant), 403);
         abort_unless((int) $invoice->restaurant_id === (int) $restaurant->id, 404);
 
         $invoice->loadMissing(['restaurant.organization', 'plan', 'payments.paymentMethod']);

@@ -42,6 +42,19 @@ function validCancellationPolicyPayload(array $overrides = []): array
     ], $overrides);
 }
 
+it('allows a staff member with only policies.manage (no restaurants.view/manage) to list and create cancellation policies', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['policies.manage']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies")->assertSuccessful();
+
+    postJson(
+        "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies",
+        validCancellationPolicyPayload(),
+    )->assertCreated();
+});
+
 it('lists cancellation policies for a restaurant', function (): void {
     RestaurantCancellationPolicy::factory()->count(2)->create([
         'restaurant_id' => $this->restaurant->id,

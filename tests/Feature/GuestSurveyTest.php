@@ -37,6 +37,35 @@ beforeEach(function (): void {
     Sanctum::actingAs($this->owner);
 });
 
+it('allows a staff member with only communications.manage to list and create surveys', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['communications.manage']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys")->assertSuccessful();
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys", [
+        'template_key' => 'blank',
+        'title' => 'Staff Survey',
+    ])->assertCreated();
+});
+
+it('requires reporting.export (not communications.manage alone) to export survey responses', function (): void {
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create(['status' => 'published', 'publication_sequence' => 1, 'published_at' => now()]);
+
+    $commsOnly = User::factory()->create();
+    grantAccessConfigPermissions($commsOnly, $this->restaurant, ['communications.manage']);
+    Sanctum::actingAs($commsOnly);
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$survey->id}/responses/export")
+        ->assertForbidden();
+
+    $exporter = User::factory()->create();
+    grantAccessConfigPermissions($exporter, $this->restaurant, ['reporting.export']);
+    Sanctum::actingAs($exporter);
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$survey->id}/responses/export")
+        ->assertSuccessful();
+});
+
 it('creates the post dining template with delivery settings', function (): void {
     $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys", [
         'template_key' => 'post_dining',

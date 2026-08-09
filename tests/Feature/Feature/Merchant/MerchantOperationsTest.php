@@ -348,6 +348,41 @@ it('allows restaurant managers to configure guest communication messaging', func
         ->assertJsonValidationErrors('enabled');
 });
 
+it('allows messaging.manage to toggle automated messaging but not reservation messaging', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['messaging.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication')
+        ->assertOk();
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => true,
+    ])->assertOk();
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/reservation-messaging', [
+        'enabled' => true,
+    ])->assertForbidden();
+});
+
+it('allows communications.manage to toggle reservation messaging but not automated messaging', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['communications.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/reservation-messaging', [
+        'enabled' => true,
+    ])->assertOk();
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => true,
+    ])->assertForbidden();
+});
+
 it('emails a guest when operations staff creates a walk-in reservation with guest email', function () {
     Notification::fake();
     $data = createBookableRestaurant();

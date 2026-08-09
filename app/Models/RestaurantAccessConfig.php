@@ -42,6 +42,13 @@ class RestaurantAccessConfig extends Model
                 'name' => 'Principal Admin',
                 'slug' => 'principal_admin',
                 'description' => 'All reservation management, Floor plan configuration, User management, Restaurant Settings, Integrations, Marketing tools, Billing and subscription, Reporting & exports, Guest CRM',
+                // "Everything" — every permission that exists, per explicit product
+                // decision (Principal Admin should visibly be all-access, not just
+                // mostly-access via the restaurants.manage fallback). Keep this in
+                // sync with Permission::restaurantAccessConfigPermissions() (the 12
+                // checkboxes) + staff.manage/reservations.view/reservations.manage/
+                // waitlist.manage (the 3 baseline dashboard permissions) if either
+                // list ever grows.
                 'permissions' => [
                     'restaurants.view',
                     'restaurants.manage',
@@ -51,6 +58,13 @@ class RestaurantAccessConfig extends Model
                     'tables.manage',
                     'staff.manage',
                     'audit_logs.view',
+                    'billing.manage',
+                    'integrations.manage',
+                    'communications.manage',
+                    'marketing.manage',
+                    'messaging.manage',
+                    'policies.manage',
+                    'reporting.export',
                 ],
             ],
             [

@@ -85,6 +85,23 @@ it('forbids reporting without reservations.view permission', function (): void {
         ->assertForbidden();
 });
 
+it('allows a staff member with only audit_logs.view to view but not export reporting', function (): void {
+    $viewer = User::factory()->create();
+    grantAccessConfigPermissions($viewer, $this->data['restaurant'], ['audit_logs.view']);
+    Sanctum::actingAs($viewer);
+
+    $this->getJson($this->reportingBase.'/shift-occupancy?'.$this->periodQuery)->assertSuccessful();
+    $this->get($this->reportingBase.'/reservations/export?'.$this->periodQuery)->assertForbidden();
+});
+
+it('allows a staff member with only reporting.export to export reporting even without audit_logs.view', function (): void {
+    $exporter = User::factory()->create();
+    grantAccessConfigPermissions($exporter, $this->data['restaurant'], ['reporting.export']);
+    Sanctum::actingAs($exporter);
+
+    $this->get($this->reportingBase.'/reservations/export?'.$this->periodQuery)->assertSuccessful();
+});
+
 it('returns reporting filter metadata', function (): void {
     $this->getJson($this->reportingBase.'/filters')
         ->assertOk()
@@ -205,6 +222,13 @@ it('returns guest export list', function (): void {
 });
 
 it('exports guest frequency as csv', function (): void {
+    // Exporting is a distinct capability from viewing (reporting.export vs
+    // audit_logs.view) — $this->staff (Role::AnalyticsReporting) only has
+    // audit_logs.view, so a dedicated exporter is needed here.
+    $exporter = User::factory()->create();
+    grantAccessConfigPermissions($exporter, $this->data['restaurant'], ['reporting.export']);
+    Sanctum::actingAs($exporter);
+
     $response = $this->get($this->reportingBase.'/guest-frequency/export?'.$this->periodQuery.'&frequency_period=all_time');
 
     $response->assertOk();
@@ -213,6 +237,10 @@ it('exports guest frequency as csv', function (): void {
 });
 
 it('exports reservations as csv', function (): void {
+    $exporter = User::factory()->create();
+    grantAccessConfigPermissions($exporter, $this->data['restaurant'], ['reporting.export']);
+    Sanctum::actingAs($exporter);
+
     $response = $this->get($this->reportingBase.'/reservations/export?'.$this->periodQuery);
 
     $response->assertOk();
@@ -221,6 +249,10 @@ it('exports reservations as csv', function (): void {
 });
 
 it('exports guest list as csv', function (): void {
+    $exporter = User::factory()->create();
+    grantAccessConfigPermissions($exporter, $this->data['restaurant'], ['reporting.export']);
+    Sanctum::actingAs($exporter);
+
     $response = $this->get($this->reportingBase.'/guest-export/export?'.$this->periodQuery);
 
     $response->assertOk();

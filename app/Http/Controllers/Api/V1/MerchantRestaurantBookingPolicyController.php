@@ -15,7 +15,7 @@ class MerchantRestaurantBookingPolicyController extends Controller
 {
     public function show(Request $request, Restaurant $restaurant): RestaurantBookingPolicyResource
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'policies.manage'], $restaurant), 403);
 
         $policy = $this->policyFor($restaurant);
 

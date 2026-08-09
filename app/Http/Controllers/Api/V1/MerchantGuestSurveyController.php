@@ -25,7 +25,7 @@ class MerchantGuestSurveyController extends Controller
     #[Response(200, type: 'array{data: list<array{key: string, title: string, description: string, questions: list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>}>}')]
     public function templates(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'communications.manage'], $restaurant), 403);
 
         return response()->json(['data' => [
             [
@@ -41,7 +41,7 @@ class MerchantGuestSurveyController extends Controller
     #[Response(200, type: 'array{data: list<array{id: int, version: int, publication_sequence: int|null, title: string, description: string|null, logo_url: string|null, status: string, questions: list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>, settings: array{send_delay_minutes: int, channels: list<string>}, published_at: string|null}>}')]
     public function index(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'communications.manage'], $restaurant), 403);
 
         return response()->json([
             'data' => GuestSurveyResource::collection($restaurant->guestSurveys()->latest()->get())->resolve($request),
@@ -50,7 +50,7 @@ class MerchantGuestSurveyController extends Controller
 
     public function store(StoreGuestSurveyRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         $validated = $request->validated();
         $survey = DB::transaction(function () use ($restaurant, $validated): GuestSurvey {
@@ -75,7 +75,7 @@ class MerchantGuestSurveyController extends Controller
     public function show(Request $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'communications.manage'], $restaurant), 403);
 
         return response()->json(['survey' => GuestSurveyResource::make($survey->load('restaurant'))->resolve($request)]);
     }
@@ -83,7 +83,7 @@ class MerchantGuestSurveyController extends Controller
     public function update(UpdateGuestSurveyRequest $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         $survey = DB::transaction(function () use ($restaurant, $survey, $request): GuestSurvey {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
@@ -107,7 +107,7 @@ class MerchantGuestSurveyController extends Controller
     public function publish(Request $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         DB::transaction(function () use ($restaurant, $survey): void {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
@@ -136,7 +136,7 @@ class MerchantGuestSurveyController extends Controller
     public function responses(Request $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'communications.manage'], $restaurant), 403);
 
         $responses = GuestSurveyResponse::query()
             ->whereHas('invitation', fn ($query) => $query->where('guest_survey_id', $survey->id))
@@ -153,7 +153,11 @@ class MerchantGuestSurveyController extends Controller
     public function exportResponses(Request $request, Restaurant $restaurant, GuestSurvey $survey): StreamedResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        // Export is gated by reporting.export specifically, not restaurants.view/
+        // communications.manage — viewing and exporting are meant to be distinct
+        // capabilities (see docs/PERMISSION_MATRIX.md). restaurants.manage kept
+        // as the usual super-permission fallback.
+        abort_unless($request->user()->hasAnyRestaurantPermission(['reporting.export', 'restaurants.manage'], $restaurant), 403);
 
         $responses = GuestSurveyResponse::query()
             ->whereHas('invitation', fn ($query) => $query->where('guest_survey_id', $survey->id))
@@ -172,7 +176,7 @@ class MerchantGuestSurveyController extends Controller
     public function destroy(Request $request, Restaurant $restaurant, GuestSurvey $survey): JsonResponse
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         DB::transaction(function () use ($restaurant, $survey): void {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
