@@ -54,12 +54,12 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
         return [
             'business_name' => ['required', 'string', 'max:255'],
             'business_slug' => ['nullable', 'string', 'max:255', Rule::unique('organizations', 'slug')],
-            'business_phone' => ['required', 'string', 'max:30'],
+            'business_phone' => ['nullable', 'string', 'max:30'],
             'owner_name' => ['required', 'string', 'max:255'],
             'owner_phone' => ['required', 'string', 'max:30', Rule::unique('users', 'phone')],
             'owner_email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
-            'business_email' => ['required', 'email', 'max:255'],
-            'business_website' => ['required', 'url', 'max:2048'],
+            'business_email' => ['nullable', 'email', 'max:255'],
+            'business_website' => ['nullable', 'url', 'max:2048'],
             'billing_email' => ['nullable', 'email', 'max:255'],
             'tax_id' => ['nullable', 'string', 'max:255'],
             'registration_number' => ['nullable', 'string', 'max:255'],
@@ -212,12 +212,9 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
     {
         return [
             'business_name.required' => 'A business name is required.',
-            'business_phone.required' => 'A business phone number is required.',
             'owner_name.required' => 'An owner or manager name is required.',
             'owner_phone.required' => 'An owner or manager phone number is required.',
             'owner_email.required' => 'An owner email address is required so we can create the owner account.',
-            'business_email.required' => 'A business email address is required.',
-            'business_website.required' => 'A business website is required.',
             'restaurants_count.required' => 'Please specify how many restaurants are being onboarded.',
             'restaurants.required' => 'At least one restaurant entry is requ ired.',
             'restaurants.*.name.required' => 'Each restaurant needs a name.',

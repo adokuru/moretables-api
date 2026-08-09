@@ -8019,7 +8019,7 @@
        "mode": "raw",
        "raw": "{\n  \"business_name\": \"Chicken Republic Limited\",\n  \"business_phone\": \"+2348000000000\",\n  \"owner_name\": \"Ada Okafor\",\n  \"owner_phone\": \"+2348011111111\",\n  \"owner_email\": \"ada@chickenrepublic.example\",\n  \"business_email\": \"contact@chickenrepublic.example\",\n  \"business_website\": \"https://chickenrepublic.example\",\n  \"restaurants_count\": 1,\n  \"restaurants\": [\n    {\n      \"name\": \"Chicken Republic Ikeja\",\n      \"email\": \"ikeja@chickenrepublic.example\",\n      \"phone\": \"+2348022222222\",\n      \"description\": \"Flagship branch.\",\n      \"cuisine_type\": \"Nigerian\",\n      \"average_price_range\": \"$$\",\n      \"dining_style\": \"Casual Dining\",\n      \"dress_code\": \"Casual\",\n      \"address_line_1\": \"12 Allen Avenue, Ikeja\",\n      \"address_line_2\": \"\",\n      \"latitude\": 6.6018,\n      \"longitude\": 3.3515,\n      \"menu\": {\n        \"mode\": \"link\",\n        \"link\": \"https://chickenrepublic.example/menu\"\n      }\n    }\n  ]\n}"
       },
-      "description": "Admin step-1/2/3 onboarding payload submitted as one final request. Optional org fields (billing_email, business_city, etc.) and restaurant sections (hours, accessibility, payment_options, seating settings) may be omitted."
+      "description": "Admin step-1/2/3 onboarding payload submitted as one final request. Business email, business phone, and business website are optional. Other optional org fields (billing_email, business_city, etc.) and restaurant sections (hours, accessibility, payment_options, seating settings) may be omitted."
      }
     },
     {

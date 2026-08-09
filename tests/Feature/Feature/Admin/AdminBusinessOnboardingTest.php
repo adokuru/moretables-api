@@ -217,6 +217,48 @@ it('allows business admins to onboard a business with the minimal restaurant upl
     expect((float) $restaurant->longitude)->toBe(3.3947);
 });
 
+it('allows onboarding without business email, phone, or website', function (): void {
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+    Sanctum::actingAs($admin);
+
+    $response = $this->postJson('/api/v1/admin/organizations/onboard', [
+        'business_name' => 'Optional Contact Group',
+        'owner_name' => 'Optional Owner',
+        'owner_phone' => '+2348000000701',
+        'owner_email' => 'optional-owner@example.com',
+        'restaurants_count' => 1,
+        'restaurants' => [
+            [
+                'name' => 'Optional Contact Bistro',
+                'email' => 'hello@optional-contact-bistro.example.com',
+                'cuisine_type' => 'Nigerian',
+                'average_price_range' => '50k and above',
+                'dining_style' => 'fine',
+                'dress_code' => 'smart',
+                'phone' => '+2348000000702',
+                'address_line_1' => '1 Kapital Road',
+                'latitude' => 9.0475458,
+                'longitude' => 7.502173,
+            ],
+        ],
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('organization.business_email', null)
+        ->assertJsonPath('organization.business_phone', null)
+        ->assertJsonPath('organization.website', null);
+
+    $organization = Organization::query()->where('name', 'Optional Contact Group')->firstOrFail();
+
+    expect($organization->business_email)->toBeNull()
+        ->and($organization->business_phone)->toBeNull()
+        ->and($organization->website)->toBeNull();
+});
+
 it('accepts long tracked business website urls during onboarding', function (): void {
     Notification::fake();
     $this->seed(RoleAndPermissionSeeder::class);

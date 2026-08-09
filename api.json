@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost/api/v1"
+            "url": "http://localhost:8000/api/v1"
         }
     ],
     "tags": [
@@ -3039,6 +3039,7 @@
         "/reservations": {
             "post": {
                 "operationId": "customerReservation.store",
+                "description": "Slots under a card-hold cancellation policy require `card_hold_reference`: either a `rch_` reference from the card-hold endpoint, or the reference of a Paystack transaction the frontend collected itself. In the latter case the transaction is verified here, the card authorization is saved, and the verification charge is refunded. A 422 is returned when the reference cannot be verified or has already been used.",
                 "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing. The guest and restaurant owner are notified by email",
                 "tags": [
                     "Customer Reservations"
@@ -32912,6 +32913,7 @@
         "/billing/paystack/webhook": {
             "post": {
                 "operationId": "v1.paystackWebhook",
+                "summary": "Receive Paystack webhooks. Requires a valid `x-paystack-signature` header. Handled events:\n`charge.success` (checkout payments and reservation card holds), `invoice.update` (subscription\nrenewal charges \u2014 this is what moves a subscription into its next billing period),\n`invoice.payment_failed` (declined renewal, marks the subscription past due), and\n`subscription.create` / `subscription.enable` / `subscription.not_renew` / `subscription.disable`.\nAny other event is acknowledged and ignored",
                 "tags": [
                     "PaystackWebhook"
                 ],
@@ -34338,6 +34340,18 @@
                     "name": {
                         "type": "string"
                     },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "description": {
                         "type": [
                             "string",
@@ -34370,32 +34384,20 @@
                             "null"
                         ],
                         "format": "date-time"
-                    },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
+                    "category",
+                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at",
-                    "category",
-                    "floor_type"
+                    "updated_at"
                 ],
                 "title": "DiningArea"
             },
@@ -37767,7 +37769,10 @@
                         "maxLength": 255
                     },
                     "business_phone": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "maxLength": 30
                     },
                     "owner_name": {
@@ -37784,12 +37789,18 @@
                         "maxLength": 255
                     },
                     "business_email": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "email",
                         "maxLength": 255
                     },
                     "business_website": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "uri",
                         "maxLength": 2048
                     },
@@ -38222,12 +38233,9 @@
                 },
                 "required": [
                     "business_name",
-                    "business_phone",
                     "owner_name",
                     "owner_phone",
                     "owner_email",
-                    "business_email",
-                    "business_website",
                     "restaurants_count",
                     "restaurants"
                 ],
@@ -39876,6 +39884,12 @@
                     "party_size": {
                         "type": "integer",
                         "minimum": 1
+                    },
+                    "dining_area_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "notes": {
                         "type": [
