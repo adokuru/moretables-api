@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\WaitlistEntryUpdated;
 use App\Listeners\Concerns\NotifiesRestaurantStaff;
+use App\Models\WaitlistEntry;
 use App\Notifications\RestaurantActivityNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
@@ -42,10 +43,11 @@ class CreateAvailabilityAlertNotification implements ShouldQueue
         $guestName = $alert->user?->fullName()
             ?? trim(($alert->guestContact?->first_name ?? '').' '.($alert->guestContact?->last_name ?? ''));
         $guestName = $guestName !== '' ? $guestName : 'A guest';
+        $window = $this->formatWindow($alert);
 
         [$title, $message] = match ($event->action) {
-            'created' => ['New availability alert', sprintf('%s asked to be notified for a table of %d.', $guestName, $alert->party_size)],
-            'notified' => ['Table opened up', sprintf('%s was notified that a table is now available.', $guestName)],
+            'created' => ['New availability alert', sprintf('%s asked to be notified for a table of %d, %s.', $guestName, $alert->party_size, $window)],
+            'notified' => ['Table opened up', sprintf('%s was notified that a table is now available for %s.', $guestName, $window)],
         };
 
         Notification::send(
@@ -58,5 +60,23 @@ class CreateAvailabilityAlertNotification implements ShouldQueue
                 route: '/dashboard/notice-me',
             ),
         );
+    }
+
+    /**
+     * "Mon, Aug 10, 6:00 PM - 9:00 PM" in the restaurant's own timezone.
+     */
+    private function formatWindow(WaitlistEntry $alert): string
+    {
+        if ($alert->preferred_starts_at === null) {
+            return 'an unscheduled window';
+        }
+
+        $timezone = $alert->restaurant?->timezone ?: config('app.timezone');
+        $start = $alert->preferred_starts_at->copy()->timezone($timezone);
+        $end = $alert->preferred_ends_at?->copy()->timezone($timezone);
+
+        return $end
+            ? sprintf('%s, %s - %s', $start->format('D, M j'), $start->format('g:i A'), $end->format('g:i A'))
+            : $start->format('D, M j \a\t g:i A');
     }
 }

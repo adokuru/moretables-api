@@ -80,14 +80,16 @@ it('names the table and the staff member who assigned it in the table_assigned n
     $reservation = Reservation::factory()->for($restaurant)->create([
         'user_id' => User::factory()->create(['first_name' => 'Test', 'last_name' => 'Customer']),
         'restaurant_table_id' => $table->id,
+        'starts_at' => now()->addDay()->setTime(18, 0),
     ]);
 
     event(new ReservationUpdated($reservation, 'table_assigned', $assigner));
 
-    Notification::assertSentTo($staff, RestaurantActivityNotification::class, function ($notification) use ($staff) {
+    Notification::assertSentTo($staff, RestaurantActivityNotification::class, function ($notification) use ($staff, $reservation, $restaurant) {
         $data = $notification->toArray($staff);
+        $when = $reservation->starts_at->copy()->timezone($restaurant->timezone)->format('D, M j \a\t g:i A');
 
-        expect($data['message'])->toBe('Test Customer was assigned to Table 4 by Jane Doe.');
+        expect($data['message'])->toBe("Test Customer ({$when}) was assigned to Table 4 by Jane Doe.");
 
         return true;
     });
