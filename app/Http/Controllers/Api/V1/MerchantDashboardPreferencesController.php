@@ -12,10 +12,10 @@ use Illuminate\Http\Request;
 /**
  * Display preferences for the front-of-house dashboard (Nav/Sidebar → Settings →
  * Preferences), as distinct from the business-facing restaurant settings served
- * by MerchantRestaurantSettingsController. Three booleans today
+ * by MerchantRestaurantSettingsController. Four booleans today
  * (display_recommended_table_assignment, display_guest_full_name,
- * show_guest_preferences); more dashboard toggles can be added to the same
- * resource later.
+ * show_guest_preferences, show_cleaned_tables); more dashboard toggles can be
+ * added to the same resource later.
  */
 #[Group('Merchant Restaurant Settings', weight: 31)]
 class MerchantDashboardPreferencesController extends Controller
@@ -42,7 +42,7 @@ class MerchantDashboardPreferencesController extends Controller
     }
 
     /**
-     * @return array{display_recommended_table_assignment: bool, display_guest_full_name: bool, show_guest_preferences: bool}
+     * @return array{display_recommended_table_assignment: bool, display_guest_full_name: bool, show_guest_preferences: bool, show_cleaned_tables: bool}
      */
     private function preferences(Restaurant $restaurant): array
     {
@@ -50,6 +50,7 @@ class MerchantDashboardPreferencesController extends Controller
             'display_recommended_table_assignment' => $restaurant->display_recommended_table_assignment,
             'display_guest_full_name' => $restaurant->display_guest_full_name,
             'show_guest_preferences' => $restaurant->show_guest_preferences,
+            'show_cleaned_tables' => $restaurant->show_cleaned_tables,
         ];
     }
 }

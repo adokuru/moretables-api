@@ -20,6 +20,7 @@ class UpdateDashboardPreferencesRequest extends FormRequest
             'display_recommended_table_assignment' => ['sometimes', 'boolean'],
             'display_guest_full_name' => ['sometimes', 'boolean'],
             'show_guest_preferences' => ['sometimes', 'boolean'],
+            'show_cleaned_tables' => ['sometimes', 'boolean'],
         ];
     }
 }
