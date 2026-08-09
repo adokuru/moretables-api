@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\Reservation;
+use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -18,6 +19,7 @@ class ReservationUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit, 
     public function __construct(
         public Reservation $reservation,
         public string $action,
+        public ?User $actor = null,
     ) {}
 
     public function broadcastOn(): array
@@ -52,6 +54,7 @@ class ReservationUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit, 
             'restaurant_table_id' => $this->reservation->restaurant_table_id,
             'starts_at' => $this->reservation->starts_at?->toIso8601String(),
             'ends_at' => $this->reservation->ends_at?->toIso8601String(),
+            'actor_name' => $this->actor?->fullName(),
         ];
     }
 }

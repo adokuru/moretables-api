@@ -18,7 +18,7 @@ class MerchantRewardRuleController extends Controller
 {
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'marketing.manage'], $restaurant), 403);
 
         $rules = $restaurant->rewardRules()
             ->latest()
@@ -41,7 +41,7 @@ class MerchantRewardRuleController extends Controller
 
     public function show(Request $request, Restaurant $restaurant, RestaurantRewardRule $rewardRule): RestaurantRewardRuleResource
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'marketing.manage'], $restaurant), 403);
         $this->ensureBelongsToRestaurant($restaurant, $rewardRule);
 
         return RestaurantRewardRuleResource::make($rewardRule);
@@ -58,7 +58,7 @@ class MerchantRewardRuleController extends Controller
 
     public function destroy(Request $request, Restaurant $restaurant, RestaurantRewardRule $rewardRule): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'marketing.manage'], $restaurant), 403);
         $this->ensureBelongsToRestaurant($restaurant, $rewardRule);
 
         $rewardRule->delete();

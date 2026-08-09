@@ -1,76 +1,93 @@
 # Permission matrix — what each access-config permission actually does
 
-> **Session paused here** — the matrix below is complete and verified. What
-> follows is unfinished: the user's next ask (lock the 5 default access
-> configs — Principal Admin fully checked and uneditable, the other 4 locked
-> to their current permission sets so "their name work well for their
-> roles") wasn't implemented yet. Pick up at "Next steps" at the bottom.
-
-
-
 The 12 permissions assignable via the Access Config editor
 (`PERMISSION_LABELS`, `moretable-web-app/src/lib/api/accounts/accounts.types.ts`),
 what they unlock in `/dashboard` (front of house) vs `/admin` (back of
 house), and whether it's a read or a write. Built by grepping every
-`hasRestaurantPermission()` / `FormRequest::authorize()` call in the
-codebase — not inferred from the label text, which turned out to matter (see
-below).
+`hasRestaurantPermission()` / `hasAnyRestaurantPermission()` /
+`FormRequest::authorize()` call in the codebase.
 
-## Read this first: half of these permissions aren't enforced anywhere
+## Every permission is now enforced
 
-`billing.manage`, `integrations.manage`, `marketing.manage`,
-`communications.manage`, `messaging.manage`, `policies.manage`,
-`audit_logs.view`, and `reporting.export` — **8 of the 12** — appear only in
-`MerchantAccessConfigController.php`'s allow-list (what a custom config is
-permitted to store) and nowhere else. No controller, no `FormRequest`, no
-middleware ever calls `hasRestaurantPermission('billing.manage', ...)` or any
-of the other seven. They're real, storable, displayed values — just
-functionally inert today.
-
-What actually gates billing/menus/policies/gallery/media/onboarding/rewards/
-guest-communication/surveys/restaurant-profile mutations is one blunt
-permission: **`restaurants.manage`**. What gates reading almost all of the
-same surfaces is **`restaurants.view`**. So right now, unchecking "Policies"
-but leaving "Restaurant Settings" (`restaurants.manage`) checked on a custom
-config does not actually restrict that user from touching policies — they
-still can, via the same `restaurants.manage` grant that lets them touch
-everything else in that bucket. The checkbox is honest about *intent*, not
-about *effect*.
-
-This is not a security hole (nothing is under-protected — every mutating
-endpoint does require *some* permission), but it is a real product gap: the
-UI promises finer-grained control than the backend currently delivers. Worth
-knowing before deciding how much weight to put on the granular checkboxes
-either in documentation or in product decisions like locking default
-configs.
+As of the roles-and-permissions pass described below, all 12 permissions
+gate a real backend check — none are UI-only anymore. Every new check is
+**additive**: `restaurants.manage` (and `restaurants.view` for read-only
+checks) remains a valid fallback alongside the specific permission, so
+existing restaurants relying on the broad "Restaurant Settings"/"Restaurant
+Profile" permissions keep working exactly as before. The one deliberate
+exception is `reporting.export`, which is intentionally **not** granted by
+`reservations.view`/`audit_logs.view` — see its row below.
 
 ## The matrix
 
-| Permission | Label (UI) | Dashboard | Admin | Read/Write | What it actually gates |
+| Permission | Label (UI) | Dashboard | Admin | Read/Write | What it gates |
 |---|---|:-:|:-:|---|---|
-| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits (create/update/delete guest, update preferences — `GuestbookController`), creating shift notes (`FrontOfHouseShiftNoteController::store`), broadcasting messages to guests (`MerchantRestaurantBroadcastController`), adding a server (`StoreRestaurantServerRequest`). |
-| `tables.manage` | Floor Configurations | ✅ | ✅ | Both | **Dashboard**: viewing/assigning tables on the live floor plan, dashboard-preferences update (the "recommended table assignment" toggle). **Admin**: `availability-planning`'s Floor Plan + Table Combinations tabs — full CRUD on dining areas, dining spots, tables, table combinations, table status. |
-| `audit_logs.view` | Reporting View | — | — | *(not enforced)* | Nothing currently checks this. |
-| `reporting.export` | Reporting Exporting Data | — | — | *(not enforced)* | Nothing currently checks this — including the actual CSV export endpoints (guest survey responses, reporting exports), which are gated by `restaurants.view`/`reservations.view` instead. |
-| `restaurants.manage` | Restaurant Settings | (edge case) | ✅ | Write | **The workhorse write permission.** Billing checkout/upgrade/verify, restaurant profile update, menu category/item/media CRUD, gallery CRUD, restaurant media CRUD, internal notes write, guest-communication settings write, guest survey CRUD, booking + cancellation policy write, shift + special-day CRUD, reward rules write, onboarding step writes, restaurant-settings update, widget settings. One dashboard edge case: `FrontOfHouseShiftNoteController::destroy` also accepts this (a manager-override path for deleting any shift note, not just your own — see that controller). |
-| `integrations.manage` | Integrations | — | — | *(not enforced)* | Nothing currently checks this — there's no dedicated integrations controller yet. |
-| `marketing.manage` | Marketing | — | — | *(not enforced)* | Nothing currently checks this. |
-| `restaurants.view` | Restaurant Profile | ✅ | ✅ | Read | **The workhorse read permission.** Nearly every `GET` across both dashboard and admin: billing show/invoices, restaurant profile/settings, menus/gallery/media, guest-communication, guest surveys, booking/cancellation policy, reward rules, onboarding data, shifts/special-days, widget settings, dashboard-preferences. |
-| `billing.manage` | Billing | — | — | *(not enforced)* | Nothing currently checks this — real billing writes require `restaurants.manage` instead (see above). |
-| `communications.manage` | Communications Channels | — | — | *(not enforced)* | Nothing currently checks this. |
-| `messaging.manage` | Direct Messaging | — | — | *(not enforced)* | Nothing currently checks this. |
-| `policies.manage` | Policies | — | — | *(not enforced)* | Nothing currently checks this — real policy writes require `restaurants.manage` instead (routed through the `AuthorizesRestaurantManageOnboarding` trait on `UpdateRestaurantBookingPolicyRequest`/`StoreRestaurantCancellationPolicyRequest`/`UpdateRestaurantCancellationPolicyRequest`). |
+| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits, creating shift notes, broadcasting messages to guests (fallback alongside `communications.manage`/`messaging.manage` — see below), adding a server. |
+| `tables.manage` | Floor Configurations | ✅ | ✅ | Both | **Dashboard**: viewing/assigning tables on the live floor plan. **Admin**: `availability-planning`'s Floor Plan + Table Combinations tabs — full CRUD on dining areas, dining spots, tables, table combinations, table status. Also part of `Permission::adminSectionPermissions()` — unlocks `/admin` on its own. |
+| `audit_logs.view` | Reporting View | — | ✅ | Read | `/admin/reporting`'s view endpoints (`filters`, `shiftOccupancy`, `coverTrends`, `firstTimeVisits`, `guestFrequency`, `reservations`, `turnTimes`, `guestExport` — `MerchantReportingController::authorizeReporting()`), additive alongside the existing `reservations.view` check. Does **not** grant export — see `reporting.export`. |
+| `reporting.export` | Reporting Exporting Data | — | ✅ | Write-ish (export) | The 3 CSV export endpoints on `MerchantReportingController` (`exportGuestFrequency`/`exportReservations`/`exportGuestExport`) and `MerchantGuestSurveyController::exportResponses`. **Deliberately its own gate** — only OR'd with `restaurants.manage`, not `reservations.view`/`audit_logs.view`, so viewing and exporting are genuinely distinct capabilities (a user who can see a report can't necessarily download it). |
+| `restaurants.manage` | Restaurant Settings | (edge case) | ✅ | Write | **The workhorse write permission**, unchanged. Billing checkout/upgrade/verify, restaurant profile update, menu/gallery/media CRUD, internal notes write, guest-communication settings write, guest survey CRUD, booking + cancellation policy write, shift + special-day CRUD, reward rules write, onboarding step writes, restaurant-settings update, widget settings. Also the universal fallback for every one of the newly-wired permissions below. |
+| `integrations.manage` | Integrations | — | ✅ (frontend-only) | n/a | No backend controller exists yet for Integrations — nothing to enforce server-side. Gated purely on the frontend (nav + route guard, `moretable-web-app/src/lib/adminAccess.ts`). |
+| `marketing.manage` | Marketing | — | ✅ | Both | `MerchantRewardRuleController` (index/show/store/update/destroy) and its two `FormRequest`s — OR'd alongside `restaurants.view`(read)/`restaurants.manage`(write). This is the only backend surface behind the `/admin/marketing` page (reward points, private dining, campaigns, promos are all UI over the same reward-rule resource). |
+| `restaurants.view` | Restaurant Profile | ✅ | ✅ (view-only) | Read | **The workhorse read permission**, unchanged — nearly every `GET` across dashboard and admin. On its own it grants **view-only** access to `/admin/restaurant-profile`; editing that page (and everywhere else `restaurants.manage` already gated) still requires `restaurants.manage` — this was an explicit product decision, not a backend change (see `ADMIN_ACCESS_CONTROL.md`/`access-control.md`). |
+| `billing.manage` | Billing | — | ✅ | Both (single tier) | `MerchantBillingController` (`show`/`checkout`/`upgrade`/`verify`/`invoices`/`downloadInvoice`) — OR'd alongside the existing `restaurants.view`/`restaurants.manage` checks. Deliberately single-tier (view + pay together, no separate view-only mode), per product decision. |
+| `communications.manage` | Communications Channels | — | ✅ | Both | Maps to the **Guest Email** + **Surveys and Templates** tabs of `/admin/guest-communication`. `MerchantGuestCommunicationController::show`/`updateReservationMessaging`, all of `MerchantGuestSurveyController`, and `MerchantRestaurantBroadcastController::store` when `audience !== "all"` (i.e. the Guest Email tab's "send to selected guests" flow). |
+| `messaging.manage` | Direct Messaging | — | ✅ | Both | Maps to the **Broadcast Messaging** tab of `/admin/guest-communication`. `MerchantGuestCommunicationController::show`/`updateAutomatedMessaging`, and `MerchantRestaurantBroadcastController::store` when `audience === "all"`. |
+| `policies.manage` | Policies | — | ✅ | Both | Maps to the **Policies** tab of `/admin/restaurant-settings`. `MerchantRestaurantBookingPolicyController`, `MerchantRestaurantCancellationPolicyController`, and their `FormRequest`s (`UpdateRestaurantBookingPolicyRequest`, `Store`/`UpdateRestaurantCancellationPolicyRequest`) — OR'd alongside `restaurants.manage`. |
 
-Two more permissions exist and *are* fully enforced, but aren't in the
+Two more permissions exist and are fully enforced, but aren't in the
 12-item assignable list above (they're either always-on for certain default
 configs or handled specially):
 
 | Permission | Dashboard | Admin | What it gates |
 |---|:-:|:-:|---|
-| `waitlist.manage` | ✅ | — | Everything waitlist: the dashboard's waitlist column, availability alerts, and every waitlist-entry action (arrive, notify, cancel, assign table, ...) — `FrontOfHouseController`/`MerchantWaitlistController`. |
-| `staff.manage` | ✅ | ✅ | **Both.** Dashboard's User Management "Add"/"Edit" (`MerchantRestaurantStaffController`), and `/admin/accounts`' entire Users tab *and* the Access Config tab itself (creating/editing/deleting access configs also requires `staff.manage`, not `restaurants.manage` — see `MerchantAccessConfigController`). Deliberately excluded from `Permission::adminSectionPermissions()` (`ADMIN_ACCESS_CONTROL.md`) — it unlocks a dashboard feature, not `/admin` itself. |
+| `waitlist.manage` | ✅ | — | Everything waitlist: the dashboard's waitlist column, availability alerts, and every waitlist-entry action (arrive, notify, cancel, assign table, ...). |
+| `staff.manage` | ✅ | ✅ | **Both.** Dashboard's User Management (removed — staff management is now admin-only, see `moretable-web-app/AGENTS.md`), and `/admin/accounts`' entire Users + Access Config tabs. **Now included in `Permission::adminSectionPermissions()`** (previously deliberately excluded) — a staff.manage-only user can reach `/admin/accounts` directly instead of first needing another admin permission. |
 
-## Default access configs today (`RestaurantAccessConfig::defaults()`)
+## `Permission::adminSectionPermissions()` — every page-granting permission unlocks `/admin`
+
+Per the per-page gating work below, `canAccessAdmin` now needs to be true for
+*any* permission that gates a real `/admin` page — otherwise a user with
+e.g. only `audit_logs.view` (the "Analytics & Reporting" default config)
+would be bounced out of `/admin` before ever reaching the one page they're
+meant to see. The list is now every permission except the 3 purely
+dashboard-scoped ones (`reservations.manage`, `reservations.view`,
+`waitlist.manage`):
+
+```php
+['restaurants.view', 'restaurants.manage', 'tables.manage', 'staff.manage',
+ 'audit_logs.view', 'reporting.export', 'billing.manage', 'integrations.manage',
+ 'marketing.manage', 'communications.manage', 'messaging.manage', 'policies.manage']
+```
+
+This is a behavior change from before: the "Analytics & Reporting",
+"Operations", and "Guest Relations" default access configs — which
+previously could not open `/admin` at all — now can, scoped to just the
+pages their specific permissions actually unlock (enforced by the
+frontend's per-page route guard, `moretable-web-app/src/lib/adminAccess.ts`,
+and per-page nav gating, `AdminSidebar.tsx`/`AdminPageSideNav.tsx`).
+
+## Per-page `/admin` gating (frontend)
+
+Previously every `/admin` nav item was visible to any admin-access user
+regardless of which specific permission they held (documented in
+`access-control.md`'s "Known gaps"). That gap is now closed:
+
+- **Route guard** (`moretable-web-app/src/app/admin/layout.tsx`): redirects
+  to `/admin` (not `/dashboard`, since the user does belong in `/admin`)
+  if the current path's required permission(s) aren't held — no error
+  toast, checked before render.
+- **Nav gating** (`AdminSidebar.tsx`/`MobileAdminSidebar.tsx`): a nav item
+  the user lacks permission for stays **visible but unclickable** (muted,
+  `cursor-not-allowed`, small lock icon) rather than disappearing.
+- **Tab gating** (`AdminPageSideNav.tsx`, used by `restaurant-settings`'
+  Policies tab and `guest-communication`'s 3 tabs): same unclickable
+  treatment, plus a hand-typed `?tab=` URL for a tab the user lacks falls
+  back to their first accessible tab instead of rendering the gated content.
+
+Single source of truth for all three: `moretable-web-app/src/lib/adminAccess.ts`.
+
+## Default access configs today (`RestaurantAccessConfig::defaults()`) — unchanged
 
 | Config | Permissions |
 |---|---|
@@ -80,77 +97,69 @@ configs or handled specially):
 | Marketing & Growth | `restaurants.view`, `restaurants.manage` |
 | Guest Relations | `restaurants.view`, `reservations.view` |
 
-Note Principal Admin is **missing** `reporting.export` even though its own
-description string says "Reporting & exports" — a pre-existing inconsistency
-between the description text and the actual permissions array, unrelated to
-the enforcement gap above (this one's just a data omission, easy to fix if
-Principal Admin's set is being revisited anyway).
+**Deliberately not changed as part of this pass.** Every default keeps
+working exactly as before because `restaurants.manage`/`restaurants.view`
+remain valid fallbacks on every newly-wired check — e.g. Principal Admin
+still gets full Billing/Marketing/Integrations/Guest Communication access
+via `restaurants.manage`, even though its permissions array doesn't
+literally list `billing.manage`/`marketing.manage`/etc. Two things worth
+noting if these defaults are revisited later:
 
-## See also
+- Principal Admin still doesn't literally have `reporting.export` (only
+  `audit_logs.view`) — but unlike before, this now has a real effect: its
+  own description promises "Reporting & exports," but a Principal Admin
+  user still exports reports today only via the `restaurants.manage`
+  fallback, not because the permission is actually in their array. Harmless
+  today, but worth fixing if the defaults' arrays are ever tightened.
+- Operations/Analytics & Reporting/Guest Relations now unlock `/admin`
+  (they didn't before, see above) but only for the specific pages their
+  permissions grant — e.g. Analytics & Reporting can view Reporting and the
+  Restaurant Profile (view-only) but nothing else; Operations can reach
+  Accounts (staff.manage) and Availability Planning (tables.manage) but not
+  Billing/Marketing/etc.
 
-`ADMIN_ACCESS_CONTROL.md` — how `restaurants.manage` and the rest of the
-"admin section" permissions get turned into the frontend's `canAccessAdmin`
-flag.
-
-## Next steps — locking the 5 default access configs (not started)
+## Next steps — locking the 5 default access configs (still not started)
 
 **The ask**: Principal Admin's access config should show every permission
 checked and not allow unchecking any of them ("select all, can't uncheck").
 The other 4 defaults (Operations, Analytics & Reporting, Marketing & Growth,
 Guest Relations) should be locked the same way, fixed to their *current*
-permission sets (the table above, "Default access configs today") — so an
-owner can't accidentally redefine what "Operations" means by unchecking a
-box, and the name stays trustworthy. Presumably enforced in
-`AccessConfigModal.tsx` (disable the checkboxes when editing a default
-config) — not investigated yet.
+permission sets (the table above) — so an owner can't accidentally redefine
+what "Operations" means by unchecking a box, and the name stays
+trustworthy. Presumably enforced in `AccessConfigModal.tsx` (disable the
+checkboxes when editing a default config) — not investigated yet. This is
+unrelated to (and unblocked by) the enforcement work above — still a
+separate, unstarted task.
 
-**My take, for when we pick this up**: good idea, worth doing regardless of
-the "8 permissions aren't enforced yet" finding above — it's about UI
-honesty (Principal Admin should visibly *be* "everything," not just mostly
-be it) and future-proofing (once those 8 permissions do get real
-enforcement later, the defaults' semantics should already be locked in
-rather than silently drifting). Principal Admin's "select all" should
-include all 12, including the currently-decorative ones — no reason to
-leave it half-checked just because enforcement hasn't caught up yet.
+**What's already true, relevant for whoever implements this:**
 
-**What I'd checked before pausing** — relevant for whoever implements this:
+- `MerchantAccessConfigController::update()` has **no `is_default` check at
+  all** — anyone with `staff.manage` can rename Principal Admin, edit its
+  description, or change its permissions array via a direct API call,
+  regardless of what the frontend UI allows. Locking this only in the
+  frontend would be cosmetic — the backend needs its own guard too.
+- `MerchantAccessConfigController::destroy()` only blocks deletion when
+  staff are currently assigned to that config — it does **not** specifically
+  protect `is_default` configs from deletion once unassigned.
+- `RestaurantAccessConfig.is_default: boolean` already exists and is set
+  correctly at creation — the flag needed to gate this is already there,
+  just unused for authorization.
 
-- `MerchantAccessConfigController::update()` (line ~129) has **no
-  `is_default` check at all** — right now, anyone with `staff.manage` can
-  rename Principal Admin, edit its description, or change its permissions
-  array via a direct API call, regardless of what the frontend UI allows.
-  Locking this only in the frontend (disabling checkboxes) would be
-  cosmetic — the backend needs its own guard too if this is meant to be a
-  real rule, not just a UI nicety.
-- `MerchantAccessConfigController::destroy()` (line ~177) only blocks
-  deletion when staff are currently assigned to that config
-  (`abort_if($accessConfig->userRoles()->exists(), 422, ...)`) — it does
-  **not** specifically protect `is_default` configs from deletion once
-  unassigned. So today, an unassigned "Principal Admin" config *can* be
-  deleted outright. Whether that should also be locked is part of the same
-  question below.
-- `RestaurantAccessConfig.is_default: boolean` already exists on the model
-  and is set correctly at creation (`true` for the 5 seeded defaults,
-  `false` for anything an owner creates) — the flag needed to gate all of
-  this is already there, just unused for authorization.
-
-**Open questions to resolve before implementing** (didn't get to ask):
+**Open questions to resolve before implementing:**
 
 1. Lock just the *permission checkboxes*, or also the *name*/*description*
-   fields? The ask says "make the default fixed and uncheckable," which
-   reads as permissions specifically, but if the name stays editable
-   someone could rename "Operations" to something else while keeping its
-   permission set — which undercuts "so their name work well for their
-   roles" a little differently than unchecking boxes would.
-2. Should "locked" also mean *can't be deleted*, closing the gap found
-   above? Or is delete-when-unassigned an intentionally-kept escape hatch
-   (e.g. a restaurant that genuinely never wants a "Guest Relations" tier
-   at all)?
-3. Separate, bigger question, not required for the lock itself but raised
-   by the same investigation: do you want the 8 currently-decorative
-   permissions (billing/integrations/marketing/communications/messaging/
-   policies/audit_logs.view/reporting.export) wired up to real backend
-   enforcement at some point? That's a materially larger task (new
-   permission checks across ~10 controllers) and wasn't asked for yet —
-   flagging it here since it surfaced during this research, not proposing
-   to do it unprompted.
+   fields?
+2. Should "locked" also mean *can't be deleted*?
+3. If Principal Admin's permission array is ever revisited to genuinely
+   include all 12 (fixing the `reporting.export` gap noted above), that's a
+   data change, not a code change — flag before doing it, since it changes
+   live restaurants' effective grants.
+
+## See also
+
+`ADMIN_ACCESS_CONTROL.md` — how the admin-section permissions get turned
+into the frontend's `canAccessAdmin` flag.
+
+`moretable-web-app/docs/access-control.md` — the frontend counterpart:
+`restaurantPermissions`/`canAccessAdmin`, and the per-page/per-tab gating
+described above.

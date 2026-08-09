@@ -41,12 +41,14 @@ it('grants can_access_admin to a staff member invited with the default Principal
         ->and($restaurant['permissions'])->toContain('staff.manage', 'restaurants.manage');
 });
 
-it('withholds can_access_admin from a staff member invited with the default Operations access config\'s day-to-day permissions only', function (): void {
-    // Operations grants reservations.manage/tables.manage/waitlist.manage/staff.manage —
-    // staff.manage now unlocks the User Management "Add"/"Edit" actions in the dashboard
-    // (a deliberate, explicit exception — Operations should be able to manage staff), but
-    // none of Operations' permissions are in Permission::adminSectionPermissions(), so it
-    // should NOT unlock the /admin back-office section itself.
+it('grants can_access_admin to a staff member invited with the default Operations access config, via staff.manage/tables.manage/restaurants.view', function (): void {
+    // Operations grants restaurants.view/reservations.manage/tables.manage/waitlist.manage/
+    // staff.manage. Each of restaurants.view (Restaurant Profile, view-only), tables.manage
+    // (Availability Planning), and staff.manage (Accounts) is now in
+    // Permission::adminSectionPermissions() — every permission that gates a real /admin
+    // page unlocks /admin itself, so Operations can reach /admin (scoped to just those
+    // pages via the frontend's per-page gating) even though it still lacks the broad
+    // restaurants.manage/billing.manage/etc. permissions.
     $staff = User::factory()->create();
     $config = RestaurantAccessConfig::query()
         ->where('restaurant_id', $this->restaurant->id)
@@ -67,8 +69,8 @@ it('withholds can_access_admin from a staff member invited with the default Oper
     $response->assertSuccessful();
     $restaurant = collect($response->json('restaurants'))->firstWhere('id', $this->restaurant->id);
 
-    expect($restaurant['can_access_admin'])->toBeFalse()
-        ->and($restaurant['permissions'])->toContain('staff.manage')
+    expect($restaurant['can_access_admin'])->toBeTrue()
+        ->and($restaurant['permissions'])->toContain('staff.manage', 'tables.manage', 'restaurants.view')
         ->and($restaurant['permissions'])->not->toContain('restaurants.manage', 'billing.manage');
 });
 

@@ -62,7 +62,7 @@ class MerchantReportingController extends Controller
 
     public function exportGuestFrequency(Request $request, Restaurant $restaurant): StreamedResponse
     {
-        $this->authorizeReporting($request, $restaurant);
+        $this->authorizeExport($request, $restaurant);
         $request->merge(['export' => true]);
         $context = $this->filters->resolveContext($request, $restaurant, [
             'include_frequency_period' => true,
@@ -88,7 +88,7 @@ class MerchantReportingController extends Controller
 
     public function exportReservations(Request $request, Restaurant $restaurant): StreamedResponse
     {
-        $this->authorizeReporting($request, $restaurant);
+        $this->authorizeExport($request, $restaurant);
         $request->merge(['export' => true, 'page' => 1]);
         $context = $this->filters->resolveContext($request, $restaurant, [
             'include_status' => true,
@@ -120,7 +120,7 @@ class MerchantReportingController extends Controller
 
     public function exportGuestExport(Request $request, Restaurant $restaurant): StreamedResponse
     {
-        $this->authorizeReporting($request, $restaurant);
+        $this->authorizeExport($request, $restaurant);
         $request->merge(['export' => true]);
         $context = $this->filters->resolveContext($request, $restaurant);
 
@@ -134,7 +134,17 @@ class MerchantReportingController extends Controller
 
     private function authorizeReporting(Request $request, Restaurant $restaurant): void
     {
-        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['reservations.view', 'audit_logs.view'], $restaurant), 403);
+    }
+
+    /**
+     * Exporting is a distinct capability from viewing (Reporting Exporting Data vs
+     * Reporting View) — deliberately does not fall back to reservations.view/
+     * audit_logs.view, only restaurants.manage as the usual super-permission.
+     */
+    private function authorizeExport(Request $request, Restaurant $restaurant): void
+    {
+        abort_unless($request->user()->hasAnyRestaurantPermission(['reporting.export', 'restaurants.manage'], $restaurant), 403);
     }
 
     private function csvResponse(string $filename, string $content): StreamedResponse

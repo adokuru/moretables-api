@@ -267,7 +267,7 @@ class ReservationService
                 description: 'Reservation updated',
             );
 
-            event(new ReservationUpdated($reservation, 'updated'));
+            event(new ReservationUpdated($reservation, 'updated', $actor));
 
             foreach ($reservation->notifiableParticipants() as $participant) {
                 $participant->notify(new ReservationLifecycleNotification($reservation, 'updated'));
@@ -446,7 +446,7 @@ class ReservationService
                 description: $auditDescription,
             );
 
-            event(new ReservationUpdated($reservation, $eventAction));
+            event(new ReservationUpdated($reservation, $eventAction, $actor));
 
             $newlyAddedGuests = $reservation->reservationGuests
                 ->filter(fn (ReservationGuest $guest): bool => ! in_array($guest->email_normalized, $existingGuestEmails, true))
@@ -480,7 +480,7 @@ class ReservationService
             description: 'Reservation cancelled',
         );
 
-        event(new ReservationUpdated($reservation, $action));
+        event(new ReservationUpdated($reservation, $action, $actor));
 
         foreach ($reservation->notifiableParticipants() as $participant) {
             $participant->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
@@ -551,7 +551,7 @@ class ReservationService
                     description: 'Reservation table assigned',
                 );
 
-                event(new ReservationUpdated($reservation, 'table_assigned'));
+                event(new ReservationUpdated($reservation, 'table_assigned', $actor));
 
                 return $reservation;
             });
@@ -596,11 +596,24 @@ class ReservationService
                     ]);
                 }
 
-                $tableHasSeatedParty = Reservation::query()
+                $seatedOnTable = Reservation::query()
+                    ->with(['user', 'guestContact', 'restaurant'])
                     ->where('restaurant_table_id', $reservation->restaurant_table_id)
                     ->where('status', ReservationStatus::Seated)
                     ->whereKeyNot($reservation->id)
-                    ->exists();
+                    ->first();
+
+                if ($seatedOnTable !== null) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => [sprintf(
+                            'Table %s is still seated with %s\'s reservation from %s. Mark that reservation finished to free the table, or assign a different one.',
+                            $reservation->table->name,
+                            $this->guestDisplayName($seatedOnTable),
+                            $this->formatReservationWhen($seatedOnTable),
+                        )],
+                    ]);
+                }
+
                 $tableIsAvailable = $this->availabilityService->isTableAvailable(
                     restaurant: $reservation->restaurant,
                     table: $reservation->table,
@@ -609,9 +622,12 @@ class ReservationService
                     excludingReservationId: $reservation->id,
                 );
 
-                if ($tableHasSeatedParty || ! $tableIsAvailable) {
+                if (! $tableIsAvailable) {
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => ['The assigned table is no longer available. Assign a new table before seating this reservation.'],
+                        'restaurant_table_id' => [sprintf(
+                            'Table %s is not available for this reservation\'s time. Assign a different table.',
+                            $reservation->table->name,
+                        )],
                     ]);
                 }
 
@@ -633,7 +649,7 @@ class ReservationService
                     organization: $reservation->restaurant->organization,
                     description: 'Reservation seated',
                 );
-                event(new ReservationUpdated($reservation, 'seated'));
+                event(new ReservationUpdated($reservation, 'seated', $actor));
 
                 return $reservation;
             });
@@ -716,7 +732,7 @@ class ReservationService
                     organization: $reservation->restaurant->organization,
                     description: 'Reservation moved',
                 );
-                event(new ReservationUpdated($reservation, 'moved'));
+                event(new ReservationUpdated($reservation, 'moved', $actor));
 
                 return $reservation;
             });
@@ -742,7 +758,7 @@ class ReservationService
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'completed'));
+        event(new ReservationUpdated($reservation, 'completed', $actor));
 
         if (! $reservation->restaurant->guestSurveys()->where('status', 'published')->exists()) {
             foreach ($reservation->notifiableParticipants() as $participant) {
@@ -787,7 +803,7 @@ class ReservationService
             description: 'Reservation service stage updated',
         );
 
-        event(new ReservationUpdated($reservation, 'service_stage_updated'));
+        event(new ReservationUpdated($reservation, 'service_stage_updated', $actor));
 
         return $reservation;
     }
@@ -840,7 +856,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'arrived'));
+        event(new ReservationUpdated($reservation, 'arrived', $actor));
 
         return $reservation;
     }
@@ -853,7 +869,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'partially_arrived'));
+        event(new ReservationUpdated($reservation, 'partially_arrived', $actor));
 
         return $reservation;
     }
@@ -865,7 +881,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'left_message'));
+        event(new ReservationUpdated($reservation, 'left_message', $actor));
 
         return $reservation;
     }
@@ -877,7 +893,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'running_late'));
+        event(new ReservationUpdated($reservation, 'running_late', $actor));
 
         return $reservation;
     }
@@ -902,7 +918,7 @@ class ReservationService
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show'));
+        event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show', $actor));
 
         ChargeNoShowFeeJob::dispatch($reservation->id);
 
@@ -1321,7 +1337,7 @@ class ReservationService
                     description: 'Reservation created',
                 );
 
-                event(new ReservationUpdated($reservation, 'created'));
+                event(new ReservationUpdated($reservation, 'created', $actor));
 
                 if ($user) {
                     $user->notify(new ReservationLifecycleNotification($reservation, 'created'));
@@ -1380,6 +1396,28 @@ class ReservationService
                 'starts_at' => ['The selected time is outside the restaurant booking hours.'],
             ]);
         }
+    }
+
+    private function guestDisplayName(Reservation $reservation): string
+    {
+        $name = $reservation->user?->fullName()
+            ?? trim(($reservation->guestContact?->first_name ?? '').' '.($reservation->guestContact?->last_name ?? ''));
+
+        return $name !== '' ? $name : 'a guest';
+    }
+
+    /**
+     * "Mon, Aug 10 at 6:00 PM" in the restaurant's own timezone.
+     */
+    private function formatReservationWhen(Reservation $reservation): string
+    {
+        if ($reservation->starts_at === null) {
+            return 'an unscheduled time';
+        }
+
+        $timezone = $reservation->restaurant?->timezone ?: config('app.timezone');
+
+        return $reservation->starts_at->copy()->timezone($timezone)->format('D, M j \a\t g:i A');
     }
 
     protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed

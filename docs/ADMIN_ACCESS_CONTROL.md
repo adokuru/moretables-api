@@ -46,15 +46,20 @@ Two static lists, kept deliberately separate:
   `staff.manage` — that one isn't a user-togglable checkbox, only the two
   default configs (Principal Admin, Operations) carry it, baked directly
   into `RestaurantAccessConfig::defaults()`.
-- `adminSectionPermissions()` — the subset that unlocks `/admin`:
-  `restaurants.manage`, `billing.manage`, `integrations.manage`,
-  `marketing.manage`, `communications.manage`, `messaging.manage`,
-  `policies.manage`, `reporting.export`. **`staff.manage` is deliberately
-  excluded from this list** — it only unlocks the dashboard's own User
-  Management "Add"/"Edit" actions (a dashboard-tier feature, by explicit
-  product decision), not `/admin` itself. This is why Operations' default
-  config can carry `staff.manage` (so Operations staff can manage other
-  staff from the dashboard) without that also granting them `/admin`.
+- `adminSectionPermissions()` — the subset that unlocks `/admin`. **As of
+  the per-page `/admin` gating work (see `docs/PERMISSION_MATRIX.md`), this
+  is now every permission that gates at least one real `/admin` page**:
+  `restaurants.view`, `restaurants.manage`, `tables.manage`, `staff.manage`,
+  `audit_logs.view`, `reporting.export`, `billing.manage`,
+  `integrations.manage`, `marketing.manage`, `communications.manage`,
+  `messaging.manage`, `policies.manage` — i.e. everything except the 3
+  purely dashboard-scoped permissions (`reservations.manage`,
+  `reservations.view`, `waitlist.manage`), since nothing in `/admin` is
+  reservation/waitlist-scoped. **`staff.manage` was previously excluded**
+  (it only unlocked the dashboard's own User Management "Add"/"Edit"
+  actions) but is now included by explicit product decision, since
+  `/admin/accounts` is itself a real `/admin` page a `staff.manage`-only
+  user should be able to reach directly.
 
 ### `User::hasAnyRestaurantPermission()` (`app/Models/User.php`)
 
@@ -136,13 +141,6 @@ through `setRestaurant()`'s existing optional-param pattern.
 
 ## What this does *not* do (deliberately, not an oversight)
 
-- **No per-page gating within `/admin` itself.** A user with only
-  `marketing.manage` currently sees the same admin sidebar/nav as one with
-  `billing.manage` — they'd just get a 403 (via the existing per-endpoint
-  checks) if they tried to use a page they don't have the specific
-  permission for. Hiding individual `/admin` sub-nav items per specific
-  permission is a reasonable follow-up but wasn't part of this request —
-  the ask was specifically about the dashboard's "Admin" entry point.
 - **No backfill for already-invited staff.** `RestaurantAccessConfig::defaults()`
   gaining `staff.manage` on the Operations config only affects restaurants
   created from now on — an already-existing restaurant's Operations config

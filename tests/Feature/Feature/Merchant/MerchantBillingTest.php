@@ -23,6 +23,26 @@ beforeEach(function (): void {
     $this->seed(BillingPlanSeeder::class);
 });
 
+it('allows a staff member with only billing.manage (no restaurants.view/manage) to view billing', function (): void {
+    $data = createBookableRestaurant();
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['billing.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/billing')
+        ->assertSuccessful();
+});
+
+it('forbids a staff member without billing.manage or restaurants.view/manage from viewing billing', function (): void {
+    $data = createBookableRestaurant();
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['reservations.view']);
+    Sanctum::actingAs($staff);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/billing')
+        ->assertForbidden();
+});
+
 it('lists merchant billing plans', function (): void {
     $user = User::factory()->create();
     Sanctum::actingAs($user);

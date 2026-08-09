@@ -26,6 +26,26 @@ function validCustomDiningPolicyText(): string
     return 'Guests are required to arrive within fifteen minutes of their reserved time. Reservations held beyond this window may be released to other diners.';
 }
 
+it('allows a staff member with only policies.manage (no restaurants.view/manage) to view and update the booking policy', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['policies.manage']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/booking-policy")->assertSuccessful();
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/booking-policy", [
+        'booking_details_locale' => 'fr',
+    ])->assertSuccessful();
+});
+
+it('forbids a staff member without policies.manage or restaurants.view/manage from viewing the booking policy', function (): void {
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $this->restaurant, ['reservations.view']);
+    Sanctum::actingAs($staff);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/booking-policy")->assertForbidden();
+});
+
 it('shows booking policy and creates a default policy row when missing', function (): void {
     expect(RestaurantPolicy::query()->where('restaurant_id', $this->restaurant->id)->exists())->toBeFalse();
 

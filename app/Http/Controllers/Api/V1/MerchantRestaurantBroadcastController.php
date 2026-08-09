@@ -25,9 +25,15 @@ class MerchantRestaurantBroadcastController extends Controller
      */
     public function store(SendRestaurantBroadcastRequest $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
-
         $validated = $request->validated();
+
+        // Broadcast Messaging tab (audience "all") is gated by messaging.manage;
+        // Guest Email tab (audience "selected") is gated by communications.manage.
+        // reservations.manage remains a valid fallback for both — this endpoint
+        // was reservations.manage-only before Communications Channels/Direct
+        // Messaging existed as real permissions.
+        $requiredPermission = $validated['audience'] === 'all' ? 'messaging.manage' : 'communications.manage';
+        abort_unless($request->user()->hasAnyRestaurantPermission(['reservations.manage', $requiredPermission], $restaurant), 403);
 
         $recipients = $this->recipientsQuery(
             $restaurant,

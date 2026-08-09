@@ -267,9 +267,11 @@ it('rejects seating at a table occupied by another party and requests reassignme
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
     actingAsFrontOfHouse($data);
-    Reservation::factory()->create([
+    $seatedGuest = User::factory()->create(['first_name' => 'Seated', 'last_name' => 'Guest']);
+    $blockingReservation = Reservation::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'restaurant_table_id' => $data['table']->id,
+        'user_id' => $seatedGuest->id,
         'status' => ReservationStatus::Seated,
         'service_stage' => ReservationServiceStage::Appetizer,
         'starts_at' => now()->subHours(3),
@@ -284,10 +286,15 @@ it('rejects seating at a table occupied by another party and requests reassignme
         'ends_at' => now()->addHours(2),
     ]);
 
+    $when = $blockingReservation->starts_at->copy()->timezone($data['restaurant']->timezone)->format('D, M j \a\t g:i A');
+
     $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/seat'))
         ->assertUnprocessable()
         ->assertJsonValidationErrors('restaurant_table_id')
-        ->assertJsonPath('errors.restaurant_table_id.0', 'The assigned table is no longer available. Assign a new table before seating this reservation.');
+        ->assertJsonPath(
+            'errors.restaurant_table_id.0',
+            "Table {$data['table']->name} is still seated with Seated Guest's reservation from {$when}. Mark that reservation finished to free the table, or assign a different one.",
+        );
 
     expect($reservation->refresh())
         ->status->toBe(ReservationStatus::Arrived)

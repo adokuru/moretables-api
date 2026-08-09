@@ -161,6 +161,64 @@ it('requires guest contact ids when the audience is selected', function () {
         ->assertJsonValidationErrors(['guest_contact_ids']);
 });
 
+it('allows a staff member with only messaging.manage to broadcast to all guests', function () {
+    Notification::fake();
+    $data = createBroadcastMerchant();
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['messaging.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'all',
+    ])->assertAccepted();
+});
+
+it('forbids a staff member with only messaging.manage from broadcasting to selected guests', function () {
+    $data = createBroadcastMerchant();
+    $selectedContact = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['messaging.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'selected',
+        'guest_contact_ids' => [$selectedContact->id],
+    ])->assertForbidden();
+});
+
+it('allows a staff member with only communications.manage to broadcast to selected guests', function () {
+    Notification::fake();
+    $data = createBroadcastMerchant();
+    $selectedContact = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['communications.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'selected',
+        'guest_contact_ids' => [$selectedContact->id],
+    ])->assertAccepted();
+});
+
+it('forbids a staff member with only communications.manage from broadcasting to all guests', function () {
+    $data = createBroadcastMerchant();
+    $staff = User::factory()->create();
+    grantAccessConfigPermissions($staff, $data['restaurant'], ['communications.manage']);
+    Sanctum::actingAs($staff);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'all',
+    ])->assertForbidden();
+});
+
 it('forbids users without reservation management permission', function () {
     $data = createBroadcastMerchant();
 

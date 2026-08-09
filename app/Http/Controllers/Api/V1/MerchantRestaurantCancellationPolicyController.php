@@ -19,7 +19,7 @@ class MerchantRestaurantCancellationPolicyController extends Controller
 {
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'policies.manage'], $restaurant), 403);
 
         $policies = $restaurant->cancellationPolicies()
             ->orderBy('sort_order')
@@ -52,7 +52,7 @@ class MerchantRestaurantCancellationPolicyController extends Controller
         Restaurant $restaurant,
         RestaurantCancellationPolicy $cancellationPolicy,
     ): RestaurantCancellationPolicyResource {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'policies.manage'], $restaurant), 403);
         $this->ensureBelongsToRestaurant($restaurant, $cancellationPolicy);
 
         return RestaurantCancellationPolicyResource::make($cancellationPolicy);
@@ -75,7 +75,7 @@ class MerchantRestaurantCancellationPolicyController extends Controller
         Restaurant $restaurant,
         RestaurantCancellationPolicy $cancellationPolicy,
     ): JsonResponse {
-        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'policies.manage'], $restaurant), 403);
         $this->ensureBelongsToRestaurant($restaurant, $cancellationPolicy);
 
         $cancellationPolicy->delete();
