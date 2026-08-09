@@ -267,7 +267,7 @@ class ReservationService
                 description: 'Reservation updated',
             );
 
-            event(new ReservationUpdated($reservation, 'updated'));
+            event(new ReservationUpdated($reservation, 'updated', $actor));
 
             foreach ($reservation->notifiableParticipants() as $participant) {
                 $participant->notify(new ReservationLifecycleNotification($reservation, 'updated'));
@@ -446,7 +446,7 @@ class ReservationService
                 description: $auditDescription,
             );
 
-            event(new ReservationUpdated($reservation, $eventAction));
+            event(new ReservationUpdated($reservation, $eventAction, $actor));
 
             $newlyAddedGuests = $reservation->reservationGuests
                 ->filter(fn (ReservationGuest $guest): bool => ! in_array($guest->email_normalized, $existingGuestEmails, true))
@@ -480,7 +480,7 @@ class ReservationService
             description: 'Reservation cancelled',
         );
 
-        event(new ReservationUpdated($reservation, $action));
+        event(new ReservationUpdated($reservation, $action, $actor));
 
         foreach ($reservation->notifiableParticipants() as $participant) {
             $participant->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
@@ -551,7 +551,7 @@ class ReservationService
                     description: 'Reservation table assigned',
                 );
 
-                event(new ReservationUpdated($reservation, 'table_assigned'));
+                event(new ReservationUpdated($reservation, 'table_assigned', $actor));
 
                 return $reservation;
             });
@@ -633,7 +633,7 @@ class ReservationService
                     organization: $reservation->restaurant->organization,
                     description: 'Reservation seated',
                 );
-                event(new ReservationUpdated($reservation, 'seated'));
+                event(new ReservationUpdated($reservation, 'seated', $actor));
 
                 return $reservation;
             });
@@ -716,7 +716,7 @@ class ReservationService
                     organization: $reservation->restaurant->organization,
                     description: 'Reservation moved',
                 );
-                event(new ReservationUpdated($reservation, 'moved'));
+                event(new ReservationUpdated($reservation, 'moved', $actor));
 
                 return $reservation;
             });
@@ -742,7 +742,7 @@ class ReservationService
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'completed'));
+        event(new ReservationUpdated($reservation, 'completed', $actor));
 
         if (! $reservation->restaurant->guestSurveys()->where('status', 'published')->exists()) {
             foreach ($reservation->notifiableParticipants() as $participant) {
@@ -787,7 +787,7 @@ class ReservationService
             description: 'Reservation service stage updated',
         );
 
-        event(new ReservationUpdated($reservation, 'service_stage_updated'));
+        event(new ReservationUpdated($reservation, 'service_stage_updated', $actor));
 
         return $reservation;
     }
@@ -840,7 +840,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'arrived'));
+        event(new ReservationUpdated($reservation, 'arrived', $actor));
 
         return $reservation;
     }
@@ -853,7 +853,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'partially_arrived'));
+        event(new ReservationUpdated($reservation, 'partially_arrived', $actor));
 
         return $reservation;
     }
@@ -865,7 +865,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'left_message'));
+        event(new ReservationUpdated($reservation, 'left_message', $actor));
 
         return $reservation;
     }
@@ -877,7 +877,7 @@ class ReservationService
         ])->save();
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, 'running_late'));
+        event(new ReservationUpdated($reservation, 'running_late', $actor));
 
         return $reservation;
     }
@@ -902,7 +902,7 @@ class ReservationService
         }
 
         $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
-        event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show'));
+        event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show', $actor));
 
         ChargeNoShowFeeJob::dispatch($reservation->id);
 
@@ -1321,7 +1321,7 @@ class ReservationService
                     description: 'Reservation created',
                 );
 
-                event(new ReservationUpdated($reservation, 'created'));
+                event(new ReservationUpdated($reservation, 'created', $actor));
 
                 if ($user) {
                     $user->notify(new ReservationLifecycleNotification($reservation, 'created'));

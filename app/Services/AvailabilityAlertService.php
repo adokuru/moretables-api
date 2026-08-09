@@ -52,7 +52,10 @@ class AvailabilityAlertService
             description: 'Table availability alert created',
         );
 
-        return $alert->load('restaurant');
+        $alert->load('restaurant');
+        event(new WaitlistEntryUpdated($alert, 'created'));
+
+        return $alert;
     }
 
     public function cancel(WaitlistEntry $alert, User $actor): WaitlistEntry
@@ -91,8 +94,6 @@ class AvailabilityAlertService
             organization: $alert->restaurant?->organization,
             description: 'Table availability alert manually notified',
         );
-
-        event(new WaitlistEntryUpdated($alert, 'notified'));
 
         return $alert;
     }
@@ -212,5 +213,11 @@ class AvailabilityAlertService
 
             $alert->user?->notify(new AvailabilityAlertNotification($alert));
         });
+
+        // Shared by both the manual "Notify" button (notifyNow()) and the
+        // automatic table-opened-up path (processForRestaurant()) — putting
+        // the broadcast here means both get it for free, instead of only the
+        // manual path (which is how this worked before).
+        event(new WaitlistEntryUpdated($alert, 'notified'));
     }
 }
