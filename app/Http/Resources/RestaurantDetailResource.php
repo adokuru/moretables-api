@@ -156,6 +156,9 @@ class RestaurantDetailResource extends JsonResource
             'cancellation_policies' => RestaurantCancellationPolicyResource::collection(
                 $this->whenLoaded('cancellationPolicies'),
             ),
+            'rewards_enabled' => (bool) $this->rewards_enabled,
+            'reservation_reward_points' => $this->reservation_reward_points,
+            'reward_rules' => RestaurantRewardRuleResource::collection($this->whenLoaded('rewardRules')),
             'widget_settings' => $this->resource->widgetSettingsWithDefaults(),
             'menus' => $this->whenLoaded('menuItems', fn () => $this->menuItems
                 ->groupBy('section_name')

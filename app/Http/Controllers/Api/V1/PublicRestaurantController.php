@@ -234,6 +234,7 @@ class PublicRestaurantController extends Controller
             'availabilitySchedules',
             'policy',
             'cancellationPolicies' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('id'),
+            'rewardRules' => fn ($query) => $query->active()->orderBy('id'),
             'menuItems.media',
             'diningAreas.tables',
         ]));

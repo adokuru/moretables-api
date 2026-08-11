@@ -129,4 +129,9 @@ it('serves the generated api specification route', function () {
         'completed_at',
         'finished_at',
     ]);
+    expect($specification['components']['schemas']['RestaurantDetailResource']['properties'])->toHaveKeys([
+        'rewards_enabled',
+        'reservation_reward_points',
+        'reward_rules',
+    ]);
 });

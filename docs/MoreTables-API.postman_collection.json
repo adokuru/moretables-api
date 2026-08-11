@@ -1371,7 +1371,7 @@
        ]
       }
      },
-     "description": "Public restaurant detail response including hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours), meal_types / meal_schedules for business hours, summary, and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages). Returns 404 when the restaurant is inactive or does not have an active or trialing merchant subscription."
+     "description": "Public restaurant detail response including hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours), meal_types / meal_schedules for business hours, rewards_enabled, reservation_reward_points, active reward_rules, summary, and discovery_metrics with reviews_count, average_rating, ratings_breakdown (counts keyed 5\u20131), and category_breakdown (food, service, ambience, value averages). Returns 404 when the restaurant is inactive or does not have an active or trialing merchant subscription."
     },
     {
      "name": "Restaurant availability",

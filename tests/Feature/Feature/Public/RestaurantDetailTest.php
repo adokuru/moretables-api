@@ -8,6 +8,7 @@ use App\Models\RestaurantHour;
 use App\Models\RestaurantMenuItem;
 use App\Models\RestaurantPolicy;
 use App\Models\RestaurantReview;
+use App\Models\RestaurantRewardRule;
 use App\Models\Role;
 use App\Models\SavedRestaurant;
 use App\Models\User;
@@ -247,6 +248,34 @@ it('exposes booking policy and active cancellation policies on public restaurant
         ->assertJsonCount(1, 'data.cancellation_policies')
         ->assertJsonPath('data.cancellation_policies.0.id', $activePolicy->id)
         ->assertJsonPath('data.cancellation_policies.0.name', 'Weekend card hold');
+});
+
+it('exposes the reward points configured by the restaurant on public restaurant detail', function () {
+    $restaurant = createListedRestaurant([
+        'rewards_enabled' => true,
+        'reservation_reward_points' => 250,
+    ]);
+
+    $activeRule = RestaurantRewardRule::factory()->for($restaurant)->create([
+        'points' => 500,
+        'days' => [5],
+        'times' => ['18:00'],
+    ]);
+
+    RestaurantRewardRule::factory()->for($restaurant)->inactive()->create([
+        'points' => 900,
+        'days' => [6],
+    ]);
+
+    $this->getJson('/api/v1/restaurants/'.$restaurant->slug)
+        ->assertOk()
+        ->assertJsonPath('data.rewards_enabled', true)
+        ->assertJsonPath('data.reservation_reward_points', 250)
+        ->assertJsonCount(1, 'data.reward_rules')
+        ->assertJsonPath('data.reward_rules.0.id', $activeRule->id)
+        ->assertJsonPath('data.reward_rules.0.points', 500)
+        ->assertJsonPath('data.reward_rules.0.days', [5])
+        ->assertJsonPath('data.reward_rules.0.times', ['18:00']);
 });
 
 it('only includes internal notes for users who can access the restaurant', function () {
