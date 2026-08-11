@@ -22,6 +22,8 @@ class ReservationResource extends JsonResource
             'notes' => $this->notes,
             'occasion' => $this->occasion,
             'accept_points' => $this->accept_points,
+            'use_points' => $this->redeemed_points > 0,
+            'redeemed_points' => $this->redeemed_points,
             'subscribe_to_promotions' => $this->subscribe_to_promotions,
             'guests' => $this->resource->guestsForApi(),
             'internal_notes' => $this->when(

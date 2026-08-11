@@ -21,8 +21,16 @@ class StoreReservationRequest extends FormRequest
             'notes' => ['nullable', 'string'],
             'occasion' => ['nullable', 'string', 'max:100'],
             'accept_points' => ['nullable', 'boolean'],
+            'use_points' => ['nullable', 'boolean'],
             'subscribe_to_promotions' => ['nullable', 'boolean'],
             'card_hold_reference' => ['nullable', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'use_points.boolean' => 'The use points selection must be true or false.',
         ];
     }
 }

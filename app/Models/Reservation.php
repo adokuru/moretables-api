@@ -36,6 +36,7 @@ class Reservation extends Model
         'notes',
         'occasion',
         'accept_points',
+        'redeemed_points',
         'subscribe_to_promotions',
         'internal_notes',
         'arrived_at',
@@ -58,6 +59,7 @@ class Reservation extends Model
             'completed_at' => 'datetime',
             'canceled_at' => 'datetime',
             'accept_points' => 'boolean',
+            'redeemed_points' => 'integer',
             'subscribe_to_promotions' => 'boolean',
             'metadata' => 'array',
         ];

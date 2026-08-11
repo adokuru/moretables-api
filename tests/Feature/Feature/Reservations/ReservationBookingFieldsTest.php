@@ -4,7 +4,9 @@ use App\Models\Reservation;
 use App\Models\RewardPointTransaction;
 use App\Models\User;
 use App\ReservationStatus;
+use App\RewardPointTransactionType;
 use App\Services\ReservationService;
+use App\Services\RewardProgramService;
 use App\UserStatus;
 use Laravel\Sanctum\Sanctum;
 
@@ -52,8 +54,65 @@ it('defaults accept_points and subscribe_to_promotions to false when not provide
 
     $response->assertCreated()
         ->assertJsonPath('reservation.accept_points', false)
+        ->assertJsonPath('reservation.use_points', false)
+        ->assertJsonPath('reservation.redeemed_points', 0)
         ->assertJsonPath('reservation.subscribe_to_promotions', false)
         ->assertJsonPath('reservation.occasion', null);
+});
+
+it('uses the customer entire points balance when requested during reservation booking', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create(['status' => UserStatus::Active]);
+
+    app(RewardProgramService::class)->awardPoints($customer, [
+        'points' => 350,
+        'type' => RewardPointTransactionType::Earn,
+        'description' => 'Test points balance.',
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $response = $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'use_points' => true,
+    ]);
+
+    $reservationId = $response->json('reservation.id');
+
+    $response->assertCreated()
+        ->assertJsonPath('reservation.use_points', true)
+        ->assertJsonPath('reservation.redeemed_points', 350);
+
+    $this->assertDatabaseHas('reward_point_transactions', [
+        'user_id' => $customer->id,
+        'type' => RewardPointTransactionType::Redeem->value,
+        'points' => -350,
+        'balance_after' => 0,
+        'reference_type' => Reservation::class,
+        'reference_id' => $reservationId,
+    ]);
+});
+
+it('rejects using points during reservation booking when the customer has no points', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create(['status' => UserStatus::Active]);
+
+    Sanctum::actingAs($customer);
+
+    $this->postJson('/api/v1/reservations', [
+        'restaurant_id' => $data['restaurant']->id,
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'use_points' => true,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['use_points']);
+
+    $this->assertDatabaseMissing('reservations', [
+        'user_id' => $customer->id,
+        'restaurant_id' => $data['restaurant']->id,
+    ]);
 });
 
 it('allows updating occasion and subscribe_to_promotions on an existing reservation', function () {

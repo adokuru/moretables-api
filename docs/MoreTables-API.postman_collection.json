@@ -2443,9 +2443,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"Long-form special request text is supported here. Include accessibility, allergy, seating, celebration, timing, or other guest context as needed.\",\n  \"card_hold_reference\": \"rch_... from Place card hold, or your own Paystack Inline transaction reference (required only for card-hold slots)\"\n}"
+       "raw": "{\n  \"restaurant_id\": 1,\n  \"starts_at\": \"2025-12-25T19:00:00Z\",\n  \"party_size\": 4,\n  \"notes\": \"Long-form special request text is supported here. Include accessibility, allergy, seating, celebration, timing, or other guest context as needed.\",\n  \"accept_points\": true,\n  \"use_points\": false,\n  \"card_hold_reference\": \"rch_... from Place card hold, or your own Paystack Inline transaction reference (required only for card-hold slots)\"\n}"
       },
-      "description": "Availability is checked live inside a restaurant-scoped lock. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
+      "description": "Set use_points to true to deduct the customer's entire available points balance when the reservation is created. The response records the amount in reservation.redeemed_points; a 422 is returned when the customer has no available points. accept_points separately controls whether the customer earns points after completing the reservation. Availability is checked live inside a restaurant-scoped lock. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
      }
     },
     {

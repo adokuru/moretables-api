@@ -193,6 +193,61 @@ class RewardProgramService
         );
     }
 
+    public function redeemAllPointsForReservation(User $user, Reservation $reservation): RewardPointTransaction
+    {
+        $program = $this->activeProgram();
+
+        return DB::transaction(function () use ($user, $reservation, $program): RewardPointTransaction {
+            $existingTransaction = RewardPointTransaction::query()
+                ->where('reward_program_id', $program->id)
+                ->where('user_id', $user->id)
+                ->where('type', RewardPointTransactionType::Redeem)
+                ->where('reference_type', Reservation::class)
+                ->where('reference_id', $reservation->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingTransaction) {
+                return $existingTransaction->load(['rewardProgram.levels', 'createdBy']);
+            }
+
+            $latestTransaction = RewardPointTransaction::query()
+                ->where('reward_program_id', $program->id)
+                ->where('user_id', $user->id)
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            $points = (int) ($latestTransaction?->balance_after ?? 0);
+
+            if ($points <= 0) {
+                throw ValidationException::withMessages([
+                    'use_points' => ['You do not have any points available to use.'],
+                ]);
+            }
+
+            return $this->awardPoints(
+                user: $user,
+                attributes: [
+                    'points' => -$points,
+                    'type' => RewardPointTransactionType::Redeem,
+                    'description' => 'All available points used for a reservation.',
+                    'reference_type' => Reservation::class,
+                    'reference_id' => $reservation->id,
+                    'metadata' => [
+                        'redemption' => [
+                            'points_redeemed' => $points,
+                            'use_all_points' => true,
+                        ],
+                        'restaurant_id' => $reservation->restaurant_id,
+                        'reservation_reference' => $reservation->reservation_reference,
+                    ],
+                ],
+                actor: $user,
+            );
+        });
+    }
+
     public function expireDuePointLots(): int
     {
         $program = $this->activeProgram();

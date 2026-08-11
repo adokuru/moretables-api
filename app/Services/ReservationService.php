@@ -1322,9 +1322,18 @@ class ReservationService
                     'notes' => $attributes['notes'] ?? null,
                     'occasion' => $attributes['occasion'] ?? null,
                     'accept_points' => (bool) ($attributes['accept_points'] ?? false),
+                    'redeemed_points' => 0,
                     'subscribe_to_promotions' => (bool) ($attributes['subscribe_to_promotions'] ?? false),
                     'internal_notes' => $attributes['internal_notes'] ?? null,
                 ]);
+
+                if ($user && ($attributes['use_points'] ?? false)) {
+                    $redemption = $this->rewardProgramService->redeemAllPointsForReservation($user, $reservation);
+
+                    $reservation->update([
+                        'redeemed_points' => abs($redemption->points),
+                    ]);
+                }
 
                 $reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
 
