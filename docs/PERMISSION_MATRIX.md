@@ -1,6 +1,6 @@
 # Permission matrix — what each access-config permission actually does
 
-The 12 permissions assignable via the Access Config editor
+The 13 permissions assignable via the Access Config editor
 (`PERMISSION_LABELS`, `moretable-web-app/src/lib/api/accounts/accounts.types.ts`),
 what they unlock in `/dashboard` (front of house) vs `/admin` (back of
 house), and whether it's a read or a write. Built by grepping every
@@ -9,7 +9,7 @@ house), and whether it's a read or a write. Built by grepping every
 
 ## Every permission is now enforced
 
-As of the roles-and-permissions pass described below, all 12 permissions
+As of the roles-and-permissions pass described below, all 13 permissions
 gate a real backend check — none are UI-only anymore. Every new check is
 **additive**: `restaurants.manage` (and `restaurants.view` for read-only
 checks) remains a valid fallback alongside the specific permission, so
@@ -22,7 +22,8 @@ exception is `reporting.export`, which is intentionally **not** granted by
 
 | Permission | Label (UI) | Dashboard | Admin | Read/Write | What it gates |
 |---|---|:-:|:-:|---|---|
-| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits, creating shift notes, broadcasting messages to guests (fallback alongside `communications.manage`/`messaging.manage` — see below), adding a server. |
+| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits, creating shift notes, broadcasting messages to guests (fallback alongside `communications.manage`/`messaging.manage` — see below), adding a server. **Implies and locks `reservations.view` in the Access Config editor** (`AccessConfigModal.tsx`) — same "manage implies view" pairing as `restaurants.manage`/`restaurants.view` below, since editing something you can't view doesn't make sense. |
+| `reservations.view` | View Reservations | ✅ | (via `reporting` fallback) | Read | Nearly every FOH `GET` the dashboard depends on — summary, reservations, arrived, waitlist, seated, finished, floor plan, timelines, shift overview, guestbook, etc. (per-endpoint `abort_unless`, not route middleware — see each controller listed under `reservations.manage`'s write counterparts). Without it the dashboard's first fetch 403s and the user is bounced to `/access-denied`; it does not gate the `/admin` section itself, except as one of three fallbacks (alongside `reporting.export`/`audit_logs.view`) for `/admin/reporting`. Was already enforced backend-side and already assignable via the API before this change — it just had no checkbox in `AccessConfigModal.tsx` until now. |
 | `tables.manage` | Floor Configurations | ✅ | ✅ | Both | **Dashboard**: viewing/assigning tables on the live floor plan. **Admin**: `availability-planning`'s Floor Plan + Table Combinations tabs — full CRUD on dining areas, dining spots, tables, table combinations, table status. Also part of `Permission::adminSectionPermissions()` — unlocks `/admin` on its own. |
 | `audit_logs.view` | Reporting View | — | ✅ | Read | `/admin/reporting`'s view endpoints (`filters`, `shiftOccupancy`, `coverTrends`, `firstTimeVisits`, `guestFrequency`, `reservations`, `turnTimes`, `guestExport` — `MerchantReportingController::authorizeReporting()`), additive alongside the existing `reservations.view` check. Does **not** grant export — see `reporting.export`. |
 | `reporting.export` | Reporting Exporting Data | — | ✅ | Write-ish (export) | The 3 CSV export endpoints on `MerchantReportingController` (`exportGuestFrequency`/`exportReservations`/`exportGuestExport`) and `MerchantGuestSurveyController::exportResponses`. **Deliberately its own gate** — only OR'd with `restaurants.manage`, not `reservations.view`/`audit_logs.view`, so viewing and exporting are genuinely distinct capabilities (a user who can see a report can't necessarily download it). |
@@ -36,7 +37,7 @@ exception is `reporting.export`, which is intentionally **not** granted by
 | `policies.manage` | Policies | — | ✅ | Both | Maps to the **Policies** tab of `/admin/restaurant-settings`. `MerchantRestaurantBookingPolicyController`, `MerchantRestaurantCancellationPolicyController`, and their `FormRequest`s (`UpdateRestaurantBookingPolicyRequest`, `Store`/`UpdateRestaurantCancellationPolicyRequest`) — OR'd alongside `restaurants.manage`. |
 
 Two more permissions exist and are fully enforced, but aren't in the
-12-item assignable list above (they're either always-on for certain default
+13-item assignable list above (they're either always-on for certain default
 configs or handled specially):
 
 | Permission | Dashboard | Admin | What it gates |
