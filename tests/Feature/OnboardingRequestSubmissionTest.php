@@ -55,11 +55,14 @@ it('submits an onboarding request with all fields', function () {
         OnboardingRequestSubmittedNotification::class,
         function (OnboardingRequestSubmittedNotification $notification, array $channels): bool {
             $databasePayload = $notification->toArray(new stdClass);
+            $mailHtml = (string) $notification->toMail(new stdClass)->render();
 
             return $channels === ['mail', 'database']
                 && $databasePayload['type'] === 'onboarding_request_submitted'
                 && $databasePayload['restaurant_name'] === 'Chidi\'s Bistro'
-                && $databasePayload['email'] === 'chidi@bistro.ng';
+                && $databasePayload['email'] === 'chidi@bistro.ng'
+                && str_contains($mailHtml, 'Reason: Book a demo')
+                && ! str_contains($mailHtml, 'Reason: book_a_demo');
         },
     );
     Notification::assertNotSentTo($suspendedAdmin, OnboardingRequestSubmittedNotification::class);

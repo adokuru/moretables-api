@@ -37,7 +37,7 @@ class OnboardingRequestSubmittedNotification extends Notification implements Sho
             ->line("{$ownerName} submitted an onboarding request for {$this->onboardingRequest->restaurant_name}.")
             ->line('Email: '.$this->onboardingRequest->email)
             ->line('Phone: '.$this->onboardingRequest->phone)
-            ->line('Reason: '.$this->onboardingRequest->contact_reason->value)
+            ->line('Reason: '.ucfirst(str_replace('_', ' ', $this->onboardingRequest->contact_reason->value)))
             ->line('Review it in the MoreTables admin dashboard.');
     }
 
