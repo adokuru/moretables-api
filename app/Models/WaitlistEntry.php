@@ -32,6 +32,7 @@ class WaitlistEntry extends Model
         'notified_at',
         'notification_count',
         'expires_at',
+        'arrived_at',
         'seated_at',
         'metadata',
     ];
@@ -47,6 +48,7 @@ class WaitlistEntry extends Model
             'notified_at' => 'datetime',
             'notification_count' => 'integer',
             'expires_at' => 'datetime',
+            'arrived_at' => 'datetime',
             'seated_at' => 'datetime',
             'metadata' => 'array',
         ];

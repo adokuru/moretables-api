@@ -8,6 +8,7 @@ use App\Models\RestaurantView;
 use App\Models\Role;
 use App\Models\SavedRestaurant;
 use App\Models\User;
+use App\ReservationStatus;
 use App\Services\AvailabilityService;
 use App\Services\ReservationService;
 use Carbon\Carbon;
@@ -93,7 +94,12 @@ it('assigns the requested available table instead of the first sorted table', fu
     expect($reservation->refresh()->restaurant_table_id)->toBe($requestedTable->id);
 });
 
-it('rejects an overlapping requested table assignment', function () {
+it('allows preassigning a not-yet-seated reservation onto a table with an overlapping booking', function () {
+    // ReservationService::assignTable only enforces an availability/occupancy
+    // check when the reservation being moved is already Seated (a real,
+    // right-now table swap). A not-yet-seated reservation is a tentative
+    // preassignment — the real "can't double-seat a table" guard runs later,
+    // at actual seat time (seatReservation()), not here.
     $data = createBookableRestaurant();
     $actor = User::factory()->create();
     $startsAt = now()->addDays(2)->setTime(18, 0);
@@ -115,6 +121,38 @@ it('rejects an overlapping requested table assignment', function () {
         'restaurant_table_id' => $requestedTable->id,
         'party_size' => 2,
         'starts_at' => $startsAt->copy()->addMinutes(30),
+        'ends_at' => $startsAt->copy()->addHours(2),
+    ]);
+
+    app(ReservationService::class)->assignTable($reservation, $requestedTable, $actor);
+
+    expect($reservation->refresh()->restaurant_table_id)->toBe($requestedTable->id);
+});
+
+it('rejects moving an already-seated reservation onto a table another party is currently seated at', function () {
+    $data = createBookableRestaurant();
+    $actor = User::factory()->create();
+    $startsAt = now()->setTime(18, 0);
+    $requestedTable = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => null,
+        'max_capacity' => 4,
+    ]);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 2,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->copy()->addHours(2),
+    ]);
+
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $requestedTable->id,
+        'party_size' => 2,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => $startsAt->copy()->subMinutes(30),
         'ends_at' => $startsAt->copy()->addHours(2),
     ]);
 

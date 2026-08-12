@@ -507,26 +507,31 @@ class ReservationService
                     return $reservation->load(['user', 'guestContact', 'reservationGuests']);
                 }
 
-                $availabilityStartsAt = $reservation->status === ReservationStatus::Seated
-                    ? now()
-                    : $reservation->starts_at;
-                $occupiedByAnotherSeatedParty = $reservation->status === ReservationStatus::Seated
-                    && Reservation::query()
+                // Only an already-Seated reservation being physically moved to a
+                // new table right now needs an availability/occupancy check here.
+                // A not-yet-seated reservation is a preassignment — the table is
+                // just tentatively attached, no conflict check at this point. The
+                // real "can't double-seat a table" guard runs later, at actual
+                // seat time (seatReservation()), which already produces a
+                // specific error naming the blocking reservation.
+                if ($reservation->status === ReservationStatus::Seated) {
+                    $occupiedByAnotherSeatedParty = Reservation::query()
                         ->where('restaurant_table_id', $table->id)
                         ->where('status', ReservationStatus::Seated)
                         ->whereKeyNot($reservation->id)
                         ->exists();
 
-                if ($occupiedByAnotherSeatedParty || ! $this->availabilityService->isTableAvailable(
-                    restaurant: $reservation->restaurant,
-                    table: $table,
-                    startsAt: $availabilityStartsAt,
-                    partySize: $reservation->party_size,
-                    excludingReservationId: $reservation->id,
-                )) {
-                    throw ValidationException::withMessages([
-                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
-                    ]);
+                    if ($occupiedByAnotherSeatedParty || ! $this->availabilityService->isTableAvailable(
+                        restaurant: $reservation->restaurant,
+                        table: $table,
+                        startsAt: now(),
+                        partySize: $reservation->party_size,
+                        excludingReservationId: $reservation->id,
+                    )) {
+                        throw ValidationException::withMessages([
+                            'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                        ]);
+                    }
                 }
 
                 $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
@@ -1024,7 +1029,10 @@ class ReservationService
                 ]);
             }
 
-            $entry->forceFill(['status' => WaitlistStatus::Arrived])->save();
+            $entry->forceFill([
+                'status' => WaitlistStatus::Arrived,
+                'arrived_at' => $entry->arrived_at ?? now(),
+            ])->save();
             $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
 
             $this->auditLogService->log(
@@ -1053,7 +1061,10 @@ class ReservationService
                 ]);
             }
 
-            $entry->forceFill(['status' => WaitlistStatus::PartiallyArrived])->save();
+            $entry->forceFill([
+                'status' => WaitlistStatus::PartiallyArrived,
+                'arrived_at' => $entry->arrived_at ?? now(),
+            ])->save();
             $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'user', 'guestContact']);
 
             $this->auditLogService->log(
@@ -1234,17 +1245,12 @@ class ReservationService
                     ]);
                 }
 
-                if (! $this->availabilityService->isTableAvailable(
-                    restaurant: $entry->restaurant,
-                    table: $table,
-                    startsAt: $entry->preferred_starts_at,
-                    partySize: $entry->party_size,
-                )) {
-                    throw ValidationException::withMessages([
-                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
-                    ]);
-                }
-
+                // No availability/occupancy check here on purpose — this is a
+                // tentative preassignment, not seating, so a table already in
+                // use by another party is still a valid pick (multiple
+                // not-yet-seated entries can share a preassigned table). The
+                // real "can't double-seat a table" guard runs later, at actual
+                // seat time (assignWaitlistEntryToTable() -> seatReservation()).
                 $entry->forceFill(['restaurant_table_id' => $table->id])->save();
                 $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'table', 'user', 'guestContact']);
 
