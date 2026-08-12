@@ -35,6 +35,7 @@ class Permission extends Model
     {
         return [
             'reservations.manage',
+            'reservations.view',
             'tables.manage',
             'audit_logs.view',
             'reporting.export',

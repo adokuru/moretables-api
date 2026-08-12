@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -262,6 +263,53 @@ class User extends Authenticatable implements HasMedia
         }
 
         return false;
+    }
+
+    /**
+     * The human-readable label for how this user was granted access to
+     * $restaurant — the access config's own name (e.g. "Marketing &
+     * Growth") for access-config-based staff, or the classic Role's name
+     * title-cased (e.g. "Organization Owner") otherwise. This is NOT
+     * `roles`/`role_assignments[].role` (UserResource) — those read the
+     * legacy `role_id` stand-in, which is stamped `principal_admin` on
+     * every access-config-based assignment regardless of what was
+     * actually granted (see docs/ADMIN_ACCESS_CONTROL.md). Null only if
+     * the user genuinely has no assignment reaching this restaurant.
+     */
+    public function restaurantRoleLabel(Restaurant $restaurant): ?string
+    {
+        $assignment = $this->roleAssignments()
+            ->with(['accessConfig', 'role'])
+            ->where('restaurant_id', $restaurant->getKey())
+            ->first();
+
+        if (! $assignment && $restaurant->organization_id) {
+            $assignment = $this->roleAssignments()
+                ->with(['accessConfig', 'role'])
+                ->where('organization_id', $restaurant->organization_id)
+                ->whereNull('restaurant_id')
+                ->first();
+        }
+
+        if (! $assignment) {
+            $assignment = $this->roleAssignments()
+                ->with(['accessConfig', 'role'])
+                ->whereNull('organization_id')
+                ->whereNull('restaurant_id')
+                ->first();
+        }
+
+        if (! $assignment) {
+            return null;
+        }
+
+        if ($assignment->access_config_id && $assignment->accessConfig) {
+            return $assignment->accessConfig->name;
+        }
+
+        return $assignment->role
+            ? Str::title(str_replace('_', ' ', $assignment->role->name))
+            : null;
     }
 
     public function canAccessRestaurant(Restaurant $restaurant): bool

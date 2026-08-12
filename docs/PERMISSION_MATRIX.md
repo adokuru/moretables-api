@@ -1,6 +1,6 @@
 # Permission matrix — what each access-config permission actually does
 
-The 12 permissions assignable via the Access Config editor
+The 13 permissions assignable via the Access Config editor
 (`PERMISSION_LABELS`, `moretable-web-app/src/lib/api/accounts/accounts.types.ts`),
 what they unlock in `/dashboard` (front of house) vs `/admin` (back of
 house), and whether it's a read or a write. Built by grepping every
@@ -9,7 +9,7 @@ house), and whether it's a read or a write. Built by grepping every
 
 ## Every permission is now enforced
 
-As of the roles-and-permissions pass described below, all 12 permissions
+As of the roles-and-permissions pass described below, all 13 permissions
 gate a real backend check — none are UI-only anymore. Every new check is
 **additive**: `restaurants.manage` (and `restaurants.view` for read-only
 checks) remains a valid fallback alongside the specific permission, so
@@ -22,7 +22,8 @@ exception is `reporting.export`, which is intentionally **not** granted by
 
 | Permission | Label (UI) | Dashboard | Admin | Read/Write | What it gates |
 |---|---|:-:|:-:|---|---|
-| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits, creating shift notes, broadcasting messages to guests (fallback alongside `communications.manage`/`messaging.manage` — see below), adding a server. |
+| `reservations.manage` | Reservations Management | ✅ | — | Write | Creating/editing/canceling/arriving/seating reservations (`MerchantReservationController`), Guestbook edits, creating shift notes, broadcasting messages to guests (fallback alongside `communications.manage`/`messaging.manage` — see below), adding a server. **Implies and locks `reservations.view` in the Access Config editor** (`AccessConfigModal.tsx`) — same "manage implies view" pairing as `restaurants.manage`/`restaurants.view` below, since editing something you can't view doesn't make sense. |
+| `reservations.view` | View Reservations | ✅ | (via `reporting` fallback) | Read | Nearly every FOH `GET` the dashboard depends on — summary, reservations, arrived, waitlist, seated, finished, floor plan, timelines, shift overview, guestbook, etc. (per-endpoint `abort_unless`, not route middleware — see each controller listed under `reservations.manage`'s write counterparts). Without it the dashboard's first fetch 403s and the user is bounced to `/access-denied`; it does not gate the `/admin` section itself, except as one of three fallbacks (alongside `reporting.export`/`audit_logs.view`) for `/admin/reporting`. Was already enforced backend-side and already assignable via the API before this change — it just had no checkbox in `AccessConfigModal.tsx` until now. |
 | `tables.manage` | Floor Configurations | ✅ | ✅ | Both | **Dashboard**: viewing/assigning tables on the live floor plan. **Admin**: `availability-planning`'s Floor Plan + Table Combinations tabs — full CRUD on dining areas, dining spots, tables, table combinations, table status. Also part of `Permission::adminSectionPermissions()` — unlocks `/admin` on its own. |
 | `audit_logs.view` | Reporting View | — | ✅ | Read | `/admin/reporting`'s view endpoints (`filters`, `shiftOccupancy`, `coverTrends`, `firstTimeVisits`, `guestFrequency`, `reservations`, `turnTimes`, `guestExport` — `MerchantReportingController::authorizeReporting()`), additive alongside the existing `reservations.view` check. Does **not** grant export — see `reporting.export`. |
 | `reporting.export` | Reporting Exporting Data | — | ✅ | Write-ish (export) | The 3 CSV export endpoints on `MerchantReportingController` (`exportGuestFrequency`/`exportReservations`/`exportGuestExport`) and `MerchantGuestSurveyController::exportResponses`. **Deliberately its own gate** — only OR'd with `restaurants.manage`, not `reservations.view`/`audit_logs.view`, so viewing and exporting are genuinely distinct capabilities (a user who can see a report can't necessarily download it). |
@@ -30,13 +31,13 @@ exception is `reporting.export`, which is intentionally **not** granted by
 | `integrations.manage` | Integrations | — | ✅ (frontend-only) | n/a | No backend controller exists yet for Integrations — nothing to enforce server-side. Gated purely on the frontend (nav + route guard, `moretable-web-app/src/lib/adminAccess.ts`). |
 | `marketing.manage` | Marketing | — | ✅ | Both | `MerchantRewardRuleController` (index/show/store/update/destroy) and its two `FormRequest`s — OR'd alongside `restaurants.view`(read)/`restaurants.manage`(write). This is the only backend surface behind the `/admin/marketing` page (reward points, private dining, campaigns, promos are all UI over the same reward-rule resource). |
 | `restaurants.view` | Restaurant Profile | ✅ | ✅ (view-only) | Read | **The workhorse read permission**, unchanged — nearly every `GET` across dashboard and admin. On its own it grants **view-only** access to `/admin/restaurant-profile`; editing that page (and everywhere else `restaurants.manage` already gated) still requires `restaurants.manage` — this was an explicit product decision, not a backend change (see `ADMIN_ACCESS_CONTROL.md`/`access-control.md`). |
-| `billing.manage` | Billing | — | ✅ | Both (single tier) | `MerchantBillingController` (`show`/`checkout`/`upgrade`/`verify`/`invoices`/`downloadInvoice`) — OR'd alongside the existing `restaurants.view`/`restaurants.manage` checks. Deliberately single-tier (view + pay together, no separate view-only mode), per product decision. |
+| `billing.manage` | Billing | — | ✅ | Both (single tier) | `MerchantBillingController` (`show`/`checkout`/`upgrade`/`verify`/`invoices`/`downloadInvoice`) — OR'd alongside the existing `restaurants.view`/`restaurants.manage` checks. Deliberately single-tier (view + pay together, no separate view-only mode), per product decision. **Frontend nav/route-guard no longer mirrors the `restaurants.manage` OR** (`adminAccess.ts`'s `/admin/billing` rule requires only `billing.manage` now) — a config with just Restaurant Settings checked was showing Billing in the nav, which read as a bug once Marketing/Integrations/Guest Communication's own nav items were already strict (their own dedicated checkbox only, no `restaurants.manage` fallback). The backend OR above is untouched — a restaurant that could reach Billing via `restaurants.manage` before this still can via a direct API call, only the nav affordance was removed. |
 | `communications.manage` | Communications Channels | — | ✅ | Both | Maps to the **Guest Email** + **Surveys and Templates** tabs of `/admin/guest-communication`. `MerchantGuestCommunicationController::show`/`updateReservationMessaging`, all of `MerchantGuestSurveyController`, and `MerchantRestaurantBroadcastController::store` when `audience !== "all"` (i.e. the Guest Email tab's "send to selected guests" flow). |
 | `messaging.manage` | Direct Messaging | — | ✅ | Both | Maps to the **Broadcast Messaging** tab of `/admin/guest-communication`. `MerchantGuestCommunicationController::show`/`updateAutomatedMessaging`, and `MerchantRestaurantBroadcastController::store` when `audience === "all"`. |
 | `policies.manage` | Policies | — | ✅ | Both | Maps to the **Policies** tab of `/admin/restaurant-settings`. `MerchantRestaurantBookingPolicyController`, `MerchantRestaurantCancellationPolicyController`, and their `FormRequest`s (`UpdateRestaurantBookingPolicyRequest`, `Store`/`UpdateRestaurantCancellationPolicyRequest`) — OR'd alongside `restaurants.manage`. |
 
 Two more permissions exist and are fully enforced, but aren't in the
-12-item assignable list above (they're either always-on for certain default
+13-item assignable list above (they're either always-on for certain default
 configs or handled specially):
 
 | Permission | Dashboard | Admin | What it gates |

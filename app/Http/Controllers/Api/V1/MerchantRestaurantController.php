@@ -80,6 +80,10 @@ class MerchantRestaurantController extends Controller
                     // Accounts, Integrations, Marketing, Guest Communication, ...) as distinct from
                     // day-to-day /dashboard front-of-house use — see Permission::adminSectionPermissions().
                     'can_access_admin' => $user->hasAnyRestaurantPermission(Permission::adminSectionPermissions(), $restaurant),
+                    // The user's actual access config / role name for this restaurant
+                    // (e.g. "Marketing & Growth") — see User::restaurantRoleLabel()'s
+                    // doc comment for why this isn't the same as roles/role_assignments.
+                    'role_name' => $user->restaurantRoleLabel($restaurant),
                     'is_profile_published' => (bool) $restaurant->is_profile_published,
                     'onboarding_current_step' => $restaurant->onboarding_current_step,
                     'cuisines' => $restaurant->cuisines->pluck('name')->values(),
