@@ -12,6 +12,8 @@ use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 it('renders the reservation confirmed email with restaurant details and actions', function (): void {
@@ -78,6 +80,24 @@ it('renders the reservation confirmed email with restaurant details and actions'
         ->and($text)->toContain('Add to calendar:')
         ->and($text)->toContain('See Menu: https://pepp.example.com/menu')
         ->and($text)->toContain('Get Directions: https://www.google.com/maps/search/?api=1&query=39.1080000%2C-84.5150000');
+
+    config([
+        'mail.default' => 'array',
+        'mail.logo_url' => 'https://cdn.example.com/logo.png',
+    ]);
+
+    $transport = Mail::mailer('array')->getSymfonyTransport();
+    $transport->flush();
+
+    Notification::route('mail', 'guest@example.com')->notifyNow($notification);
+
+    $email = $transport->messages()[0]->getOriginalMessage();
+
+    expect($email->getHtmlBody())
+        ->toContain('src="cid:')
+        ->not->toContain('https://cdn.example.com/logo.png')
+        ->and($email->getAttachments())->toHaveCount(1)
+        ->and($email->getAttachments()[0]->getFilename())->toBe('logo.png');
 });
 
 it('falls back to an address-based directions link when the restaurant has no coordinates', function (): void {

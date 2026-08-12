@@ -121,12 +121,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Email Logo URL
+    | Email Logo Fallback URL
     |--------------------------------------------------------------------------
     |
-    | Absolute URL used in transactional email headers. Email clients cannot
-    | load localhost asset URLs, so set this to a publicly reachable HTTPS
-    | image in production (CDN / frontend hosted logo).
+    | Sent emails embed public/logo.png so the logo does not depend on remote
+    | image loading. This absolute URL is used as a fallback when that local
+    | file or a live mail message is unavailable.
     |
     */
 

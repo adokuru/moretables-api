@@ -1,6 +1,6 @@
 {{--
     Tabular-style transactional layout: logo, greeting, body, CTA link, footer.
-    Fonts: Nantes (greeting); Avenir (body/footer). Logo: public/logo.png via absolute URL.
+    Fonts: Nantes (greeting); Avenir (body/footer). Logo: public/logo.png embedded in sent emails.
 --}}
 @php
     $configuredLogoUrl = config('mail.logo_url');
@@ -8,7 +8,9 @@
     $isLocalAppUrl = in_array($appHost, ['localhost', '127.0.0.1', '::1'], true);
     $logoPath = public_path('logo.png');
 
-    if (filled($configuredLogoUrl)) {
+    if (isset($message) && is_file($logoPath)) {
+        $logoUrl = $message->embed($logoPath);
+    } elseif (filled($configuredLogoUrl)) {
         $logoUrl = $configuredLogoUrl;
     } elseif ($isLocalAppUrl && is_file($logoPath)) {
         $logoUrl = 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath));
