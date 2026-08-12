@@ -95,11 +95,37 @@ it('excludes cancelled reservations from calendar covers', function () {
     expect($todayDay['reservations_count'])->toBeNull();
 });
 
-it('forbids access without reservations.view permission', function () {
+it('forbids access without any permission', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
 
     $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $response = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/overview');
+
+    $response->assertForbidden();
+});
+
+it('grants access on restaurants.view alone, since this is an /admin-only page', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+
+    $user = User::factory()->create();
+    grantAccessConfigPermissions($user, $data['restaurant'], ['restaurants.view']);
+    Sanctum::actingAs($user);
+
+    $response = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/overview');
+
+    $response->assertOk();
+});
+
+it('forbids access on reservations.view alone, since that is a /dashboard-scoped permission', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+
+    $user = User::factory()->create();
+    grantAccessConfigPermissions($user, $data['restaurant'], ['reservations.view']);
     Sanctum::actingAs($user);
 
     $response = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/overview');

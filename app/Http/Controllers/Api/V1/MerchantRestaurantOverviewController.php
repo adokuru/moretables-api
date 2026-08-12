@@ -28,7 +28,7 @@ class MerchantRestaurantOverviewController extends Controller
      */
     public function show(Request $request, Restaurant $restaurant): JsonResponse
     {
-        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         return response()->json($this->performanceCache->flexible(
             $this->performanceCache->restaurantKey('merchant-overview', $restaurant->id),
