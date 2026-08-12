@@ -116,3 +116,44 @@ it('grants can_access_admin to a classic OrganizationOwner without any access co
 
     expect($restaurant['can_access_admin'])->toBeTrue();
 });
+
+it('returns the assigned access config\'s own name as role_name, not the legacy stamped role_id', function (): void {
+    $staff = User::factory()->create();
+    $config = RestaurantAccessConfig::query()
+        ->where('restaurant_id', $this->restaurant->id)
+        ->where('slug', 'marketing_growth')
+        ->firstOrFail();
+
+    app(ScopedRoleAssignmentService::class)->syncRestaurantAccessConfig(
+        user: $staff,
+        restaurant: $this->restaurant,
+        accessConfig: $config,
+        assignedBy: $staff->id,
+    );
+
+    Sanctum::actingAs($staff);
+
+    $response = getJson('/api/v1/merchant/restaurants');
+
+    $response->assertSuccessful();
+    $restaurant = collect($response->json('restaurants'))->firstWhere('id', $this->restaurant->id);
+
+    // syncRestaurantAccessConfig stamps role_id as principal_admin for every
+    // access-config-based assignment (see ADMIN_ACCESS_CONTROL.md) — role_name
+    // must reflect the real config ("Marketing & Growth"), not that stand-in.
+    expect($restaurant['role_name'])->toBe('Marketing & Growth');
+});
+
+it('returns a title-cased classic role name as role_name when there is no access config', function (): void {
+    $owner = User::factory()->create();
+    assignScopedRole($owner, Role::OrganizationOwner, $this->organization);
+
+    Sanctum::actingAs($owner);
+
+    $response = getJson('/api/v1/merchant/restaurants');
+
+    $response->assertSuccessful();
+    $restaurant = collect($response->json('restaurants'))->firstWhere('id', $this->restaurant->id);
+
+    expect($restaurant['role_name'])->toBe('Organization Owner');
+});

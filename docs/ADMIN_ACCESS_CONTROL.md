@@ -77,7 +77,8 @@ Each restaurant in the response now carries:
 ```jsonc
 {
   "permissions": ["reservations.manage", "tables.manage", "staff.manage", "..."],
-  "can_access_admin": true
+  "can_access_admin": true,
+  "role_name": "Marketing & Growth"
 }
 ```
 
@@ -88,6 +89,16 @@ Each restaurant in the response now carries:
 - `can_access_admin` — `hasAnyRestaurantPermission(Permission::adminSectionPermissions(), $restaurant)`.
   Computed once, server-side, so the frontend never needs to duplicate the
   admin-permission list itself.
+- `role_name` — `User::restaurantRoleLabel($restaurant)`: the assigned access
+  config's own `name` (e.g. "Marketing & Growth") for access-config-based
+  staff, or the classic `Role->name` title-cased (e.g. "Organization Owner")
+  otherwise. Added because `AuthUser.roles`/`role_assignments` (from
+  `/merchant/auth/profile`, `UserResource`) read the legacy `role_id`
+  stand-in described above — `principal_admin` for every access-config-based
+  assignment — so neither was usable for a "what's my role" display. Scope
+  priority (restaurant-specific → org-wide → global) mirrors `hasPermission()`'s
+  own scope filter. Frontend: `UserDropDown.tsx`'s nav-avatar dropdown, which
+  previously hardcoded the literal string `"Super Admin"` for every user.
 
 No new middleware was added on the `/admin/*`-facing merchant routes
 themselves. That was a deliberate choice, not an oversight — every one of
@@ -107,9 +118,10 @@ closes.
 
 ### `AuthProvider` (`src/providers/AuthProvider.tsx`)
 
-`restaurantPermissions: string[]` and `canAccessAdmin: boolean` are now part
-of the auth context, populated from `restaurants[0].permissions` /
-`.can_access_admin` in `fetchSessionData()` (the same function that already
+`restaurantPermissions: string[]`, `canAccessAdmin: boolean`, and
+`restaurantRoleName: string | null` are now part of the auth context,
+populated from `restaurants[0].permissions` / `.can_access_admin` /
+`.role_name` in `fetchSessionData()` (the same function that already
 resolves `restaurantId`/`restaurantName`). Reset on `logout()`, threaded
 through `setRestaurant()`'s existing optional-param pattern.
 
