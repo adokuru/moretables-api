@@ -22454,20 +22454,37 @@
                         }
                     },
                     "403": {
-                        "description": "An error",
+                        "description": "An error\n\nAn error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": ""
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": "Upgrade to Premium to customize your survey questions."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
                                         }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }
@@ -22619,20 +22636,37 @@
                         }
                     },
                     "403": {
-                        "description": "An error",
+                        "description": "An error\n\nAn error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": ""
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": "Upgrade to Premium to customize your survey questions."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
                                         }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }
@@ -22775,20 +22809,37 @@
                         }
                     },
                     "403": {
-                        "description": "An error",
+                        "description": "An error\n\nAn error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Error overview.",
-                                            "example": ""
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": ""
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "description": "Error overview.",
+                                                    "example": "Upgrade to Premium to customize your survey questions."
+                                                }
+                                            },
+                                            "required": [
+                                                "message"
+                                            ]
                                         }
-                                    },
-                                    "required": [
-                                        "message"
                                     ]
                                 }
                             }

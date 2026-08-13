@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\EmailUnsubscribe;
 use App\Models\GuestContact;
 use App\Models\GuestSurvey;
@@ -27,11 +28,33 @@ use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
 
+/**
+ * Mirrors MerchantGuestSurveyController::postDiningQuestions() — that method is private,
+ * so plan-gating tests that need the exact fixed-template content assert against this
+ * local copy instead.
+ *
+ * @return list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>
+ */
+function postDiningTemplateQuestions(): array
+{
+    return [
+        ['id' => 'food', 'type' => 'rating', 'prompt' => 'How would you rate your meal?', 'required' => true, 'options' => []],
+        ['id' => 'service', 'type' => 'rating', 'prompt' => 'How would you rate the service?', 'required' => true, 'options' => []],
+        ['id' => 'clean', 'type' => 'yes_no', 'prompt' => 'Was the restaurant clean?', 'required' => true, 'options' => []],
+        ['id' => 'nps', 'type' => 'nps', 'prompt' => 'How likely are you to recommend us?', 'required' => true, 'options' => []],
+        ['id' => 'comments', 'type' => 'long_text', 'prompt' => 'Is there anything else we could improve?', 'required' => false, 'options' => []],
+    ];
+}
+
 beforeEach(function (): void {
     $this->seed(RoleAndPermissionSeeder::class);
     $this->organization = Organization::factory()->create();
     $this->restaurant = Restaurant::factory()->for($this->organization)->create();
     activateMerchantBilling($this->restaurant);
+    // This file's existing tests freely create/publish arbitrary custom survey content and
+    // predate plan-tier gating — keep them on Premium (unrestricted) by default. The
+    // plan-gating tests further down explicitly downgrade to Foundation/Core instead.
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
     $this->owner = User::factory()->create();
     assignScopedRole($this->owner, Role::OrganizationOwner, $this->organization, $this->restaurant);
     Sanctum::actingAs($this->owner);
@@ -573,4 +596,103 @@ it('respects a registered user’s WhatsApp notification preference for surveys'
 
     expect(GuestSurveyInvitationNotification::deliveryChannels($survey, $optedIn))->toBe([WhatsAppChannel::class])
         ->and(GuestSurveyInvitationNotification::deliveryChannels($survey, $optedOut))->toBe([]);
+});
+
+// Plan-tier gating — Customizable Post-meal Guest Survey is Premium-only (docs/PLAN_PERMISSIONS.md).
+// $this->restaurant is Premium by default (see beforeEach); these tests explicitly downgrade it.
+
+it('excludes the blank template for restaurants below Premium', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Core);
+
+    $response = getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/templates")
+        ->assertSuccessful();
+
+    expect(collect($response->json('data'))->pluck('key')->all())->toBe(['post_dining']);
+});
+
+it('offers both templates to a Premium restaurant', function (): void {
+    $response = getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/templates")
+        ->assertSuccessful();
+
+    expect(collect($response->json('data'))->pluck('key')->all())->toBe(['post_dining', 'blank']);
+});
+
+it('rejects a restaurant below Premium creating a survey with customized questions', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys", [
+        'template_key' => 'blank',
+        'title' => 'Custom Survey',
+        'questions' => [[
+            'id' => 'custom',
+            'type' => 'rating',
+            'prompt' => 'Rate our custom question',
+            'required' => true,
+            'options' => [],
+        ]],
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to customize your survey questions.');
+
+    expect(GuestSurvey::query()->count())->toBe(0);
+});
+
+it('lets a restaurant below Premium create and publish the unmodified post dining template', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys", [
+        'template_key' => 'post_dining',
+        'title' => 'Post Dining Questions',
+    ])->assertCreated();
+
+    $surveyId = $response->json('survey.id');
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$surveyId}/publish")
+        ->assertSuccessful()
+        ->assertJsonPath('survey.status', 'published');
+});
+
+it('rejects a restaurant below Premium updating a draft survey with customized questions', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create(['questions' => postDiningTemplateQuestions()]);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$survey->id}", [
+        'questions' => [[
+            'id' => 'custom',
+            'type' => 'rating',
+            'prompt' => 'A custom question',
+            'required' => true,
+            'options' => [],
+        ]],
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to customize your survey questions.');
+
+    expect($survey->refresh()->questions)->toBe(postDiningTemplateQuestions());
+});
+
+it('allows a restaurant below Premium to edit non-question fields of the fixed template', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+    $survey = GuestSurvey::factory()->for($this->restaurant)->create(['questions' => postDiningTemplateQuestions()]);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys/{$survey->id}", [
+        'title' => 'Updated Title',
+        'channels' => ['email'],
+    ])->assertSuccessful();
+
+    expect($survey->refresh()->title)->toBe('Updated Title');
+});
+
+it('allows a Premium restaurant to fully customize survey questions', function (): void {
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/guest-surveys", [
+        'template_key' => 'blank',
+        'title' => 'Custom Survey',
+        'questions' => [[
+            'id' => 'custom',
+            'type' => 'rating',
+            'prompt' => 'Rate our custom question',
+            'required' => true,
+            'options' => [],
+        ]],
+    ])->assertCreated();
+
+    expect($response->json('survey.questions.0.id'))->toBe('custom');
 });

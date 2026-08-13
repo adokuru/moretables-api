@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\BillingPlanSlug;
 use App\RestaurantStatus;
 use App\Services\RestaurantRewardRuleService;
 use Database\Factories\RestaurantFactory;
@@ -286,6 +287,16 @@ class Restaurant extends Model implements HasMedia
     public function paymentMethods(): HasMany
     {
         return $this->hasMany(MerchantPaymentMethod::class);
+    }
+
+    /**
+     * Whether this restaurant's active (or trialing) subscription is on the given
+     * plan tier or higher. Used to gate plan-tier features (e.g. survey customization)
+     * separately from role-based permissions.
+     */
+    public function hasPlanAtLeast(BillingPlanSlug $minimum): bool
+    {
+        return $this->activeBillingSubscription?->plan?->slug?->atLeast($minimum) === true;
     }
 
     /**
