@@ -144,6 +144,98 @@ class AvailabilityService
     }
 
     /**
+     * Names the shift (e.g. "breakfast") covering a given instant, if any —
+     * used to make "which reservation is blocking this table" error messages
+     * name a shift, not just a raw date/time, so staff can jump straight to
+     * the right date+shift on the dashboard.
+     */
+    public function resolveShiftName(Restaurant $restaurant, CarbonInterface $at): ?string
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localAt = Carbon::parse($at)->setTimezone($restaurantTimezone);
+
+        return $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localAt)?->name;
+    }
+
+    /**
+     * Diagnoses why isTableAvailable() returned false for the same inputs,
+     * checking the exact same conditions in the exact same order. Returns a
+     * plain-language reason for every case except a genuine reservation-time
+     * conflict, where it returns the conflicting Reservation itself so the
+     * caller can name the guest and time (callers already have their own
+     * guest-name/time-formatting helpers — that's presentation, this method
+     * only answers "why").
+     */
+    public function explainUnavailable(
+        Restaurant $restaurant,
+        RestaurantTable $table,
+        CarbonInterface $startsAt,
+        int $partySize,
+        ?int $excludingReservationId = null,
+    ): string|Reservation {
+        if (! $table->is_active || $table->status === TableStatus::Unavailable) {
+            return 'This table has been marked unavailable by staff.';
+        }
+
+        if ($table->status === TableStatus::Cleaning) {
+            // Name the specific completed reservation that left the table in
+            // this state, so staff can find and clear it instead of hunting
+            // through the Finished section blind — completeReservation() only
+            // ever sets exactly one table to Cleaning per call, so the most
+            // recently completed reservation on this table is the one.
+            $lastCompleted = Reservation::query()
+                ->with(['user', 'guestContact'])
+                ->where('restaurant_table_id', $table->id)
+                ->where('status', ReservationStatus::Completed)
+                ->orderByDesc('completed_at')
+                ->first();
+
+            return $lastCompleted ?? 'This table is still being cleaned. Mark it Cleared from the Finished section once it\'s ready.';
+        }
+
+        if ($table->max_capacity < $partySize || ($partySize > 1 && $table->min_capacity > $partySize)) {
+            return sprintf(
+                'This table seats %d-%d guests, which doesn\'t fit a party of %d.',
+                $table->min_capacity,
+                $table->max_capacity,
+                $partySize,
+            );
+        }
+
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
+
+        if ($shift !== null) {
+            if (! $this->restaurantShiftService->isPartySizeReleased($shift, $localStartsAt, $partySize)) {
+                return 'This party size hasn\'t been released for booking during this shift yet.';
+            }
+
+            if ($this->restaurantShiftService->filterTablesByShiftAvailability($shift, collect([$table]), $partySize)->isEmpty()) {
+                return 'This table isn\'t available during this shift.';
+            }
+
+            if (! $this->restaurantShiftService->isTableReleased($shift, $table, $localStartsAt)) {
+                return 'This table hasn\'t been released for booking at this time yet.';
+            }
+        } elseif ($this->restaurantUsesWeeklyShifts($restaurant)) {
+            return 'There\'s no active shift covering this time.';
+        }
+
+        $conflict = $this->overlappingReservationsQuery(
+            restaurant: $restaurant,
+            startsAt: $startsAt,
+            endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
+            excludingReservationId: $excludingReservationId,
+        )
+            ->where('restaurant_table_id', $table->id)
+            ->with(['user', 'guestContact'])
+            ->first();
+
+        return $conflict ?? 'This table is not available for this reservation\'s time.';
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function listAvailableSlots(

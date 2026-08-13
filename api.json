@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000/api/v1"
+            "url": "http://localhost/api/v1"
         }
     ],
     "tags": [
@@ -3040,7 +3040,7 @@
             "post": {
                 "operationId": "customerReservation.store",
                 "description": "Slots under a card-hold cancellation policy require `card_hold_reference`: either a `rch_` reference from the card-hold endpoint, or the reference of a Paystack transaction the frontend collected itself. In the latter case the transaction is verified here, the card authorization is saved, and the verification charge is refunded. A 422 is returned when the reference cannot be verified or has already been used.",
-                "summary": "Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing. The guest and restaurant owner are notified by email",
+                "summary": "Create a reservation. Set `use_points` to true to deduct the customer's entire available points balance and record it on the reservation. A 422 is returned when no points are available, the requested time is outside effective booking hours, or availability changes while processing. The guest and restaurant owner are notified by email",
                 "tags": [
                     "Customer Reservations"
                 ],
@@ -33425,6 +33425,18 @@
                             "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
                         }
                     },
+                    "rewards_enabled": {
+                        "type": "boolean"
+                    },
+                    "reservation_reward_points": {
+                        "type": "string"
+                    },
+                    "reward_rules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantRewardRuleResource"
+                        }
+                    },
                     "widget_settings": {
                         "type": "string"
                     },
@@ -33473,12 +33485,6 @@
                     "updated_at": {
                         "type": "string"
                     },
-                    "rewards_enabled": {
-                        "type": "boolean"
-                    },
-                    "reservation_reward_points": {
-                        "type": "string"
-                    },
                     "contact_email_verified_at": {
                         "type": "string"
                     },
@@ -33515,12 +33521,6 @@
                                 "type": "null"
                             }
                         ]
-                    },
-                    "reward_rules": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/RestaurantRewardRuleResource"
-                        }
                     },
                     "access_configs": {
                         "type": "array",
@@ -33865,13 +33865,13 @@
                     "menu_documents",
                     "summary",
                     "discovery_metrics",
+                    "rewards_enabled",
+                    "reservation_reward_points",
                     "widget_settings",
                     "plan",
                     "created_at",
                     "updated_at",
                     "internal_notes",
-                    "rewards_enabled",
-                    "reservation_reward_points",
                     "contact_email_verified_at",
                     "contact_phone_verified_at",
                     "onboarding_last_step"
@@ -34340,18 +34340,6 @@
                     "name": {
                         "type": "string"
                     },
-                    "category": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "floor_type": {
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
                     "description": {
                         "type": [
                             "string",
@@ -34384,20 +34372,32 @@
                             "null"
                         ],
                         "format": "date-time"
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "floor_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 },
                 "required": [
                     "id",
                     "restaurant_id",
                     "name",
-                    "category",
-                    "floor_type",
                     "description",
                     "tags",
                     "is_active",
                     "sort_order",
                     "created_at",
-                    "updated_at"
+                    "updated_at",
+                    "category",
+                    "floor_type"
                 ],
                 "title": "DiningArea"
             },
@@ -35732,6 +35732,12 @@
                     "accept_points": {
                         "type": "boolean"
                     },
+                    "use_points": {
+                        "type": "boolean"
+                    },
+                    "redeemed_points": {
+                        "type": "integer"
+                    },
                     "subscribe_to_promotions": {
                         "type": "boolean"
                     },
@@ -35881,6 +35887,8 @@
                     "notes",
                     "occasion",
                     "accept_points",
+                    "use_points",
+                    "redeemed_points",
                     "subscribe_to_promotions",
                     "guests",
                     "arrived_at",
@@ -36687,6 +36695,18 @@
                             "$ref": "#/components/schemas/RestaurantCancellationPolicyResource"
                         }
                     },
+                    "rewards_enabled": {
+                        "type": "boolean"
+                    },
+                    "reservation_reward_points": {
+                        "type": "string"
+                    },
+                    "reward_rules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantRewardRuleResource"
+                        }
+                    },
                     "widget_settings": {
                         "type": "string"
                     },
@@ -36781,6 +36801,8 @@
                     "menu_documents",
                     "summary",
                     "discovery_metrics",
+                    "rewards_enabled",
+                    "reservation_reward_points",
                     "widget_settings",
                     "plan",
                     "created_at",
@@ -39905,6 +39927,12 @@
                         "maxLength": 100
                     },
                     "accept_points": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "use_points": {
                         "type": [
                             "boolean",
                             "null"
@@ -44462,6 +44490,9 @@
                     "expires_at": {
                         "type": "string"
                     },
+                    "arrived_at": {
+                        "type": "string"
+                    },
                     "seated_at": {
                         "type": "string"
                     },
@@ -44525,6 +44556,7 @@
                     "occasion",
                     "notified_at",
                     "expires_at",
+                    "arrived_at",
                     "seated_at",
                     "guest",
                     "actions"

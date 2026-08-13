@@ -569,6 +569,39 @@ it('preassigns a waitlist table without seating or moving the entry', function (
         ->seated_at->toBeNull();
 });
 
+it('allows preassigning a waitlist table that another party is currently seated at', function () {
+    // Preassignment is tentative and doesn't check occupancy at all — the
+    // real "can't double-seat a table" guard only runs later, when the
+    // waitlist entry is actually converted to a seated reservation via
+    // assign-table (see the "still allows seating it" test above).
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+    ]);
+
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => WaitlistStatus::Waiting,
+        'party_size' => 2,
+        'preferred_starts_at' => now()->addMinutes(10),
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_id' => $data['table']->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('waitlist_entry.table.id', $data['table']->id);
+
+    expect($entry->refresh()->restaurant_table_id)->toBe($data['table']->id);
+});
+
 it('marks a waitlist entry arrived without moving it out of the waitlist bucket, then still allows seating it', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
@@ -585,7 +618,9 @@ it('marks a waitlist entry arrived without moving it out of the waitlist bucket,
         ->assertOk()
         ->assertJsonPath('waitlist_entry.status', WaitlistStatus::Arrived->value);
 
-    expect($entry->refresh()->status)->toBe(WaitlistStatus::Arrived);
+    expect($entry->refresh())
+        ->status->toBe(WaitlistStatus::Arrived)
+        ->arrived_at->not->toBeNull();
 
     $this->getJson(frontOfHouseUrl($data, 'front-of-house/waitlist'))
         ->assertOk()
