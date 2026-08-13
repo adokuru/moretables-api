@@ -515,21 +515,36 @@ class ReservationService
                 // seat time (seatReservation()), which already produces a
                 // specific error naming the blocking reservation.
                 if ($reservation->status === ReservationStatus::Seated) {
-                    $occupiedByAnotherSeatedParty = Reservation::query()
+                    $seatedOnTable = Reservation::query()
+                        ->with(['user', 'guestContact'])
                         ->where('restaurant_table_id', $table->id)
                         ->where('status', ReservationStatus::Seated)
                         ->whereKeyNot($reservation->id)
-                        ->exists();
+                        ->first();
 
-                    if ($occupiedByAnotherSeatedParty || ! $this->availabilityService->isTableAvailable(
+                    if ($seatedOnTable !== null) {
+                        throw ValidationException::withMessages([
+                            'restaurant_table_id' => [$this->tableUnavailableMessage($table, $seatedOnTable)],
+                        ]);
+                    }
+
+                    if (! $this->availabilityService->isTableAvailable(
                         restaurant: $reservation->restaurant,
                         table: $table,
                         startsAt: now(),
                         partySize: $reservation->party_size,
                         excludingReservationId: $reservation->id,
                     )) {
+                        $reason = $this->availabilityService->explainUnavailable(
+                            restaurant: $reservation->restaurant,
+                            table: $table,
+                            startsAt: now(),
+                            partySize: $reservation->party_size,
+                            excludingReservationId: $reservation->id,
+                        );
+
                         throw ValidationException::withMessages([
-                            'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                            'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
                         ]);
                     }
                 }
@@ -610,12 +625,7 @@ class ReservationService
 
                 if ($seatedOnTable !== null) {
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [sprintf(
-                            'Table %s is still seated with %s\'s reservation from %s. Mark that reservation finished to free the table, or assign a different one.',
-                            $reservation->table->name,
-                            $this->guestDisplayName($seatedOnTable),
-                            $this->formatReservationWhen($seatedOnTable),
-                        )],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->table, $seatedOnTable)],
                     ]);
                 }
 
@@ -628,11 +638,16 @@ class ReservationService
                 );
 
                 if (! $tableIsAvailable) {
+                    $reason = $this->availabilityService->explainUnavailable(
+                        restaurant: $reservation->restaurant,
+                        table: $reservation->table,
+                        startsAt: $reservation->starts_at,
+                        partySize: $reservation->party_size,
+                        excludingReservationId: $reservation->id,
+                    );
+
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [sprintf(
-                            'Table %s is not available for this reservation\'s time. Assign a different table.',
-                            $reservation->table->name,
-                        )],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->table, $reason)],
                     ]);
                 }
 
@@ -687,22 +702,38 @@ class ReservationService
 
                 abort_unless($table->restaurant_id === $reservation->restaurant_id, 404);
 
-                $tableHasSeatedParty = $reservation->status === ReservationStatus::Seated
-                    && Reservation::query()
+                $seatedOnTable = $reservation->status === ReservationStatus::Seated
+                    ? Reservation::query()
+                        ->with(['user', 'guestContact'])
                         ->where('restaurant_table_id', $table->id)
                         ->where('status', ReservationStatus::Seated)
                         ->whereKeyNot($reservation->id)
-                        ->exists();
+                        ->first()
+                    : null;
 
-                if ($tableHasSeatedParty || ! $this->availabilityService->isTableAvailable(
+                if ($seatedOnTable !== null) {
+                    throw ValidationException::withMessages([
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $seatedOnTable)],
+                    ]);
+                }
+
+                if (! $this->availabilityService->isTableAvailable(
                     restaurant: $reservation->restaurant,
                     table: $table,
                     startsAt: $startsAt,
                     partySize: $reservation->party_size,
                     excludingReservationId: $reservation->id,
                 )) {
+                    $reason = $this->availabilityService->explainUnavailable(
+                        restaurant: $reservation->restaurant,
+                        table: $table,
+                        startsAt: $startsAt,
+                        partySize: $reservation->party_size,
+                        excludingReservationId: $reservation->id,
+                    );
+
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => ['Selected table is unavailable or conflicts with an existing booking. Please retry.'],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
                     ]);
                 }
 
@@ -1305,12 +1336,21 @@ class ReservationService
                     startsAt: $startsAt,
                     partySize: (int) $attributes['party_size'],
                 )) {
+                    if (! $hasSelectedTable) {
+                        throw ValidationException::withMessages([
+                            'starts_at' => ['No table is available for the selected time. Please retry.'],
+                        ]);
+                    }
+
+                    $reason = $this->availabilityService->explainUnavailable(
+                        restaurant: $restaurant,
+                        table: $table,
+                        startsAt: $startsAt,
+                        partySize: (int) $attributes['party_size'],
+                    );
+
                     throw ValidationException::withMessages([
-                        $hasSelectedTable ? 'restaurant_table_id' : 'starts_at' => [
-                            $hasSelectedTable
-                                ? 'Selected table is unavailable or conflicts with an existing booking. Please retry.'
-                                : 'No table is available for the selected time. Please retry.',
-                        ],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
                     ]);
                 }
 
@@ -1433,6 +1473,36 @@ class ReservationService
         $timezone = $reservation->restaurant?->timezone ?: config('app.timezone');
 
         return $reservation->starts_at->copy()->timezone($timezone)->format('D, M j \a\t g:i A');
+    }
+
+    /**
+     * Turns AvailabilityService::explainUnavailable()'s result into a full,
+     * specific sentence naming the table and, when the reason is a genuine
+     * time conflict, the actual blocking guest/reservation — instead of the
+     * old one-size-fits-all "Selected table is unavailable or conflicts with
+     * an existing booking. Please retry."
+     */
+    private function tableUnavailableMessage(RestaurantTable $table, string|Reservation $reason): string
+    {
+        if ($reason instanceof Reservation) {
+            if ($reason->status === ReservationStatus::Seated) {
+                return sprintf(
+                    'Table %s is still seated with %s\'s reservation from %s. Mark that reservation finished to free the table, or assign a different one.',
+                    $table->name,
+                    $this->guestDisplayName($reason),
+                    $this->formatReservationWhen($reason),
+                );
+            }
+
+            return sprintf(
+                'Table %s is booked for %s\'s reservation at %s. Assign a different table.',
+                $table->name,
+                $this->guestDisplayName($reason),
+                $this->formatReservationWhen($reason),
+            );
+        }
+
+        return sprintf('Table %s is unavailable: %s', $table->name, $reason);
     }
 
     protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed
