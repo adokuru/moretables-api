@@ -524,7 +524,7 @@ class ReservationService
 
                     if ($seatedOnTable !== null) {
                         throw ValidationException::withMessages([
-                            'restaurant_table_id' => [$this->tableUnavailableMessage($table, $seatedOnTable)],
+                            'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $seatedOnTable)],
                         ]);
                     }
 
@@ -544,7 +544,7 @@ class ReservationService
                         );
 
                         throw ValidationException::withMessages([
-                            'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
+                            'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $reason)],
                         ]);
                     }
                 }
@@ -625,7 +625,7 @@ class ReservationService
 
                 if ($seatedOnTable !== null) {
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->table, $seatedOnTable)],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $reservation->table, $seatedOnTable)],
                     ]);
                 }
 
@@ -647,7 +647,7 @@ class ReservationService
                     );
 
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->table, $reason)],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $reservation->table, $reason)],
                     ]);
                 }
 
@@ -713,7 +713,7 @@ class ReservationService
 
                 if ($seatedOnTable !== null) {
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $seatedOnTable)],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $seatedOnTable)],
                     ]);
                 }
 
@@ -733,7 +733,7 @@ class ReservationService
                     );
 
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $reason)],
                     ]);
                 }
 
@@ -1350,7 +1350,7 @@ class ReservationService
                     );
 
                     throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($table, $reason)],
+                        'restaurant_table_id' => [$this->tableUnavailableMessage($restaurant, $table, $reason)],
                     ]);
                 }
 
@@ -1482,7 +1482,7 @@ class ReservationService
      * old one-size-fits-all "Selected table is unavailable or conflicts with
      * an existing booking. Please retry."
      */
-    private function tableUnavailableMessage(RestaurantTable $table, string|Reservation $reason): string
+    private function tableUnavailableMessage(Restaurant $restaurant, RestaurantTable $table, string|Reservation $reason): string
     {
         if ($reason instanceof Reservation) {
             if ($reason->status === ReservationStatus::Seated) {
@@ -1491,6 +1491,24 @@ class ReservationService
                     $table->name,
                     $this->guestDisplayName($reason),
                     $this->formatReservationWhen($reason),
+                );
+            }
+
+            if ($reason->status === ReservationStatus::Completed) {
+                // Names the exact reservation + shift that left the table
+                // dirty, so staff can go find it in the Finished section
+                // instead of guessing — this was the whole point of the ask,
+                // a bare "still being cleaned" with no pointer to which
+                // reservation caused it wasn't useful enough.
+                $shiftName = $this->availabilityService->resolveShiftName($restaurant, $reason->starts_at);
+
+                return sprintf(
+                    'Table %s is still being cleaned after %s\'s reservation (%s%s, reservation #%s). Find it in the Finished section and mark it Cleared, or assign a different table.',
+                    $table->name,
+                    $this->guestDisplayName($reason),
+                    $this->formatReservationWhen($reason),
+                    $shiftName ? ", {$shiftName} shift" : '',
+                    $reason->id,
                 );
             }
 

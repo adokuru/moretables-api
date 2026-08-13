@@ -144,6 +144,20 @@ class AvailabilityService
     }
 
     /**
+     * Names the shift (e.g. "breakfast") covering a given instant, if any —
+     * used to make "which reservation is blocking this table" error messages
+     * name a shift, not just a raw date/time, so staff can jump straight to
+     * the right date+shift on the dashboard.
+     */
+    public function resolveShiftName(Restaurant $restaurant, CarbonInterface $at): ?string
+    {
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localAt = Carbon::parse($at)->setTimezone($restaurantTimezone);
+
+        return $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localAt)?->name;
+    }
+
+    /**
      * Diagnoses why isTableAvailable() returned false for the same inputs,
      * checking the exact same conditions in the exact same order. Returns a
      * plain-language reason for every case except a genuine reservation-time
@@ -164,7 +178,19 @@ class AvailabilityService
         }
 
         if ($table->status === TableStatus::Cleaning) {
-            return 'This table is still being cleaned. Mark it Cleared from the Finished section once it\'s ready.';
+            // Name the specific completed reservation that left the table in
+            // this state, so staff can find and clear it instead of hunting
+            // through the Finished section blind — completeReservation() only
+            // ever sets exactly one table to Cleaning per call, so the most
+            // recently completed reservation on this table is the one.
+            $lastCompleted = Reservation::query()
+                ->with(['user', 'guestContact'])
+                ->where('restaurant_table_id', $table->id)
+                ->where('status', ReservationStatus::Completed)
+                ->orderByDesc('completed_at')
+                ->first();
+
+            return $lastCompleted ?? 'This table is still being cleaned. Mark it Cleared from the Finished section once it\'s ready.';
         }
 
         if ($table->max_capacity < $partySize || ($partySize > 1 && $table->min_capacity > $partySize)) {
