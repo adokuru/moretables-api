@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\Role;
@@ -16,6 +17,11 @@ beforeEach(function (): void {
         'rewards_enabled' => true,
         'reservation_reward_points' => 100,
     ]);
+    // Guest Loyalty Program is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — this file's
+    // existing tests predate plan-tier gating and expect rewards_enabled alone to be
+    // sufficient, so keep the restaurant on Premium by default.
+    activateMerchantBilling($this->restaurant);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
     $this->owner = User::factory()->create();
     assignScopedRole($this->owner, Role::OrganizationOwner, $this->organization, $this->restaurant);
     Sanctum::actingAs($this->owner);
@@ -49,8 +55,28 @@ it('reports when a restaurant does not offer credits', function (): void {
         ->assertJsonPath('rewards.offers_credits', false);
 });
 
+it('reports that a restaurant below Core does not offer credits, even with rewards_enabled true', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/rewards/status")
+        ->assertOk()
+        ->assertJsonPath('rewards.offers_credits', false);
+});
+
+it('reports that a restaurant on Core (not just Premium) offers credits', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Core);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/rewards/status")
+        ->assertOk()
+        ->assertJsonPath('rewards.offers_credits', true);
+});
+
 it('prevents checking the reward status of another restaurant', function (): void {
     $otherRestaurant = Restaurant::factory()->create();
+    // Needs its own active billing subscription, or EnsureMerchantBillingActive short-circuits
+    // to a 402 (unbillable restaurant) before the controller's own permission check ever runs
+    // — this test is about permission scoping, not billing state.
+    activateMerchantBilling($otherRestaurant);
 
     getJson("/api/v1/merchant/restaurants/{$otherRestaurant->id}/rewards/status")
         ->assertForbidden();

@@ -46,15 +46,16 @@ checked inline per-controller-method, no Policy classes) rather than
 introducing a new authorization layer — confirmed no Merchant controller
 uses Laravel Policies before adding this.
 
-## What's actually gated today: the Customizable Post-meal Guest Survey
+## What's actually gated today
 
-The **only** plan-gated feature enforced so far. `BillingPlan.features`
-(a JSON column) and `plans-table.tsx` (the public pricing page) both
-describe several other Premium/Core-only rows — Loyalty Program,
-Reservation Widget, Pre-shift Report — but none of those are wired to any
-real check yet. `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts`
-are written as **reusable infrastructure** for when those get built, not
-single-purpose to surveys.
+Two features so far. `BillingPlan.features` (a JSON column) and
+`plans-table.tsx` (the public pricing page) describe further Premium/Core-only
+rows — Reservation Widget, Pre-shift Report — that still aren't wired to any
+real check. `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are
+written as **reusable infrastructure**, not single-purpose to either feature
+below.
+
+### Customizable Post-meal Guest Survey (Premium-only)
 
 `MerchantGuestSurveyController.php` — Foundation and Core restaurants get
 the fixed `post_dining` question set and cannot customize it; Premium can
@@ -87,6 +88,54 @@ helper `setRestaurantBillingPlan(Restaurant, BillingPlanSlug)` (in
 test restaurant to Foundation) moves an already-activated subscription onto
 a specific tier.
 
+### Guest Loyalty Program (Core/Premium — the first non-Premium-only gate)
+
+Two independent surfaces, both requiring `hasPlanAtLeast(BillingPlanSlug::Core)`:
+
+1. **The onboarding opt-in flag** (`restaurants.rewards_enabled`, the
+   "I agree to participate" checkbox saved via the generic
+   `MerchantRestaurantSettingsController::update()`, **not** a dedicated
+   onboarding endpoint). When the submitted `rewards_enabled` is truthy but
+   the restaurant doesn't qualify, it's silently coerced to `false` before
+   saving ("auto-disagree") — no error, no rejection, since this is a
+   passive settings field, not an explicit feature action. Other settings
+   fields in the same request are unaffected.
+2. **`Restaurant::offersMoretablesCredits()`** — the single source of truth
+   for whether a restaurant's reservations actually earn reward points, now
+   `rewards_enabled && hasPlanAtLeast(Core)` instead of the bare column.
+   `ReservationService::maybeAwardReservationPoints()` and
+   `MerchantRestaurantRewardStatusController` (the merchant-facing "does
+   this restaurant offer credits" check) both read through this helper —
+   so a restaurant whose `rewards_enabled` is stuck at a stale `true` from
+   before a downgrade (or from the DB column's own `true` default) never
+   actually issues points, no backfill migration needed. This is stronger
+   than the survey feature's approach (which only blocks *changing* content,
+   not *using* already-saved content) — deliberate, since a boolean toggle
+   has no "saved custom content" to preserve, unlike survey questions.
+3. **`MerchantRewardRuleController::store()`/`::update()`** (the ongoing
+   `/admin/marketing` bonus-rule editor — a day/time-specific point bonus on
+   top of the base program, a *different* resource from the opt-in flag
+   above) — reject with `403 "Upgrade to Core or Premium to set up the
+   Guest Loyalty Program."` when the restaurant doesn't qualify. Per
+   explicit product decision, the frontend form is **not** disabled/hidden
+   pre-submit — staff can fill it out, and the error only appears on
+   submit, surfaced via the same global-toast mechanism as the survey
+   feature's 403s.
+   - **Adjacent fix, found while adding this**: `store()`/`update()` had
+     **no authorization check of any kind** before this — any authenticated
+     user could create or edit reward rules for *any* restaurant, not just
+     ones they belong to. Added `abort_unless($user->hasAnyRestaurantPermission(['restaurants.manage', 'marketing.manage'], $restaurant), 403)`
+     to both, matching `destroy()`'s existing permission set in the same
+     controller. Not part of the plan-gating ask, but too directly adjacent
+     (same two methods, same edit) to leave for a separate pass.
+
+Tests: `tests/Feature/MerchantRewardRuleCrudTest.php`,
+`tests/Feature/MerchantRestaurantRewardStatusTest.php`,
+`tests/Feature/MerchantRestaurantSettingsRewardsTest.php` (new file), and
+`tests/Feature/Feature/Reservations/ReservationBookingFieldsTest.php` (the
+point-awarding path). All follow the same `setRestaurantBillingPlan()`
+pattern as the survey tests.
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is unenforced.**
@@ -108,15 +157,20 @@ a specific tier.
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. If a 3rd or 4th plan-gated feature shows up, it's
-  worth revisiting whether a shared `FeatureGate`-style service is warranted
-  — not built preemptively here since there's only one real caller so far.
+  convention it mirrors. Two features now call it across 5 different
+  controller methods — still judged not worth a shared `FeatureGate`-style
+  service, but the next feature added here should revisit that judgment.
+- **Reservation Widget and Pre-shift Report are still unenforced.** Both are
+  advertised as plan-gated on the public pricing page; neither has any real
+  check anywhere in the app yet.
 
 ## See also
 
 `moretable-web-app/docs/plan-permissions.md` — the frontend counterpart:
 where the current plan is exposed (`AuthProvider.planSlug`), the
-`planAccess.ts` helper, and how the survey editor renders the locked state.
+`planAccess.ts` helper, how the survey editor renders the locked state, and
+how the onboarding stepper removes the Reward Program step entirely below
+Core.
 
 `PERMISSION_MATRIX.md` — the orthogonal role-permission axis. A user still
 needs `communications.manage`/`restaurants.manage` *and* the right plan

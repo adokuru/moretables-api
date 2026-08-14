@@ -198,10 +198,14 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * Whether the restaurant participates in the MoreTables credits (loyalty rewards) program.
+     * Requires both the restaurant's own opt-in (rewards_enabled) and a Core/Premium plan —
+     * see docs/PLAN_PERMISSIONS.md. This is the single source of truth for "effective"
+     * participation; a Foundation restaurant with a stale rewards_enabled=true never
+     * actually participates, regardless of what's stored.
      */
     public function offersMoretablesCredits(): bool
     {
-        return (bool) $this->rewards_enabled;
+        return (bool) $this->rewards_enabled && $this->hasPlanAtLeast(BillingPlanSlug::Core);
     }
 
     /**

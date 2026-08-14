@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreRestaurantRewardRuleRequest;
 use App\Http\Requests\Merchant\UpdateRestaurantRewardRuleRequest;
@@ -32,6 +33,13 @@ class MerchantRewardRuleController extends Controller
      */
     public function store(StoreRestaurantRewardRuleRequest $request, Restaurant $restaurant): JsonResponse
     {
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'marketing.manage'], $restaurant), 403);
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Core),
+            403,
+            'Upgrade to Core or Premium to set up the Guest Loyalty Program.',
+        );
+
         $rule = $restaurant->rewardRules()->create($this->normalize($request->validated()));
 
         return RestaurantRewardRuleResource::make($rule)
@@ -49,6 +57,12 @@ class MerchantRewardRuleController extends Controller
 
     public function update(UpdateRestaurantRewardRuleRequest $request, Restaurant $restaurant, RestaurantRewardRule $rewardRule): RestaurantRewardRuleResource
     {
+        abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'marketing.manage'], $restaurant), 403);
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Core),
+            403,
+            'Upgrade to Core or Premium to set up the Guest Loyalty Program.',
+        );
         $this->ensureBelongsToRestaurant($restaurant, $rewardRule);
 
         $rewardRule->fill($this->normalize($request->validated()))->save();

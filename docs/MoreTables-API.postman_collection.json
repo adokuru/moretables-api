@@ -6753,7 +6753,7 @@
         "status"
        ]
       },
-      "description": "Check whether the restaurant offers MoreTables credits (rewards_enabled) and whether it has entered its own custom reward score (reservation_reward_points differs from the default)."
+      "description": "Check whether the restaurant offers MoreTables credits (rewards_enabled AND a Core/Premium plan — see docs/PLAN_PERMISSIONS.md) and whether it has entered its own custom reward score (reservation_reward_points differs from the default)."
      }
     },
     {
@@ -6815,7 +6815,7 @@
        "mode": "raw",
        "raw": "{\n  \"points\": 300,\n  \"days\": [\n    1,\n    2\n  ],\n  \"times\": [\n    \"09:00\",\n    \"09:15\"\n  ],\n  \"is_active\": true\n}"
       },
-      "description": "Create a custom reward-point rule. Omit or empty `times` to award the points all day on the selected days. `days` are 0=Sunday..6=Saturday."
+      "description": "Create a custom reward-point rule. Omit or empty `times` to award the points all day on the selected days. `days` are 0=Sunday..6=Saturday. Requires the restaurant to be on the Core or Premium plan — a Foundation restaurant gets 403 'Upgrade to Core or Premium to set up the Guest Loyalty Program.' (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -6879,7 +6879,7 @@
        "mode": "raw",
        "raw": "{\n  \"points\": 250\n}"
       },
-      "description": "Update a reward-point rule."
+      "description": "Update a reward-point rule. Same Core/Premium plan requirement as creating one — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
