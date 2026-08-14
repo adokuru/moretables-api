@@ -3525,7 +3525,7 @@
         }
        ]
       },
-      "description": "Sends an in-app + push notification broadcast to the restaurant's guests. audience is 'all' (every user with an active or completed reservation) or 'selected' (only users linked to the provided guest_contact_ids, which come from the merchant guests endpoint). No WhatsApp or email is sent."
+      "description": "Sends an in-app + push notification broadcast to the restaurant's guests. audience is 'all' (every user with an active or completed reservation) or 'selected' (only users linked to the provided guest_contact_ids, which come from the merchant guests endpoint). No WhatsApp or email is sent. Automated Email Campaigns (this whole endpoint) is Premium-only — a Foundation/Core restaurant gets 403 'Upgrade to Premium to send automated email campaigns to guests.' (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -3561,7 +3561,8 @@
          "type": "string"
         }
        ]
-      }
+      },
+      "description": "Both automated_messaging.enabled and reservation_messaging.enabled report as false for a restaurant below Premium, even if previously enabled (e.g. before a downgrade) — reflects effective state without altering stored data. See docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -3606,7 +3607,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true\n}"
-      }
+      },
+      "description": "Setting enabled=true requires the restaurant to be on the Premium plan — 403 'Upgrade to Premium to send automated email campaigns to guests.' below that. Setting enabled=false is always allowed. See docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -3651,7 +3653,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true\n}"
-      }
+      },
+      "description": "Same Premium-only rule as the automated-messaging toggle above — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {

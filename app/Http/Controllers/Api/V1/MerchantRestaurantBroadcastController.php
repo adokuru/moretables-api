@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\SendRestaurantBroadcastRequest;
 use App\Models\Restaurant;
@@ -34,6 +35,16 @@ class MerchantRestaurantBroadcastController extends Controller
         // Messaging existed as real permissions.
         $requiredPermission = $validated['audience'] === 'all' ? 'messaging.manage' : 'communications.manage';
         abort_unless($request->user()->hasAnyRestaurantPermission(['reservations.manage', $requiredPermission], $restaurant), 403);
+
+        // Automated Email Campaigns (both the Guest Email and Broadcast Messaging tabs
+        // that lead here) are Premium-only (docs/PLAN_PERMISSIONS.md). The Guest Email
+        // tab's compose/send UI isn't gated behind its own toggle on the frontend, so
+        // this is the actual enforcement point for that tab, not just defense-in-depth.
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium),
+            403,
+            'Upgrade to Premium to send automated email campaigns to guests.',
+        );
 
         $recipients = $this->recipientsQuery(
             $restaurant,

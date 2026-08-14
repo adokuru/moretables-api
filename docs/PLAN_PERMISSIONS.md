@@ -48,11 +48,11 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Two features so far. `BillingPlan.features` (a JSON column) and
+Three features so far. `BillingPlan.features` (a JSON column) and
 `plans-table.tsx` (the public pricing page) describe further Premium/Core-only
 rows — Reservation Widget, Pre-shift Report — that still aren't wired to any
 real check. `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are
-written as **reusable infrastructure**, not single-purpose to either feature
+written as **reusable infrastructure**, not single-purpose to any one feature
 below.
 
 ### Customizable Post-meal Guest Survey (Premium-only)
@@ -136,19 +136,69 @@ Tests: `tests/Feature/MerchantRewardRuleCrudTest.php`,
 point-awarding path). All follow the same `setRestaurantBillingPlan()`
 pattern as the survey tests.
 
+### Automated Email Campaigns (Premium-only)
+
+Covers **both** guest-communication tabs — the pricing page's "Automated
+Email Campaigns" row doesn't map to a single dedicated feature in the code
+(there's no scheduled/recurring campaign builder anywhere in the app, just
+two manual "compose and send now" toggles), so both are gated identically:
+
+- **Guest Email tab** (`reservation_messaging_enabled`, "Send curated
+  messages to guests," `MerchantGuestCommunicationController::updateReservationMessaging()`)
+- **Broadcast Messaging tab** (`automated_messaging_enabled`, "Send curated
+  broadcast messages," `::updateAutomatedMessaging()`)
+
+Three enforcement points, each requiring `hasPlanAtLeast(BillingPlanSlug::Premium)`:
+
+1. **`updateAutomatedMessaging()`/`updateReservationMessaging()`** — a
+   private `abortUnlessMayEnable()` helper rejects (`403`, `"Upgrade to
+   Premium to send automated email campaigns to guests."`) only when the
+   request tries to set `enabled=true`; setting `false` is always allowed
+   (turning a feature off never needs a plan check).
+2. **`show()`** — reports both `automated_messaging.enabled` and
+   `reservation_messaging.enabled` as `false` for a sub-Premium restaurant
+   regardless of the stored column value, **without persisting anything** —
+   same "report the effective state, don't silently rewrite data" approach
+   as the survey feature's read paths, and avoids ever needing a downgrade
+   migration (same reasoning as the Loyalty Program's `offersMoretablesCredits()`).
+3. **`MerchantRestaurantBroadcastController::store()`** (the actual
+   send-a-message action, shared by both tabs, keyed by `audience`) — also
+   requires Premium, regardless of `audience`. This one isn't just
+   defense-in-depth: the Guest Email tab's compose/send UI is **not** gated
+   behind its own toggle on the frontend (unlike Broadcast Messaging's,
+   which only renders its compose box while `enabled`), so this is the
+   actual, and only, backend enforcement point for that tab's send action.
+
+Per explicit product decision (same as the Loyalty Program's reward-rule
+editor): the frontend makes **no changes at all** here — no disabled
+toggles, no hidden compose box beyond what `automated_messaging.enabled`'s
+now-always-`false` value already naturally causes on the Broadcast
+Messaging tab. Staff can flip the toggle or attempt to send on either tab;
+the 403 surfaces via the existing global toast. Confirmed none of
+`useUpdateAutomatedMessaging`/`useUpdateReservationMessaging`/`useSendBroadcast`
+(`moretable-web-app/src/lib/api/guest-communication/hooks/useGuestCommunication.ts`)
+define a custom `onError` that would need touching.
+
+Tests: `tests/Feature/Feature/Merchant/MerchantOperationsTest.php` (the
+guest-communication toggle tests) and
+`tests/Feature/Feature/Merchant/MerchantBroadcastTest.php` (the send
+action). Both files' existing tests predate this gate and were updated to
+default to Premium via `setRestaurantBillingPlan()`, same pattern as the
+other two features.
+
 ## Known gaps (flagged, not built)
 
-- **Foundation's `features.guest_communication` config flag is unenforced.**
-  `config/billing.php`/`BillingPlanSeeder` already mark Foundation as
-  `guest_communication: false` — read literally, that implies Foundation
-  shouldn't have *any* access to `/admin/guest-communication`, not just the
-  survey-customization slice gated here. Live behavior today: Foundation
-  restaurants can fully use Guest Email and Broadcast Messaging, and can use
-  (not customize) the Survey tab. This was scoped out deliberately — the
-  ask was specifically "lock survey customization to Premium," not "lock
-  all of guest communication to Core+." If the broader lock is wanted later,
-  it needs its own explicit decision (which sub-features Foundation keeps,
-  if any) before implementing, not an inferred read of the config flag.
+- **Foundation's `features.guest_communication` config flag is still only
+  partially reflected.** `config/billing.php`/`BillingPlanSeeder` mark
+  Foundation as `guest_communication: false`, read literally implying no
+  `/admin/guest-communication` access at all. Live behavior now: Foundation
+  and Core can no longer send anything (Automated Email Campaigns is
+  gated above) and can't customize surveys (Premium-only), but they can
+  still *view* the guest-communication settings page, list/view surveys,
+  and use the fixed-template survey — narrower than the config flag's
+  literal claim, but nobody has asked for the page to be fully inaccessible
+  below Premium, only for the specific actions gated so far. Revisit if
+  that's ever explicitly requested.
 - **No retroactive handling of a plan downgrade.** A restaurant that
   customizes its survey on Premium and later downgrades to Foundation/Core
   keeps its already-saved custom `questions` untouched (they simply become
@@ -157,7 +207,7 @@ pattern as the survey tests.
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Two features now call it across 5 different
+  convention it mirrors. Three features now call it across 8 different
   controller methods — still judged not worth a shared `FeatureGate`-style
   service, but the next feature added here should revisit that judgment.
 - **Reservation Widget and Pre-shift Report are still unenforced.** Both are

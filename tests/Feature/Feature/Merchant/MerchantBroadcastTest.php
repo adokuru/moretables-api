@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\Role;
@@ -21,6 +22,11 @@ function createBroadcastMerchant(): array
 {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    // Automated Email Campaigns (this whole broadcast endpoint) is Premium-only
+    // (docs/PLAN_PERMISSIONS.md) — this file's existing tests predate that gate and
+    // expect broadcasting to just work, so default to Premium. The plan-gating tests
+    // further down explicitly downgrade instead.
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
 
     $merchant = User::factory()->create();
     assignScopedRole($merchant, Role::Operations, $data['organization'], $data['restaurant']);
@@ -230,4 +236,43 @@ it('forbids users without reservation management permission', function () {
         'message' => 'Test message.',
         'audience' => 'all',
     ])->assertForbidden();
+});
+
+// Plan-tier gating — Automated Email Campaigns (both the Guest Email and Broadcast
+// Messaging tabs, i.e. this whole endpoint regardless of audience) is Premium-only
+// (docs/PLAN_PERMISSIONS.md). createBroadcastMerchant() defaults to Premium; these
+// tests explicitly downgrade instead.
+
+it('rejects broadcasting to all guests for a restaurant below Premium', function () {
+    Notification::fake();
+    $data = createBroadcastMerchant();
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Core);
+    Sanctum::actingAs($data['merchant']);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'all',
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to send automated email campaigns to guests.');
+
+    Notification::assertNothingSent();
+});
+
+it('rejects broadcasting to selected guests for a restaurant below Premium', function () {
+    Notification::fake();
+    $data = createBroadcastMerchant();
+    $selectedContact = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Foundation);
+    Sanctum::actingAs($data['merchant']);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/broadcasts', [
+        'title' => 'Hello',
+        'message' => 'Test message.',
+        'audience' => 'selected',
+        'guest_contact_ids' => [$selectedContact->id],
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to send automated email campaigns to guests.');
+
+    Notification::assertNothingSent();
 });
