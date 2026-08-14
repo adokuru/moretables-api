@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\BillingPlanSlug;
 use App\Models\Restaurant;
 use App\Models\RestaurantCancellationPolicy;
 use Illuminate\Support\Carbon;
@@ -10,6 +11,14 @@ class RestaurantCancellationPolicyService
 {
     public function matchingPolicy(Restaurant $restaurant, Carbon $at, int $partySize): ?RestaurantCancellationPolicy
     {
+        // Reservation Holds is Core/Premium-only (docs/PLAN_PERMISSIONS.md). A restaurant
+        // that downgraded keeps whatever policies it already created, but they stop
+        // actually applying to new bookings — same "effective state, no backfill needed"
+        // approach as offersMoretablesCredits() for the Loyalty Program.
+        if (! $restaurant->hasPlanAtLeast(BillingPlanSlug::Core)) {
+            return null;
+        }
+
         $localAt = $at->copy();
 
         if (filled($restaurant->timezone)) {

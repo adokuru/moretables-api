@@ -48,7 +48,7 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Four features so far. `BillingPlan.features` (a JSON column) and
+Five features so far. `BillingPlan.features` (a JSON column) and
 `plans-table.tsx` (the public pricing page) still describe a further
 Premium-only row — Pre-shift Report — not wired to any real check yet.
 `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are written as
@@ -215,6 +215,48 @@ Tests: `tests/Feature/MerchantRestaurantWidgetSettingsTest.php`. Existing
 tests predate this gate and were updated to default to Premium via
 `setRestaurantBillingPlan()`.
 
+### Reservation Holds (Core/Premium — a sub-tab within a shared page, not the whole page)
+
+`admin/restaurant-settings?tab=policies` has 2 sub-tabs: "Booking Policies"
+(language + free-text dining policy, unrelated, stays available on any
+plan) and "Cancellation and No-show Policies" — which, despite the generic
+name, is **100% the Reservation Holds feature**: every policy created there
+is a credit-card-hold rule (`RestaurantCancellationPolicy.management_method`
+has only one enum case, `card_hold`). Don't confuse this with the
+unrelated, unused `RestaurantPolicy.deposit_required` column (booking
+policy's model) — it's dead, never read or written by any real endpoint.
+
+Three enforcement points, all requiring `hasPlanAtLeast(BillingPlanSlug::Core)`:
+
+1. **`MerchantRestaurantCancellationPolicyController::store()`/`update()`**
+   — reject (`403`, `"Upgrade to Core or Premium to set up reservation
+   holds."`) via a shared private `abortUnlessPlanQualifies()` helper.
+   `destroy()` is deliberately **not** gated — removing an existing policy
+   stays allowed on any plan, same "turning something off/away never needs
+   a plan check" reasoning as the Loyalty Program and Email Campaigns
+   features. `index`/`show` also stay ungated (read-only).
+2. **`RestaurantCancellationPolicyService::matchingPolicy()`** — the
+   runtime lookup that decides whether an incoming booking needs a card
+   hold at all — now returns `null` immediately for a sub-Core restaurant,
+   **regardless of what policies already exist in the database**. This is
+   the actual enforcement that matters operationally: a restaurant that
+   downgrades keeps its already-created hold policies in storage (same
+   "no backfill migration" choice as `offersMoretablesCredits()`), but they
+   silently stop applying to new bookings the moment the plan drops below
+   Core — no card hold gets required, no guest gets charged based on a
+   policy the restaurant can no longer configure or see take effect.
+
+Frontend UX, per explicit product decision (see the frontend doc): this is
+the **second** feature to use the "redirect + toast" treatment introduced
+by the Reservation Widget, but scoped to just the one sub-tab —
+"Booking Policies" stays completely normal.
+
+Tests: `tests/Feature/MerchantRestaurantCancellationPolicyCrudTest.php`
+(CRUD + plan gating) and
+`tests/Feature/Feature/Reservations/ReservationCardHoldTest.php` (the
+`matchingPolicy()` runtime check — its `cardHoldRestaurant()` helper
+predates this gate and was updated to default to Premium).
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is still only
@@ -236,11 +278,15 @@ tests predate this gate and were updated to default to Premium via
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Four features now call it across 9 different
-  controller methods — still judged not worth a shared `FeatureGate`-style
-  service, but the next feature added here should revisit that judgment.
-- **Pre-shift Report is still unenforced.** Advertised as Premium-only on
-  the public pricing page; no real check anywhere in the app yet.
+  convention it mirrors. Five features now call it across 12 different
+  controller/service methods — still judged not worth a shared
+  `FeatureGate`-style service, but the next feature added here should
+  revisit that judgment.
+- **Waitlist Management and Pre-shift Report are still unenforced.** Both
+  Core/Premium-only (Waitlist) or Premium-only (Pre-shift Report) per the
+  public pricing page; no real check anywhere in the app yet. Waitlist
+  Management is next up — deliberately not started yet, pending separate
+  research the user is doing first.
 - **`PERMISSION_MATRIX.md`'s note on `integrations.manage` is stale**,
   found while researching the Reservation Widget gate, unrelated to plan
   tiers: it claims "No backend controller exists yet for Integrations,"

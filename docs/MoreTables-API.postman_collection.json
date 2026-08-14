@@ -6637,7 +6637,7 @@
        "mode": "raw",
        "raw": "{\n  \"name\": \"Weekend card hold\",\n  \"management_method\": \"card_hold\",\n  \"party_size_scope\": \"all_party_sizes\",\n  \"hold_charge_amount\": 5000,\n  \"starts_on\": \"2026-01-23\",\n  \"ends_on\": \"2026-03-23\",\n  \"days\": [\n    5,\n    6\n  ],\n  \"is_active\": true\n}"
       },
-      "description": "Create a cancellation or no-show policy. `management_method` is currently `card_hold`. `party_size_scope` can be `all_party_sizes`, `large_parties_only`, or `custom` (requires `min_party_size` and `max_party_size`). `days` are 0=Sunday..6=Saturday."
+      "description": "Create a cancellation or no-show policy. `management_method` is currently `card_hold`. `party_size_scope` can be `all_party_sizes`, `large_parties_only`, or `custom` (requires `min_party_size` and `max_party_size`). `days` are 0=Sunday..6=Saturday. Reservation Holds (this whole resource) is Core/Premium-only — 403 'Upgrade to Core or Premium to set up reservation holds.' below that (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -6701,7 +6701,7 @@
        "mode": "raw",
        "raw": "{\n  \"name\": \"Updated weekend hold\",\n  \"hold_charge_amount\": 7500\n}"
       },
-      "description": "Update a cancellation or no-show policy."
+      "description": "Update a cancellation or no-show policy. Same Core/Premium plan requirement as creating one — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -6729,7 +6729,7 @@
         "1"
        ]
       },
-      "description": "Delete a cancellation or no-show policy."
+      "description": "Delete a cancellation or no-show policy. Deletion is allowed on any plan, unlike create/update — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {

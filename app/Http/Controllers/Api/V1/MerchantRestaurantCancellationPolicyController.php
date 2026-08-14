@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Enums\CancellationPolicyPartySizeScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreRestaurantCancellationPolicyRequest;
@@ -34,6 +35,8 @@ class MerchantRestaurantCancellationPolicyController extends Controller
      */
     public function store(StoreRestaurantCancellationPolicyRequest $request, Restaurant $restaurant): JsonResponse
     {
+        $this->abortUnlessPlanQualifies($restaurant);
+
         $validated = $this->normalize($request->validated());
 
         if (! array_key_exists('sort_order', $validated)) {
@@ -63,6 +66,7 @@ class MerchantRestaurantCancellationPolicyController extends Controller
         Restaurant $restaurant,
         RestaurantCancellationPolicy $cancellationPolicy,
     ): RestaurantCancellationPolicyResource {
+        $this->abortUnlessPlanQualifies($restaurant);
         $this->ensureBelongsToRestaurant($restaurant, $cancellationPolicy);
 
         $cancellationPolicy->fill($this->normalize($request->validated()))->save();
@@ -104,5 +108,18 @@ class MerchantRestaurantCancellationPolicyController extends Controller
     private function ensureBelongsToRestaurant(Restaurant $restaurant, RestaurantCancellationPolicy $cancellationPolicy): void
     {
         abort_unless((int) $cancellationPolicy->restaurant_id === (int) $restaurant->id, 404);
+    }
+
+    /**
+     * Reservation Holds is Core/Premium-only (docs/PLAN_PERMISSIONS.md). Deleting an
+     * existing policy stays allowed on any plan — only creating/editing is gated.
+     */
+    private function abortUnlessPlanQualifies(Restaurant $restaurant): void
+    {
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Core),
+            403,
+            'Upgrade to Core or Premium to set up reservation holds.',
+        );
     }
 }
