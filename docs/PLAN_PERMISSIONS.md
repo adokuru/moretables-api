@@ -48,11 +48,12 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Seven features so far. `BillingPlan.features` (a JSON column) and
-`plans-table.tsx` (the public pricing page) still describe a further
-Core/Premium row — Waitlist Management — not wired to any real check yet.
-`hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are written as
-**reusable infrastructure**, not single-purpose to any one feature below.
+Eight features so far (one, Group Reporting, is frontend-only — see below
+for why). `BillingPlan.features` (a JSON column) and `plans-table.tsx` (the
+public pricing page) still describe a further Core/Premium row — Waitlist
+Management — not wired to any real check yet. `hasPlanAtLeast()`/the
+frontend's mirroring `planAccess.ts` are written as **reusable
+infrastructure**, not single-purpose to any one feature below.
 
 ### Customizable Post-meal Guest Survey (Premium-only)
 
@@ -350,6 +351,33 @@ existing convention `access-control.md` already documents for
 Tests: `tests/Feature/MerchantAccessConfigControllerTest.php` (new file —
 no test coverage existed for this controller at all before this).
 
+### Group Reporting (Premium-only — frontend-only, because there's no backend to gate yet)
+
+`admin/reporting`'s "Group Reporting" tab is **entirely static mock data**
+(`group-reporting-data.ts`, 4 hardcoded fake restaurant rows) — confirmed
+via full grep of both repos that **no backend endpoint for this feature
+exists at all**. `MerchantReportingController` has exactly 7 methods
+(`filters`, `shift-occupancy`, `cover-trends`, `first-time-visits`,
+`guest-frequency`, `reservations`, `turn-times`, `guest-export`), none of
+them cross-restaurant — Group Reporting's pricing-page tooltip
+("Centralize reporting across all locations...") describes a genuinely
+different, org/multi-restaurant-scoped data model none of the existing
+per-restaurant reporting endpoints could serve even if extended.
+
+**Nothing was added here on the backend** — there's no real data to
+protect. When a real Group Reporting backend eventually gets built (a
+separate, larger piece of work — likely a new controller, not an extension
+of `MerchantReportingController`), gate it the same way as every other
+feature in this doc: `$restaurant->hasPlanAtLeast(BillingPlanSlug::Premium)`
+(or the relevant org-scoped equivalent) on whatever endpoint(s) it adds.
+Flagged in "Known gaps" below so this isn't forgotten when that work
+happens.
+
+Frontend: the tab is **omitted from the nav entirely** below Premium (not
+shown locked) — see the frontend doc for why this differs from the
+role-permission-gated tabs on the same page, which use the existing
+"visible but grayed out" `AdminPageSideNav` treatment instead.
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is still only
@@ -379,6 +407,11 @@ no test coverage existed for this controller at all before this).
   pricing page; no real check anywhere in the app yet — next up,
   deliberately not started yet, pending separate research the user is
   doing first.
+- **Group Reporting has no backend at all yet** — the frontend gate (tab
+  omitted from nav below Premium) exists, but there's no real endpoint to
+  protect since the tab is currently 100% static mock data. Whoever builds
+  the real cross-restaurant backend for this needs to add the plan check
+  then — it's easy to forget since the frontend already "looks" gated.
 - **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
   non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
   Report section above) gets a `canAccessAdmin: false` user *to* the page,
