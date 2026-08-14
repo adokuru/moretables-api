@@ -412,6 +412,22 @@ role-permission-gated tabs on the same page, which use the existing
   protect since the tab is currently 100% static mock data. Whoever builds
   the real cross-restaurant backend for this needs to add the plan check
   then — it's easy to forget since the frontend already "looks" gated.
+- **Customizable Advanced Analytics (Premium, pricing tooltip: "custom
+  reporting and segmentation") has no real feature behind it at all, and
+  is deliberately NOT gated.** Investigated and explicitly deferred, not
+  overlooked: no report builder, custom-metric picker, or basic/advanced
+  split exists anywhere in either repo. The 7 non-Group-Reporting tabs on
+  `admin/reporting` (Shift Occupancy, Cover Trends, First Time Visits,
+  Guest Frequency, Reservations, Turn Times, Guest Export) are the *only*
+  analytics implementation that exists — and the sibling `"Analytics"` row
+  on the same pricing page separately promises that same capability
+  free-for-everyone. Gating those 7 tabs to Premium would directly
+  contradict the free-tier promise, since there's no separate "basic
+  Analytics" view to fall back to. **Confirmed with the user explicitly**:
+  leave ungated until there's a real answer for what "basic Analytics"
+  (free tier) should look like versus the "advanced/customizable" version
+  — implementing a plan gate here first would mean inventing product scope
+  that hasn't been decided, not enforcing an existing boundary.
 - **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
   non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
   Report section above) gets a `canAccessAdmin: false` user *to* the page,
