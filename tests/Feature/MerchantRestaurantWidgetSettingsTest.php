@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\Role;
@@ -16,6 +17,10 @@ beforeEach(function (): void {
     $this->restaurant = createListedRestaurant([
         'organization_id' => $this->organization->id,
     ]);
+    // Reservation Widget is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — this file's
+    // existing tests predate that gate and expect saving to just work, so default to
+    // Premium. The plan-gating tests further down explicitly downgrade instead.
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
     $this->owner = User::factory()->create();
     assignScopedRole($this->owner, Role::OrganizationOwner, $this->organization, $this->restaurant);
     Sanctum::actingAs($this->owner);
@@ -92,4 +97,40 @@ it('forbids users without restaurant manage permission from updating widget sett
     patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/widget-settings", [
         'theme' => 'dark',
     ])->assertForbidden();
+});
+
+// Plan-tier gating — Reservation Widget is Core/Premium-only (docs/PLAN_PERMISSIONS.md).
+// $this->restaurant is Premium by default (see beforeEach); these tests explicitly
+// downgrade it.
+
+it('rejects updating widget settings for a restaurant below Core with an upgrade message', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/widget-settings", [
+        'theme' => 'dark',
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Core or Premium to configure your reservation widget.');
+
+    $settings = Restaurant::query()->findOrFail($this->restaurant->id)->widgetSettingsWithDefaults();
+    expect($settings['theme'])->toBe('light');
+});
+
+it('allows updating widget settings on the Core plan (not just Premium)', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Core);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/widget-settings", [
+        'theme' => 'dark',
+    ])->assertSuccessful()->assertJsonPath('data.theme', 'dark');
+});
+
+it('still shows widget settings and the public embed for a restaurant below Core', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/widget-settings")
+        ->assertSuccessful()
+        ->assertJsonPath('data.enabled', true);
+
+    getJson("/api/v1/restaurants/{$this->restaurant->slug}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.widget_settings.enabled', true);
 });

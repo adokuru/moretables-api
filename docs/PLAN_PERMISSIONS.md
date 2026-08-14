@@ -48,12 +48,11 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Three features so far. `BillingPlan.features` (a JSON column) and
-`plans-table.tsx` (the public pricing page) describe further Premium/Core-only
-rows — Reservation Widget, Pre-shift Report — that still aren't wired to any
-real check. `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are
-written as **reusable infrastructure**, not single-purpose to any one feature
-below.
+Four features so far. `BillingPlan.features` (a JSON column) and
+`plans-table.tsx` (the public pricing page) still describe a further
+Premium-only row — Pre-shift Report — not wired to any real check yet.
+`hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are written as
+**reusable infrastructure**, not single-purpose to any one feature below.
 
 ### Customizable Post-meal Guest Survey (Premium-only)
 
@@ -186,6 +185,36 @@ action). Both files' existing tests predate this gate and were updated to
 default to Premium via `setRestaurantBillingPlan()`, same pattern as the
 other two features.
 
+### Reservation Widget (Core/Premium — first "redirect away" UX treatment)
+
+`MerchantRestaurantWidgetSettingsController::update()` rejects (`403`,
+`"Upgrade to Core or Premium to configure your reservation widget."`) below
+`hasPlanAtLeast(BillingPlanSlug::Core)`. `show()` is **left ungated** — it's
+read-only and harmless to leave available (matches the frontend, which
+still fires the settings fetch during its brief pre-redirect render, see
+below).
+
+**The one endpoint that must never be touched by this gate**:
+`PublicRestaurantController::show` (`GET /v1/restaurants/{restaurant:slug}`,
+unauthenticated, serves `widget_settings` via `RestaurantDetailResource`) is
+what the actual embedded widget — already live on some Foundation
+restaurant's own website, hosted on a separate customer-facing site outside
+either of these two repos — reads to render itself. Gating this would break
+every already-embedded widget the moment a restaurant's plan status changed
+underneath it, not just prevent new configuration. Confirmed no plan check
+was added there; a Foundation restaurant's already-configured, already-live
+widget keeps working exactly as before, it just can't be reconfigured.
+
+Per explicit product decision, this feature uses a **third UX treatment**,
+distinct from the other three features in this doc — see the frontend doc
+for why (a full settings page, not a single toggle or a single-submit
+form): the frontend **redirects away entirely** rather than showing a
+locked form or letting the request fail on submit.
+
+Tests: `tests/Feature/MerchantRestaurantWidgetSettingsTest.php`. Existing
+tests predate this gate and were updated to default to Premium via
+`setRestaurantBillingPlan()`.
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is still only
@@ -207,12 +236,21 @@ other two features.
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Three features now call it across 8 different
+  convention it mirrors. Four features now call it across 9 different
   controller methods — still judged not worth a shared `FeatureGate`-style
   service, but the next feature added here should revisit that judgment.
-- **Reservation Widget and Pre-shift Report are still unenforced.** Both are
-  advertised as plan-gated on the public pricing page; neither has any real
-  check anywhere in the app yet.
+- **Pre-shift Report is still unenforced.** Advertised as Premium-only on
+  the public pricing page; no real check anywhere in the app yet.
+- **`PERMISSION_MATRIX.md`'s note on `integrations.manage` is stale**,
+  found while researching the Reservation Widget gate, unrelated to plan
+  tiers: it claims "No backend controller exists yet for Integrations,"
+  which was true when written but no longer is
+  (`MerchantRestaurantWidgetSettingsController` exists and enforces
+  `restaurants.view`/`restaurants.manage` server-side) — and separately,
+  `integrations.manage` itself is never actually checked by any controller
+  (confirmed via full grep), only referenced in seeders/the access-config
+  model. Not touched here — flagging since it was noticed in passing, not
+  part of this plan-gating work.
 
 ## See also
 

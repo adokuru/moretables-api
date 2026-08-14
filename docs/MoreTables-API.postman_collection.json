@@ -3400,7 +3400,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true,\n  \"theme\": \"dark\",\n  \"accent_color\": \"#A52700\",\n  \"layout\": \"card\",\n  \"button_text\": \"Book a table\"\n}"
-      }
+      },
+      "description": "Requires the restaurant to be on the Core or Premium plan (403) 'Upgrade to Core or Premium to configure your reservation widget.' below that. Read-only 'Widget settings show' above stays available on any plan, and the public embed keeps working on already-published widgets regardless of plan (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
