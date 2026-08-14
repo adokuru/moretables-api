@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\Role;
@@ -320,6 +321,9 @@ it('rejects renaming a table to a label already used on a different floor', func
 it('allows restaurant managers to configure guest communication messaging', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    // Automated Email Campaigns (both toggles here) is Premium-only (docs/PLAN_PERMISSIONS.md)
+    // — this test predates that gate and expects enabling to just work.
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
     $manager = User::factory()->create();
     assignScopedRole($manager, Role::PrincipalAdmin, $data['organization'], $data['restaurant']);
 
@@ -351,6 +355,7 @@ it('allows restaurant managers to configure guest communication messaging', func
 it('allows messaging.manage to toggle automated messaging but not reservation messaging', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
     $staff = User::factory()->create();
     grantAccessConfigPermissions($staff, $data['restaurant'], ['messaging.manage']);
     Sanctum::actingAs($staff);
@@ -370,6 +375,7 @@ it('allows messaging.manage to toggle automated messaging but not reservation me
 it('allows communications.manage to toggle reservation messaging but not automated messaging', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
     $staff = User::factory()->create();
     grantAccessConfigPermissions($staff, $data['restaurant'], ['communications.manage']);
     Sanctum::actingAs($staff);
@@ -381,6 +387,55 @@ it('allows communications.manage to toggle reservation messaging but not automat
     $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
         'enabled' => true,
     ])->assertForbidden();
+});
+
+// Plan-tier gating — Automated Email Campaigns (both toggles) is Premium-only
+// (docs/PLAN_PERMISSIONS.md).
+
+it('rejects enabling either messaging toggle for a restaurant below Premium, but still allows disabling', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']); // defaults to Foundation
+    $manager = User::factory()->create();
+    assignScopedRole($manager, Role::PrincipalAdmin, $data['organization'], $data['restaurant']);
+    Sanctum::actingAs($manager);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => true,
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to send automated email campaigns to guests.');
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/reservation-messaging', [
+        'enabled' => true,
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to send automated email campaigns to guests.');
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => false,
+    ])->assertOk()->assertJsonPath('guest_communication.automated_messaging.enabled', false);
+});
+
+it('reports both messaging toggles as disabled for a downgraded restaurant, without persisting anything', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
+    $manager = User::factory()->create();
+    assignScopedRole($manager, Role::PrincipalAdmin, $data['organization'], $data['restaurant']);
+    Sanctum::actingAs($manager);
+
+    $this->patchJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication/automated-messaging', [
+        'enabled' => true,
+    ])->assertOk();
+
+    $setting = $data['restaurant']->guestCommunicationSetting()->firstOrFail();
+    expect($setting->automated_messaging_enabled)->toBeTrue();
+
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Core);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guest-communication')
+        ->assertOk()
+        ->assertJsonPath('guest_communication.automated_messaging.enabled', false);
+
+    expect($setting->refresh()->automated_messaging_enabled)->toBeTrue();
 });
 
 it('emails a guest when operations staff creates a walk-in reservation with guest email', function () {

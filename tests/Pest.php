@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\MerchantSubscriptionStatus;
 use App\Models\BillingPlan;
 use App\Models\MerchantSubscription;
@@ -185,6 +186,23 @@ function activateMerchantBilling(Restaurant $restaurant): void
         'status' => MerchantSubscriptionStatus::Active,
         'current_period_end' => now()->addMonth(),
     ]);
+}
+
+/**
+ * Moves a restaurant's already-active subscription (see activateMerchantBilling())
+ * onto the given plan tier — used by tests that need to assert plan-tier-gated
+ * behavior (e.g. Premium-only survey customization) rather than the default
+ * Foundation tier activateMerchantBilling() sets up.
+ */
+function setRestaurantBillingPlan(Restaurant $restaurant, BillingPlanSlug $slug): void
+{
+    $planId = BillingPlan::query()->where('slug', $slug->value)->value('id');
+
+    if (! $planId) {
+        $planId = BillingPlan::factory()->create(['slug' => $slug])->id;
+    }
+
+    $restaurant->activeBillingSubscription()->update(['billing_plan_id' => $planId]);
 }
 
 function createListedRestaurant(array $attributes = []): Restaurant

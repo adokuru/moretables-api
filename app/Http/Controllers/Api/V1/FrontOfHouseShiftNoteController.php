@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Events\RestaurantShiftNoteUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\RestaurantShiftNoteResource;
@@ -33,6 +34,7 @@ class FrontOfHouseShiftNoteController extends Controller
     public function store(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        $this->abortUnlessPlanQualifies($restaurant);
         $validated = $this->validateService($request) + $request->validate([
             'restaurant_shift_id' => ['nullable', 'integer'],
             'body' => ['required', 'string', 'max:5000'],
@@ -58,6 +60,7 @@ class FrontOfHouseShiftNoteController extends Controller
     public function update(Request $request, Restaurant $restaurant, RestaurantShiftNote $shiftNote): JsonResponse
     {
         $this->authorizeMutation($request, $restaurant, $shiftNote);
+        $this->abortUnlessPlanQualifies($restaurant);
         $validated = $request->validate(['body' => ['required', 'string', 'max:5000']]);
         $shiftNote->update($validated);
         $shiftNote->load(['author', 'restaurant']);
@@ -98,6 +101,20 @@ class FrontOfHouseShiftNoteController extends Controller
             $request->user()->id === $note->created_by_user_id
             || $request->user()->hasRestaurantPermission('restaurants.manage', $restaurant),
             403,
+        );
+    }
+
+    /**
+     * Pre-shift Report is Premium-only (docs/PLAN_PERMISSIONS.md). Reading existing
+     * notes and deleting them stay allowed on any plan — only creating/editing new
+     * content is gated.
+     */
+    private function abortUnlessPlanQualifies(Restaurant $restaurant): void
+    {
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium),
+            403,
+            'Upgrade to Premium to access the Pre-shift Report.',
         );
     }
 }

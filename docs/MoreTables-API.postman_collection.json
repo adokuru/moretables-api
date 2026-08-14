@@ -305,7 +305,8 @@
         }
        }
       },
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes",
+      "description": "Pre-shift Report (shift notes) is Premium-only — 403 'Upgrade to Premium to access the Pre-shift Report.' below that. Listing and deleting notes stay available on any plan (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -331,7 +332,8 @@
         }
        }
       },
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}",
+      "description": "Same Premium-only plan requirement as creating a note — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -2968,12 +2970,12 @@
     {
      "name": "Guest Surveys",
      "item": [
-      {"name": "List templates", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/templates", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "templates"]}}},
+      {"name": "List templates", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/templates", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "templates"]}, "description": "Returns the fixed 'post_dining' template always. The 'blank' (build-your-own) template is only included for restaurants on the Premium plan — see docs/PLAN_PERMISSIONS.md."}},
       {"name": "List surveys", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys"]}}},
-      {"name": "Create survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"template_key\": \"post_dining\",\n  \"title\": \"Post Dining Questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\", \"whatsapp\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys"]}}},
+      {"name": "Create survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"template_key\": \"post_dining\",\n  \"title\": \"Post Dining Questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\", \"whatsapp\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys"]}, "description": "Foundation/Core restaurants get 403 'Upgrade to Premium to customize your survey questions.' if template_key isn't 'post_dining' or questions differ from the fixed template — see docs/PLAN_PERMISSIONS.md."}},
       {"name": "Show survey", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}},
-      {"name": "Update draft survey", "request": {"method": "PATCH", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\", \"whatsapp\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}},
-      {"name": "Publish survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}", "publish"]}}},
+      {"name": "Update draft survey", "request": {"method": "PATCH", "header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"title\": \"Updated questions\",\n  \"send_delay_minutes\": 120,\n  \"channels\": [\"push\", \"email\", \"whatsapp\"]\n}"}, "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}, "description": "Foundation/Core restaurants get 403 'Upgrade to Premium to customize your survey questions.' if a 'questions' field is sent that differs from the fixed post_dining template. Other fields (title, description, channels, send_delay_minutes) stay editable on any plan — see docs/PLAN_PERMISSIONS.md."}},
+      {"name": "Publish survey", "request": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}/publish", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}", "publish"]}, "description": "Defense-in-depth: also re-checks the Premium-only question-customization rule at publish time — see docs/PLAN_PERMISSIONS.md."}},
       {"name": "List survey responses", "request": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}/responses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}", "responses"]}}},
       {"name": "Delete draft survey", "request": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/guest-surveys/{{survey_id}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "merchant", "restaurants", "{{restaurant_id}}", "guest-surveys", "{{survey_id}}"]}}}
      ]
@@ -3400,7 +3402,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true,\n  \"theme\": \"dark\",\n  \"accent_color\": \"#A52700\",\n  \"layout\": \"card\",\n  \"button_text\": \"Book a table\"\n}"
-      }
+      },
+      "description": "Requires the restaurant to be on the Core or Premium plan (403) 'Upgrade to Core or Premium to configure your reservation widget.' below that. Read-only 'Widget settings show' above stays available on any plan, and the public embed keeps working on already-published widgets regardless of plan (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -3525,7 +3528,7 @@
         }
        ]
       },
-      "description": "Sends an in-app + push notification broadcast to the restaurant's guests. audience is 'all' (every user with an active or completed reservation) or 'selected' (only users linked to the provided guest_contact_ids, which come from the merchant guests endpoint). No WhatsApp or email is sent."
+      "description": "Sends an in-app + push notification broadcast to the restaurant's guests. audience is 'all' (every user with an active or completed reservation) or 'selected' (only users linked to the provided guest_contact_ids, which come from the merchant guests endpoint). No WhatsApp or email is sent. Automated Email Campaigns (this whole endpoint) is Premium-only — a Foundation/Core restaurant gets 403 'Upgrade to Premium to send automated email campaigns to guests.' (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -3561,7 +3564,8 @@
          "type": "string"
         }
        ]
-      }
+      },
+      "description": "Both automated_messaging.enabled and reservation_messaging.enabled report as false for a restaurant below Premium, even if previously enabled (e.g. before a downgrade) — reflects effective state without altering stored data. See docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -3606,7 +3610,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true\n}"
-      }
+      },
+      "description": "Setting enabled=true requires the restaurant to be on the Premium plan — 403 'Upgrade to Premium to send automated email campaigns to guests.' below that. Setting enabled=false is always allowed. See docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -3651,7 +3656,8 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"enabled\": true\n}"
-      }
+      },
+      "description": "Same Premium-only rule as the automated-messaging toggle above — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -6633,7 +6639,7 @@
        "mode": "raw",
        "raw": "{\n  \"name\": \"Weekend card hold\",\n  \"management_method\": \"card_hold\",\n  \"party_size_scope\": \"all_party_sizes\",\n  \"hold_charge_amount\": 5000,\n  \"starts_on\": \"2026-01-23\",\n  \"ends_on\": \"2026-03-23\",\n  \"days\": [\n    5,\n    6\n  ],\n  \"is_active\": true\n}"
       },
-      "description": "Create a cancellation or no-show policy. `management_method` is currently `card_hold`. `party_size_scope` can be `all_party_sizes`, `large_parties_only`, or `custom` (requires `min_party_size` and `max_party_size`). `days` are 0=Sunday..6=Saturday."
+      "description": "Create a cancellation or no-show policy. `management_method` is currently `card_hold`. `party_size_scope` can be `all_party_sizes`, `large_parties_only`, or `custom` (requires `min_party_size` and `max_party_size`). `days` are 0=Sunday..6=Saturday. Reservation Holds (this whole resource) is Core/Premium-only — 403 'Upgrade to Core or Premium to set up reservation holds.' below that (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -6697,7 +6703,7 @@
        "mode": "raw",
        "raw": "{\n  \"name\": \"Updated weekend hold\",\n  \"hold_charge_amount\": 7500\n}"
       },
-      "description": "Update a cancellation or no-show policy."
+      "description": "Update a cancellation or no-show policy. Same Core/Premium plan requirement as creating one — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -6725,7 +6731,7 @@
         "1"
        ]
       },
-      "description": "Delete a cancellation or no-show policy."
+      "description": "Delete a cancellation or no-show policy. Deletion is allowed on any plan, unlike create/update — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
@@ -6753,7 +6759,7 @@
         "status"
        ]
       },
-      "description": "Check whether the restaurant offers MoreTables credits (rewards_enabled) and whether it has entered its own custom reward score (reservation_reward_points differs from the default)."
+      "description": "Check whether the restaurant offers MoreTables credits (rewards_enabled AND a Core/Premium plan — see docs/PLAN_PERMISSIONS.md) and whether it has entered its own custom reward score (reservation_reward_points differs from the default)."
      }
     },
     {
@@ -6815,7 +6821,7 @@
        "mode": "raw",
        "raw": "{\n  \"points\": 300,\n  \"days\": [\n    1,\n    2\n  ],\n  \"times\": [\n    \"09:00\",\n    \"09:15\"\n  ],\n  \"is_active\": true\n}"
       },
-      "description": "Create a custom reward-point rule. Omit or empty `times` to award the points all day on the selected days. `days` are 0=Sunday..6=Saturday."
+      "description": "Create a custom reward-point rule. Omit or empty `times` to award the points all day on the selected days. `days` are 0=Sunday..6=Saturday. Requires the restaurant to be on the Core or Premium plan — a Foundation restaurant gets 403 'Upgrade to Core or Premium to set up the Guest Loyalty Program.' (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -6879,7 +6885,7 @@
        "mode": "raw",
        "raw": "{\n  \"points\": 250\n}"
       },
-      "description": "Update a reward-point rule."
+      "description": "Update a reward-point rule. Same Core/Premium plan requirement as creating one — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {

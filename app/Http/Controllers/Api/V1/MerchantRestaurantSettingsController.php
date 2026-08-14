@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\UpdateRestaurantSettingsRequest;
 use App\Models\Restaurant;
@@ -47,6 +48,12 @@ class MerchantRestaurantSettingsController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
 
         $validated = $request->validated();
+
+        // Guest Loyalty Program is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — a
+        // Foundation restaurant can't opt in, regardless of what it submits here.
+        if (($validated['rewards_enabled'] ?? false) && ! $restaurant->hasPlanAtLeast(BillingPlanSlug::Core)) {
+            $validated['rewards_enabled'] = false;
+        }
 
         $restaurant->fill($validated)->save();
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\Reservation;
 use App\Models\RewardPointTransaction;
 use App\Models\User;
@@ -142,6 +143,10 @@ it('allows updating occasion and subscribe_to_promotions on an existing reservat
 it('awards 100 points to a user on reservation completion when accept_points is true and restaurant rewards are enabled', function () {
     $data = createBookableRestaurant();
     $restaurant = $data['restaurant'];
+    // Guest Loyalty Program is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — points are
+    // only ever awarded for a restaurant on a qualifying plan.
+    activateMerchantBilling($restaurant);
+    setRestaurantBillingPlan($restaurant, BillingPlanSlug::Core);
     $restaurant->update(['rewards_enabled' => true, 'reservation_reward_points' => 100]);
 
     $customer = User::factory()->create(['status' => UserStatus::Active]);
@@ -216,9 +221,36 @@ it('does not award points when restaurant rewards are disabled', function () {
     )->toBeFalse();
 });
 
+it('does not award points when the restaurant is on a plan below Core, even with rewards enabled', function () {
+    $data = createBookableRestaurant();
+    $restaurant = $data['restaurant'];
+    activateMerchantBilling($restaurant); // defaults to Foundation
+    $restaurant->update(['rewards_enabled' => true, 'reservation_reward_points' => 100]);
+
+    $customer = User::factory()->create(['status' => UserStatus::Active]);
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'accept_points' => true,
+        'status' => ReservationStatus::Seated,
+    ]);
+
+    app(ReservationService::class)->completeReservation($reservation, $customer);
+
+    expect(
+        RewardPointTransaction::query()->where('user_id', $customer->id)->exists()
+    )->toBeFalse();
+});
+
 it('awards a custom points amount set by the restaurant on reservation completion', function () {
     $data = createBookableRestaurant();
     $restaurant = $data['restaurant'];
+    activateMerchantBilling($restaurant);
+    setRestaurantBillingPlan($restaurant, BillingPlanSlug::Premium);
     $restaurant->update(['rewards_enabled' => true, 'reservation_reward_points' => 250]);
 
     $customer = User::factory()->create(['status' => UserStatus::Active]);

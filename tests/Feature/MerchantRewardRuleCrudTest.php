@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\RestaurantRewardRule;
@@ -22,6 +23,11 @@ beforeEach(function (): void {
         'timezone' => 'UTC',
         'reservation_reward_points' => 100,
     ]);
+    // This file's existing tests predate plan-tier gating and freely create/edit reward
+    // rules — keep them on Premium (unrestricted) by default. The plan-gating tests
+    // further down explicitly downgrade to Foundation instead.
+    activateMerchantBilling($this->restaurant);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
     $this->owner = User::factory()->create();
     assignScopedRole($this->owner, Role::OrganizationOwner, $this->organization, $this->restaurant);
     Sanctum::actingAs($this->owner);
@@ -112,6 +118,48 @@ it('prevents managing reward rules from another restaurant', function (): void {
 
     getJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules/{$otherRule->id}")
         ->assertNotFound();
+});
+
+// Plan-tier gating — Guest Loyalty Program is Core/Premium-only (docs/PLAN_PERMISSIONS.md).
+// $this->restaurant is Premium by default (see beforeEach); these tests explicitly downgrade it.
+
+it('rejects creating a reward rule for a restaurant below Core with an upgrade message', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules", [
+        'points' => 300,
+        'days' => [3],
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Core or Premium to set up the Guest Loyalty Program.');
+
+    expect($this->restaurant->rewardRules()->count())->toBe(0);
+});
+
+it('rejects updating a reward rule for a restaurant below Core with an upgrade message', function (): void {
+    $rule = RestaurantRewardRule::factory()->for($this->restaurant)->create(['points' => 150, 'days' => [3]]);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules/{$rule->id}", [
+        'points' => 250,
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Core or Premium to set up the Guest Loyalty Program.');
+
+    expect($rule->refresh()->points)->toBe(150);
+});
+
+it('allows creating and updating reward rules on the Core plan (not just Premium)', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Core);
+
+    $response = postJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules", [
+        'points' => 300,
+        'days' => [3],
+    ])->assertCreated();
+
+    $ruleId = $response->json('data.id');
+
+    patchJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/reward-rules/{$ruleId}", [
+        'points' => 350,
+    ])->assertOk()->assertJsonPath('data.points', 350);
 });
 
 describe('points resolution', function (): void {

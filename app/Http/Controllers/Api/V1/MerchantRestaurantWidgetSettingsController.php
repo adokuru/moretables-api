@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\UpdateRestaurantWidgetSettingsRequest;
 use App\Models\Restaurant;
@@ -24,6 +25,15 @@ class MerchantRestaurantWidgetSettingsController extends Controller
 
     public function update(UpdateRestaurantWidgetSettingsRequest $request, Restaurant $restaurant): JsonResponse
     {
+        // Reservation Widget is Core/Premium-only (docs/PLAN_PERMISSIONS.md). The frontend
+        // redirects a Foundation restaurant away before this is ever reached, but a direct
+        // API call still needs blocking.
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Core),
+            403,
+            'Upgrade to Core or Premium to configure your reservation widget.',
+        );
+
         $settings = array_merge(
             $restaurant->widgetSettingsWithDefaults(),
             $request->validated(),

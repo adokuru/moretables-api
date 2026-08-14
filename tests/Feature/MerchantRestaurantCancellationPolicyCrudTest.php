@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Enums\CancellationPolicyManagementMethod;
 use App\Enums\CancellationPolicyPartySizeScope;
 use App\Models\Organization;
@@ -21,6 +22,10 @@ beforeEach(function (): void {
     $this->restaurant = createListedRestaurant([
         'organization_id' => $this->organization->id,
     ]);
+    // Reservation Holds is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — this file's
+    // existing tests predate that gate and expect creating/editing to just work, so
+    // default to Premium. The plan-gating tests further down explicitly downgrade instead.
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
     $this->owner = User::factory()->create();
     assignScopedRole($this->owner, Role::OrganizationOwner, $this->organization, $this->restaurant);
     Sanctum::actingAs($this->owner);
@@ -144,4 +149,59 @@ it('forbids users without restaurant manage permission from creating cancellatio
         "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies",
         validCancellationPolicyPayload(),
     )->assertForbidden();
+});
+
+// Plan-tier gating — Reservation Holds is Core/Premium-only (docs/PLAN_PERMISSIONS.md).
+// $this->restaurant is Premium by default (see beforeEach); these tests explicitly
+// downgrade it.
+
+it('rejects creating a cancellation policy for a restaurant below Core with an upgrade message', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    postJson(
+        "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies",
+        validCancellationPolicyPayload(),
+    )->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Core or Premium to set up reservation holds.');
+
+    expect(RestaurantCancellationPolicy::query()->where('restaurant_id', $this->restaurant->id)->count())->toBe(0);
+});
+
+it('rejects updating a cancellation policy for a restaurant below Core with an upgrade message', function (): void {
+    $policy = RestaurantCancellationPolicy::factory()->create(['restaurant_id' => $this->restaurant->id, 'name' => 'Original']);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    patchJson(
+        "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies/{$policy->id}",
+        ['name' => 'Changed'],
+    )->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Core or Premium to set up reservation holds.');
+
+    expect($policy->refresh()->name)->toBe('Original');
+});
+
+it('still allows deleting an existing cancellation policy for a restaurant below Core', function (): void {
+    $policy = RestaurantCancellationPolicy::factory()->create(['restaurant_id' => $this->restaurant->id]);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Foundation);
+
+    deleteJson("/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies/{$policy->id}")
+        ->assertSuccessful();
+
+    $this->assertDatabaseMissing('restaurant_cancellation_policies', ['id' => $policy->id]);
+});
+
+it('allows creating and updating cancellation policies on the Core plan (not just Premium)', function (): void {
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Core);
+
+    $response = postJson(
+        "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies",
+        validCancellationPolicyPayload(),
+    )->assertCreated();
+
+    $policyId = $response->json('data.id');
+
+    patchJson(
+        "/api/v1/merchant/restaurants/{$this->restaurant->id}/cancellation-policies/{$policyId}",
+        ['name' => 'Updated on Core'],
+    )->assertSuccessful()->assertJsonPath('data.name', 'Updated on Core');
 });

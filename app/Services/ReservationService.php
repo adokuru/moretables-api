@@ -860,7 +860,7 @@ class ReservationService
 
         $reservation->loadMissing('restaurant');
 
-        if (! $reservation->restaurant->rewards_enabled) {
+        if (! $reservation->restaurant->offersMoretablesCredits()) {
             return;
         }
 

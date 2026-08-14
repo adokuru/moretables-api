@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Jobs\ChargeNoShowFeeJob;
 use App\Models\Reservation;
 use App\Models\ReservationCardHold;
@@ -31,6 +32,10 @@ beforeEach(function (): void {
 function cardHoldRestaurant(int $holdAmount = 15000): array
 {
     $data = createBookableRestaurant();
+    // Reservation Holds is Core/Premium-only (docs/PLAN_PERMISSIONS.md) — this file's
+    // tests are about card-hold mechanics, not plan gating, so default to Premium.
+    activateMerchantBilling($data['restaurant']);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
 
     $policy = RestaurantCancellationPolicy::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
@@ -70,6 +75,18 @@ it('captures a card before booking a card-hold slot', function (): void {
     ]);
 
     Http::assertSent(fn ($request): bool => $request['amount'] === 5000);
+});
+
+it('rejects card capture for a restaurant below Core, even with an active hold policy', function (): void {
+    ['restaurant' => $restaurant] = cardHoldRestaurant();
+    setRestaurantBillingPlan($restaurant, BillingPlanSlug::Foundation);
+    $user = User::factory()->create();
+    Sanctum::actingAs($user);
+
+    $this->postJson("/api/v1/restaurants/{$restaurant->slug}/card-hold", [
+        'starts_at' => now()->addDay()->setTime(18, 0)->toDateTimeString(),
+        'party_size' => 2,
+    ])->assertUnprocessable();
 });
 
 it('rejects card capture when the slot has no card-hold policy', function (): void {

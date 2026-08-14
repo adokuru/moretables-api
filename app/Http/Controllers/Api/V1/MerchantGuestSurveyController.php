@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\StoreGuestSurveyRequest;
 use App\Http\Requests\Merchant\UpdateGuestSurveyRequest;
@@ -27,15 +28,22 @@ class MerchantGuestSurveyController extends Controller
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'communications.manage'], $restaurant), 403);
 
-        return response()->json(['data' => [
+        $templates = [
             [
                 'key' => 'post_dining',
                 'title' => 'Post Dining Questions',
                 'description' => 'Standard post-visit feedback survey.',
                 'questions' => $this->postDiningQuestions(),
             ],
-            ['key' => 'blank', 'title' => 'Blank Template', 'description' => 'Build your own survey.', 'questions' => []],
-        ]]);
+        ];
+
+        // Customizing beyond the fixed template is a Premium-only feature — Foundation/Core
+        // restaurants aren't offered the blank starting point at all (see docs/PLAN_PERMISSIONS.md).
+        if ($restaurant->hasPlanAtLeast(BillingPlanSlug::Premium)) {
+            $templates[] = ['key' => 'blank', 'title' => 'Blank Template', 'description' => 'Build your own survey.', 'questions' => []];
+        }
+
+        return response()->json(['data' => $templates]);
     }
 
     #[Response(200, type: 'array{data: list<array{id: int, version: int, publication_sequence: int|null, title: string, description: string|null, logo_url: string|null, status: string, questions: list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>, settings: array{send_delay_minutes: int, channels: list<string>}, published_at: string|null}>}')]
@@ -53,14 +61,26 @@ class MerchantGuestSurveyController extends Controller
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
         $validated = $request->validated();
-        $survey = DB::transaction(function () use ($restaurant, $validated): GuestSurvey {
+        $canCustomize = $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium);
+        $templateKey = $validated['template_key'] ?? ($canCustomize ? 'blank' : 'post_dining');
+        $questions = $validated['questions'] ?? ($templateKey === 'post_dining' ? $this->postDiningQuestions() : []);
+
+        if (! $canCustomize) {
+            abort_unless(
+                $templateKey === 'post_dining' && $this->isDefaultPostDiningQuestions($questions),
+                403,
+                'Upgrade to Premium to customize your survey questions.',
+            );
+        }
+
+        $survey = DB::transaction(function () use ($restaurant, $validated, $questions): GuestSurvey {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
 
             return $lockedRestaurant->guestSurveys()->create([
-                ...collect($validated)->except('template_key')->all(),
+                ...collect($validated)->except(['template_key', 'questions'])->all(),
                 'version' => ((int) $lockedRestaurant->guestSurveys()->max('version')) + 1,
                 'status' => 'draft',
-                'questions' => $validated['questions'] ?? (($validated['template_key'] ?? 'blank') === 'post_dining' ? $this->postDiningQuestions() : []),
+                'questions' => $questions,
                 'channels' => $validated['channels'] ?? ['push', 'email'],
                 'send_delay_minutes' => $validated['send_delay_minutes'] ?? 120,
             ]);
@@ -85,7 +105,17 @@ class MerchantGuestSurveyController extends Controller
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
 
-        $survey = DB::transaction(function () use ($restaurant, $survey, $request): GuestSurvey {
+        $validated = $request->validated();
+
+        if (array_key_exists('questions', $validated) && ! $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium)) {
+            abort_unless(
+                $this->isDefaultPostDiningQuestions($validated['questions']),
+                403,
+                'Upgrade to Premium to customize your survey questions.',
+            );
+        }
+
+        $survey = DB::transaction(function () use ($restaurant, $survey, $validated): GuestSurvey {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
             $lockedSurvey = $lockedRestaurant->guestSurveys()->lockForUpdate()->findOrFail($survey->id);
 
@@ -93,7 +123,7 @@ class MerchantGuestSurveyController extends Controller
                 throw ValidationException::withMessages(['survey' => ['Published surveys are immutable. Create a new draft version instead.']]);
             }
 
-            $lockedSurvey->update($request->validated());
+            $lockedSurvey->update($validated);
 
             return $lockedSurvey;
         });
@@ -108,6 +138,17 @@ class MerchantGuestSurveyController extends Controller
     {
         $this->assertSurveyBelongsToRestaurant($survey, $restaurant);
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'communications.manage'], $restaurant), 403);
+
+        // Defense-in-depth: store()/update() already block saving customized questions
+        // below Premium, so this should never trip in practice — but publish is the last
+        // gate before a survey goes live, so it re-checks rather than trusting that state.
+        if (! $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium)) {
+            abort_unless(
+                $this->isDefaultPostDiningQuestions($survey->questions),
+                403,
+                'Upgrade to Premium to customize your survey questions.',
+            );
+        }
 
         DB::transaction(function () use ($restaurant, $survey): void {
             $lockedRestaurant = Restaurant::query()->lockForUpdate()->findOrFail($restaurant->id);
@@ -202,6 +243,14 @@ class MerchantGuestSurveyController extends Controller
             ['id' => 'nps', 'type' => 'nps', 'prompt' => 'How likely are you to recommend us?', 'required' => true, 'options' => []],
             ['id' => 'comments', 'type' => 'long_text', 'prompt' => 'Is there anything else we could improve?', 'required' => false, 'options' => []],
         ];
+    }
+
+    /**
+     * @param  list<array{id: string, type: string, prompt: string, required: bool, options: list<string>}>  $questions
+     */
+    private function isDefaultPostDiningQuestions(array $questions): bool
+    {
+        return $questions == $this->postDiningQuestions();
     }
 
     private function csvResponse(string $filename, string $content): StreamedResponse

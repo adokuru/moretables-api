@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\RestaurantAccessConfigResource;
 use App\Models\Restaurant;
@@ -57,6 +58,14 @@ class MerchantAccessConfigController extends Controller
     public function store(Request $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('staff.manage', $restaurant), 403);
+        // Customized User Permissions (creating a new access config) is Core/Premium-only
+        // (docs/PLAN_PERMISSIONS.md). Foundation restaurants can still view/edit the 5
+        // default configs and assign staff to them — only creating a new one is gated.
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Core),
+            403,
+            'Upgrade to Core or Premium to create custom access configs.',
+        );
 
         $availablePermissions = [
             // system permissions (used for backend auth checks)

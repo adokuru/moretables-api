@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\BillingPlanSlug;
 use App\RestaurantStatus;
 use App\Services\RestaurantRewardRuleService;
 use Database\Factories\RestaurantFactory;
@@ -197,10 +198,14 @@ class Restaurant extends Model implements HasMedia
 
     /**
      * Whether the restaurant participates in the MoreTables credits (loyalty rewards) program.
+     * Requires both the restaurant's own opt-in (rewards_enabled) and a Core/Premium plan —
+     * see docs/PLAN_PERMISSIONS.md. This is the single source of truth for "effective"
+     * participation; a Foundation restaurant with a stale rewards_enabled=true never
+     * actually participates, regardless of what's stored.
      */
     public function offersMoretablesCredits(): bool
     {
-        return (bool) $this->rewards_enabled;
+        return (bool) $this->rewards_enabled && $this->hasPlanAtLeast(BillingPlanSlug::Core);
     }
 
     /**
@@ -286,6 +291,16 @@ class Restaurant extends Model implements HasMedia
     public function paymentMethods(): HasMany
     {
         return $this->hasMany(MerchantPaymentMethod::class);
+    }
+
+    /**
+     * Whether this restaurant's active (or trialing) subscription is on the given
+     * plan tier or higher. Used to gate plan-tier features (e.g. survey customization)
+     * separately from role-based permissions.
+     */
+    public function hasPlanAtLeast(BillingPlanSlug $minimum): bool
+    {
+        return $this->activeBillingSubscription?->plan?->slug?->atLeast($minimum) === true;
     }
 
     /**
