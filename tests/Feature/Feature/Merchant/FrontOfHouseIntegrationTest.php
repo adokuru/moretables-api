@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Events\ReservationUpdated;
 use App\Events\RestaurantShiftNoteUpdated;
 use App\Models\DiningArea;
@@ -760,6 +761,9 @@ it('allows toggling a waitlist entry between arrived and partially arrived', fun
 it('cancels waitlist entries and enforces author-or-manager shift-note mutation rights', function () {
     $data = createBookableRestaurant();
     activateMerchantBilling($data['restaurant']);
+    // Pre-shift Report (shift notes) is Premium-only (docs/PLAN_PERMISSIONS.md) — this
+    // test predates that gate and expects creating a note to just work.
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
     $author = actingAsFrontOfHouse($data);
     $entry = WaitlistEntry::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
@@ -801,6 +805,43 @@ it('cancels waitlist entries and enforces author-or-manager shift-note mutation 
         'restaurant_id' => $data['restaurant']->id,
         'action' => 'deleted',
     ])->and($event->broadcastOn()[0]->name)->toBe('private-restaurant.'.$data['restaurant']->id);
+});
+
+it('rejects creating or updating a shift note for a restaurant below Premium, but still allows reading and deleting', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Premium);
+    actingAsFrontOfHouse($data);
+
+    $service = [
+        'service_starts_at' => now()->addDay()->startOfHour()->utc()->toIso8601String(),
+        'service_ends_at' => now()->addDay()->startOfHour()->addHours(5)->utc()->toIso8601String(),
+    ];
+    $noteId = $this->postJson(frontOfHouseUrl($data, 'front-of-house/shift-notes'), [
+        ...$service,
+        'body' => 'Written while still on Premium.',
+    ])->assertCreated()->json('note.id');
+
+    setRestaurantBillingPlan($data['restaurant'], BillingPlanSlug::Core);
+
+    $this->postJson(frontOfHouseUrl($data, 'front-of-house/shift-notes'), [
+        ...$service,
+        'body' => 'Should not save.',
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to access the Pre-shift Report.');
+
+    $this->patchJson(frontOfHouseUrl($data, 'front-of-house/shift-notes/'.$noteId), [
+        'body' => 'Should not save either.',
+    ])->assertForbidden()
+        ->assertJsonPath('message', 'Upgrade to Premium to access the Pre-shift Report.');
+
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/shift-notes?'.http_build_query($service)))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.body', 'Written while still on Premium.');
+
+    $this->deleteJson(frontOfHouseUrl($data, 'front-of-house/shift-notes/'.$noteId))
+        ->assertOk();
 });
 
 it('assigns and partially seats a reservation atomically', function () {

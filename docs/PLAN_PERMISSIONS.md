@@ -48,9 +48,9 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Five features so far. `BillingPlan.features` (a JSON column) and
+Six features so far. `BillingPlan.features` (a JSON column) and
 `plans-table.tsx` (the public pricing page) still describe a further
-Premium-only row — Pre-shift Report — not wired to any real check yet.
+Core/Premium row — Waitlist Management — not wired to any real check yet.
 `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are written as
 **reusable infrastructure**, not single-purpose to any one feature below.
 
@@ -257,6 +257,58 @@ Tests: `tests/Feature/MerchantRestaurantCancellationPolicyCrudTest.php`
 `matchingPolicy()` runtime check — its `cardHoldRestaurant()` helper
 predates this gate and was updated to default to Premium).
 
+### Pre-shift Report (Premium-only — one of two views on a shared dashboard page)
+
+`dashboard/shift-overview` (note: `/dashboard/*`, not `/admin/*` — the
+front-of-house side, not the back office) has 2 views toggled by a
+`?view=` query param, not sub-routes: the default ("chat") view is generic
+covers/party-size analytics, unrelated and free for everyone; `?view=list`
+renders `ShiftListTab` — Shift Notes plus 3 flagged-guest groups (Large
+Parties, Reservation Notes, Seating Preference) for the selected shift.
+**Confirmed via explicit clarifying question**: `?view=list` is Pre-shift
+Report; the chat/analytics view is not. No component in the codebase is
+literally named "Pre-shift Report" — the feature name only exists as
+pricing-page copy.
+
+The flagged-guest groups are built client-side by filtering the *same*
+general-purpose front-of-house endpoints every other dashboard view already
+uses (`useFohReservations`/`useFohArrived`/`useFohSeated`/`useFohFinished`)
+— **these are not gated and must never be**, gating them would break the
+entire front-of-house board for every plan. The one genuinely
+feature-specific backend resource is shift notes
+(`FrontOfHouseShiftNoteController`, confirmed via grep as the sole consumer
+of `useShiftNotes` on the frontend) — that's what's actually gated:
+
+- `store()`/`update()` reject (`403`, `"Upgrade to Premium to access the
+  Pre-shift Report."`) below `hasPlanAtLeast(BillingPlanSlug::Premium)` via
+  a shared `abortUnlessPlanQualifies()` helper. `index`/`destroy()` stay
+  ungated — reading and deleting existing notes are always allowed, same
+  pattern as every other feature in this doc.
+
+Frontend: `ShiftListTab` gets the same redirect-guard shape as
+`ReservationWidget`/`PolicyCancellation` (3rd copy of this pattern — see
+the frontend doc's known gaps re: extracting a shared hook), scoped to just
+this one view — the default analytics view is untouched.
+
+**A real, adjacent bug found and fixed while implementing this, not part
+of the plan-gating work itself**: `app/admin/layout.tsx`'s `lacksAdminAccess`
+check had no exemption for `/admin/onboarding`, unlike the two gates below
+it in the same file which both explicitly exempt their own target pages. A
+`canAccessAdmin: false` user — a real, supported configuration for
+dashboard-only staff on a custom access config with none of the 12
+admin-unlocking permissions — redirected to `/admin/onboarding` (by this
+feature, or by Reservation Widget/Reservation Holds before it, though
+neither of those could actually trigger it since both live under `/admin/*`
+already) would have been bounced straight back to `/dashboard` by this
+same check, a dead end. Fixed by adding the same `pathname !==
+"/admin/onboarding"` exemption the other two gates already use.
+`/admin/subscription-expired` deliberately did **not** get the same
+exemption — not asked for.
+
+Tests: `tests/Feature/Feature/Merchant/FrontOfHouseIntegrationTest.php`
+(shift-note plan gating; its existing shift-note test predates this gate
+and was updated to default to Premium).
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is still only
@@ -278,15 +330,26 @@ predates this gate and was updated to default to Premium).
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Five features now call it across 12 different
+  convention it mirrors. Six features now call it across 14 different
   controller/service methods — still judged not worth a shared
   `FeatureGate`-style service, but the next feature added here should
   revisit that judgment.
-- **Waitlist Management and Pre-shift Report are still unenforced.** Both
-  Core/Premium-only (Waitlist) or Premium-only (Pre-shift Report) per the
-  public pricing page; no real check anywhere in the app yet. Waitlist
-  Management is next up — deliberately not started yet, pending separate
-  research the user is doing first.
+- **Waitlist Management is still unenforced.** Core/Premium per the public
+  pricing page; no real check anywhere in the app yet — next up,
+  deliberately not started yet, pending separate research the user is
+  doing first.
+- **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
+  non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
+  Report section above) gets a `canAccessAdmin: false` user *to* the page,
+  but `useBillingStatus()` (`MerchantBillingController::show`) itself
+  requires `restaurants.view`/`billing.manage` — both of which are among
+  the 12 permissions `canAccessAdmin` is derived from, so a user who
+  genuinely lacks all of them (a real but rare custom access config, not
+  any of the 5 seeded defaults) would reach the page only to have this GET
+  403 and hard-redirect to `/access-denied` instead — a different, but
+  still real, dead end. Not fixed — would require loosening
+  `MerchantBillingController::show()`'s permission gate specifically for
+  this read, a bigger decision than the route-guard fix, and not asked for.
 - **`PERMISSION_MATRIX.md`'s note on `integrations.manage` is stale**,
   found while researching the Reservation Widget gate, unrelated to plan
   tiers: it claims "No backend controller exists yet for Integrations,"

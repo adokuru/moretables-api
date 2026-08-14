@@ -305,7 +305,8 @@
         }
        }
       },
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes",
+      "description": "Pre-shift Report (shift notes) is Premium-only — 403 'Upgrade to Premium to access the Pre-shift Report.' below that. Listing and deleting notes stay available on any plan (see docs/PLAN_PERMISSIONS.md)."
      }
     },
     {
@@ -331,7 +332,8 @@
         }
        }
       },
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/shift-notes/{{shift_note_id}}",
+      "description": "Same Premium-only plan requirement as creating a note — see docs/PLAN_PERMISSIONS.md."
      }
     },
     {
