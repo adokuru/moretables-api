@@ -351,39 +351,53 @@ existing convention `access-control.md` already documents for
 Tests: `tests/Feature/MerchantAccessConfigControllerTest.php` (new file —
 no test coverage existed for this controller at all before this).
 
-### Customizable Advanced Analytics (Premium-only — implemented via the "Group Reporting" tab; frontend-only, because there's no backend to gate yet)
+### Customizable Advanced Analytics (Premium-only — the entire Reporting page, not just Group Reporting)
 
-**Naming correction**: this was first built and documented as "Group
-Reporting" — the user later clarified the actual pricing-page feature
-being gated is **"Customizable Advanced Analytics"** (same "Analytics &
-Insights" section, also Premium-only). The implementation is unchanged:
-gating the "Group Reporting" tab on `admin/reporting` is what satisfies
-this. Don't re-investigate or re-implement this as if it were still open.
+**Naming correction**: this was first built and documented as gating just
+the "Group Reporting" tab — the user later clarified the actual
+pricing-page feature is **"Customizable Advanced Analytics"** (same
+"Analytics & Insights" section, also Premium-only) and that it means the
+**whole `admin/reporting` page**, not one tab. Foundation *and* Core are
+both blocked — confirmed explicitly, since Core previously had full access
+to the other 7 tabs and losing that is a real behavior change, not an
+oversight.
 
-`admin/reporting`'s "Group Reporting" tab is **entirely static mock data**
-(`group-reporting-data.ts`, 4 hardcoded fake restaurant rows) — confirmed
-via full grep of both repos that **no backend endpoint for this feature
-exists at all**. `MerchantReportingController` has exactly 7 methods
-(`filters`, `shift-occupancy`, `cover-trends`, `first-time-visits`,
-`guest-frequency`, `reservations`, `turn-times`, `guest-export`), none of
-them cross-restaurant — Group Reporting's pricing-page tooltip
-("Centralize reporting across all locations...") describes a genuinely
-different, org/multi-restaurant-scoped data model none of the existing
-per-restaurant reporting endpoints could serve even if extended.
+All 11 `MerchantReportingController` methods (`filters`, the 7 report
+views, and the 3 CSV exports) now go through a shared
+`abortUnlessPlanQualifies()` helper, called from both `authorizeReporting()`
+and `authorizeExport()`:
 
-**Nothing was added here on the backend** — there's no real data to
-protect. When a real Group Reporting backend eventually gets built (a
-separate, larger piece of work — likely a new controller, not an extension
-of `MerchantReportingController`), gate it the same way as every other
-feature in this doc: `$restaurant->hasPlanAtLeast(BillingPlanSlug::Premium)`
-(or the relevant org-scoped equivalent) on whatever endpoint(s) it adds.
-Flagged in "Known gaps" below so this isn't forgotten when that work
-happens.
+```php
+private function abortUnlessPlanQualifies(Restaurant $restaurant): void
+{
+    abort_unless(
+        $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium),
+        403,
+        'Upgrade to Premium to access Reporting.',
+    );
+}
+```
 
-Frontend: the tab is **omitted from the nav entirely** below Premium (not
-shown locked) — see the frontend doc for why this differs from the
-role-permission-gated tabs on the same page, which use the existing
-"visible but grayed out" `AdminPageSideNav` treatment instead.
+This is on top of the existing role-permission checks (`reservations.view`/
+`audit_logs.view` for viewing, `reporting.export`/`restaurants.manage` for
+exporting) — both checks must pass now, not just one.
+
+The "Group Reporting" tab itself is still separately worth knowing about:
+it's **entirely static mock data** (`group-reporting-data.ts`, 4 hardcoded
+fake restaurant rows) — no backend endpoint for it exists at all, and its
+pricing-page tooltip ("Centralize reporting across all locations...")
+describes a genuinely different, org/multi-restaurant-scoped data model
+none of `MerchantReportingController`'s existing per-restaurant endpoints
+could serve even if extended. Since the whole page now requires Premium to
+reach at all, and Group Reporting was already Premium-gated at the same
+tier, the tab no longer needs its own separate conditional — it's just
+always in the nav once a restaurant clears the page-level gate.
+
+Frontend: the entire page **redirects to `/admin/onboarding`** for a
+sub-Premium restaurant (not a per-tab lock) — same treatment as Reservation
+Widget. Uses `router.replace()`, not `router.push()` — see "Known gaps"
+below for why that distinction matters and which other features needed the
+same fix.
 
 ## Known gaps (flagged, not built)
 
@@ -414,12 +428,23 @@ role-permission-gated tabs on the same page, which use the existing
   pricing page; no real check anywhere in the app yet — next up,
   deliberately not started yet, pending separate research the user is
   doing first.
-- **Customizable Advanced Analytics has no backend at all yet** (see the
-  section above — implemented via gating the "Group Reporting" tab). The
-  frontend gate (tab omitted from nav below Premium) exists, but there's
-  no real endpoint to protect since the tab is currently 100% static mock
-  data. Whoever builds a real backend for this needs to add the plan check
-  then — easy to forget since the frontend already "looks" gated.
+- **Group Reporting specifically is still static mock data**, even though
+  the whole Reporting page (including that tab) is now Premium-gated end
+  to end — see the Customizable Advanced Analytics section above. Whoever
+  eventually builds a real cross-restaurant backend for that one tab still
+  needs to gate it explicitly (`hasPlanAtLeast(Premium)`, same as
+  everything else in this doc) — it doesn't inherit the page-level gate
+  automatically once it becomes a real endpoint elsewhere.
+- **Browser back-button trap, found and fixed across all 4 redirect-guard
+  features** (Reservation Widget, Reservation Holds, Pre-shift Report,
+  Customizable Advanced Analytics): every frontend guard originally used
+  `router.push("/admin/onboarding")`. `push` leaves the gated URL in
+  browser history, so clicking back lands on it again, the guard re-fires
+  immediately, and the browser is bounced forward again — looked like
+  "back" did nothing. Fixed by switching all 4 to `router.replace()`,
+  which drops the gated URL from history instead of adding to it. If a 5th
+  redirect-guard feature gets built, use `replace` from the start — this
+  is not something to rediscover per feature.
 - **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
   non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
   Report section above) gets a `canAccessAdmin: false` user *to* the page,

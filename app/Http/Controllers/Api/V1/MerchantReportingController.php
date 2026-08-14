@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\BillingPlanSlug;
 use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\Services\Reporting\ReportingFilterService;
@@ -135,6 +136,7 @@ class MerchantReportingController extends Controller
     private function authorizeReporting(Request $request, Restaurant $restaurant): void
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['reservations.view', 'audit_logs.view'], $restaurant), 403);
+        $this->abortUnlessPlanQualifies($restaurant);
     }
 
     /**
@@ -145,6 +147,22 @@ class MerchantReportingController extends Controller
     private function authorizeExport(Request $request, Restaurant $restaurant): void
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['reporting.export', 'restaurants.manage'], $restaurant), 403);
+        $this->abortUnlessPlanQualifies($restaurant);
+    }
+
+    /**
+     * Customizable Advanced Analytics is Premium-only (docs/PLAN_PERMISSIONS.md) —
+     * the entire Reporting page, not just Group Reporting. Foundation AND Core are
+     * both blocked; the frontend redirects away before reaching this, this is
+     * defense-in-depth against a direct API call.
+     */
+    private function abortUnlessPlanQualifies(Restaurant $restaurant): void
+    {
+        abort_unless(
+            $restaurant->hasPlanAtLeast(BillingPlanSlug::Premium),
+            403,
+            'Upgrade to Premium to access Reporting.',
+        );
     }
 
     private function csvResponse(string $filename, string $content): StreamedResponse
