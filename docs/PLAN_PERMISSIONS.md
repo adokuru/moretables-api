@@ -48,7 +48,7 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Six features so far. `BillingPlan.features` (a JSON column) and
+Seven features so far. `BillingPlan.features` (a JSON column) and
 `plans-table.tsx` (the public pricing page) still describe a further
 Core/Premium row — Waitlist Management — not wired to any real check yet.
 `hasPlanAtLeast()`/the frontend's mirroring `planAccess.ts` are written as
@@ -309,6 +309,47 @@ Tests: `tests/Feature/Feature/Merchant/FrontOfHouseIntegrationTest.php`
 (shift-note plan gating; its existing shift-note test predates this gate
 and was updated to default to Premium).
 
+### Customized User Permissions (Core/Premium — gates only *creating* a config, nothing else)
+
+Pricing-page label is literally `"User Permissions"` (`plans-table.tsx`'s
+"Guest Data & CRM" section) — used here as "Customized User Permissions"
+per how the task was framed. `admin/accounts`'s "Access config" tab has
+exactly one path that creates a *new* `RestaurantAccessConfig`: the
+**"New Config"** button → `AccessConfigModal` in `mode: "add"` →
+`MerchantAccessConfigController::store()`. Everything else on that tab and
+the whole "User accounts" tab — viewing all 5 default configs plus any
+already-existing custom ones, editing an existing config's permissions
+(`mode: "edit"` → `update()`), and inviting/assigning staff to any config
+via `UserModal.tsx` — is a **separate** code path and stays completely
+available on Foundation. Confirmed via full grep that `store()` is the
+*only* way to create a config anywhere in the app; the staff-invite flow
+only ever assigns to configs that already exist, never creates one inline.
+
+`store()` rejects (`403`, `"Upgrade to Core or Premium to create custom
+access configs."`) below `hasPlanAtLeast(BillingPlanSlug::Core)`.
+`index`/`show`/`update`/`destroy`/`permissions` are all unchanged — a
+Foundation restaurant must still be able to list configs (to populate the
+staff-invite picker) and manage staff freely.
+
+**Don't confuse this with the separate, still-unstarted "lock the 5
+defaults" task** noted elsewhere in this doc's history and in
+`PERMISSION_MATRIX.md`'s "Next steps" section — that one is about
+preventing *anyone* (any plan) from renaming/re-permissioning the 5 seeded
+defaults, an unrelated role-permission-model concern. This task is purely
+about which plan tier can create additional *custom* configs beyond those
+5. Neither task touches the other's code.
+
+Frontend, per explicit product decision (confirmed via clarifying
+question): the "New Config" button itself is `disabled` (with a `title`
+tooltip carrying the same upgrade message) for Foundation, rather than
+letting the modal open and rejecting on submit — the first plan-gated
+feature to use a disabled-button-with-tooltip treatment, matching the
+existing convention `access-control.md` already documents for
+`reporting.export`'s disabled export buttons.
+
+Tests: `tests/Feature/MerchantAccessConfigControllerTest.php` (new file —
+no test coverage existed for this controller at all before this).
+
 ## Known gaps (flagged, not built)
 
 - **Foundation's `features.guest_communication` config flag is still only
@@ -330,7 +371,7 @@ and was updated to default to Premium).
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Six features now call it across 14 different
+  convention it mirrors. Seven features now call it across 15 different
   controller/service methods — still judged not worth a shared
   `FeatureGate`-style service, but the next feature added here should
   revisit that judgment.
