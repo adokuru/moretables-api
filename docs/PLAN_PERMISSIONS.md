@@ -445,6 +445,19 @@ same fix.
   which drops the gated URL from history instead of adding to it. If a 5th
   redirect-guard feature gets built, use `replace` from the start — this
   is not something to rediscover per feature.
+- **Double toast on the same 4 redirect-guard features, found right after
+  the fix above.** Cause was unrelated to `push` vs `replace`: React
+  Strict Mode (on by default in this repo's dev builds — `next.config.ts`
+  doesn't disable it) double-invokes effects on mount to surface
+  side-effect bugs. Since none of these `useEffect`s returned a cleanup
+  function, both invocations ran the full body — `toast.error()` and the
+  redirect each fired twice. Fixed with a `useRef(false)` guard
+  (`redirectedRef`) checked and set at the top of the effect, so only the
+  first invocation (real or Strict-Mode-synthetic) actually does anything
+  — same "ref, not state, so it only fires once" pattern already used
+  elsewhere in this codebase (e.g. the list-view→dashboard guest-open
+  handoff, `moretable-web-app/AGENTS.md`). Apply this ref guard to any
+  future redirect-style gate from the start too, alongside `replace`.
 - **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
   non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
   Report section above) gets a `canAccessAdmin: false` user *to* the page,
