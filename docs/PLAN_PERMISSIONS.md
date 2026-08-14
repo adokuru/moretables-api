@@ -48,7 +48,7 @@ uses Laravel Policies before adding this.
 
 ## What's actually gated today
 
-Eight features so far (one, Group Reporting, is frontend-only — see below
+Eight features so far (one, Customizable Advanced Analytics, is frontend-only — see below
 for why). `BillingPlan.features` (a JSON column) and `plans-table.tsx` (the
 public pricing page) still describe a further Core/Premium row — Waitlist
 Management — not wired to any real check yet. `hasPlanAtLeast()`/the
@@ -351,7 +351,14 @@ existing convention `access-control.md` already documents for
 Tests: `tests/Feature/MerchantAccessConfigControllerTest.php` (new file —
 no test coverage existed for this controller at all before this).
 
-### Group Reporting (Premium-only — frontend-only, because there's no backend to gate yet)
+### Customizable Advanced Analytics (Premium-only — implemented via the "Group Reporting" tab; frontend-only, because there's no backend to gate yet)
+
+**Naming correction**: this was first built and documented as "Group
+Reporting" — the user later clarified the actual pricing-page feature
+being gated is **"Customizable Advanced Analytics"** (same "Analytics &
+Insights" section, also Premium-only). The implementation is unchanged:
+gating the "Group Reporting" tab on `admin/reporting` is what satisfies
+this. Don't re-investigate or re-implement this as if it were still open.
 
 `admin/reporting`'s "Group Reporting" tab is **entirely static mock data**
 (`group-reporting-data.ts`, 4 hardcoded fake restaurant rows) — confirmed
@@ -399,7 +406,7 @@ role-permission-gated tabs on the same page, which use the existing
   scheduled job that reverts custom content on downgrade.
 - **No generic `PlanFeature`/policy abstraction yet.** `hasPlanAtLeast()` is
   a plain boolean helper called inline, same as the role-permission
-  convention it mirrors. Seven features now call it across 15 different
+  convention it mirrors. Eight features now call it across 15 different
   controller/service methods — still judged not worth a shared
   `FeatureGate`-style service, but the next feature added here should
   revisit that judgment.
@@ -407,27 +414,12 @@ role-permission-gated tabs on the same page, which use the existing
   pricing page; no real check anywhere in the app yet — next up,
   deliberately not started yet, pending separate research the user is
   doing first.
-- **Group Reporting has no backend at all yet** — the frontend gate (tab
-  omitted from nav below Premium) exists, but there's no real endpoint to
-  protect since the tab is currently 100% static mock data. Whoever builds
-  the real cross-restaurant backend for this needs to add the plan check
-  then — it's easy to forget since the frontend already "looks" gated.
-- **Customizable Advanced Analytics (Premium, pricing tooltip: "custom
-  reporting and segmentation") has no real feature behind it at all, and
-  is deliberately NOT gated.** Investigated and explicitly deferred, not
-  overlooked: no report builder, custom-metric picker, or basic/advanced
-  split exists anywhere in either repo. The 7 non-Group-Reporting tabs on
-  `admin/reporting` (Shift Occupancy, Cover Trends, First Time Visits,
-  Guest Frequency, Reservations, Turn Times, Guest Export) are the *only*
-  analytics implementation that exists — and the sibling `"Analytics"` row
-  on the same pricing page separately promises that same capability
-  free-for-everyone. Gating those 7 tabs to Premium would directly
-  contradict the free-tier promise, since there's no separate "basic
-  Analytics" view to fall back to. **Confirmed with the user explicitly**:
-  leave ungated until there's a real answer for what "basic Analytics"
-  (free tier) should look like versus the "advanced/customizable" version
-  — implementing a plan gate here first would mean inventing product scope
-  that hasn't been decided, not enforcing an existing boundary.
+- **Customizable Advanced Analytics has no backend at all yet** (see the
+  section above — implemented via gating the "Group Reporting" tab). The
+  frontend gate (tab omitted from nav below Premium) exists, but there's
+  no real endpoint to protect since the tab is currently 100% static mock
+  data. Whoever builds a real backend for this needs to add the plan check
+  then — easy to forget since the frontend already "looks" gated.
 - **`/admin/onboarding`'s billing-status fetch can still 403 a maximally-restricted
   non-admin user.** Fixing `layout.tsx`'s route guard (see the Pre-shift
   Report section above) gets a `canAccessAdmin: false` user *to* the page,
