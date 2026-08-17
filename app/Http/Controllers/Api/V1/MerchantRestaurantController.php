@@ -39,7 +39,7 @@ class MerchantRestaurantController extends Controller
         );
 
         $restaurants = Restaurant::query()
-            ->with(['media', 'cuisines', 'organization'])
+            ->with(['media', 'cuisines', 'organization', 'activeBillingSubscription.plan'])
             ->when(! $hasGlobalAccess, function ($query) use ($assignments): void {
                 $restaurantIds = $assignments->whereNotNull('restaurant_id')->pluck('restaurant_id');
                 $orgIds = $assignments->whereNull('restaurant_id')->whereNotNull('organization_id')->pluck('organization_id');
@@ -86,6 +86,7 @@ class MerchantRestaurantController extends Controller
                     'role_name' => $user->restaurantRoleLabel($restaurant),
                     'is_profile_published' => (bool) $restaurant->is_profile_published,
                     'onboarding_current_step' => $restaurant->onboarding_current_step,
+                    'plan_slug' => $restaurant->activeBillingSubscription?->plan?->slug?->value,
                     'cuisines' => $restaurant->cuisines->pluck('name')->values(),
                     'cover_image' => $cover?->getAvailableUrl(['card']),
                 ];

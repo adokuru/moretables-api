@@ -1,5 +1,6 @@
 <?php
 
+use App\BillingPlanSlug;
 use App\Models\Organization;
 use App\Models\RestaurantAccessConfig;
 use App\Models\Role;
@@ -156,4 +157,19 @@ it('returns a title-cased classic role name as role_name when there is no access
     $restaurant = collect($response->json('restaurants'))->firstWhere('id', $this->restaurant->id);
 
     expect($restaurant['role_name'])->toBe('Organization Owner');
+});
+
+it('returns the restaurant\'s own plan_slug, sourced from its active billing subscription', function (): void {
+    $owner = User::factory()->create();
+    assignScopedRole($owner, Role::OrganizationOwner, $this->organization);
+    setRestaurantBillingPlan($this->restaurant, BillingPlanSlug::Premium);
+
+    Sanctum::actingAs($owner);
+
+    $response = getJson('/api/v1/merchant/restaurants');
+
+    $response->assertSuccessful();
+    $restaurant = collect($response->json('restaurants'))->firstWhere('id', $this->restaurant->id);
+
+    expect($restaurant['plan_slug'])->toBe('premium');
 });
