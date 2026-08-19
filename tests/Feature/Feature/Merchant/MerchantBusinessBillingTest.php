@@ -332,3 +332,15 @@ it('downloads a business invoice from the business billing endpoint', function (
         ->assertOk()
         ->assertHeader('content-type', 'application/pdf');
 });
+
+it('reports the business subscription status when a business plan lapses', function (): void {
+    $data = createBookableRestaurant();
+    actingBusinessOwner($data);
+
+    $subscription = activateBusinessBilling($data['organization'], 'premium');
+    $subscription->update(['status' => MerchantSubscriptionStatus::Expired, 'current_period_end' => now()->subDay()]);
+
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/tables')
+        ->assertStatus(402)
+        ->assertJsonPath('billing.status', 'expired');
+});

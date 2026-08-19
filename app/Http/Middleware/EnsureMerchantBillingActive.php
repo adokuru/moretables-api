@@ -31,10 +31,16 @@ class EnsureMerchantBillingActive
         $restaurant = $request->route('restaurant');
 
         if ($restaurant && $this->hasActiveBillingPlans() && ! $this->billingService->isRestaurantBillable($restaurant)) {
+            // The status the merchant app routes on: a business whose subscription lapsed should
+            // land on the renewal screen, not the never-subscribed one, even though the restaurant
+            // itself never held a subscription of its own.
+            $lapsedSubscription = $restaurant->latestBillingSubscription
+                ?? $restaurant->organization?->latestBillingSubscription;
+
             return response()->json([
                 'message' => 'An active billing subscription is required for this restaurant.',
                 'billing' => [
-                    'status' => $restaurant->latestBillingSubscription?->status?->value ?? 'unpaid',
+                    'status' => $lapsedSubscription?->status?->value ?? 'unpaid',
                 ],
             ], 402);
         }
