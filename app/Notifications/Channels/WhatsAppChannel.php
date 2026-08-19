@@ -5,6 +5,7 @@ namespace App\Notifications\Channels;
 use App\Notifications\WhatsAppMessage;
 use App\Services\WhatsAppService;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppChannel
 {
@@ -25,6 +26,11 @@ class WhatsAppChannel
         $recipient = $notifiable->routeNotificationFor('whatsapp', $notification);
 
         if (! is_string($recipient) || $recipient === '') {
+            Log::warning('WhatsApp notification skipped: notifiable has no WhatsApp route.', [
+                'notifiable' => $notifiable::class,
+                'notification' => $notification::class,
+            ]);
+
             return;
         }
 

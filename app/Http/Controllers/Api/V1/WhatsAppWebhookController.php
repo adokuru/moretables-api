@@ -32,7 +32,14 @@ class WhatsAppWebhookController extends Controller
 
     public function handle(Request $request): Response
     {
-        abort_unless($this->hasValidSignature($request), 403);
+        if (! $this->hasValidSignature($request)) {
+            Log::warning('WhatsApp webhook rejected: signature verification failed.', [
+                'has_app_secret' => (string) config('services.whatsapp.app_secret') !== '',
+                'has_signature_header' => $request->hasHeader('X-Hub-Signature-256'),
+            ]);
+
+            abort(403);
+        }
 
         foreach ($request->input('entry', []) as $entry) {
             foreach ($entry['changes'] ?? [] as $change) {
@@ -82,6 +89,11 @@ class WhatsAppWebhookController extends Controller
         $from = (string) ($message['from'] ?? '');
 
         if ($from === '' || ! str_starts_with($payload, 'cancel_reservation:')) {
+            Log::warning('WhatsApp webhook ignored a button reply it could not route.', [
+                'payload' => $payload,
+                'has_sender' => $from !== '',
+            ]);
+
             return;
         }
 

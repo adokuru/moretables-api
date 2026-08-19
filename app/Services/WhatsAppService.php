@@ -21,7 +21,19 @@ class WhatsAppService
     {
         $recipient = $this->normalizeRecipient($recipient);
 
-        if ($recipient === '' || ! $this->isConfigured()) {
+        if (! $this->isConfigured()) {
+            Log::debug('WhatsApp template message skipped: service is not configured.', [
+                'template' => $message->templateName,
+            ]);
+
+            return;
+        }
+
+        if ($recipient === '') {
+            Log::warning('WhatsApp template message skipped: recipient has no usable phone number.', [
+                'template' => $message->templateName,
+            ]);
+
             return;
         }
 
@@ -37,7 +49,18 @@ class WhatsAppService
     {
         $recipient = $this->normalizeRecipient($recipient);
 
-        if ($recipient === '' || $body === '' || ! $this->isConfigured()) {
+        if (! $this->isConfigured()) {
+            Log::debug('WhatsApp text message skipped: service is not configured.');
+
+            return;
+        }
+
+        if ($recipient === '' || $body === '') {
+            Log::warning('WhatsApp text message skipped: empty recipient or body.', [
+                'has_recipient' => $recipient !== '',
+                'has_body' => $body !== '',
+            ]);
+
             return;
         }
 

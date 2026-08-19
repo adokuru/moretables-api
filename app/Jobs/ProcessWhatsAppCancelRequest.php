@@ -17,6 +17,13 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
     use Queueable;
 
     /**
+     * Reply used whenever the request cannot be tied to a booking the sender
+     * owns. Deliberately carries no reservation details so a stray or guessed
+     * payload cannot confirm that a given reservation exists.
+     */
+    protected const UNVERIFIED_REPLY = 'We could not verify that cancellation request. Please contact the restaurant directly to cancel your reservation.';
+
+    /**
      * Create a new job instance.
      */
     public function __construct(
@@ -36,13 +43,27 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
             ->find($this->reservationId);
 
         if ($reservation === null) {
+            Log::warning('WhatsApp cancel request rejected: reservation not found.', [
+                'reservation_id' => $this->reservationId,
+                'from' => PhoneNumber::mask($this->fromPhone),
+            ]);
+
+            $whatsAppService->sendText($this->fromPhone, self::UNVERIFIED_REPLY);
+
             return;
         }
 
         if (! $this->senderIsPrimaryBooker($reservation)) {
             Log::warning('WhatsApp cancel request rejected: sender is not the primary booker.', [
                 'reservation_id' => $reservation->id,
+                'from' => PhoneNumber::mask($this->fromPhone),
+                'booker_candidates' => array_map(
+                    static fn (string $phone): string => PhoneNumber::mask($phone),
+                    $this->bookerPhones($reservation),
+                ),
             ]);
+
+            $whatsAppService->sendText($this->fromPhone, self::UNVERIFIED_REPLY);
 
             return;
         }
@@ -70,6 +91,8 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
         }
 
         $reservationService->cancelReservation($reservation, null);
+
+        $whatsAppService->sendText($this->fromPhone, "Your reservation at {$restaurantName} ({$reservation->reservation_reference}) has been cancelled.");
     }
 
     /**
@@ -84,10 +107,30 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
             return false;
         }
 
-        $bookerPhone = PhoneNumber::forWhatsApp(
-            (string) ($reservation->user?->phone ?? $reservation->guestContact?->phone),
-        );
+        foreach ($this->bookerPhones($reservation) as $bookerPhone) {
+            if (hash_equals($bookerPhone, $from)) {
+                return true;
+            }
+        }
 
-        return $bookerPhone !== '' && hash_equals($bookerPhone, $from);
+        return false;
+    }
+
+    /**
+     * Every number that may authorize a chat cancellation. A reservation can
+     * carry both a registered user and a guest contact, and the cancel button
+     * is offered to whichever of the two the template was addressed to, so
+     * either number has to be accepted.
+     *
+     * @return list<string>
+     */
+    protected function bookerPhones(Reservation $reservation): array
+    {
+        return collect([$reservation->user?->phone, $reservation->guestContact?->phone])
+            ->map(static fn (?string $phone): string => PhoneNumber::forWhatsApp((string) $phone))
+            ->filter(static fn (string $phone): bool => $phone !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 }

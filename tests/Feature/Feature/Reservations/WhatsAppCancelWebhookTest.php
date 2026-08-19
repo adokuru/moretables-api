@@ -9,6 +9,7 @@ use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 beforeEach(function (): void {
@@ -147,7 +148,7 @@ it('matches local Nigerian booker phone numbers to Meta sender numbers', functio
     Notification::assertSentTo($reservation->guestContact, ReservationLifecycleNotification::class);
 });
 
-it('ignores cancel taps from a phone that is not the primary booker', function (): void {
+it('refuses cancel taps from a phone that is not the primary booker and tells the sender', function (): void {
     Notification::fake();
     Http::fake();
 
@@ -157,7 +158,135 @@ it('ignores cancel taps from a phone that is not the primary booker', function (
 
     expect($reservation->refresh()->status)->toBe(ReservationStatus::Booked);
     Notification::assertNothingSent();
+
+    Http::assertSent(function ($request): bool {
+        return $request['type'] === 'text'
+            && $request['to'] === '2347000000000'
+            && str_contains($request['text']['body'], 'could not verify that cancellation request');
+    });
+});
+
+it('accepts the guest contact phone when the reservation also has a user with a different phone', function (): void {
+    Notification::fake();
+    Http::fake();
+
+    $reservation = cancellableReservation([
+        'user_id' => User::factory()->create(['phone' => '+2348099998888'])->id,
+    ]);
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();
+
+    expect($reservation->refresh()->status)->toBe(ReservationStatus::Cancelled);
+});
+
+it('accepts the user phone when the reservation also has a guest contact with a different phone', function (): void {
+    Notification::fake();
+    Http::fake();
+
+    $reservation = cancellableReservation([
+        'user_id' => User::factory()->create(['phone' => '+2348099998888'])->id,
+    ]);
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348099998888'))->assertOk();
+
+    expect($reservation->refresh()->status)->toBe(ReservationStatus::Cancelled);
+});
+
+it('falls back to the guest contact when the reservation user has no phone', function (): void {
+    Notification::fake();
+    Http::fake();
+
+    $reservation = cancellableReservation([
+        'user_id' => User::factory()->create(['phone' => null])->id,
+    ]);
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();
+
+    expect($reservation->refresh()->status)->toBe(ReservationStatus::Cancelled);
+});
+
+it('confirms in chat after a successful cancellation', function (): void {
+    Notification::fake();
+    Http::fake();
+
+    $reservation = cancellableReservation();
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2348012345678'))->assertOk();
+
+    Http::assertSent(function ($request) use ($reservation): bool {
+        return $request['type'] === 'text'
+            && $request['to'] === '2348012345678'
+            && str_contains($request['text']['body'], 'has been cancelled')
+            && str_contains($request['text']['body'], $reservation->reservation_reference);
+    });
+});
+
+it('logs and replies generically when the reservation in the payload does not exist', function (): void {
+    Notification::fake();
+    Http::fake();
+    Log::spy();
+
+    postSignedWebhook(cancelButtonTapPayload(987654, '2348012345678'))->assertOk();
+
+    Log::shouldHaveReceived('warning')->withArgs(
+        fn (string $message, array $context = []): bool => $message === 'WhatsApp cancel request rejected: reservation not found.'
+            && $context['reservation_id'] === 987654
+            && $context['from'] === '234******5678',
+    )->once();
+
+    Http::assertSent(function ($request): bool {
+        return $request['type'] === 'text'
+            && str_contains($request['text']['body'], 'could not verify that cancellation request');
+    });
+});
+
+it('logs the masked numbers it compared when the sender is not the booker', function (): void {
+    Notification::fake();
+    Http::fake();
+    Log::spy();
+
+    $reservation = cancellableReservation();
+
+    postSignedWebhook(cancelButtonTapPayload($reservation->id, '2347000000000'))->assertOk();
+
+    Log::shouldHaveReceived('warning')->withArgs(
+        fn (string $message, array $context = []): bool => $message === 'WhatsApp cancel request rejected: sender is not the primary booker.'
+            && $context['from'] === '234******0000'
+            && $context['booker_candidates'] === ['234******5678'],
+    )->once();
+});
+
+it('logs a button reply whose payload it cannot route', function (): void {
+    Notification::fake();
+    Http::fake();
+    Log::spy();
+
+    $payload = cancelButtonTapPayload(1, '2348012345678');
+    $payload['entry'][0]['changes'][0]['value']['messages'][0]['button']['payload'] = 'Cancel reservation';
+
+    postSignedWebhook($payload)->assertOk();
+
+    Log::shouldHaveReceived('warning')->withArgs(
+        fn (string $message, array $context = []): bool => $message === 'WhatsApp webhook ignored a button reply it could not route.'
+            && $context['payload'] === 'Cancel reservation'
+            && $context['has_sender'] === true,
+    )->once();
+
     Http::assertNothingSent();
+});
+
+it('logs why it rejected a webhook when signature verification fails', function (): void {
+    Log::spy();
+
+    config()->set('services.whatsapp.app_secret', '');
+
+    postSignedWebhook(cancelButtonTapPayload(1, '2348012345678'), '')->assertForbidden();
+
+    Log::shouldHaveReceived('warning')->withArgs(
+        fn (string $message, array $context = []): bool => $message === 'WhatsApp webhook rejected: signature verification failed.'
+            && $context['has_app_secret'] === false
+            && $context['has_signature_header'] === true,
+    )->once();
 });
 
 it('replies with a text message instead of cancelling inside the cancellation cutoff', function (): void {
