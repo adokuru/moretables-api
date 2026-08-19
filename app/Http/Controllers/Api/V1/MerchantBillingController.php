@@ -7,7 +7,6 @@ use App\Http\Requests\Merchant\StartBillingCheckoutRequest;
 use App\Http\Resources\BillingPlanResource;
 use App\Http\Resources\MerchantBillingResource;
 use App\Http\Resources\MerchantInvoiceResource;
-use App\MerchantInvoiceStatus;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
 use App\Models\MerchantPaymentMethod;
@@ -123,7 +122,6 @@ class MerchantBillingController extends Controller
 
         $invoices = $restaurant->invoices()
             ->with(['plan', 'restaurant.organization', 'payments'])
-            ->where('status', MerchantInvoiceStatus::Paid)
             ->latest()
             ->paginate($request->integer('per_page', 15));
 

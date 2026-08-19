@@ -155,7 +155,26 @@ it('uploads a profile photo, adding to gallery and setting as featured', functio
     expect($restaurant->getMedia('gallery'))->toHaveCount(1);
 });
 
-it('rejects photo uploads larger than 15MB', function () {
+it('returns the uploaded profile photo when the onboarding data is fetched again', function () {
+    // Regression: uploading alone isn't enough — this is the exact
+    // re-fetch-after-upload path the "profile photo doesn't persist through
+    // onboarding" bug report exercises (revisiting Basic Information should
+    // still show the previously uploaded image).
+    Storage::fake('public');
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $this->post(obUrl($data['restaurant']->id, '/profile-photo'), [
+        'photo' => UploadedFile::fake()->image('profile.jpg'),
+    ], ['Accept' => 'application/json'])->assertCreated();
+
+    $this->getJson(obUrl($data['restaurant']->id, '/data'))
+        ->assertOk()
+        ->assertJsonPath('featured_image.original_url', fn (string $url) => str_contains($url, '.jpg'));
+});
+
+it('rejects photo uploads larger than 10MB', function () {
     $this->seed(RoleAndPermissionSeeder::class);
     $data = createBookableRestaurant();
     Sanctum::actingAs(marketingActor($data));
@@ -164,6 +183,24 @@ it('rejects photo uploads larger than 15MB', function () {
 
     $this->post(obUrl($data['restaurant']->id, '/profile-photo'), [
         'photo' => $big,
+    ], ['Accept' => 'application/json'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('photo');
+});
+
+it('rejects a photo just past the 10MB media-library limit with a clean validation error, not a server error', function () {
+    // Regression: the request's own `max` rule used to allow up to 15MB while
+    // config('media-library.max_file_size') only allows 10MB — a file in
+    // that 10-15MB gap passed Laravel's validation, then crashed with an
+    // uncaught Spatie FileTooBig exception (a 500) inside toMediaCollection().
+    $this->seed(RoleAndPermissionSeeder::class);
+    $data = createBookableRestaurant();
+    Sanctum::actingAs(marketingActor($data));
+
+    $inTheGap = UploadedFile::fake()->image('almost-too-big.jpg')->size(12000);
+
+    $this->post(obUrl($data['restaurant']->id, '/profile-photo'), [
+        'photo' => $inTheGap,
     ], ['Accept' => 'application/json'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('photo');

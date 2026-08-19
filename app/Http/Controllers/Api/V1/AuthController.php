@@ -156,7 +156,11 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'user' => UserResource::make($user->refresh()->load('roles')),
+            'user' => UserResource::make($user->refresh()->load([
+                'roles',
+                'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.latestBillingSubscription.plan',
+            ])),
         ]);
     }
 
@@ -171,7 +175,11 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Product tour marked as completed.',
-            'user' => UserResource::make($user->refresh()->load('roles')),
+            'user' => UserResource::make($user->refresh()->load([
+                'roles',
+                'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.latestBillingSubscription.plan',
+            ])),
         ]);
     }
 
