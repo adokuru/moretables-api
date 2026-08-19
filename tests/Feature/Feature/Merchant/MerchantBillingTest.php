@@ -185,6 +185,31 @@ it('lists invoice history and downloads invoice pdfs', function (): void {
         ->assertHeader('content-type', 'application/pdf');
 });
 
+it('includes failed and pending invoices in payment history, not just paid ones', function (): void {
+    $data = createBookableRestaurant();
+    actingRestaurantManager($data);
+
+    $plan = BillingPlan::query()->where('slug', 'premium')->firstOrFail();
+    $failedInvoice = MerchantInvoice::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'amount' => $plan->amount,
+        'status' => MerchantInvoiceStatus::Failed,
+    ]);
+    $pendingInvoice = MerchantInvoice::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'billing_plan_id' => $plan->id,
+        'amount' => $plan->amount,
+        'status' => MerchantInvoiceStatus::Pending,
+    ]);
+
+    $response = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/billing/invoices')
+        ->assertOk();
+
+    $response->assertJsonFragment(['id' => $failedInvoice->id, 'status' => 'failed']);
+    $response->assertJsonFragment(['id' => $pendingInvoice->id, 'status' => 'pending']);
+});
+
 it('processes signed paystack charge success webhooks', function (): void {
     $data = createBookableRestaurant();
     $plan = BillingPlan::query()->where('slug', 'foundation')->firstOrFail();
