@@ -21,6 +21,7 @@ class BillingPlanSeeder extends Seeder
                     'amount' => $plan['amount'],
                     'currency' => $plan['currency'] ?? 'NGN',
                     'interval' => $plan['interval'] ?? 'monthly',
+                    'max_restaurants' => $plan['max_restaurants'] ?? null,
                     'provider' => $plan['provider'] ?? 'paystack',
                     'provider_plan_code' => $plan['provider_plan_code'] ?? null,
                     'features' => $plan['features'] ?? [],

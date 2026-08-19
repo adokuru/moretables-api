@@ -178,11 +178,11 @@ class RestaurantDetailResource extends JsonResource
             ),
             'is_subscribed' => $this->when(
                 $this->relationLoaded('activeBillingSubscription'),
-                fn () => $this->activeBillingSubscription !== null,
+                fn () => $this->effectiveBillingSubscription() !== null,
             ),
             'subscription_type' => $this->when(
                 $this->relationLoaded('activeBillingSubscription'),
-                fn () => $this->activeBillingSubscription?->plan?->slug?->value,
+                fn () => $this->effectiveBillingSubscription()?->plan?->slug?->value,
             ),
             'billing' => $this->when(
                 $this->relationLoaded('activeBillingSubscription') || $this->relationLoaded('latestBillingSubscription'),

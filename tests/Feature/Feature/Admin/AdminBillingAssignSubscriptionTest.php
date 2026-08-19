@@ -202,3 +202,73 @@ it('forbids non admins from assigning subscriptions', function (): void {
         'plan' => 'core',
     ])->assertForbidden();
 });
+
+it('allows admins to assign a subscription to a business, covering all of its restaurants', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create();
+    $first = Restaurant::factory()->create(['organization_id' => $organization->id]);
+    $second = Restaurant::factory()->create(['organization_id' => $organization->id]);
+
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/v1/admin/billing/subscriptions', [
+        'organization_id' => $organization->id,
+        'plan' => 'premium',
+        'status' => 'active',
+        'notes' => 'Group deal',
+    ])->assertCreated()
+        ->assertJsonPath('subscription.scope', 'business')
+        ->assertJsonPath('subscription.restaurant.id', null)
+        ->assertJsonPath('subscription.organization.id', $organization->id)
+        ->assertJsonPath('subscription.plan.slug', 'premium');
+
+    $subscription = MerchantSubscription::query()
+        ->whereNull('restaurant_id')
+        ->where('organization_id', $organization->id)
+        ->firstOrFail();
+
+    expect($subscription->isBusinessLevel())->toBeTrue()
+        ->and($first->fresh()->effectiveBillingSubscription()?->id)->toBe($subscription->id)
+        ->and($second->fresh()->effectiveBillingSubscription()?->id)->toBe($subscription->id);
+
+    $this->getJson('/api/v1/admin/businesses/'.$organization->id.'/billing/plan')
+        ->assertOk()
+        ->assertJsonPath('organization.restaurants_count', 2)
+        ->assertJsonPath('plan.slug', 'premium')
+        ->assertJsonPath('billing.is_active', true);
+
+    $this->getJson('/api/v1/admin/restaurants/'.$second->id.'/billing/plan')
+        ->assertOk()
+        ->assertJsonPath('billing_scope', 'business')
+        ->assertJsonPath('plan.slug', 'premium');
+});
+
+it('refuses a business subscription on a plan that cannot cover all of its restaurants', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+
+    $organization = Organization::factory()->create();
+    Restaurant::factory()->count(2)->create(['organization_id' => $organization->id]);
+
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/v1/admin/billing/subscriptions', [
+        'organization_id' => $organization->id,
+        'plan' => 'foundation',
+    ])->assertStatus(422);
+
+    expect(MerchantSubscription::query()->whereNull('restaurant_id')->exists())->toBeFalse();
+});
+
+it('requires either a business or a restaurant when assigning a subscription', function (): void {
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::SuperAdmin);
+    Sanctum::actingAs($admin);
+
+    $this->postJson('/api/v1/admin/billing/subscriptions', [
+        'plan' => 'core',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['organization_id', 'restaurant_id']);
+});

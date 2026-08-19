@@ -6,6 +6,7 @@ use App\Contracts\PaymentProvider;
 use App\Exceptions\PaymentProviderException;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
+use App\Models\Organization;
 use App\Models\Restaurant;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -15,9 +16,9 @@ use Illuminate\Support\Facades\Log;
 
 class PaystackPaymentProvider implements PaymentProvider
 {
-    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array
+    public function initializeSubscriptionCheckout(Organization|Restaurant $owner, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array
     {
-        $email = $restaurant->billingEmail() ?? $fallbackEmail;
+        $email = $owner->billingEmail() ?? $fallbackEmail;
 
         if (! $email) {
             throw new PaymentProviderException(
@@ -32,7 +33,8 @@ class PaystackPaymentProvider implements PaymentProvider
             'reference' => $invoice->provider_reference,
             'callback_url' => config('billing.providers.paystack.callback_url'),
             'metadata' => [
-                'restaurant_id' => $restaurant->id,
+                'organization_id' => $invoice->organization_id,
+                'restaurant_id' => $invoice->restaurant_id,
                 'billing_plan_id' => $plan->id,
                 'merchant_invoice_id' => $invoice->id,
             ],

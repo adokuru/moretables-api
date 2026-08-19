@@ -61,6 +61,7 @@ class MerchantRestaurantController extends Controller
                 return [
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
+                    'organization_id' => $restaurant->organization_id,
                     'organization_name' => $restaurant->organization?->name,
                     'slug' => $restaurant->slug,
                     'status' => $restaurant->status?->value,
@@ -86,7 +87,10 @@ class MerchantRestaurantController extends Controller
                     'role_name' => $user->restaurantRoleLabel($restaurant),
                     'is_profile_published' => (bool) $restaurant->is_profile_published,
                     'onboarding_current_step' => $restaurant->onboarding_current_step,
-                    'plan_slug' => $restaurant->activeBillingSubscription?->plan?->slug?->value,
+                    'plan_slug' => $restaurant->effectiveBillingSubscription()?->plan?->slug?->value,
+                    // Which entity the plan above is billed to, so the merchant app knows whether to
+                    // manage billing for the business or for this restaurant alone.
+                    'billing_scope' => $restaurant->effectiveBillingSubscription()?->isBusinessLevel() ? 'business' : 'restaurant',
                     'cuisines' => $restaurant->cuisines->pluck('name')->values(),
                     'cover_image' => $cover?->getAvailableUrl(['card']),
                 ];
@@ -99,6 +103,7 @@ class MerchantRestaurantController extends Controller
         abort_unless(request()->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
         return RestaurantDetailResource::make($restaurant->load([
+            'organization.activeBillingSubscription.plan',
             'cuisines',
             'media',
             'hours',
@@ -106,6 +111,7 @@ class MerchantRestaurantController extends Controller
             'menuItems.media',
             'diningAreas.tables',
             'activeBillingSubscription.plan',
+            'organization.activeBillingSubscription.plan',
         ]));
     }
 

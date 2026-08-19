@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'admin.access', 'throttle:admin-api'])->prefi
     Route::post('users/{user}/reward-points', [AdminRewardProgramController::class, 'storePoints']);
     Route::get('billing/plans', [AdminBillingController::class, 'plans']);
     Route::get('restaurants/{restaurant}/billing/plan', [AdminBillingController::class, 'restaurantPlan']);
+    Route::get('businesses/{organization}/billing/plan', [AdminBillingController::class, 'businessPlan']);
     Route::get('billing/overview', [AdminBillingController::class, 'overview']);
     Route::get('billing/subscriptions', [AdminBillingController::class, 'subscriptions']);
     Route::post('billing/subscriptions', [AdminBillingController::class, 'storeSubscription']);

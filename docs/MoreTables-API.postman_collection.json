@@ -101,6 +101,10 @@
    "value": "1"
   },
   {
+   "key": "billing_reference",
+   "value": "mt_reference"
+  },
+  {
    "key": "discovery_section",
    "value": "top-saved",
    "description": "Discovery section slug, e.g. top-booked, top-viewed, top-saved, highly-rated, new-on-moretables, featured"
@@ -3196,6 +3200,207 @@
         "invoices",
         "{{invoice_id}}",
         "download"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Business billing status",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/businesses/{{organization_id}}/billing",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "businesses",
+        "{{organization_id}}",
+        "billing"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Business billing checkout",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/businesses/{{organization_id}}/billing/checkout",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "businesses",
+        "{{organization_id}}",
+        "billing",
+        "checkout"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"plan\": \"premium\"\n}"
+      }
+     }
+    },
+    {
+     "name": "Business billing upgrade",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/businesses/{{organization_id}}/billing/upgrade",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "businesses",
+        "{{organization_id}}",
+        "billing",
+        "upgrade"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"plan\": \"premium\"\n}"
+      }
+     }
+    },
+    {
+     "name": "Business billing verify checkout",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/businesses/{{organization_id}}/billing/verify/{{billing_reference}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "businesses",
+        "{{organization_id}}",
+        "billing",
+        "verify",
+        "{{billing_reference}}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Business billing invoices",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/businesses/{{organization_id}}/billing/invoices",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "businesses",
+        "{{organization_id}}",
+        "billing",
+        "invoices"
        ]
       },
       "auth": {
@@ -9024,6 +9229,236 @@
        ]
       },
       "description": "Delete a Moretable Lineup blog post."
+     }
+    },
+    {
+     "name": "Billing plans",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/billing/plans",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "billing",
+        "plans"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Billing subscriptions list",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/billing/subscriptions",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "billing",
+        "subscriptions"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Assign business subscription",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/billing/subscriptions",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "billing",
+        "subscriptions"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"organization_id\": {{organization_id}},\n  \"plan\": \"premium\",\n  \"status\": \"active\",\n  \"notes\": \"Offline payment received\"\n}"
+      }
+     }
+    },
+    {
+     "name": "Assign restaurant subscription",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/billing/subscriptions",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "billing",
+        "subscriptions"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"restaurant_id\": {{restaurant_id}},\n  \"plan\": \"core\",\n  \"status\": \"active\"\n}"
+      }
+     }
+    },
+    {
+     "name": "Business billing plan",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/businesses/{{organization_id}}/billing/plan",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "businesses",
+        "{{organization_id}}",
+        "billing",
+        "plan"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "Restaurant billing plan",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/admin/restaurants/{{restaurant_id}}/billing/plan",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "admin",
+        "restaurants",
+        "{{restaurant_id}}",
+        "billing",
+        "plan"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{admin_token}}",
+         "type": "string"
+        }
+       ]
+      }
      }
     }
    ]

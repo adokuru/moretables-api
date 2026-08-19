@@ -189,6 +189,30 @@ function activateMerchantBilling(Restaurant $restaurant): void
 }
 
 /**
+ * Gives the business itself an active subscription — the model every restaurant it owns inherits
+ * from, up to the plan's restaurant allowance.
+ */
+function activateBusinessBilling(Organization $organization, string $planSlug = 'premium'): MerchantSubscription
+{
+    $planId = BillingPlan::query()->where('slug', $planSlug)->value('id');
+
+    if (! $planId) {
+        $planId = BillingPlan::factory()->create([
+            'slug' => $planSlug,
+            'name' => Str::title($planSlug),
+        ])->id;
+    }
+
+    return MerchantSubscription::factory()
+        ->forBusiness($organization)
+        ->create([
+            'billing_plan_id' => $planId,
+            'status' => MerchantSubscriptionStatus::Active,
+            'current_period_end' => now()->addMonth(),
+        ]);
+}
+
+/**
  * Moves a restaurant's already-active subscription (see activateMerchantBilling())
  * onto the given plan tier — used by tests that need to assert plan-tier-gated
  * behavior (e.g. Premium-only survey customization) rather than the default

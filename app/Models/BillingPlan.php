@@ -21,6 +21,7 @@ class BillingPlan extends Model
         'amount',
         'currency',
         'interval',
+        'max_restaurants',
         'provider',
         'provider_plan_code',
         'features',
@@ -34,12 +35,26 @@ class BillingPlan extends Model
         return [
             'slug' => BillingPlanSlug::class,
             'amount' => 'integer',
+            'max_restaurants' => 'integer',
             'provider' => BillingProvider::class,
             'features' => 'array',
             'metadata' => 'array',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * A null max_restaurants means the plan covers every restaurant the business owns.
+     */
+    public function allowsUnlimitedRestaurants(): bool
+    {
+        return $this->max_restaurants === null;
+    }
+
+    public function allowsRestaurantCount(int $count): bool
+    {
+        return $this->allowsUnlimitedRestaurants() || $count <= $this->max_restaurants;
     }
 
     public function subscriptions(): HasMany

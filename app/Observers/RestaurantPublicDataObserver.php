@@ -65,8 +65,17 @@ class RestaurantPublicDataObserver implements ShouldHandleEventsAfterCommit
             $this->performanceCache->invalidateRestaurant((int) $restaurantId);
         }
 
-        if ($model instanceof MerchantSubscription && $restaurantId) {
-            $this->performanceCache->invalidateBillingEligibility((int) $restaurantId);
+        if ($model instanceof MerchantSubscription) {
+            if ($restaurantId) {
+                $this->performanceCache->invalidateBillingEligibility((int) $restaurantId);
+
+                return;
+            }
+
+            // A business-level subscription decides eligibility for every restaurant it owns.
+            if ($model->organization_id) {
+                $this->performanceCache->invalidateBusinessBillingEligibility((int) $model->organization_id);
+            }
         }
     }
 }

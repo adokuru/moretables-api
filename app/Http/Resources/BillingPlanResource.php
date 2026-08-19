@@ -23,6 +23,8 @@ class BillingPlanResource extends JsonResource
             'display_amount' => number_format($this->amount / 100, 2),
             'currency' => $this->currency,
             'interval' => $this->interval,
+            'max_restaurants' => $this->max_restaurants,
+            'allows_unlimited_restaurants' => $this->allowsUnlimitedRestaurants(),
             'provider' => $this->provider?->value,
             'features' => $this->features ?? [],
             'metadata' => $this->metadata ?? [],

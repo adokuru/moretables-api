@@ -36,6 +36,7 @@ class ProfileSettingsController extends Controller
                 'media',
                 'allergies',
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
             ])),
             'rewards' => [

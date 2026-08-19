@@ -15,6 +15,7 @@ class MerchantPayment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'organization_id',
         'restaurant_id',
         'merchant_invoice_id',
         'merchant_subscription_id',
@@ -39,6 +40,11 @@ class MerchantPayment extends Model
             'paid_at' => 'datetime',
             'provider_payload' => 'array',
         ];
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function restaurant(): BelongsTo

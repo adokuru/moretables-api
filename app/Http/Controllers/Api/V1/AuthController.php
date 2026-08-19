@@ -89,6 +89,7 @@ class AuthController extends Controller
         $user = $challenge->user->load([
             'roles',
             'roleAssignments.restaurant.activeBillingSubscription.plan',
+            'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
             'roleAssignments.restaurant.latestBillingSubscription.plan',
         ]);
         $user->forceFill(['last_active_at' => now()])->save();
@@ -130,6 +131,7 @@ class AuthController extends Controller
             'user' => UserResource::make($user->load([
                 'roles',
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
             ])),
         ]);
@@ -159,6 +161,7 @@ class AuthController extends Controller
             'user' => UserResource::make($user->refresh()->load([
                 'roles',
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
             ])),
         ]);
@@ -178,6 +181,7 @@ class AuthController extends Controller
             'user' => UserResource::make($user->refresh()->load([
                 'roles',
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
             ])),
         ]);

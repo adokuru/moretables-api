@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Restaurant;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -71,6 +72,18 @@ class PerformanceCacheService
     public function invalidateBillingEligibility(int $restaurantId): void
     {
         Cache::forget($this->billingEligibilityKey($restaurantId));
+    }
+
+    /**
+     * Business-level billing decides eligibility for every restaurant the business owns, so a
+     * change to it has to clear each of their eligibility entries.
+     */
+    public function invalidateBusinessBillingEligibility(int $organizationId): void
+    {
+        Restaurant::query()
+            ->where('organization_id', $organizationId)
+            ->pluck('id')
+            ->each(fn (int $restaurantId) => $this->invalidateBillingEligibility($restaurantId));
     }
 
     public function invalidateAuthorization(?int $userId = null): void

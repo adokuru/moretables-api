@@ -16,7 +16,8 @@ class StoreAdminBillingSubscriptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'restaurant_id' => ['required', 'integer', 'exists:restaurants,id'],
+            'organization_id' => ['required_without:restaurant_id', 'nullable', 'integer', 'exists:organizations,id'],
+            'restaurant_id' => ['required_without:organization_id', 'nullable', 'integer', 'exists:restaurants,id'],
             'plan' => [
                 'required',
                 'string',
@@ -33,6 +34,8 @@ class StoreAdminBillingSubscriptionRequest extends FormRequest
     {
         return [
             'plan.exists' => 'The selected billing plan is invalid or inactive.',
+            'organization_id.required_without' => 'Provide the business or the restaurant the subscription is for.',
+            'restaurant_id.required_without' => 'Provide the business or the restaurant the subscription is for.',
         ];
     }
 }

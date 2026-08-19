@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\MerchantPaymentMethod;
+use App\Models\Organization;
 use App\Models\Restaurant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,6 +21,9 @@ class MerchantPaymentMethodFactory extends Factory
     {
         return [
             'restaurant_id' => Restaurant::factory(),
+            'organization_id' => fn (array $attributes): ?int => Restaurant::query()
+                ->whereKey($attributes['restaurant_id'])
+                ->value('organization_id'),
             'provider' => 'paystack',
             'provider_customer_code' => 'CUS_'.$this->faker->unique()->bothify('????????'),
             'authorization_code' => 'AUTH_'.$this->faker->unique()->bothify('????????'),
@@ -37,5 +41,16 @@ class MerchantPaymentMethodFactory extends Factory
             'metadata' => [],
             'is_default' => true,
         ];
+    }
+
+    /**
+     * A business-level record: owned by the organization, inherited by its restaurants.
+     */
+    public function forBusiness(Organization $organization): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'organization_id' => $organization->id,
+            'restaurant_id' => null,
+        ]);
     }
 }

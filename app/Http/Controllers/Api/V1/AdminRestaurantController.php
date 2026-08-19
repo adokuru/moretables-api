@@ -56,6 +56,8 @@ class AdminRestaurantController extends Controller
                 'cuisines',
                 'media',
                 'activeBillingSubscription.plan',
+                'organization.activeBillingSubscription.plan',
+                'organization.activeBillingSubscription.plan',
                 'latestBillingSubscription.plan',
             ])
             ->when(
@@ -332,6 +334,7 @@ class AdminRestaurantController extends Controller
             'rewardRules',
             'accessConfigs',
             'activeBillingSubscription.plan',
+            'organization.activeBillingSubscription.plan',
             'latestBillingSubscription.plan',
             'defaultPaymentMethod',
             'userRoles' => fn ($query) => $query

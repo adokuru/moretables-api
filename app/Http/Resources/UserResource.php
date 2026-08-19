@@ -72,7 +72,7 @@ class UserResource extends JsonResource
                     ->filter();
 
                 $activeSubscription = $restaurants
-                    ->map(fn ($r) => $r->activeBillingSubscription)
+                    ->map(fn ($r) => $r->effectiveBillingSubscription())
                     ->filter()
                     ->first();
 

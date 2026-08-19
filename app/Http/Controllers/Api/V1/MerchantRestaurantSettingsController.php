@@ -17,8 +17,8 @@ class MerchantRestaurantSettingsController extends Controller
     {
         abort_unless($request->user()->hasRestaurantPermission('restaurants.view', $restaurant), 403);
 
-        $restaurant->load('activeBillingSubscription.plan');
-        $subscription = $restaurant->activeBillingSubscription;
+        $restaurant->load(['activeBillingSubscription.plan', 'organization.activeBillingSubscription.plan']);
+        $subscription = $restaurant->effectiveBillingSubscription();
         $plan = $subscription?->plan;
 
         return response()->json([

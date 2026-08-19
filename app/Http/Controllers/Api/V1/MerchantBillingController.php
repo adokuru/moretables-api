@@ -11,6 +11,7 @@ use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
 use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantSubscription;
+use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Services\BillingService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -49,6 +50,12 @@ class MerchantBillingController extends Controller
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'billing.manage'], $restaurant), 403);
 
+        if ($restaurant->businessBillingSubscription()) {
+            return response()->json([
+                'message' => 'This restaurant is already covered by your business subscription.',
+            ], 422);
+        }
+
         if ($this->billingService->isRestaurantBillable($restaurant)) {
             return response()->json([
                 'message' => 'You already have an active subscription for this restaurant.',
@@ -80,6 +87,15 @@ class MerchantBillingController extends Controller
     public function upgrade(StartBillingCheckoutRequest $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.manage', 'billing.manage'], $restaurant), 403);
+
+        // Upgrading here would sell a second subscription on top of the business's own and bill the
+        // merchant twice — the business subscription is the one that has to move tier.
+        if ($restaurant->businessBillingSubscription()) {
+            return response()->json([
+                'message' => 'This restaurant is covered by your business subscription. Upgrade the business plan instead.',
+                'business_id' => $restaurant->organization_id,
+            ], 422);
+        }
 
         $plan = BillingPlan::query()
             ->where('slug', $request->validated('plan'))
@@ -120,8 +136,17 @@ class MerchantBillingController extends Controller
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'billing.manage'], $restaurant), 403);
 
-        $invoices = $restaurant->invoices()
-            ->with(['plan', 'restaurant.organization', 'payments'])
+        $invoices = MerchantInvoice::query()
+            ->with(['plan', 'organization', 'restaurant.organization', 'payments'])
+            ->where(function ($query) use ($restaurant): void {
+                $query->where('restaurant_id', $restaurant->id);
+
+                if ($restaurant->organization_id) {
+                    $query->orWhere(fn ($businessQuery) => $businessQuery
+                        ->whereNull('restaurant_id')
+                        ->where('organization_id', $restaurant->organization_id));
+                }
+            })
             ->latest()
             ->paginate($request->integer('per_page', 15));
 
@@ -139,34 +164,49 @@ class MerchantBillingController extends Controller
     public function downloadInvoice(Request $request, Restaurant $restaurant, MerchantInvoice $invoice): Response
     {
         abort_unless($request->user()->hasAnyRestaurantPermission(['restaurants.view', 'billing.manage'], $restaurant), 403);
-        abort_unless((int) $invoice->restaurant_id === (int) $restaurant->id, 404);
+        abort_unless(
+            (int) $invoice->restaurant_id === (int) $restaurant->id
+                || ($invoice->restaurant_id === null && (int) $invoice->organization_id === (int) $restaurant->organization_id),
+            404,
+        );
 
-        $invoice->loadMissing(['restaurant.organization', 'plan', 'payments.paymentMethod']);
+        $invoice->loadMissing(['organization', 'restaurant.organization', 'plan', 'payments.paymentMethod']);
 
         $pdf = Pdf::loadView('pdf.merchant-invoice', [
             'invoice' => $invoice,
-            'restaurant' => $restaurant->loadMissing('organization'),
+            'restaurant' => $invoice->restaurant_id === null ? null : $restaurant->loadMissing('organization'),
+            'organization' => $invoice->organization ?? $restaurant->organization,
         ]);
 
         return $pdf->download($invoice->invoice_number.'.pdf');
     }
 
     /**
-     * @return array{is_active: bool, subscription: ?MerchantSubscription, payment_method: ?MerchantPaymentMethod, upcoming_invoice: ?MerchantInvoice}
+     * @return array{is_active: bool, scope: string, business: ?Organization, subscription: ?MerchantSubscription, payment_method: ?MerchantPaymentMethod, upcoming_invoice: ?MerchantInvoice}
      */
     protected function billingPayload(Restaurant $restaurant): array
     {
-        $subscription = $restaurant->billingSubscriptions()
-            ->with('plan')
-            ->whereIn('status', ['active', 'trialing', 'past_due'])
-            ->latest()
-            ->first();
+        $subscription = $restaurant->effectiveBillingSubscription()
+            ?? $restaurant->billingSubscriptions()
+                ->with('plan')
+                ->whereIn('status', ['active', 'trialing', 'past_due'])
+                ->latest()
+                ->first()
+            ?? $restaurant->organization?->billingSubscriptions()
+                ->with('plan')
+                ->whereIn('status', ['active', 'trialing', 'past_due'])
+                ->latest()
+                ->first();
 
         return [
             'is_active' => $this->billingService->isRestaurantBillable($restaurant),
+            'scope' => $subscription?->isBusinessLevel() ? 'business' : 'restaurant',
+            'business' => $restaurant->organization,
             'subscription' => $subscription,
-            'payment_method' => $restaurant->paymentMethods()->where('is_default', true)->latest()->first(),
-            'upcoming_invoice' => $restaurant->invoices()->with(['plan', 'restaurant.organization'])->where('status', 'pending')->latest()->first(),
+            'payment_method' => $restaurant->paymentMethods()->where('is_default', true)->latest()->first()
+                ?? $restaurant->organization?->defaultPaymentMethod()->first(),
+            'upcoming_invoice' => $restaurant->invoices()->with(['plan', 'restaurant.organization'])->where('status', 'pending')->latest()->first()
+                ?? $restaurant->organization?->invoices()->with(['plan', 'organization'])->where('status', 'pending')->latest()->first(),
         ];
     }
 }

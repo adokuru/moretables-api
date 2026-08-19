@@ -30,15 +30,54 @@ kobo):
 ```php
 public function hasPlanAtLeast(BillingPlanSlug $minimum): bool
 {
-    return $this->activeBillingSubscription?->plan?->slug?->atLeast($minimum) === true;
+    return $this->effectiveBillingSubscription()?->plan?->slug?->atLeast($minimum) === true;
 }
 ```
 
-`activeBillingSubscription` (already existed) only resolves a subscription
-whose status is `active`/`trialing` and whose `current_period_end` hasn't
-passed — so a trialing restaurant on a given tier counts as meeting it, and
-a lapsed/canceled subscription never does, regardless of what tier it was
-on.
+`effectiveBillingSubscription()` resolves the restaurant's own
+`activeBillingSubscription` first and falls back to the subscription its
+**business** (organization) holds — see "Who holds the subscription" below.
+Either way it only resolves a subscription whose status is
+`active`/`trialing` and whose `current_period_end` hasn't passed — so a
+trialing restaurant on a given tier counts as meeting it, and a
+lapsed/canceled subscription never does, regardless of what tier it was on.
+
+## Who holds the subscription
+
+Billing is owned by the **business**, and its restaurants inherit it.
+A `merchant_subscriptions` row with `restaurant_id = null` and an
+`organization_id` is business-level; one with a `restaurant_id` is
+restaurant-level (what every subscription was before, and what restaurants
+that already bought their own keep using — their own always wins over the
+business's).
+
+Each plan carries a restaurant allowance in `billing_plans.max_restaurants`:
+
+| Plan | Restaurants covered |
+|---|---|
+| Foundation | 1 |
+| Core | 1 |
+| Premium | unlimited (`null`) |
+
+A business-level subscription covers that many of the business's
+restaurants, **oldest first**, so which restaurants are served stays stable
+as the business opens more. Checkout and admin assignment both refuse a plan
+whose allowance is smaller than the business's current restaurant count
+(422), so this only bites if restaurants are added after the fact.
+
+Merchants who already paid keep their restaurant-level subscription
+untouched — the migration only backfills `organization_id` on those rows so
+they can be reported per business. To move them onto the business,
+`php artisan billing:promote-subscriptions-to-business` (with `--dry-run`
+first) promotes the ones where it cannot change who is being served: the
+business holds exactly one live restaurant-level subscription, has no
+business-level one, and owns no more restaurants than the plan allows.
+Everything else is reported and left alone, because deciding which
+restaurant keeps the plan (and who gets refunded) is a commercial call.
+
+`config('billing.scope')` (`BILLING_SCOPE`) is the kill switch: set it to
+`restaurant` to turn inheritance off and bill each restaurant on its own
+again. Restaurant-level subscriptions work under either setting.
 
 This mirrors the codebase's established inline-gate convention for role
 permissions (`$user->hasAnyRestaurantPermission([...], $restaurant)`,

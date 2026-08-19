@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\BillingPlanSlug;
+use App\BillingScope;
 use App\RestaurantStatus;
 use App\Services\RestaurantRewardRuleService;
 use Database\Factories\RestaurantFactory;
@@ -280,12 +281,66 @@ class Restaurant extends Model implements HasMedia
     public function activeBillingSubscription(): HasOne
     {
         return $this->hasOne(MerchantSubscription::class)
-            ->whereIn('status', ['active', 'trialing'])
-            ->where(function ($q): void {
-                $q->whereNull('current_period_end')
-                    ->orWhere('current_period_end', '>=', now());
-            })
+            ->active()
             ->latestOfMany();
+    }
+
+    /**
+     * The subscription that entitles this restaurant to service: its own, when it holds one, and
+     * otherwise the subscription its business holds. Restaurants sold a subscription before
+     * billing moved to the business keep being served by their own.
+     */
+    public function effectiveBillingSubscription(): ?MerchantSubscription
+    {
+        $this->loadMissing('activeBillingSubscription.plan');
+
+        return $this->activeBillingSubscription ?? $this->businessBillingSubscription();
+    }
+
+    /**
+     * The business-level subscription covering this restaurant, or null when the business has none
+     * or has more restaurants than its plan allows.
+     */
+    public function businessBillingSubscription(): ?MerchantSubscription
+    {
+        if (! BillingScope::businessBillingEnabled()) {
+            return null;
+        }
+
+        $this->loadMissing('organization.activeBillingSubscription.plan');
+
+        $subscription = $this->organization?->activeBillingSubscription;
+
+        if (! $subscription) {
+            return null;
+        }
+
+        return $this->isCoveredByBusinessSubscription($subscription) ? $subscription : null;
+    }
+
+    /**
+     * A plan with a restaurant allowance covers that many of the business's restaurants, oldest
+     * first, so which restaurants are served stays stable as the business opens more of them.
+     */
+    public function isCoveredByBusinessSubscription(MerchantSubscription $subscription): bool
+    {
+        $subscription->loadMissing('plan');
+        $plan = $subscription->plan;
+
+        if (! $plan) {
+            return false;
+        }
+
+        return $plan->allowsUnlimitedRestaurants()
+            || $this->businessCoverageRank() < $plan->max_restaurants;
+    }
+
+    public function businessCoverageRank(): int
+    {
+        return static::query()
+            ->where('organization_id', $this->organization_id)
+            ->where('id', '<', $this->id)
+            ->count();
     }
 
     public function paymentMethods(): HasMany
@@ -300,7 +355,7 @@ class Restaurant extends Model implements HasMedia
      */
     public function hasPlanAtLeast(BillingPlanSlug $minimum): bool
     {
-        return $this->activeBillingSubscription?->plan?->slug?->atLeast($minimum) === true;
+        return $this->effectiveBillingSubscription()?->plan?->slug?->atLeast($minimum) === true;
     }
 
     /**
@@ -403,7 +458,33 @@ class Restaurant extends Model implements HasMedia
                     ->orWhereHas('availabilitySchedules')
                     ->orWhereHas('hours', fn (Builder $hoursQuery): Builder => $hoursQuery->where('is_closed', false));
             })
-            ->whereHas('activeBillingSubscription');
+            ->where(function (Builder $billingQuery): void {
+                $billingQuery->whereHas('activeBillingSubscription');
+
+                if (BillingScope::businessBillingEnabled()) {
+                    $billingQuery->orWhere(
+                        fn (Builder $businessQuery): Builder => static::applyBusinessSubscriptionCoverage($businessQuery),
+                    );
+                }
+            });
+    }
+
+    /**
+     * SQL counterpart of isCoveredByBusinessSubscription(): the restaurant's business holds an
+     * active subscription whose plan is either unlimited or still has room for it, counting the
+     * business's restaurants oldest first.
+     */
+    protected static function applyBusinessSubscriptionCoverage(Builder $query): Builder
+    {
+        return $query->whereHas('organization.billingSubscriptions', function (Builder $subscriptionQuery): void {
+            $subscriptionQuery->active()->whereHas('plan', function (Builder $planQuery): void {
+                $planQuery->where(function (Builder $allowanceQuery): void {
+                    $allowanceQuery
+                        ->whereNull('billing_plans.max_restaurants')
+                        ->orWhereRaw('(select count(*) from restaurants as covered_siblings where covered_siblings.organization_id = restaurants.organization_id and covered_siblings.id < restaurants.id) < billing_plans.max_restaurants');
+                });
+            });
+        });
     }
 
     public function isPubliclyListed(): bool
@@ -420,11 +501,7 @@ class Restaurant extends Model implements HasMedia
             return false;
         }
 
-        if ($this->relationLoaded('activeBillingSubscription')) {
-            return $this->activeBillingSubscription !== null;
-        }
-
-        return $this->activeBillingSubscription()->exists();
+        return $this->effectiveBillingSubscription() !== null;
     }
 
     private function hasBookableTimes(): bool

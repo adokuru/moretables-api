@@ -16,19 +16,31 @@ class MerchantBillingResource extends JsonResource
     {
         $subscription = $this->resource['subscription'] ?? null;
         $paymentMethod = $this->resource['payment_method'] ?? null;
+        $business = $this->resource['business'] ?? null;
+        $plan = $subscription?->plan;
 
         return [
             'is_active' => (bool) ($this->resource['is_active'] ?? false),
             'status' => $subscription?->status?->value ?? 'unpaid',
+            'scope' => $this->resource['scope'] ?? ($subscription?->isBusinessLevel() ? 'business' : 'restaurant'),
+            'business' => $business ? [
+                'id' => $business->id,
+                'name' => $business->name,
+                'slug' => $business->slug,
+                'restaurants_count' => $this->resource['restaurants_count'] ?? $business->restaurants()->count(),
+                'restaurants_allowed' => $plan?->max_restaurants,
+            ] : null,
             'payment_url' => config('billing.frontend_billing_url'),
             'subscription' => $subscription ? [
                 'status' => $subscription->status?->value,
                 'subscribed_at' => $subscription->current_period_start?->toISOString(),
                 'next_payment_at' => $subscription->next_payment_at?->toISOString(),
+                'scope' => $subscription->isBusinessLevel() ? 'business' : 'restaurant',
                 'plan' => [
                     'name' => $subscription->plan?->name,
                     'slug' => $subscription->plan?->slug?->value,
                     'interval' => $subscription->plan?->interval,
+                    'max_restaurants' => $subscription->plan?->max_restaurants,
                     'amount' => $subscription->plan?->amount,
                     'display_amount' => $subscription->plan?->amount !== null
                         ? number_format($subscription->plan->amount / 100, 2)

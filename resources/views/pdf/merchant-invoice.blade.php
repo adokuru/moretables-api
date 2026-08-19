@@ -37,9 +37,11 @@
         <div class="col">
             <strong>Billed to</strong>
             <p>
-                {{ $restaurant->name }}<br>
-                {{ $restaurant->organization?->name }}<br>
-                {{ $restaurant->email ?? $restaurant->organization?->billing_email ?? $restaurant->organization?->primary_contact_email }}
+                @if ($restaurant)
+                    {{ $restaurant->name }}<br>
+                @endif
+                {{ $organization?->name }}<br>
+                {{ $restaurant?->email ?? $organization?->billing_email ?? $organization?->primary_contact_email }}
             </p>
         </div>
         <div class="col right">

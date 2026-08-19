@@ -47,8 +47,8 @@ class AdminRestaurantDetailResource extends RestaurantDetailResource
             'staff' => RestaurantStaffAssignmentResource::collection($this->whenLoaded('userRoles')),
             'active_billing_subscription' => $this->whenLoaded(
                 'activeBillingSubscription',
-                fn () => $this->activeBillingSubscription
-                    ? $this->subscriptionPayload($this->activeBillingSubscription)
+                fn () => ($subscription = $this->effectiveBillingSubscription())
+                    ? $this->subscriptionPayload($subscription)
                     : null,
             ),
             'latest_billing_subscription' => $this->whenLoaded(

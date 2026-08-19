@@ -4,6 +4,7 @@ namespace App\Contracts;
 
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
+use App\Models\Organization;
 use App\Models\Restaurant;
 
 interface PaymentProvider
@@ -11,7 +12,7 @@ interface PaymentProvider
     /**
      * @return array<string, mixed>
      */
-    public function initializeSubscriptionCheckout(Restaurant $restaurant, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array;
+    public function initializeSubscriptionCheckout(Organization|Restaurant $owner, BillingPlan $plan, MerchantInvoice $invoice, ?string $fallbackEmail = null): array;
 
     /**
      * @return array<string, mixed>

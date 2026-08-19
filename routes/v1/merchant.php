@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\FrontOfHouseTimelineController;
 use App\Http\Controllers\Api\V1\GuestbookController;
 use App\Http\Controllers\Api\V1\MerchantAccessConfigController;
 use App\Http\Controllers\Api\V1\MerchantBillingController;
+use App\Http\Controllers\Api\V1\MerchantBusinessBillingController;
 use App\Http\Controllers\Api\V1\MerchantDashboardPreferencesController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
@@ -51,6 +52,17 @@ Route::middleware(['auth:sanctum', 'throttle:merchant-api'])->group(function ():
     Route::get('merchant/restaurants', [MerchantRestaurantController::class, 'index']);
     Route::get('merchant/billing/plans', [MerchantBillingController::class, 'plans']);
 });
+
+Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])
+    ->prefix('merchant/businesses/{organization}/billing')
+    ->group(function (): void {
+        Route::get('/', [MerchantBusinessBillingController::class, 'show']);
+        Route::post('checkout', [MerchantBusinessBillingController::class, 'checkout']);
+        Route::post('upgrade', [MerchantBusinessBillingController::class, 'upgrade']);
+        Route::get('verify/{reference}', [MerchantBusinessBillingController::class, 'verify']);
+        Route::get('invoices', [MerchantBusinessBillingController::class, 'invoices']);
+        Route::get('invoices/{invoice}/download', [MerchantBusinessBillingController::class, 'downloadInvoice']);
+    });
 
 Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
     Route::prefix('billing')->group(function (): void {

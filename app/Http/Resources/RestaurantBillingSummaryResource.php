@@ -12,12 +12,14 @@ class RestaurantBillingSummaryResource extends JsonResource
     {
         $subscription = $this->resolvedBillingSubscription();
         $plan = $subscription?->plan;
+        $isBusinessScoped = $subscription?->isBusinessLevel() === true;
 
         return [
             'is_active' => $this->relationLoaded('activeBillingSubscription')
-                ? $this->activeBillingSubscription !== null
+                ? $this->effectiveBillingSubscription() !== null
                 : in_array($subscription?->status?->value, ['active', 'trialing'], true),
             'status' => $subscription?->status?->value ?? 'unpaid',
+            'scope' => $isBusinessScoped ? 'business' : 'restaurant',
             'subscription_id' => $subscription?->id,
             'current_period_end' => $subscription?->current_period_end?->toIso8601String(),
             'plan' => $plan ? [
@@ -36,6 +38,10 @@ class RestaurantBillingSummaryResource extends JsonResource
     {
         if ($this->relationLoaded('activeBillingSubscription') && $this->activeBillingSubscription !== null) {
             return $this->activeBillingSubscription;
+        }
+
+        if (($businessSubscription = $this->businessBillingSubscription()) !== null) {
+            return $businessSubscription;
         }
 
         if ($this->relationLoaded('latestBillingSubscription')) {

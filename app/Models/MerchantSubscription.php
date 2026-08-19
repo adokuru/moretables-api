@@ -5,6 +5,7 @@ namespace App\Models;
 use App\BillingProvider;
 use App\MerchantSubscriptionStatus;
 use Database\Factories\MerchantSubscriptionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ class MerchantSubscription extends Model
     use HasFactory;
 
     protected $fillable = [
+        'organization_id',
         'restaurant_id',
         'billing_plan_id',
         'provider',
@@ -48,9 +50,49 @@ class MerchantSubscription extends Model
         ];
     }
 
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
     public function restaurant(): BelongsTo
     {
         return $this->belongsTo(Restaurant::class);
+    }
+
+    /**
+     * A business-level subscription is owned by the organization and inherited by every restaurant
+     * it owns, up to the plan's restaurant allowance. Restaurant-level subscriptions predate that
+     * model and stay bound to the single restaurant that bought them.
+     */
+    public function isBusinessLevel(): bool
+    {
+        return $this->restaurant_id === null && $this->organization_id !== null;
+    }
+
+    /**
+     * Subscriptions that entitle their owner to service right now — billable status and a period
+     * that has not run out.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query
+            ->whereIn($query->qualifyColumn('status'), [
+                MerchantSubscriptionStatus::Active->value,
+                MerchantSubscriptionStatus::Trialing->value,
+            ])
+            ->where(function (Builder $periodQuery): void {
+                $periodQuery
+                    ->whereNull($periodQuery->qualifyColumn('current_period_end'))
+                    ->orWhere($periodQuery->qualifyColumn('current_period_end'), '>=', now());
+            });
+    }
+
+    public function scopeBusinessLevel(Builder $query): Builder
+    {
+        return $query
+            ->whereNull($query->qualifyColumn('restaurant_id'))
+            ->whereNotNull($query->qualifyColumn('organization_id'));
     }
 
     public function plan(): BelongsTo

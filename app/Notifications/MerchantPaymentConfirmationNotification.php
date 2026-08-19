@@ -26,10 +26,13 @@ class MerchantPaymentConfirmationNotification extends Notification implements Sh
 
     public function toMail(object $notifiable): MailMessage
     {
-        $this->invoice->loadMissing(['restaurant.organization', 'plan']);
+        $this->invoice->loadMissing(['organization', 'restaurant.organization', 'plan']);
 
         $restaurant = $this->invoice->restaurant;
-        $recipientName = $restaurant->organization?->name ?? $restaurant->name ?? 'there';
+        $recipientName = $this->invoice->organization?->name
+            ?? $restaurant?->organization?->name
+            ?? $restaurant?->name
+            ?? 'there';
         $planName = $this->invoice->plan?->name ?? 'MoreTables Plan';
         $amount = $this->formatAmount($this->invoice->amount, $this->invoice->currency);
 

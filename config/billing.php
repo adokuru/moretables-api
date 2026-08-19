@@ -3,6 +3,14 @@
 return [
     'default_provider' => env('BILLING_PROVIDER', 'paystack'),
 
+    /*
+     * Which entity owns a subscription. 'organization' bills the business once and lets every
+     * restaurant it owns inherit that subscription; 'restaurant' keeps the legacy per-restaurant
+     * billing and disables inheritance. Restaurant-level subscriptions already sold keep working
+     * under either setting.
+     */
+    'scope' => env('BILLING_SCOPE', 'organization'),
+
     'frontend_billing_url' => env('RESTAURANT_FRONTEND_BILLING_URL', rtrim((string) env('RESTAURANT_FRONTEND_URL', 'https://restaurant.moretables.com'), '/').'/billing'),
 
     // ponytail: Paystack cannot tokenize a card at zero amount, so verification charges a nominal
@@ -31,6 +39,7 @@ return [
             'amount' => 8500000,
             'currency' => 'NGN',
             'interval' => 'monthly',
+            'max_restaurants' => 1,
             'provider' => 'paystack',
             'provider_plan_code' => env('PAYSTACK_FOUNDATION_PLAN_CODE'),
             'features' => [
@@ -46,6 +55,7 @@ return [
             'amount' => 13500000,
             'currency' => 'NGN',
             'interval' => 'monthly',
+            'max_restaurants' => 1,
             'provider' => 'paystack',
             'provider_plan_code' => env('PAYSTACK_CORE_PLAN_CODE'),
             'features' => [
@@ -61,6 +71,7 @@ return [
             'amount' => 18500000,
             'currency' => 'NGN',
             'interval' => 'monthly',
+            'max_restaurants' => null,
             'provider' => 'paystack',
             'provider_plan_code' => env('PAYSTACK_PREMIUM_PLAN_CODE'),
             'features' => [

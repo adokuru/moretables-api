@@ -153,6 +153,9 @@
             "name": "Merchant Staff Auth"
         },
         {
+            "name": "Merchant Business Billing"
+        },
+        {
             "name": "Guestbook"
         },
         {
@@ -24135,6 +24138,391 @@
                 }
             }
         },
+        "/merchant/businesses/{organization}/billing": {
+            "get": {
+                "operationId": "merchantBusinessBilling.show",
+                "tags": [
+                    "Merchant Business Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "billing": {
+                                            "$ref": "#/components/schemas/MerchantBillingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "billing"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/businesses/{organization}/billing/checkout": {
+            "post": {
+                "operationId": "merchantBusinessBilling.checkout",
+                "tags": [
+                    "Merchant Business Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartBillingCheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Billing upgrade initialized successfully.",
+                                                "Billing checkout initialized successfully."
+                                            ]
+                                        },
+                                        "checkout": {
+                                            "type": "object",
+                                            "properties": {
+                                                "reference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "plan_code": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "authorization_url": {},
+                                                "access_code": {}
+                                            },
+                                            "required": [
+                                                "reference",
+                                                "email",
+                                                "plan_code",
+                                                "authorization_url",
+                                                "access_code"
+                                            ]
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "checkout",
+                                        "invoice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/businesses/{organization}/billing/upgrade": {
+            "post": {
+                "operationId": "merchantBusinessBilling.upgrade",
+                "tags": [
+                    "Merchant Business Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartBillingCheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Billing upgrade initialized successfully.",
+                                                "Billing checkout initialized successfully."
+                                            ]
+                                        },
+                                        "checkout": {
+                                            "type": "object",
+                                            "properties": {
+                                                "reference": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "plan_code": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "authorization_url": {},
+                                                "access_code": {}
+                                            },
+                                            "required": [
+                                                "reference",
+                                                "email",
+                                                "plan_code",
+                                                "authorization_url",
+                                                "access_code"
+                                            ]
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "checkout",
+                                        "invoice"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/businesses/{organization}/billing/verify/{reference}": {
+            "get": {
+                "operationId": "merchantBusinessBilling.verify",
+                "tags": [
+                    "Merchant Business Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "reference",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Billing checkout verified successfully."
+                                        },
+                                        "invoice": {
+                                            "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                        },
+                                        "billing": {
+                                            "$ref": "#/components/schemas/MerchantBillingResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "invoice",
+                                        "billing"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/businesses/{organization}/billing/invoices": {
+            "get": {
+                "operationId": "merchantBusinessBilling.invoices",
+                "tags": [
+                    "Merchant Business Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "invoices": {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MerchantInvoiceResource"
+                                                    }
+                                                },
+                                                "current_page": {
+                                                    "type": "integer"
+                                                },
+                                                "last_page": {
+                                                    "type": "integer"
+                                                },
+                                                "per_page": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "data",
+                                                "current_page",
+                                                "last_page",
+                                                "per_page",
+                                                "total"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "invoices"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/auth/staff/login": {
             "post": {
                 "operationId": "auth.staffLogin",
@@ -30100,6 +30488,13 @@
                                         "billing": {
                                             "$ref": "#/components/schemas/MerchantBillingResource"
                                         },
+                                        "billing_scope": {
+                                            "type": "string",
+                                            "enum": [
+                                                "business",
+                                                "restaurant"
+                                            ]
+                                        },
                                         "plan": {
                                             "anyOf": [
                                                 {
@@ -30118,6 +30513,13 @@
                                             "properties": {
                                                 "id": {
                                                     "type": "integer"
+                                                },
+                                                "scope": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "business",
+                                                        "restaurant"
+                                                    ]
                                                 },
                                                 "provider": {
                                                     "type": "string"
@@ -30229,6 +30631,7 @@
                                             },
                                             "required": [
                                                 "id",
+                                                "scope",
                                                 "provider",
                                                 "status",
                                                 "provider_subscription_code",
@@ -30247,6 +30650,237 @@
                                     "required": [
                                         "organization",
                                         "restaurant",
+                                        "billing",
+                                        "billing_scope",
+                                        "plan",
+                                        "subscription"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/admin/businesses/{organization}/billing/plan": {
+            "get": {
+                "operationId": "adminBilling.businessPlan",
+                "tags": [
+                    "Admin Billing"
+                ],
+                "parameters": [
+                    {
+                        "name": "organization",
+                        "in": "path",
+                        "required": true,
+                        "description": "The organization ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "organization": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "slug": {
+                                                    "type": "string"
+                                                },
+                                                "billing_email": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "restaurants_count": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "slug",
+                                                "billing_email",
+                                                "restaurants_count"
+                                            ]
+                                        },
+                                        "billing": {
+                                            "$ref": "#/components/schemas/MerchantBillingResource"
+                                        },
+                                        "plan": {
+                                            "anyOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/BillingPlanResource"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
+                                        "subscription": {
+                                            "type": [
+                                                "object",
+                                                "null"
+                                            ],
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "scope": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "business",
+                                                        "restaurant"
+                                                    ]
+                                                },
+                                                "provider": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "provider_subscription_code": {
+                                                    "type": [
+                                                        "string",
+                                                        "null"
+                                                    ]
+                                                },
+                                                "current_period_start": {
+                                                    "type": "string"
+                                                },
+                                                "current_period_end": {
+                                                    "type": "string"
+                                                },
+                                                "next_payment_at": {
+                                                    "type": "string"
+                                                },
+                                                "cancel_at_period_end": {
+                                                    "type": "boolean"
+                                                },
+                                                "metadata": {
+                                                    "type": [
+                                                        "array",
+                                                        "null"
+                                                    ],
+                                                    "items": {}
+                                                },
+                                                "restaurant": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name",
+                                                        "slug"
+                                                    ]
+                                                },
+                                                "organization": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "billing_email": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name",
+                                                        "slug",
+                                                        "billing_email"
+                                                    ]
+                                                },
+                                                "plan": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "slug": {
+                                                            "type": "string"
+                                                        },
+                                                        "amount": {
+                                                            "type": "string"
+                                                        },
+                                                        "currency": {
+                                                            "type": "string"
+                                                        },
+                                                        "interval": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "id",
+                                                        "name",
+                                                        "slug",
+                                                        "amount",
+                                                        "currency",
+                                                        "interval"
+                                                    ]
+                                                },
+                                                "created_at": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "scope",
+                                                "provider",
+                                                "status",
+                                                "provider_subscription_code",
+                                                "current_period_start",
+                                                "current_period_end",
+                                                "next_payment_at",
+                                                "cancel_at_period_end",
+                                                "metadata",
+                                                "restaurant",
+                                                "organization",
+                                                "plan",
+                                                "created_at"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "organization",
                                         "billing",
                                         "plan",
                                         "subscription"
@@ -30297,6 +30931,10 @@
                                                 "paying_restaurants": {
                                                     "type": "integer",
                                                     "minimum": 0
+                                                },
+                                                "paying_businesses": {
+                                                    "type": "integer",
+                                                    "minimum": 0
                                                 }
                                             },
                                             "required": [
@@ -30304,7 +30942,8 @@
                                                 "currency",
                                                 "active_subscriptions",
                                                 "overdue_invoices",
-                                                "paying_restaurants"
+                                                "paying_restaurants",
+                                                "paying_businesses"
                                             ]
                                         }
                                     },
@@ -30405,6 +31044,13 @@
                                                 "properties": {
                                                     "id": {
                                                         "type": "integer"
+                                                    },
+                                                    "scope": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "business",
+                                                            "restaurant"
+                                                        ]
                                                     },
                                                     "provider": {
                                                         "type": "string"
@@ -30516,6 +31162,7 @@
                                                 },
                                                 "required": [
                                                     "id",
+                                                    "scope",
                                                     "provider",
                                                     "status",
                                                     "provider_subscription_code",
@@ -30655,6 +31302,13 @@
                                                 "id": {
                                                     "type": "integer"
                                                 },
+                                                "scope": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "business",
+                                                        "restaurant"
+                                                    ]
+                                                },
                                                 "provider": {
                                                     "type": "string"
                                                 },
@@ -30765,6 +31419,7 @@
                                             },
                                             "required": [
                                                 "id",
+                                                "scope",
                                                 "provider",
                                                 "status",
                                                 "provider_subscription_code",
@@ -30799,14 +31454,14 @@
                             }
                         }
                     },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
-                    },
-                    "422": {
-                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -34262,6 +34917,15 @@
                     "interval": {
                         "type": "string"
                     },
+                    "max_restaurants": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "allows_unlimited_restaurants": {
+                        "type": "boolean"
+                    },
                     "provider": {
                         "type": "string"
                     },
@@ -34318,6 +34982,8 @@
                     "display_amount",
                     "currency",
                     "interval",
+                    "max_restaurants",
+                    "allows_unlimited_restaurants",
                     "provider",
                     "features",
                     "metadata",
@@ -34934,6 +35600,50 @@
                             }
                         ]
                     },
+                    "scope": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "business",
+                                    "restaurant"
+                                ]
+                            }
+                        ]
+                    },
+                    "business": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "slug": {
+                                "type": "string"
+                            },
+                            "restaurants_count": {
+                                "type": "string"
+                            },
+                            "restaurants_allowed": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "slug",
+                            "restaurants_count",
+                            "restaurants_allowed"
+                        ]
+                    },
                     "payment_url": {
                         "type": "string"
                     },
@@ -34952,6 +35662,13 @@
                             "next_payment_at": {
                                 "type": "string"
                             },
+                            "scope": {
+                                "type": "string",
+                                "enum": [
+                                    "business",
+                                    "restaurant"
+                                ]
+                            },
                             "plan": {
                                 "type": "object",
                                 "properties": {
@@ -34962,6 +35679,9 @@
                                         "type": "string"
                                     },
                                     "interval": {
+                                        "type": "string"
+                                    },
+                                    "max_restaurants": {
                                         "type": "string"
                                     },
                                     "amount": {
@@ -34981,6 +35701,7 @@
                                     "name",
                                     "slug",
                                     "interval",
+                                    "max_restaurants",
                                     "amount",
                                     "display_amount",
                                     "currency"
@@ -34991,6 +35712,7 @@
                             "status",
                             "subscribed_at",
                             "next_payment_at",
+                            "scope",
                             "plan"
                         ]
                     },
@@ -35101,6 +35823,8 @@
                 "required": [
                     "is_active",
                     "status",
+                    "scope",
+                    "business",
                     "payment_url",
                     "subscription",
                     "payment_method",
@@ -35156,6 +35880,13 @@
                     "paid_at": {
                         "type": "string"
                     },
+                    "scope": {
+                        "type": "string",
+                        "enum": [
+                            "business",
+                            "restaurant"
+                        ]
+                    },
                     "billing_address": {
                         "type": "string"
                     },
@@ -35183,6 +35914,7 @@
                     "billing_period_end",
                     "due_at",
                     "paid_at",
+                    "scope",
                     "created_at"
                 ],
                 "title": "MerchantInvoiceResource"
@@ -37825,8 +38557,17 @@
             "StoreAdminBillingSubscriptionRequest": {
                 "type": "object",
                 "properties": {
+                    "organization_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
                     "restaurant_id": {
-                        "type": "integer"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "plan": {
                         "type": "string"
@@ -37856,7 +38597,6 @@
                     }
                 },
                 "required": [
-                    "restaurant_id",
                     "plan"
                 ],
                 "title": "StoreAdminBillingSubscriptionRequest"
@@ -44281,7 +45021,7 @@
                         "type": "string",
                         "format": "binary",
                         "contentMediaType": "application/octet-stream",
-                        "maxLength": 15360
+                        "maxLength": 10240
                     }
                 },
                 "required": [

@@ -15,6 +15,7 @@ class MerchantPaymentMethod extends Model
     use HasFactory;
 
     protected $fillable = [
+        'organization_id',
         'restaurant_id',
         'provider',
         'provider_customer_code',
@@ -42,6 +43,11 @@ class MerchantPaymentMethod extends Model
             'metadata' => 'array',
             'is_default' => 'boolean',
         ];
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function restaurant(): BelongsTo

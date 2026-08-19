@@ -12,10 +12,12 @@ use App\Models\MerchantInvoice;
 use App\Models\MerchantPayment;
 use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantSubscription;
+use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Notifications\MerchantPaymentConfirmationNotification;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +34,7 @@ class BillingService
     /**
      * @return array<string, mixed>
      */
-    public function initializeCheckout(Restaurant $restaurant, BillingPlan $plan, bool $isUpgrade = false, ?string $requesterEmail = null): array
+    public function initializeCheckout(Organization|Restaurant $owner, BillingPlan $plan, bool $isUpgrade = false, ?string $requesterEmail = null): array
     {
         // Without a plan code Paystack takes a one-off payment instead of creating a subscription,
         // so nothing ever renews and the merchant silently lapses at the end of the period.
@@ -40,12 +42,12 @@ class BillingService
             Log::warning('Billing plan has no Paystack plan code; checkout will not create a renewable subscription.', [
                 'billing_plan_id' => $plan->id,
                 'plan_slug' => $plan->slug,
-                'restaurant_id' => $restaurant->id,
+                ...$this->ownerAttributes($owner),
             ]);
         }
 
         $invoice = MerchantInvoice::query()->create([
-            'restaurant_id' => $restaurant->id,
+            ...$this->ownerAttributes($owner),
             'billing_plan_id' => $plan->id,
             'invoice_number' => $this->generateInvoiceNumber(),
             'provider' => BillingProvider::Paystack,
@@ -59,7 +61,7 @@ class BillingService
             'metadata' => $isUpgrade ? ['is_upgrade' => true] : null,
         ]);
 
-        $providerResponse = $this->provider->initializeSubscriptionCheckout($restaurant, $plan, $invoice, $requesterEmail);
+        $providerResponse = $this->provider->initializeSubscriptionCheckout($owner, $plan, $invoice, $requesterEmail);
 
         return [
             'reference' => $invoice->provider_reference,
@@ -71,13 +73,12 @@ class BillingService
     /**
      * @return array<string, mixed>
      */
-    public function verifyCheckout(Restaurant $restaurant, string $reference): array
+    public function verifyCheckout(Organization|Restaurant $owner, string $reference): array
     {
         $response = $this->provider->verifyTransaction($reference);
         $data = Arr::get($response, 'data', []);
 
-        $invoice = MerchantInvoice::query()
-            ->where('restaurant_id', $restaurant->id)
+        $invoice = $this->scopeToOwner(MerchantInvoice::query(), $owner)
             ->where('provider_reference', $reference)
             ->firstOrFail();
 
@@ -132,13 +133,15 @@ class BillingService
     }
 
     /**
-     * Manually assign a billing subscription to a restaurant (admin override, no Paystack checkout).
+     * Manually assign a billing subscription to a business or a single restaurant (admin override,
+     * no Paystack checkout). Assigning to a business covers every restaurant it owns, up to the
+     * plan's restaurant allowance.
      *
      * @param  array{status?: string, current_period_end?: string|null, notes?: string|null, record_invoice?: bool}  $attributes
      * @return array{subscription: MerchantSubscription, invoice: ?MerchantInvoice}
      */
     public function assignAdminSubscription(
-        Restaurant $restaurant,
+        Organization|Restaurant $owner,
         BillingPlan $plan,
         User $admin,
         array $attributes = [],
@@ -156,12 +159,12 @@ class BillingService
             $status = MerchantSubscriptionStatus::Active;
         }
 
-        $this->cancelActiveSubscriptions($restaurant);
+        $this->cancelActiveSubscriptions($owner);
 
         $subscriptionCode = 'admin_'.strtolower((string) Str::ulid());
 
         $subscription = MerchantSubscription::query()->create([
-            'restaurant_id' => $restaurant->id,
+            ...$this->ownerAttributes($owner),
             'billing_plan_id' => $plan->id,
             'provider' => BillingProvider::Paystack,
             'status' => $status,
@@ -182,7 +185,7 @@ class BillingService
 
         if ($attributes['record_invoice'] ?? true) {
             $invoice = MerchantInvoice::query()->create([
-                'restaurant_id' => $restaurant->id,
+                ...$this->ownerAttributes($owner),
                 'billing_plan_id' => $plan->id,
                 'merchant_subscription_id' => $subscription->id,
                 'invoice_number' => $this->generateInvoiceNumber(),
@@ -203,7 +206,7 @@ class BillingService
             ]);
 
             MerchantPayment::query()->create([
-                'restaurant_id' => $restaurant->id,
+                ...$this->ownerAttributes($owner),
                 'merchant_invoice_id' => $invoice->id,
                 'merchant_subscription_id' => $subscription->id,
                 'provider' => BillingProvider::Paystack,
@@ -221,29 +224,39 @@ class BillingService
             ]);
         }
 
+        $this->invalidateEligibilityFor($subscription);
+
         return [
-            'subscription' => $subscription->load(['plan', 'restaurant.organization']),
+            'subscription' => $subscription->load(['plan', 'organization', 'restaurant.organization']),
             'invoice' => $invoice?->load('plan'),
         ];
     }
 
+    /**
+     * A restaurant is billable on its own subscription or, failing that, on the one its business
+     * holds — see Restaurant::effectiveBillingSubscription().
+     */
     public function isRestaurantBillable(Restaurant $restaurant): bool
     {
         return Cache::remember(
             $this->performanceCache->billingEligibilityKey($restaurant->id),
             (int) config('performance.cache.ttls.billing_eligibility'),
-            fn (): bool => MerchantSubscription::query()
-                ->where('restaurant_id', $restaurant->id)
-                ->whereIn('status', [
-                    MerchantSubscriptionStatus::Active->value,
-                    MerchantSubscriptionStatus::Trialing->value,
-                ])
-                ->where(function ($query): void {
-                    $query->whereNull('current_period_end')
-                        ->orWhere('current_period_end', '>=', now());
-                })
-                ->exists(),
+            fn (): bool => $restaurant->effectiveBillingSubscription() !== null,
         );
+    }
+
+    public function isBusinessBillable(Organization $organization): bool
+    {
+        return $organization->activeBillingSubscription()->exists();
+    }
+
+    /**
+     * Whether the plan's restaurant allowance covers everything the business already owns. The
+     * first two tiers cover a single restaurant; only Premium is unlimited.
+     */
+    public function planCoversBusiness(Organization $organization, BillingPlan $plan): bool
+    {
+        return $plan->allowsRestaurantCount($organization->restaurants()->count());
     }
 
     /**
@@ -309,6 +322,7 @@ class BillingService
             }
 
             $invoice = MerchantInvoice::query()->create([
+                'organization_id' => $subscription->organization_id,
                 'restaurant_id' => $subscription->restaurant_id,
                 'billing_plan_id' => $subscription->billing_plan_id,
                 'merchant_subscription_id' => $subscription->id,
@@ -345,7 +359,7 @@ class BillingService
                 MerchantSubscriptionStatus::Active->value,
                 MerchantSubscriptionStatus::Trialing->value,
             ])
-            ->get(['id', 'restaurant_id']);
+            ->get(['id', 'organization_id', 'restaurant_id']);
 
         MerchantSubscription::query()
             ->whereKey($subscriptions->pluck('id'))
@@ -354,8 +368,7 @@ class BillingService
                 'raw_provider_payload' => $data,
             ]);
 
-        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->performanceCache
-            ->invalidateBillingEligibility($subscription->restaurant_id));
+        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->invalidateEligibilityFor($subscription));
     }
 
     /**
@@ -384,7 +397,7 @@ class BillingService
     protected function recordTransaction(MerchantInvoice $invoice, array $data): MerchantPayment
     {
         $isUpgrade = (bool) ($invoice->metadata['is_upgrade'] ?? false);
-        $paymentMethod = $this->upsertPaymentMethod($invoice->restaurant, $data);
+        $paymentMethod = $this->upsertPaymentMethod($invoice, $data);
         $status = $this->paymentStatusFrom((string) Arr::get($data, 'status', 'pending'));
 
         $subscription = null;
@@ -395,6 +408,7 @@ class BillingService
         $payment = MerchantPayment::query()->updateOrCreate(
             ['reference' => (string) Arr::get($data, 'reference', $invoice->provider_reference)],
             [
+                'organization_id' => $invoice->organization_id,
                 'restaurant_id' => $invoice->restaurant_id,
                 'merchant_invoice_id' => $invoice->id,
                 'merchant_subscription_id' => $subscription?->id,
@@ -428,11 +442,11 @@ class BillingService
             ],
         ]);
 
-        $this->performanceCache->invalidateBillingEligibility($invoice->restaurant_id);
+        $this->invalidateEligibilityFor($invoice);
 
         if ($status === MerchantPaymentStatus::Success) {
-            $invoice->refresh()->loadMissing(['restaurant.organization', 'plan']);
-            $billingEmail = $invoice->restaurant->billingEmail();
+            $invoice->refresh()->loadMissing(['organization', 'restaurant.organization', 'plan']);
+            $billingEmail = $invoice->restaurant?->billingEmail() ?? $invoice->organization?->billingEmail();
 
             if ($billingEmail) {
                 Notification::route('mail', $billingEmail)
@@ -443,7 +457,7 @@ class BillingService
         return $payment->refresh();
     }
 
-    protected function upsertPaymentMethod(Restaurant $restaurant, array $data): ?MerchantPaymentMethod
+    protected function upsertPaymentMethod(MerchantInvoice $invoice, array $data): ?MerchantPaymentMethod
     {
         $authorization = Arr::get($data, 'authorization', []);
 
@@ -451,14 +465,18 @@ class BillingService
             return null;
         }
 
-        MerchantPaymentMethod::query()
-            ->where('restaurant_id', $restaurant->id)
+        $ownerAttributes = [
+            'organization_id' => $invoice->organization_id,
+            'restaurant_id' => $invoice->restaurant_id,
+        ];
+
+        $this->scopeToOwnerColumns(MerchantPaymentMethod::query(), $ownerAttributes)
             ->update(['is_default' => false]);
 
         return MerchantPaymentMethod::query()->updateOrCreate(
             ['authorization_code' => Arr::get($authorization, 'authorization_code')],
             [
-                'restaurant_id' => $restaurant->id,
+                ...$ownerAttributes,
                 'provider' => BillingProvider::Paystack,
                 'provider_customer_code' => Arr::get($data, 'customer.customer_code'),
                 'email' => Arr::get($data, 'customer.email'),
@@ -492,8 +510,12 @@ class BillingService
             ?? $this->dateOrNull(Arr::get($data, 'paid_at'))?->addMonth()
             ?? now()->addMonth();
 
-        MerchantSubscription::query()
-            ->where('restaurant_id', $invoice->restaurant_id)
+        $ownerAttributes = [
+            'organization_id' => $invoice->organization_id,
+            'restaurant_id' => $invoice->restaurant_id,
+        ];
+
+        $this->scopeToOwnerColumns(MerchantSubscription::query(), $ownerAttributes)
             ->whereIn('status', [
                 MerchantSubscriptionStatus::Active->value,
                 MerchantSubscriptionStatus::Trialing->value,
@@ -506,7 +528,7 @@ class BillingService
         return MerchantSubscription::query()->updateOrCreate(
             ['provider_subscription_code' => $subscriptionCode],
             [
-                'restaurant_id' => $invoice->restaurant_id,
+                ...$ownerAttributes,
                 'billing_plan_id' => $invoice->billing_plan_id,
                 'provider' => BillingProvider::Paystack,
                 'status' => MerchantSubscriptionStatus::Active,
@@ -536,7 +558,7 @@ class BillingService
 
         $subscriptions = MerchantSubscription::query()
             ->where('provider_subscription_code', $subscriptionCode)
-            ->get(['id', 'restaurant_id']);
+            ->get(['id', 'organization_id', 'restaurant_id']);
 
         $nextPaymentAt = $this->dateOrNull(Arr::get($data, 'next_payment_date'));
 
@@ -558,8 +580,7 @@ class BillingService
             ->whereKey($subscriptions->pluck('id'))
             ->update($attributes);
 
-        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->performanceCache
-            ->invalidateBillingEligibility($subscription->restaurant_id));
+        $subscriptions->each(fn (MerchantSubscription $subscription) => $this->invalidateEligibilityFor($subscription));
     }
 
     protected function paymentStatusFrom(string $status): MerchantPaymentStatus
@@ -586,10 +607,9 @@ class BillingService
         };
     }
 
-    protected function cancelActiveSubscriptions(Restaurant $restaurant): void
+    protected function cancelActiveSubscriptions(Organization|Restaurant $owner): void
     {
-        MerchantSubscription::query()
-            ->where('restaurant_id', $restaurant->id)
+        $this->scopeToOwner(MerchantSubscription::query(), $owner)
             ->whereIn('status', [
                 MerchantSubscriptionStatus::Active->value,
                 MerchantSubscriptionStatus::Trialing->value,
@@ -599,6 +619,66 @@ class BillingService
                 'status' => MerchantSubscriptionStatus::Canceled,
                 'canceled_at' => now(),
             ]);
+    }
+
+    /**
+     * The owning columns for a billing record. A business owns its subscription outright
+     * (restaurant_id null); a restaurant-owned record still records the business it belongs to so
+     * billing can be reported per business either way.
+     *
+     * @return array{organization_id: ?int, restaurant_id: ?int}
+     */
+    protected function ownerAttributes(Organization|Restaurant $owner): array
+    {
+        return $owner instanceof Restaurant
+            ? ['organization_id' => $owner->organization_id, 'restaurant_id' => $owner->id]
+            : ['organization_id' => $owner->id, 'restaurant_id' => null];
+    }
+
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    protected function scopeToOwner(Builder $query, Organization|Restaurant $owner): Builder
+    {
+        return $this->scopeToOwnerColumns($query, $this->ownerAttributes($owner));
+    }
+
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  array{organization_id: ?int, restaurant_id: ?int}  $ownerAttributes
+     * @return Builder<TModel>
+     */
+    protected function scopeToOwnerColumns(Builder $query, array $ownerAttributes): Builder
+    {
+        return $query
+            ->where('organization_id', $ownerAttributes['organization_id'])
+            ->when(
+                $ownerAttributes['restaurant_id'] === null,
+                fn (Builder $ownerQuery): Builder => $ownerQuery->whereNull('restaurant_id'),
+                fn (Builder $ownerQuery): Builder => $ownerQuery->where('restaurant_id', $ownerAttributes['restaurant_id']),
+            );
+    }
+
+    /**
+     * A business-level record changes what every restaurant under that business is entitled to, so
+     * the eligibility cache has to be cleared for all of them, not just one.
+     */
+    protected function invalidateEligibilityFor(MerchantInvoice|MerchantSubscription $record): void
+    {
+        if ($record->restaurant_id !== null) {
+            $this->performanceCache->invalidateBillingEligibility($record->restaurant_id);
+
+            return;
+        }
+
+        if ($record->organization_id !== null) {
+            $this->performanceCache->invalidateBusinessBillingEligibility($record->organization_id);
+        }
     }
 
     protected function defaultPeriodEnd(BillingPlan $plan, CarbonImmutable $start): CarbonImmutable

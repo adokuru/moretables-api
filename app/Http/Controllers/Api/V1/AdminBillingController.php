@@ -13,7 +13,9 @@ use App\Http\Resources\MerchantInvoiceResource;
 use App\Models\BillingPlan;
 use App\Models\MerchantInvoice;
 use App\Models\MerchantPayment;
+use App\Models\MerchantPaymentMethod;
 use App\Models\MerchantSubscription;
+use App\Models\Organization;
 use App\Models\Restaurant;
 use App\Services\BillingService;
 use Dedoc\Scramble\Attributes\Group;
@@ -45,13 +47,13 @@ class AdminBillingController extends Controller
         $this->ensureAdminAccess($request);
 
         $restaurant->loadMissing([
-            'organization',
+            'organization.activeBillingSubscription.plan',
             'activeBillingSubscription.plan',
             'latestBillingSubscription.plan',
             'defaultPaymentMethod',
         ]);
 
-        $subscription = $restaurant->activeBillingSubscription ?? $restaurant->latestBillingSubscription;
+        $subscription = $restaurant->effectiveBillingSubscription() ?? $restaurant->latestBillingSubscription;
 
         return response()->json([
             'organization' => [
@@ -66,6 +68,40 @@ class AdminBillingController extends Controller
                 'slug' => $restaurant->slug,
             ],
             'billing' => MerchantBillingResource::make($this->restaurantBillingPayload($restaurant, $subscription)),
+            'billing_scope' => $subscription?->isBusinessLevel() ? 'business' : 'restaurant',
+            'plan' => $subscription?->plan
+                ? BillingPlanResource::make($subscription->plan)
+                : null,
+            'subscription' => $subscription
+                ? $this->subscriptionPayload($subscription)
+                : null,
+        ]);
+    }
+
+    public function businessPlan(Request $request, Organization $organization): JsonResponse
+    {
+        $this->ensureAdminAccess($request);
+
+        $organization->loadMissing(['activeBillingSubscription.plan', 'latestBillingSubscription.plan']);
+
+        $subscription = $organization->activeBillingSubscription ?? $organization->latestBillingSubscription;
+
+        return response()->json([
+            'organization' => [
+                'id' => $organization->id,
+                'name' => $organization->name,
+                'slug' => $organization->slug,
+                'billing_email' => $organization->billing_email,
+                'restaurants_count' => $organization->restaurants()->count(),
+            ],
+            'billing' => MerchantBillingResource::make([
+                'is_active' => $this->billingService->isBusinessBillable($organization),
+                'scope' => 'business',
+                'business' => $organization,
+                'subscription' => $subscription?->loadMissing('plan'),
+                'payment_method' => $organization->defaultPaymentMethod()->first(),
+                'upcoming_invoice' => $organization->invoices()->with('plan')->where('status', 'pending')->latest()->first(),
+            ]),
             'plan' => $subscription?->plan
                 ? BillingPlanResource::make($subscription->plan)
                 : null,
@@ -96,6 +132,11 @@ class AdminBillingController extends Controller
             ->distinct('restaurant_id')
             ->count('restaurant_id');
 
+        $payingBusinesses = MerchantSubscription::query()
+            ->whereIn('status', ['active', 'trialing', 'past_due'])
+            ->distinct('organization_id')
+            ->count('organization_id');
+
         return response()->json([
             'overview' => [
                 'total_revenue' => $totalRevenue,
@@ -103,6 +144,7 @@ class AdminBillingController extends Controller
                 'active_subscriptions' => $activeSubscriptions,
                 'overdue_invoices' => $overdueInvoices,
                 'paying_restaurants' => $payingRestaurants,
+                'paying_businesses' => $payingBusinesses,
             ],
         ]);
     }
@@ -112,16 +154,24 @@ class AdminBillingController extends Controller
         $this->ensureAdminAccess($request);
 
         $subscriptions = MerchantSubscription::query()
-            ->with(['plan', 'restaurant.organization'])
+            ->with(['plan', 'organization', 'restaurant.organization'])
             ->when(
                 filled($request->string('search')->toString()),
                 function ($query) use ($request): void {
                     $search = $request->string('search')->toString();
 
-                    $query->whereHas('restaurant', function ($restaurantQuery) use ($search): void {
-                        $restaurantQuery
-                            ->where('name', 'like', '%'.$search.'%')
-                            ->orWhere('slug', 'like', '%'.$search.'%')
+                    $query->where(function ($scopeQuery) use ($search): void {
+                        $scopeQuery
+                            ->whereHas('restaurant', function ($restaurantQuery) use ($search): void {
+                                $restaurantQuery
+                                    ->where('name', 'like', '%'.$search.'%')
+                                    ->orWhere('slug', 'like', '%'.$search.'%')
+                                    ->orWhereHas('organization', function ($organizationQuery) use ($search): void {
+                                        $organizationQuery
+                                            ->where('name', 'like', '%'.$search.'%')
+                                            ->orWhere('slug', 'like', '%'.$search.'%');
+                                    });
+                            })
                             ->orWhereHas('organization', function ($organizationQuery) use ($search): void {
                                 $organizationQuery
                                     ->where('name', 'like', '%'.$search.'%')
@@ -140,7 +190,7 @@ class AdminBillingController extends Controller
             )
             ->when(
                 $request->filled('organization_id'),
-                fn ($query) => $query->whereHas('restaurant', fn ($restaurantQuery) => $restaurantQuery->where('organization_id', $request->integer('organization_id'))),
+                fn ($query) => $query->where('organization_id', $request->integer('organization_id')),
             )
             ->latest()
             ->paginate($this->perPage($request))
@@ -173,15 +223,27 @@ class AdminBillingController extends Controller
         $this->ensureAdminAccess($request);
 
         $validated = $request->validated();
-        $restaurant = Restaurant::query()->findOrFail($validated['restaurant_id']);
+        $restaurant = isset($validated['restaurant_id'])
+            ? Restaurant::query()->findOrFail($validated['restaurant_id'])
+            : null;
+        $organization = $restaurant
+            ? $restaurant->organization
+            : Organization::query()->findOrFail($validated['organization_id']);
+        $owner = $restaurant ?? $organization;
         $plan = BillingPlan::query()
             ->where('slug', $validated['plan'])
             ->where('is_active', true)
             ->firstOrFail();
 
-        [$result] = DB::transaction(function () use ($validated, $restaurant, $plan, $request): array {
+        if ($owner instanceof Organization && ! $this->billingService->planCoversBusiness($organization, $plan)) {
+            return response()->json([
+                'message' => "The {$plan->name} plan covers {$plan->max_restaurants} restaurant(s), but this business has {$organization->restaurants()->count()}.",
+            ], 422);
+        }
+
+        [$result] = DB::transaction(function () use ($validated, $owner, $organization, $restaurant, $plan, $request): array {
             $result = $this->billingService->assignAdminSubscription(
-                restaurant: $restaurant,
+                owner: $owner,
                 plan: $plan,
                 admin: $request->user(),
                 attributes: [
@@ -197,13 +259,15 @@ class AdminBillingController extends Controller
                 'billing.subscription.assigned',
                 $result['subscription'],
                 newValues: [
-                    'restaurant_id' => $restaurant->id,
+                    'organization_id' => $organization?->id,
+                    'restaurant_id' => $restaurant?->id,
+                    'scope' => $result['subscription']->isBusinessLevel() ? 'business' : 'restaurant',
                     'plan' => $plan->slug?->value ?? $validated['plan'],
                     'status' => $result['subscription']->status?->value,
                 ],
                 description: $validated['notes'] ?? null,
                 restaurant: $restaurant,
-                organization: $restaurant->organization,
+                organization: $organization,
             );
 
             return [$result];
@@ -223,7 +287,7 @@ class AdminBillingController extends Controller
         $this->ensureAdminAccess($request);
 
         $invoices = MerchantInvoice::query()
-            ->with(['plan', 'restaurant.organization', 'payments'])
+            ->with(['plan', 'organization', 'restaurant.organization', 'payments'])
             ->when(
                 filled($request->string('search')->toString()),
                 function ($query) use ($request): void {
@@ -251,7 +315,7 @@ class AdminBillingController extends Controller
             )
             ->when(
                 $request->filled('organization_id'),
-                fn ($query) => $query->whereHas('restaurant', fn ($restaurantQuery) => $restaurantQuery->where('organization_id', $request->integer('organization_id'))),
+                fn ($query) => $query->where('organization_id', $request->integer('organization_id')),
             )
             ->latest()
             ->paginate($this->perPage($request))
@@ -282,7 +346,7 @@ class AdminBillingController extends Controller
         $this->ensureAdminAccess($request);
 
         $payments = MerchantPayment::query()
-            ->with(['invoice', 'paymentMethod', 'restaurant.organization'])
+            ->with(['invoice', 'paymentMethod', 'organization', 'restaurant.organization'])
             ->when(
                 filled($request->string('search')->toString()),
                 function ($query) use ($request): void {
@@ -310,7 +374,7 @@ class AdminBillingController extends Controller
             )
             ->when(
                 $request->filled('organization_id'),
-                fn ($query) => $query->whereHas('restaurant', fn ($restaurantQuery) => $restaurantQuery->where('organization_id', $request->integer('organization_id'))),
+                fn ($query) => $query->where('organization_id', $request->integer('organization_id')),
             )
             ->latest()
             ->paginate($this->perPage($request))
@@ -339,10 +403,10 @@ class AdminBillingController extends Controller
                         'slug' => $payment->restaurant?->slug,
                     ],
                     'organization' => [
-                        'id' => $payment->restaurant?->organization?->id,
-                        'name' => $payment->restaurant?->organization?->name,
-                        'slug' => $payment->restaurant?->organization?->slug,
-                        'billing_email' => $payment->restaurant?->organization?->billing_email,
+                        'id' => $payment->organization?->id ?? $payment->restaurant?->organization?->id,
+                        'name' => $payment->organization?->name ?? $payment->restaurant?->organization?->name,
+                        'slug' => $payment->organization?->slug ?? $payment->restaurant?->organization?->slug,
+                        'billing_email' => $payment->organization?->billing_email ?? $payment->restaurant?->organization?->billing_email,
                     ],
                     'payment_method' => $payment->paymentMethod ? [
                         'brand' => $payment->paymentMethod->brand,
@@ -376,8 +440,11 @@ class AdminBillingController extends Controller
      */
     protected function subscriptionPayload(MerchantSubscription $subscription): array
     {
+        $organization = $subscription->organization ?? $subscription->restaurant?->organization;
+
         return [
             'id' => $subscription->id,
+            'scope' => $subscription->isBusinessLevel() ? 'business' : 'restaurant',
             'provider' => $subscription->provider?->value,
             'status' => $subscription->status?->value,
             'provider_subscription_code' => $subscription->provider_subscription_code,
@@ -392,10 +459,10 @@ class AdminBillingController extends Controller
                 'slug' => $subscription->restaurant?->slug,
             ],
             'organization' => [
-                'id' => $subscription->restaurant?->organization?->id,
-                'name' => $subscription->restaurant?->organization?->name,
-                'slug' => $subscription->restaurant?->organization?->slug,
-                'billing_email' => $subscription->restaurant?->organization?->billing_email,
+                'id' => $organization?->id,
+                'name' => $organization?->name,
+                'slug' => $organization?->slug,
+                'billing_email' => $organization?->billing_email,
             ],
             'plan' => [
                 'id' => $subscription->plan?->id,
@@ -410,14 +477,16 @@ class AdminBillingController extends Controller
     }
 
     /**
-     * @return array{is_active: bool, subscription: ?MerchantSubscription, payment_method: null, upcoming_invoice: ?MerchantInvoice}
+     * @return array{is_active: bool, scope: string, business: ?Organization, subscription: ?MerchantSubscription, payment_method: ?MerchantPaymentMethod, upcoming_invoice: ?MerchantInvoice}
      */
     protected function restaurantBillingPayload(Restaurant $restaurant, ?MerchantSubscription $subscription): array
     {
         return [
             'is_active' => $this->billingService->isRestaurantBillable($restaurant),
+            'scope' => $subscription?->isBusinessLevel() ? 'business' : 'restaurant',
+            'business' => $restaurant->organization,
             'subscription' => $subscription?->loadMissing('plan'),
-            'payment_method' => $restaurant->defaultPaymentMethod,
+            'payment_method' => $restaurant->defaultPaymentMethod ?? $restaurant->organization?->defaultPaymentMethod()->first(),
             'upcoming_invoice' => $restaurant->invoices()
                 ->with('plan')
                 ->where('status', 'pending')
