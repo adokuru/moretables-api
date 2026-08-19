@@ -19,6 +19,7 @@ use App\Services\BillingService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 #[Group('Admin Billing', weight: 57)]
 class AdminBillingController extends Controller
@@ -178,31 +179,35 @@ class AdminBillingController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $result = $this->billingService->assignAdminSubscription(
-            restaurant: $restaurant,
-            plan: $plan,
-            admin: $request->user(),
-            attributes: [
-                'status' => $validated['status'] ?? null,
-                'current_period_end' => $validated['current_period_end'] ?? null,
-                'notes' => $validated['notes'] ?? null,
-                'record_invoice' => $validated['record_invoice'] ?? true,
-            ],
-        );
+        [$result] = DB::transaction(function () use ($validated, $restaurant, $plan, $request): array {
+            $result = $this->billingService->assignAdminSubscription(
+                restaurant: $restaurant,
+                plan: $plan,
+                admin: $request->user(),
+                attributes: [
+                    'status' => $validated['status'] ?? null,
+                    'current_period_end' => $validated['current_period_end'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
+                    'record_invoice' => $validated['record_invoice'] ?? true,
+                ],
+            );
 
-        $this->logAdminAudit(
-            $request,
-            'billing.subscription.assigned',
-            $result['subscription'],
-            newValues: [
-                'restaurant_id' => $restaurant->id,
-                'plan' => $plan->slug?->value ?? $validated['plan'],
-                'status' => $result['subscription']->status?->value,
-            ],
-            description: $validated['notes'] ?? null,
-            restaurant: $restaurant,
-            organization: $restaurant->organization,
-        );
+            $this->logAdminAudit(
+                $request,
+                'billing.subscription.assigned',
+                $result['subscription'],
+                newValues: [
+                    'restaurant_id' => $restaurant->id,
+                    'plan' => $plan->slug?->value ?? $validated['plan'],
+                    'status' => $result['subscription']->status?->value,
+                ],
+                description: $validated['notes'] ?? null,
+                restaurant: $restaurant,
+                organization: $restaurant->organization,
+            );
+
+            return [$result];
+        });
 
         return response()->json([
             'message' => 'Subscription assigned successfully.',
