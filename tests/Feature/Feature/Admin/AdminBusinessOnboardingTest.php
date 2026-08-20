@@ -576,6 +576,42 @@ it('keeps existing admin and merchant restaurant surfaces working with onboardin
         ->assertJsonFragment(['Contemporary']);
 });
 
+it('accepts excel menu files and pdfs reported as octet-stream during onboarding', function (string $filename, string $mime): void {
+    Storage::fake('public');
+    Notification::fake();
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $admin = User::factory()->create();
+    assignScopedRole($admin, Role::BusinessAdmin);
+    Sanctum::actingAs($admin);
+
+    $payload = adminBusinessOnboardingPayload();
+    $payload['restaurants'] = [
+        [
+            ...$payload['restaurants'][2],
+            'name' => 'Menu File Bistro',
+            'email' => 'menu-file@chicken-republic.test',
+            'menu' => [
+                'mode' => 'pdf',
+                'pdf' => UploadedFile::fake()->create($filename, 120, $mime),
+            ],
+        ],
+    ];
+    $payload['restaurants_count'] = 1;
+
+    $this->post('/api/v1/admin/organizations/onboard', $payload)
+        ->assertCreated();
+
+    $restaurant = Restaurant::query()->where('name', 'Menu File Bistro')->firstOrFail();
+
+    expect($restaurant->menu_source)->toBe('pdf')
+        ->and($restaurant->getMedia('menu_documents'))->toHaveCount(1)
+        ->and($restaurant->getFirstMedia('menu_documents')?->file_name)->toBe($filename);
+})->with([
+    'excel xlsx' => ['branch-menu.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    'pdf as octet-stream' => ['branch-menu.pdf', 'application/octet-stream'],
+]);
+
 function adminBusinessOnboardingPayload(): array
 {
     return [

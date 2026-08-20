@@ -8,6 +8,7 @@ use App\Http\Requests\Concerns\ValidatesAveragePriceRange;
 use App\Models\OnboardingRequest;
 use App\Models\Role;
 use App\RestaurantStatus;
+use App\Support\MenuDocumentRules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -108,7 +109,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'restaurants.*.menu' => ['nullable', 'array'],
             'restaurants.*.menu.mode' => ['required_with:restaurants.*.menu', Rule::in(['link', 'pdf', 'manual'])],
             'restaurants.*.menu.link' => ['nullable', 'url', 'max:2048'],
-            'restaurants.*.menu.pdf' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:20480'],
+            'restaurants.*.menu.pdf' => MenuDocumentRules::rules(),
             'restaurants.*.menu.name' => ['nullable', 'string', 'max:100'],
             'restaurants.*.menu.currency' => ['nullable', 'string', 'max:10'],
             'restaurants.*.menu.items' => ['nullable', 'array', 'min:1'],
@@ -216,7 +217,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'owner_phone.required' => 'An owner or manager phone number is required.',
             'owner_email.required' => 'An owner email address is required so we can create the owner account.',
             'restaurants_count.required' => 'Please specify how many restaurants are being onboarded.',
-            'restaurants.required' => 'At least one restaurant entry is requ ired.',
+            'restaurants.required' => 'At least one restaurant entry is required.',
             'restaurants.*.name.required' => 'Each restaurant needs a name.',
             'restaurants.*.email.required' => 'Each restaurant needs an email address.',
             'restaurants.*.phone.required' => 'Each restaurant needs a phone number.',
@@ -228,6 +229,9 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
             'restaurants.*.latitude.required' => 'Each restaurant needs a latitude.',
             'restaurants.*.longitude.required' => 'Each restaurant needs a longitude.',
             'restaurants.*.menu.mode.required' => 'Each restaurant needs a menu input mode.',
+            'restaurants.*.menu.pdf.extensions' => 'The menu file must be a PDF or Excel file (.pdf, .xls, .xlsx).',
+            'restaurants.*.menu.pdf.mimes' => 'The menu file must be a PDF or Excel file (.pdf, .xls, .xlsx).',
+            'restaurants.*.menu.pdf.max' => 'The menu file may not be greater than 20MB.',
         ];
     }
 
@@ -287,7 +291,7 @@ class StoreAdminBusinessOnboardingRequest extends FormRequest
         }
 
         if ($menuMode === 'pdf' && ! $this->file("restaurants.$index.menu.pdf")) {
-            $validator->errors()->add("restaurants.$index.menu.pdf", 'A menu PDF is required when using PDF mode.');
+            $validator->errors()->add("restaurants.$index.menu.pdf", 'A menu PDF or Excel file is required when using file upload mode.');
         }
 
         if ($menuMode !== 'manual') {
