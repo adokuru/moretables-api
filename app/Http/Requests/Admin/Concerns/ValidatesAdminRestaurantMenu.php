@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\Concerns;
 
+use App\Support\MenuDocumentRules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
@@ -17,7 +18,7 @@ trait ValidatesAdminRestaurantMenu
             'menu' => ['nullable', 'array'],
             'menu.mode' => ['nullable', Rule::in(['link', 'pdf', 'manual'])],
             'menu.link' => ['nullable', 'url', 'max:2048'],
-            'menu.pdf' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:20480'],
+            'menu.pdf' => MenuDocumentRules::rules(),
             'menu.name' => ['nullable', 'string', 'max:100'],
             'menu.currency' => ['nullable', 'string', 'max:10'],
             'menu.items' => ['nullable', 'array', 'min:1'],
@@ -185,7 +186,7 @@ trait ValidatesAdminRestaurantMenu
         }
 
         if ($menuMode === 'pdf' && ! $this->hasMenuPdfForValidation()) {
-            $validator->errors()->add('menu.pdf', 'A menu PDF is required when using PDF mode.');
+            $validator->errors()->add('menu.pdf', 'A menu PDF or Excel file is required when using file upload mode.');
         }
 
         if ($menuMode !== 'manual') {
