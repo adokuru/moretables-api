@@ -32,7 +32,7 @@ class GuestWaitlistTableUnavailableMailNotification extends Notification impleme
             ->subject("Table no longer available — {$restaurantName}")
             ->greeting($name !== '' ? "Hello {$name}," : 'Hello,')
             ->line("The table that was held for you at {$restaurantName} is no longer available.")
-            ->line('If you would still like a table, you can rejoin the waitlist or book another time.')
+            ->line('If you would still like a table, you can set a new notify me alert or book another time.')
             ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 

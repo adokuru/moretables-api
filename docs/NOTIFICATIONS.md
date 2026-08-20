@@ -182,7 +182,7 @@ _Not sent._
 
 ### Email
 
-**Subject:** `A table is available for your waitlist request`
+**Subject:** `A table is available for your notify me request`
 
 ```
 Good news!
@@ -273,7 +273,7 @@ Hello!
 
 The time to respond to your table offer at {restaurantName} has passed.
 
-You can join the waitlist again in the app if tables become available.
+If you are still interested, you can set a new notify me alert or book another time.
 
 —
 Regards,
@@ -317,7 +317,7 @@ Regards,
 ```
 The time to respond to your table offer at {restaurantName} has passed.
 
-You can ask the restaurant to add you to the waitlist again if you are still interested.
+If you are still interested, you can set a new notify me alert or book another time.
 
 —
 Regards,
@@ -348,7 +348,7 @@ Hello!
 
 The table held for your waitlist offer at {restaurantName} is no longer available.
 
-Please join the waitlist again in the app if you would still like a table.
+If you would still like a table, you can set a new notify me alert or book another time.
 
 —
 Regards,

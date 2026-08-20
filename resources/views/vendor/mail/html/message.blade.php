@@ -22,11 +22,9 @@
 {{-- Footer --}}
 <x-slot:footer>
 <x-mail::footer>
-MoreTables Ltd. &middot; Lagos, Nigeria
+MoreTables &middot; Lagos, Nigeria.
 
-[Earn rewards]({{ config('app.url') }})
-
-[Unsubscribe]({{ config('app.url') }}/unsubscribe)
+[Earn rewards]({{ config('app.url') }}) &middot; [Unsubscribe]({{ config('app.url') }}/unsubscribe)
 </x-mail::footer>
 </x-slot:footer>
 </x-mail::layout>

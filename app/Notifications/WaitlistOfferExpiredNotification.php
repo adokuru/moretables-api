@@ -36,7 +36,7 @@ class WaitlistOfferExpiredNotification extends Notification implements ShouldQue
             ->subject('Waitlist offer expired')
             ->greeting('Hello!')
             ->line("The time to respond to your table offer at {$restaurantName} has passed.")
-            ->line('If you are still interested, you can rejoin the waitlist or book another time.')
+            ->line('If you are still interested, you can set a new notify me alert or book another time.')
             ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 

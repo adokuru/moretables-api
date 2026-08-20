@@ -27,8 +27,8 @@
     $ctaLabel = $ctaLabel ?? 'Continue';
     $signOff = $signOff ?? 'Thanks,';
     $signature = $signature ?? 'The MoreTables Team';
-    $footerLine1 = $footerLine1 ?? 'MoreTables Ltd.';
-    $footerLine2 = $footerLine2 ?? 'Lagos, Nigeria';
+    $footerLine1 = $footerLine1 ?? 'MoreTables';
+    $footerLine2 = $footerLine2 ?? 'Lagos, Nigeria.';
     $footerLink1Url = $footerLink1Url ?? config('app.url');
     $footerLink1Label = $footerLink1Label ?? 'Earn rewards';
     $footerLink2Url = $footerLink2Url ?? config('app.url');

@@ -36,7 +36,7 @@ class WaitlistTableNoLongerAvailableNotification extends Notification implements
             ->subject('Waitlist table no longer available')
             ->greeting('Hello!')
             ->line("The table held for your waitlist offer at {$restaurantName} is no longer available.")
-            ->line('If you would still like a table, you can rejoin the waitlist or book another time.')
+            ->line('If you would still like a table, you can set a new notify me alert or book another time.')
             ->action('View restaurant', $this->restaurantUrl($this->entry->restaurant->slug));
     }
 

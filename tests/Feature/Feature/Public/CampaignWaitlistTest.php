@@ -157,7 +157,7 @@ it('renders the confirmation email content', function () {
     expect($mail->subject)->toBe("You're on the MoreTables waitlist")
         ->and(config('mail.from.name'))->toBe('MoreTables')
         ->and((string) $mail->render())->toContain('Thanks for joining the MoreTables waitlist.')
-        ->toContain('MoreTables Ltd. · Lagos, Nigeria')
+        ->toContain('MoreTables · Lagos, Nigeria.')
         ->not->toContain('Sent from MoreTables')
         ->not->toContain('Moretables');
 });

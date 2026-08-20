@@ -33,7 +33,7 @@ class WaitlistAvailabilityNotification extends Notification implements ShouldQue
         $restaurantName = $this->entry->restaurant->name;
 
         return (new MailMessage)
-            ->subject('A table is available for your waitlist request')
+            ->subject('A table is available for your notify me request')
             ->greeting('Good news!')
             ->line("A table may be available at {$restaurantName}.")
             ->line('Preferred time: '.$this->entry->preferred_starts_at?->toDayDateTimeString())
