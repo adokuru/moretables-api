@@ -7,6 +7,7 @@ use App\Http\Requests\Concerns\NormalizesAveragePriceRange;
 use App\Http\Requests\Concerns\ValidatesAveragePriceRange;
 use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
+use App\Support\MenuDocumentRules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -60,7 +61,7 @@ class UpdateAdminRestaurantRequest extends FormRequest
             'number_of_tables' => ['nullable', 'integer', 'min:1'],
             'menu_source' => ['nullable', Rule::in(['link', 'pdf', 'manual'])],
             'menu_link' => ['nullable', 'url', 'max:2048'],
-            'menu_document' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:20480'],
+            'menu_document' => MenuDocumentRules::rules(),
             'payment_options' => ['nullable', 'array'],
             'payment_options.*' => ['string', 'max:50'],
             'accessibility_features' => ['nullable', 'array'],

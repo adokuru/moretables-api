@@ -4,6 +4,7 @@ namespace App\Http\Requests\Merchant;
 
 use App\Http\Requests\HasMediaUploadFields;
 use App\RestaurantStatus;
+use App\Support\MenuDocumentRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +42,7 @@ class UpdateRestaurantRequest extends FormRequest
             'number_of_tables' => ['nullable', 'integer', 'min:1'],
             'menu_source' => ['nullable', Rule::in(['link', 'pdf', 'manual'])],
             'menu_link' => ['nullable', 'url', 'max:2048'],
-            'menu_document' => ['nullable', 'file', 'mimetypes:application/pdf', 'max:20480'],
+            'menu_document' => MenuDocumentRules::rules(),
             'executive_chef' => ['nullable', 'string', 'max:255'],
             'dietary_options' => ['nullable', 'array'],
             'dietary_options.*' => ['string', 'max:100'],
