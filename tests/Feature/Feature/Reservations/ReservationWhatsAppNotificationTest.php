@@ -17,6 +17,8 @@ beforeEach(function (): void {
     config()->set('services.whatsapp.api_version', 'v21.0');
     config()->set('services.whatsapp.phone_number_id', '123456');
     config()->set('services.whatsapp.token', 'test-token');
+    config()->set('services.whatsapp.reservation_templates_have_url_button', false);
+    config()->set('services.whatsapp.reservation_templates_have_cancel_button', false);
 });
 
 afterEach(function (): void {

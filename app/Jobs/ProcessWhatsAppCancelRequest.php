@@ -38,6 +38,12 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
      */
     public function handle(ReservationService $reservationService, WhatsAppService $whatsAppService): void
     {
+        Log::info('WhatsApp cancel request processing.', [
+            'reservation_id' => $this->reservationId,
+            'from' => PhoneNumber::mask($this->fromPhone),
+            'whatsapp_configured' => $whatsAppService->isConfigured(),
+        ]);
+
         $reservation = Reservation::query()
             ->with(['restaurant.policy', 'user', 'guestContact'])
             ->find($this->reservationId);
@@ -91,6 +97,11 @@ class ProcessWhatsAppCancelRequest implements ShouldQueue
         }
 
         $reservationService->cancelReservation($reservation, null);
+
+        Log::info('WhatsApp cancel request completed.', [
+            'reservation_id' => $reservation->id,
+            'reference' => $reservation->reservation_reference,
+        ]);
 
         $whatsAppService->sendText($this->fromPhone, "Your reservation at {$restaurantName} ({$reservation->reservation_reference}) has been cancelled.");
     }

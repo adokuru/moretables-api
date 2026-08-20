@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessWhatsAppCancelRequest;
+use App\Support\PhoneNumber;
 use Dedoc\Scramble\Attributes\ExcludeAllRoutesFromDocs;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -41,12 +43,21 @@ class WhatsAppWebhookController extends Controller
             abort(403);
         }
 
-        foreach ($request->input('entry', []) as $entry) {
-            foreach ($entry['changes'] ?? [] as $change) {
-                foreach ($change['value']['messages'] ?? [] as $message) {
-                    $this->handleInboundMessage($message);
-                }
-            }
+        $messages = collect(Arr::wrap($request->input('entry', [])))
+            ->flatMap(static fn ($entry): array => Arr::wrap($entry['changes'] ?? []))
+            ->flatMap(static fn ($change): array => Arr::wrap($change['value']['messages'] ?? []))
+            ->all();
+
+        Log::log($messages === [] ? 'debug' : 'info', 'WhatsApp webhook received.', [
+            'message_count' => count($messages),
+            'message_types' => array_values(array_unique(array_map(
+                static fn ($message): string => (string) ($message['type'] ?? 'unknown'),
+                $messages,
+            ))),
+        ]);
+
+        foreach ($messages as $message) {
+            $this->handleInboundMessage($message);
         }
 
         return response('');
@@ -82,6 +93,10 @@ class WhatsAppWebhookController extends Controller
     protected function handleInboundMessage(array $message): void
     {
         if (($message['type'] ?? null) !== 'button') {
+            Log::debug('WhatsApp webhook skipped a non-button message.', [
+                'type' => $message['type'] ?? 'unknown',
+            ]);
+
             return;
         }
 
@@ -104,6 +119,12 @@ class WhatsAppWebhookController extends Controller
 
             return;
         }
+
+        Log::info('WhatsApp cancel request queued.', [
+            'reservation_id' => $reservationId,
+            'from' => PhoneNumber::mask($from),
+            'queue_connection' => config('queue.default'),
+        ]);
 
         ProcessWhatsAppCancelRequest::dispatch($reservationId, $from);
     }
