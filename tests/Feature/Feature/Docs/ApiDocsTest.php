@@ -13,6 +13,9 @@ it('serves the generated api specification route', function () {
         '/auth/google',
         '/auth/apple',
         '/auth/account',
+        '/auth/account/restore',
+        '/auth/account/restore/verify',
+        '/auth/account/restore/resend',
         '/auth/profile-picture',
         '/auth/notifications',
         '/auth/notifications/read-all',
@@ -74,6 +77,8 @@ it('serves the generated api specification route', function () {
 
     expect($specification['paths']['/auth/start']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/account']['delete']['tags'][0])->toBe('Customer Auth');
+    expect($specification['paths']['/auth/account/restore']['post']['tags'][0])->toBe('Customer Auth');
+    expect($specification['paths']['/auth/account/restore/verify']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/profile-picture']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/notifications']['get']['tags'][0])->toBe('Customer Notifications');
     expect($specification['paths']['/auth/notifications/read-all']['patch']['tags'][0])->toBe('Customer Notifications');

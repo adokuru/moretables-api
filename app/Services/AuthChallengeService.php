@@ -48,6 +48,7 @@ class AuthChallengeService
                     AuthChallengeType::GuestSignup => 'verify your email',
                     AuthChallengeType::PasswordChange => 'confirm your password change',
                     AuthChallengeType::PasswordReset => 'reset your password',
+                    AuthChallengeType::AccountRestore => 'restore your account',
                     default => 'finish signing in',
                 },
                 expiresInMinutes: $ttlMinutes,
@@ -113,6 +114,8 @@ class AuthChallengeService
             purpose: match ($challenge->type) {
                 AuthChallengeType::GuestSignup => 'verify your email',
                 AuthChallengeType::PasswordChange => 'confirm your password change',
+                AuthChallengeType::PasswordReset => 'reset your password',
+                AuthChallengeType::AccountRestore => 'restore your account',
                 default => 'finish signing in',
             },
             expiresInMinutes: $ttlMinutes,

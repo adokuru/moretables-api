@@ -21,6 +21,9 @@ Route::prefix('auth')->group(function (): void {
     Route::post('password/forgot-otp', [AuthController::class, 'forgotPasswordOtp'])->middleware('throttle:auth-initiate');
     Route::post('password/forgot-otp/resend', [AuthController::class, 'resendForgotPasswordOtp'])->middleware('throttle:auth-initiate');
     Route::post('password/reset-otp', [AuthController::class, 'resetPasswordOtp'])->middleware('throttle:auth-verify');
+    Route::post('account/restore', [ProfileSettingsController::class, 'restore'])->middleware('throttle:auth-initiate');
+    Route::post('account/restore/verify', [ProfileSettingsController::class, 'confirmRestore'])->middleware('throttle:auth-verify');
+    Route::post('account/restore/resend', [ProfileSettingsController::class, 'resendRestore'])->middleware('throttle:auth-initiate');
 
     Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function (): void {
         Route::post('complete-profile', [GuestAuthController::class, 'completeProfile']);

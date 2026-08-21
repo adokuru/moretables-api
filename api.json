@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost/api/v1"
+            "url": "http://localhost:8000/api/v1"
         }
     ],
     "tags": [
@@ -2476,6 +2476,156 @@
                 }
             }
         },
+        "/auth/account/restore": {
+            "post": {
+                "operationId": "profileSettings.restore",
+                "summary": "Start restoring a soft-deleted (pending deletion) account by email OTP",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RestoreAccountRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Verification code sent."
+                                        },
+                                        "challenge_token": {
+                                            "type": "string"
+                                        },
+                                        "expires_at": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "challenge_token",
+                                        "expires_at"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/account/restore/verify": {
+            "post": {
+                "operationId": "profileSettings.confirmRestore",
+                "summary": "Verify the restore OTP and reactivate the account",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyChallengeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Account restored successfully."
+                                        },
+                                        "token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "const": "Bearer"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "token",
+                                        "token_type",
+                                        "user"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/account/restore/resend": {
+            "post": {
+                "operationId": "profileSettings.resendRestore",
+                "summary": "Resend the account restore verification code",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResendChallengeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "A new verification code has been sent."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
         "/auth/profile": {
             "get": {
                 "operationId": "profileSettings.show",
@@ -2609,6 +2759,39 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/auth/account": {
+            "delete": {
+                "operationId": "profileSettings.requestDeletion",
+                "summary": "Request deletion of the authenticated account",
+                "tags": [
+                    "Customer Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Account deletion requested successfully."
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -38441,6 +38624,20 @@
                 ],
                 "title": "RestaurantTableResource"
             },
+            "RestoreAccountRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "email"
+                ],
+                "title": "RestoreAccountRequest"
+            },
             "RewardPointTransactionType": {
                 "type": "string",
                 "enum": [
@@ -45260,7 +45457,8 @@
                     "pending_email_verification",
                     "pending_profile_completion",
                     "active",
-                    "suspended"
+                    "suspended",
+                    "pending_deletion"
                 ],
                 "title": "UserStatus"
             },

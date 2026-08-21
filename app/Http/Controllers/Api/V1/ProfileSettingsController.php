@@ -3,20 +3,27 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\AuthChallengeStatus;
+use App\AuthChallengeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
+use App\Http\Requests\Auth\ResendChallengeRequest;
+use App\Http\Requests\Auth\RestoreAccountRequest;
 use App\Http\Requests\Auth\UpdatePhoneRequest;
 use App\Http\Requests\Auth\UpdateProfileSettingsRequest;
 use App\Http\Requests\Auth\UploadProfilePictureRequest;
+use App\Http\Requests\Auth\VerifyChallengeRequest;
 use App\Http\Resources\MediaAssetResource;
 use App\Http\Resources\UserResource;
+use App\Models\AuthChallenge;
 use App\Models\User;
+use App\Services\AuthChallengeService;
 use App\Services\MediaLibraryService;
 use App\Services\RewardProgramService;
 use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 #[Group('Customer Auth', weight: 11)]
 class ProfileSettingsController extends Controller
@@ -24,6 +31,7 @@ class ProfileSettingsController extends Controller
     public function __construct(
         protected MediaLibraryService $mediaLibraryService,
         protected RewardProgramService $rewardProgramService,
+        protected AuthChallengeService $authChallengeService,
     ) {}
 
     public function show(): JsonResponse
@@ -155,6 +163,86 @@ class ProfileSettingsController extends Controller
 
         return response()->json([
             'message' => 'Account deletion requested successfully.',
+        ]);
+    }
+
+    /**
+     * Start restoring a soft-deleted (pending deletion) account by email OTP.
+     */
+    public function restore(RestoreAccountRequest $request): JsonResponse
+    {
+        $email = $request->string('email')->toString();
+        $user = User::query()->where('email', $email)->first();
+
+        if (! $user || $user->status !== UserStatus::PendingDeletion) {
+            throw ValidationException::withMessages([
+                'email' => ['No account pending deletion was found for this email.'],
+            ]);
+        }
+
+        $challenge = $this->authChallengeService->create($user, AuthChallengeType::AccountRestore, [
+            'email' => $user->email,
+        ]);
+
+        return response()->json([
+            'message' => 'Verification code sent.',
+            'challenge_token' => $challenge->challenge_token,
+            'expires_at' => $challenge->code_expires_at->toIso8601String(),
+        ], 201);
+    }
+
+    /**
+     * Verify the restore OTP and reactivate the account.
+     */
+    public function confirmRestore(VerifyChallengeRequest $request): JsonResponse
+    {
+        $challenge = $this->authChallengeService->verify(
+            challengeToken: $request->string('challenge_token')->toString(),
+            code: $request->string('code')->toString(),
+            type: AuthChallengeType::AccountRestore,
+        );
+
+        $user = $challenge->user;
+
+        if ($user->status !== UserStatus::PendingDeletion) {
+            throw ValidationException::withMessages([
+                'challenge_token' => ['This account is not pending deletion.'],
+            ]);
+        }
+
+        $needsProfileCompletion = blank($user->first_name) || blank($user->last_name);
+
+        $user->forceFill([
+            'status' => $needsProfileCompletion
+                ? UserStatus::PendingProfileCompletion
+                : UserStatus::Active,
+            'last_active_at' => now(),
+        ])->save();
+
+        $token = $user->createToken($request->input('device_name', 'customer-api'))->plainTextToken;
+
+        return response()->json([
+            'message' => 'Account restored successfully.',
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => UserResource::make($user->load('roles')),
+        ]);
+    }
+
+    /**
+     * Resend the account restore verification code.
+     */
+    public function resendRestore(ResendChallengeRequest $request): JsonResponse
+    {
+        $challenge = AuthChallenge::query()
+            ->where('challenge_token', $request->string('challenge_token')->toString())
+            ->where('type', AuthChallengeType::AccountRestore)
+            ->firstOrFail();
+
+        $this->authChallengeService->resend($challenge);
+
+        return response()->json([
+            'message' => 'A new verification code has been sent.',
         ]);
     }
 }
