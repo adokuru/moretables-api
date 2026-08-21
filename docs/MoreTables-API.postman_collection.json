@@ -1036,6 +1036,110 @@
      }
     },
     {
+     "name": "Restore Account",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"customer@example.com\"\n}"
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/auth/account/restore",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "auth",
+        "account",
+        "restore"
+       ]
+      },
+      "description": "Start restoring a pending-deletion account. Sends an email OTP and returns a challenge_token. No auth required."
+     }
+    },
+    {
+     "name": "Verify Account Restore",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\",\n  \"code\": \"1234\",\n  \"device_name\": \"postman-customer\"\n}"
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/auth/account/restore/verify",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "auth",
+        "account",
+        "restore",
+        "verify"
+       ]
+      },
+      "description": "Verify the restore OTP, reactivate the account, and return a new Bearer token."
+     }
+    },
+    {
+     "name": "Resend Account Restore Code",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\"\n}"
+      },
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/auth/account/restore/resend",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "auth",
+        "account",
+        "restore",
+        "resend"
+       ]
+      },
+      "description": "Resend the account restore verification code for an active restore challenge."
+     }
+    },
+    {
      "name": "Profile Settings",
      "request": {
       "method": "GET",
