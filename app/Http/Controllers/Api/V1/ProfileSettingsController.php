@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\AuthChallengeStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\UpdatePhoneRequest;
@@ -12,8 +13,10 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\MediaLibraryService;
 use App\Services\RewardProgramService;
+use App\UserStatus;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 #[Group('Customer Auth', weight: 11)]
 class ProfileSettingsController extends Controller
@@ -132,5 +135,26 @@ class ProfileSettingsController extends Controller
             'profile_picture' => MediaAssetResource::make($profilePicture),
             'user' => UserResource::make($user->refresh()->load(['roles', 'media'])),
         ], 201);
+    }
+
+    /**
+     * Request deletion of the authenticated account.
+     */
+    public function requestDeletion(): JsonResponse
+    {
+        /** @var User $user */
+        $user = request()->user();
+
+        DB::transaction(function () use ($user): void {
+            $user->forceFill(['status' => UserStatus::PendingDeletion])->save();
+            $user->authChallenges()
+                ->where('status', AuthChallengeStatus::Pending)
+                ->update(['status' => AuthChallengeStatus::Cancelled]);
+            $user->tokens()->delete();
+        });
+
+        return response()->json([
+            'message' => 'Account deletion requested successfully.',
+        ]);
     }
 }

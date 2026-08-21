@@ -8,4 +8,5 @@ enum UserStatus: string
     case PendingProfileCompletion = 'pending_profile_completion';
     case Active = 'active';
     case Suspended = 'suspended';
+    case PendingDeletion = 'pending_deletion';
 }

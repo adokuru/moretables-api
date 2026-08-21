@@ -52,6 +52,12 @@ class CustomerSocialAuthService
                     ->first();
             }
 
+            if ($user?->status === UserStatus::PendingDeletion) {
+                throw ValidationException::withMessages([
+                    'id_token' => ['This account is pending deletion and can no longer be accessed.'],
+                ]);
+            }
+
             if ($user && $user->requiresAdminLogin()) {
                 throw ValidationException::withMessages([
                     'id_token' => ['Use the admin login endpoint for this account.'],

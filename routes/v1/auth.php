@@ -28,6 +28,7 @@ Route::prefix('auth')->group(function (): void {
         Route::get('me', [GuestAuthController::class, 'me']);
         Route::get('profile', [ProfileSettingsController::class, 'show']);
         Route::patch('profile', [ProfileSettingsController::class, 'update']);
+        Route::delete('account', [ProfileSettingsController::class, 'requestDeletion']);
         Route::patch('profile/phone', [ProfileSettingsController::class, 'updatePhone']);
         Route::patch('profile/password', [ProfileSettingsController::class, 'changePassword']);
         Route::post('profile-picture', [ProfileSettingsController::class, 'updateProfilePicture']);

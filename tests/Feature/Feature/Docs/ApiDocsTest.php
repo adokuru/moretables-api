@@ -12,6 +12,7 @@ it('serves the generated api specification route', function () {
         '/auth/start',
         '/auth/google',
         '/auth/apple',
+        '/auth/account',
         '/auth/profile-picture',
         '/auth/notifications',
         '/auth/notifications/read-all',
@@ -72,6 +73,7 @@ it('serves the generated api specification route', function () {
     expect($paths)->not->toContain('/auth/login', '/auth/register', '/guest/start');
 
     expect($specification['paths']['/auth/start']['post']['tags'][0])->toBe('Customer Auth');
+    expect($specification['paths']['/auth/account']['delete']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/profile-picture']['post']['tags'][0])->toBe('Customer Auth');
     expect($specification['paths']['/auth/notifications']['get']['tags'][0])->toBe('Customer Notifications');
     expect($specification['paths']['/auth/notifications/read-all']['patch']['tags'][0])->toBe('Customer Notifications');

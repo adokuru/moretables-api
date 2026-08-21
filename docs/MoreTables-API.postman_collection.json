@@ -1001,6 +1001,41 @@
      }
     },
     {
+     "name": "Request Account Deletion",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/auth/account",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "auth",
+        "account"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Marks the authenticated account as pending deletion, cancels active verification challenges, and revokes all access tokens. The user record is retained."
+     }
+    },
+    {
      "name": "Profile Settings",
      "request": {
       "method": "GET",

@@ -42,6 +42,12 @@ class GuestAuthController extends Controller
             ]);
         }
 
+        if ($user?->status === UserStatus::PendingDeletion) {
+            throw ValidationException::withMessages([
+                'email' => ['This account is pending deletion and can no longer be accessed.'],
+            ]);
+        }
+
         if (! $user) {
             $user = User::query()->create([
                 'name' => $email,
