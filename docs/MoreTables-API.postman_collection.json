@@ -7269,6 +7269,7 @@
      "name": "Admin login",
      "request": {
       "method": "POST",
+      "description": "Starts admin 2FA. Failed attempts are written to audit logs as `admin.auth.login_failed` (who, IP, user agent, reason).",
       "header": [
        {
         "key": "Accept",
@@ -7302,6 +7303,7 @@
      "name": "Admin verify 2FA",
      "request": {
       "method": "POST",
+      "description": "Completes admin login. Successful sign-ins are audited as `admin.auth.login` with email, roles, IP, platform, browser, device, and timestamp.",
       "header": [
        {
         "key": "Accept",
@@ -7335,6 +7337,7 @@
      "name": "Admin logout",
      "request": {
       "method": "POST",
+      "description": "Revokes the current admin token and records `admin.auth.logout` in the audit log.",
       "header": [
        {
         "key": "Accept",

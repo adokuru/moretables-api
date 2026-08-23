@@ -25932,6 +25932,7 @@
         "/admin/auth/login": {
             "post": {
                 "operationId": "adminAuth.login",
+                "description": "Starts admin 2FA. Failed attempts are written to audit logs as `admin.auth.login_failed` (who, IP, user agent, reason).",
                 "tags": [
                     "Admin Auth"
                 ],
@@ -25982,6 +25983,7 @@
         "/admin/auth/verify-2fa": {
             "post": {
                 "operationId": "adminAuth.verify",
+                "description": "Completes admin login. Successful sign-ins are audited as `admin.auth.login` with email, roles, IP, platform, browser, device, and timestamp.",
                 "tags": [
                     "Admin Auth"
                 ],
@@ -26057,6 +26059,7 @@
         "/admin/auth/logout": {
             "post": {
                 "operationId": "adminAuth.logout",
+                "description": "Revokes the current admin token and records `admin.auth.logout` in the audit log.",
                 "tags": [
                     "Admin Auth"
                 ],
