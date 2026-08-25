@@ -9,6 +9,7 @@ use App\OnboardingJobTitle;
 use App\OnboardingLocationCount;
 use App\UserStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
 it('submits an onboarding request with all fields', function () {
@@ -67,6 +68,10 @@ it('submits an onboarding request with all fields', function () {
     );
     Notification::assertNotSentTo($suspendedAdmin, OnboardingRequestSubmittedNotification::class);
     Notification::assertNotSentTo($customer, OnboardingRequestSubmittedNotification::class);
+    Notification::assertSentOnDemand(
+        OnboardingRequestSubmittedNotification::class,
+        fn (OnboardingRequestSubmittedNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool => $notifiable->routes['mail'] === 'sales@moretables.com',
+    );
 });
 
 it('validates required fields on onboarding request submission', function () {

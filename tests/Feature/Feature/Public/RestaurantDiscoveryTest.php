@@ -177,6 +177,7 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         ->assertJsonPath('sections.top_saved.restaurants.0.discovery_metrics.list_adds_count', 1)
         ->assertJsonPath('sections.highly_rated.restaurants.0.id', $ratedChampion->id)
         ->assertJsonPath('sections.highly_rated.restaurants.0.discovery_metrics.average_rating', 4.67)
+        ->assertJsonCount(1, 'sections.highly_rated.restaurants')
         ->assertJsonPath('sections.new_on_moretables.restaurants.0.id', $newChampion->id)
         ->assertJsonPath('sections.featured.restaurants.0.id', $featuredChampion->id)
         ->assertJsonPath('sections.featured.label', 'Featured')
@@ -205,6 +206,11 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
         ->assertJsonPath('section', 'moretable_lineup')
         ->assertJsonPath('label', 'The Moretable Lineup')
         ->assertJsonPath('meta.per_page', 2);
+
+    $this->getJson('/api/v1/restaurants/discovery/highly-rated?per_page=2')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('meta.total', 1);
 });
 
 it('returns distance_km in discovery section when coordinates are provided', function () {

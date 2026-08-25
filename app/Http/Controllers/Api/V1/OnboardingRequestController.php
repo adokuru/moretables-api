@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 class OnboardingRequestController extends Controller
 {
     /**
-     * Submit an onboarding request and notify MoreTables admins by email and database notification.
+     * Submit an onboarding request and notify admins by email/database and sales by email.
      */
     public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {

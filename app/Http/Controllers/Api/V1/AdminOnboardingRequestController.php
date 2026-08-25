@@ -70,7 +70,7 @@ class AdminOnboardingRequestController extends Controller
     }
 
     /**
-     * Create an onboarding request and notify MoreTables admins by email and database notification.
+     * Create an onboarding request and notify admins by email/database and sales by email.
      */
     public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {

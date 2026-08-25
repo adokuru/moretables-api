@@ -31,6 +31,7 @@ class PublicRestaurantDiscoveryController extends Controller
      *
      * Only includes restaurants that are publicly listed: status active and an active or trialing
      * merchant subscription whose current billing period has not expired.
+     * The highly rated section excludes restaurants without reviews.
      */
     public function index(RestaurantDiscoveryRequest $request): JsonResponse
     {
@@ -59,6 +60,7 @@ class PublicRestaurantDiscoveryController extends Controller
      * merchant subscription whose current billing period has not expired.
      *
      * Supported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured, timeofday, moretable_lineup.
+     * The highly rated section excludes restaurants without reviews.
      */
     public function show(RestaurantDiscoveryRequest $request, string $section): JsonResponse
     {

@@ -49,7 +49,7 @@ class RestaurantDiscoveryService
         foreach (array_keys(self::SECTION_LABELS) as $section) {
             $rows = $this->performanceCache->flexible(
                 $this->performanceCache->versionedKey(
-                    'discovery',
+                    'discovery-v2',
                     $section,
                     hash('sha256', json_encode([$filters, $limit, $this->currentTimeOfDay()], JSON_THROW_ON_ERROR)),
                 ),
@@ -126,6 +126,7 @@ class RestaurantDiscoveryService
                 ->orderByDesc('list_adds_count')
                 ->orderByDesc('created_at'),
             'highly_rated' => $query
+                ->has('reviews')
                 ->orderByDesc('average_rating')
                 ->orderByDesc('reviews_count')
                 ->orderByDesc('created_at'),

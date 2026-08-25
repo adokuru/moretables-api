@@ -19,5 +19,7 @@ class OnboardingRequestNotificationService
             ->get();
 
         Notification::send($admins, new OnboardingRequestSubmittedNotification($onboardingRequest));
+        Notification::route('mail', 'sales@moretables.com')
+            ->notify(new OnboardingRequestSubmittedNotification($onboardingRequest));
     }
 }
