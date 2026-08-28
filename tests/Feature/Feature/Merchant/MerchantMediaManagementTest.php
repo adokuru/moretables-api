@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\RestaurantGalleryCategory;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -65,4 +66,73 @@ it('allows marketing and growth staff to upload restaurant media and promote a g
     $featureResponse->assertOk()
         ->assertJsonPath('featured_image.featured', true)
         ->assertJsonPath('featured_image.alt_text', 'Dining room');
+});
+
+it('allows marketing and growth staff to duplicate a gallery image into another category', function () {
+    Storage::fake('public');
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $marketingLead = User::factory()->create();
+    assignScopedRole($marketingLead, Role::MarketingGrowth, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($marketingLead);
+
+    $foodCategory = RestaurantGalleryCategory::create([
+        'restaurant_id' => $data['restaurant']->id,
+        'name' => 'Food',
+        'sort_order' => 1,
+    ]);
+    $drinksCategory = RestaurantGalleryCategory::create([
+        'restaurant_id' => $data['restaurant']->id,
+        'name' => 'Drinks',
+        'sort_order' => 2,
+    ]);
+
+    $uploadResponse = $this->post('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/media', [
+        'gallery_images' => [UploadedFile::fake()->image('dish.png')],
+        'gallery_category_ids' => [$foodCategory->id],
+    ], ['Accept' => 'application/json']);
+
+    $uploadResponse->assertCreated();
+    $mediaId = $uploadResponse->json('gallery_images.0.id');
+
+    $duplicateResponse = $this->postJson(
+        '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/media/'.$mediaId.'/duplicate',
+        ['gallery_category_id' => $drinksCategory->id],
+    );
+
+    $duplicateResponse->assertCreated()
+        ->assertJsonPath('media.gallery_category_id', $drinksCategory->id);
+
+    $galleryResponse = $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/gallery');
+
+    $galleryResponse->assertOk();
+    $categories = collect($galleryResponse->json('categories'));
+    expect($categories->firstWhere('name', 'Food')['photos'])->toHaveCount(1);
+    expect($categories->firstWhere('name', 'Drinks')['photos'])->toHaveCount(1);
+});
+
+it('rejects duplicating a gallery image into a category id that does not exist', function () {
+    Storage::fake('public');
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $marketingLead = User::factory()->create();
+    assignScopedRole($marketingLead, Role::MarketingGrowth, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($marketingLead);
+
+    $uploadResponse = $this->post('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/media', [
+        'gallery_images' => [UploadedFile::fake()->image('dish.png')],
+    ], ['Accept' => 'application/json']);
+
+    $mediaId = $uploadResponse->json('gallery_images.0.id');
+
+    $duplicateResponse = $this->postJson(
+        '/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/media/'.$mediaId.'/duplicate',
+        ['gallery_category_id' => 999999],
+    );
+
+    $duplicateResponse->assertUnprocessable();
 });
