@@ -4095,6 +4095,53 @@
      }
     },
     {
+     "name": "Restaurant media duplicate",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/media/{{media_id}}/duplicate",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "media",
+        "{{media_id}}",
+        "duplicate"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"gallery_category_id\": 1\n}"
+      },
+      "description": "Copies this media item's file into a new media row tagged with the given gallery_category_id — used to add an already-uploaded photo to another category without re-uploading it."
+     }
+    },
+    {
      "name": "Restaurant media reorder",
      "request": {
       "method": "POST",

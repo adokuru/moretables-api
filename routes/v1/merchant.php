@@ -180,6 +180,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         Route::post('media', [MerchantRestaurantMediaController::class, 'store']);
         Route::patch('media/{media}', [MerchantRestaurantMediaController::class, 'update']);
+        Route::post('media/{media}/duplicate', [MerchantRestaurantMediaController::class, 'duplicate']);
         Route::post('media/reorder', [MerchantRestaurantMediaController::class, 'reorder']);
         Route::post('media/{media}/feature', [MerchantRestaurantMediaController::class, 'feature']);
         Route::delete('media/{media}', [MerchantRestaurantMediaController::class, 'destroy']);
