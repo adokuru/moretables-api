@@ -14,6 +14,7 @@ class WaitlistEntryResource extends JsonResource
             'restaurant_id' => $this->restaurant_id,
             'reservation_id' => $this->reservation_id,
             'restaurant_table_id' => $this->restaurant_table_id,
+            'restaurant_table_ids' => $this->whenLoaded('assignedTables', fn () => $this->assignedTables->modelKeys()),
             'status' => $this->status?->value,
             'type' => $this->type?->value,
             'party_size' => $this->party_size,
@@ -28,6 +29,7 @@ class WaitlistEntryResource extends JsonResource
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'reservation' => ReservationResource::make($this->whenLoaded('reservation')),
             'table' => RestaurantTableResource::make($this->whenLoaded('table')),
+            'tables' => RestaurantTableResource::collection($this->whenLoaded('assignedTables')),
             'user' => UserResource::make($this->whenLoaded('user')),
             'guest_contact' => GuestContactResource::make($this->whenLoaded('guestContact')),
             'guest' => [

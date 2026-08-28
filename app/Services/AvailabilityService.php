@@ -68,8 +68,11 @@ class AvailabilityService
         $endsAt = $this->calculateEndTime($restaurant, $localStartsAt, $partySize);
         $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
 
-        $blockedTableIds = $this->overlappingReservationsQuery($restaurant, $startsAt, $endsAt, $excludingReservationId)
-            ->pluck('restaurant_table_id');
+        $blockedTableIds = $this->assignedTableIds(
+            $this->overlappingReservationsQuery($restaurant, $startsAt, $endsAt, $excludingReservationId)
+                ->with('assignedTables:id')
+                ->get(['id', 'restaurant_table_id']),
+        );
 
         $tables = $this->eligibleTablesQuery($restaurant, $partySize)
             ->when($diningAreaId, fn ($query) => $query->where('dining_area_id', $diningAreaId))
@@ -139,8 +142,136 @@ class AvailabilityService
             endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
             excludingReservationId: $excludingReservationId,
         )
-            ->where('restaurant_table_id', $table->id)
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
             ->exists();
+    }
+
+    public function isCombinationMemberAvailable(
+        Restaurant $restaurant,
+        RestaurantTable $table,
+        CarbonInterface $startsAt,
+        int $partySize,
+        ?int $excludingReservationId = null,
+    ): bool {
+        if ($table->restaurant_id !== $restaurant->id
+            || ! $table->is_active
+            || in_array($table->status, [TableStatus::Unavailable, TableStatus::Cleaning], true)) {
+            return false;
+        }
+
+        if ($table->status === TableStatus::Occupied
+            && (! $excludingReservationId || ! Reservation::query()
+                ->whereKey($excludingReservationId)
+                ->where('restaurant_id', $restaurant->id)
+                ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+                ->exists())) {
+            return false;
+        }
+
+        $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
+        $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
+        $shift = $this->restaurantShiftService->resolveShiftForSlot($restaurant, $localStartsAt);
+
+        if ($shift !== null) {
+            if (! $this->restaurantShiftService->isPartySizeReleased($shift, $localStartsAt, $partySize)
+                || $this->restaurantShiftService->filterTablesByShiftAvailability($shift, collect([$table]), $partySize)->isEmpty()
+                || ! $this->restaurantShiftService->isTableReleased($shift, $table, $localStartsAt)) {
+                return false;
+            }
+        } elseif ($this->restaurantUsesWeeklyShifts($restaurant)) {
+            return false;
+        }
+
+        $seated = Reservation::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('status', ReservationStatus::Seated->value)
+            ->when($excludingReservationId, fn (Builder $query) => $query->whereKeyNot($excludingReservationId))
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+            ->exists();
+
+        if ($seated) {
+            return false;
+        }
+
+        return ! $this->overlappingReservationsQuery(
+            restaurant: $restaurant,
+            startsAt: $startsAt,
+            endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
+            excludingReservationId: $excludingReservationId,
+        )
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+            ->exists();
+    }
+
+    public function combinationCandidateTables(
+        Restaurant $restaurant,
+        CarbonInterface $startsAt,
+        int $partySize,
+        ?int $excludingReservationId = null,
+    ): Collection {
+        return $restaurant->tables()
+            ->where('is_active', true)
+            ->whereNotIn('status', [TableStatus::Unavailable->value, TableStatus::Cleaning->value])
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn (RestaurantTable $table): bool => $this->isCombinationMemberAvailable(
+                $restaurant,
+                $table,
+                $startsAt,
+                $partySize,
+                $excludingReservationId,
+            ))
+            ->values();
+    }
+
+    public function explainCombinationMemberUnavailable(
+        Restaurant $restaurant,
+        RestaurantTable $table,
+        CarbonInterface $startsAt,
+        int $partySize,
+        ?int $excludingReservationId = null,
+    ): string|Reservation {
+        if (! $table->is_active || $table->status === TableStatus::Unavailable) {
+            return 'This table has been marked unavailable by staff.';
+        }
+
+        if ($table->status === TableStatus::Cleaning) {
+            return Reservation::query()
+                ->with(['user', 'guestContact'])
+                ->where('status', ReservationStatus::Completed)
+                ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+                ->orderByDesc('completed_at')
+                ->first()
+                ?? 'This table is still being cleaned.';
+        }
+
+        if ($table->status === TableStatus::Occupied) {
+            return 'This table is currently occupied.';
+        }
+
+        $seated = Reservation::query()
+            ->with(['user', 'guestContact'])
+            ->where('restaurant_id', $restaurant->id)
+            ->where('status', ReservationStatus::Seated->value)
+            ->when($excludingReservationId, fn (Builder $query) => $query->whereKeyNot($excludingReservationId))
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+            ->first();
+
+        if ($seated !== null) {
+            return $seated;
+        }
+
+        $conflict = $this->overlappingReservationsQuery(
+            restaurant: $restaurant,
+            startsAt: $startsAt,
+            endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
+            excludingReservationId: $excludingReservationId,
+        )
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
+            ->with(['user', 'guestContact'])
+            ->first();
+
+        return $conflict ?? 'This table is not available during the selected shift.';
     }
 
     /**
@@ -185,7 +316,7 @@ class AvailabilityService
             // recently completed reservation on this table is the one.
             $lastCompleted = Reservation::query()
                 ->with(['user', 'guestContact'])
-                ->where('restaurant_table_id', $table->id)
+                ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
                 ->where('status', ReservationStatus::Completed)
                 ->orderByDesc('completed_at')
                 ->first();
@@ -228,7 +359,7 @@ class AvailabilityService
             endsAt: $this->calculateEndTime($restaurant, $startsAt, $partySize),
             excludingReservationId: $excludingReservationId,
         )
-            ->where('restaurant_table_id', $table->id)
+            ->where(fn (Builder $query) => $this->whereReservationUsesTable($query, $table->id))
             ->with(['user', 'guestContact'])
             ->first();
 
@@ -260,13 +391,14 @@ class AvailabilityService
         $rangeEndsAt = collect($windows)->max(fn (array $window): Carbon => $this->windowCloses($window))->copy()->utc();
 
         $reservations = $this->overlappingReservationsQuery($restaurant, $rangeStartsAt, $rangeEndsAt)
-            ->get(['restaurant_table_id', 'starts_at', 'ends_at', 'party_size']);
+            ->with('assignedTables:id')
+            ->get(['id', 'restaurant_table_id', 'starts_at', 'ends_at', 'party_size']);
 
         return $this->generateSlots(
             restaurant: $restaurant,
             windows: $windows,
             tables: $tables,
-            reservationsByTable: $reservations->groupBy('restaurant_table_id'),
+            reservationsByTable: $this->groupReservationsByAssignedTable($reservations),
             allReservations: $reservations,
             partySize: $partySize,
             requesterTimezone: $requesterTimezone,
@@ -352,7 +484,8 @@ class AvailabilityService
             $rangeStartsAt,
             $rangeEndsAt,
         )
-            ->get(['restaurant_id', 'restaurant_table_id', 'starts_at', 'ends_at', 'party_size'])
+            ->with('assignedTables:id')
+            ->get(['id', 'restaurant_id', 'restaurant_table_id', 'starts_at', 'ends_at', 'party_size'])
             ->groupBy('restaurant_id');
 
         foreach ($restaurants as $restaurant) {
@@ -369,7 +502,7 @@ class AvailabilityService
                 restaurant: $restaurant,
                 windows: $windows,
                 tables: $tables,
-                reservationsByTable: $restaurantReservations->groupBy('restaurant_table_id'),
+                reservationsByTable: $this->groupReservationsByAssignedTable($restaurantReservations),
                 allReservations: $restaurantReservations,
                 partySize: $partySize,
                 requesterTimezone: $requesterTimezone,
@@ -624,7 +757,9 @@ class AvailabilityService
     ): Builder {
         return Reservation::query()
             ->whereIn('restaurant_id', $restaurantIds)
-            ->whereNotNull('restaurant_table_id')
+            ->where(fn (Builder $query) => $query
+                ->whereNotNull('restaurant_table_id')
+                ->orWhereHas('assignedTables'))
             ->whereIn('status', [
                 ReservationStatus::Booked->value,
                 ReservationStatus::Confirmed->value,
@@ -636,6 +771,54 @@ class AvailabilityService
             ])
             ->where('starts_at', '<', $endsAt)
             ->where('ends_at', '>', $startsAt);
+    }
+
+    private function whereReservationUsesTable(Builder $query, int $tableId): void
+    {
+        $query->where('restaurant_table_id', $tableId)
+            ->orWhereHas('assignedTables', fn (Builder $tables) => $tables->whereKey($tableId));
+    }
+
+    /**
+     * @param  SupportCollection<int, Reservation>  $reservations
+     * @return SupportCollection<int, int>
+     */
+    private function assignedTableIds(SupportCollection $reservations): SupportCollection
+    {
+        return $reservations
+            ->flatMap(function (Reservation $reservation): array {
+                $ids = $reservation->assignedTables->pluck('id')->all();
+
+                return $ids !== [] ? $ids : array_filter([$reservation->restaurant_table_id]);
+            })
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * @param  SupportCollection<int, Reservation>  $reservations
+     * @return SupportCollection<int, SupportCollection<int, Reservation>>
+     */
+    private function groupReservationsByAssignedTable(SupportCollection $reservations): SupportCollection
+    {
+        $grouped = collect();
+
+        foreach ($reservations as $reservation) {
+            $tableIds = $reservation->assignedTables->pluck('id');
+            if ($tableIds->isEmpty() && $reservation->restaurant_table_id !== null) {
+                $tableIds = collect([$reservation->restaurant_table_id]);
+            }
+
+            foreach ($tableIds as $tableId) {
+                $grouped->put(
+                    (int) $tableId,
+                    $grouped->get((int) $tableId, collect())->push($reservation),
+                );
+            }
+        }
+
+        return $grouped;
     }
 
     /**

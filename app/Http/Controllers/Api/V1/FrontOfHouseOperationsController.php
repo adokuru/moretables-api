@@ -14,6 +14,7 @@ use Carbon\CarbonPeriod;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 #[Group('Front of House / Operations', weight: 35)]
 class FrontOfHouseOperationsController extends Controller
@@ -100,7 +101,11 @@ class FrontOfHouseOperationsController extends Controller
             'starts_at' => ['required', 'date'],
             'party_size' => ['required', 'integer', 'min:1'],
             'dining_area_id' => ['nullable', 'integer'],
-            'excluding_reservation_id' => ['nullable', 'integer'],
+            'excluding_reservation_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('reservations', 'id')->where('restaurant_id', $restaurant->id),
+            ],
         ]);
 
         $tables = $this->availabilityService->availableTables(
@@ -111,7 +116,39 @@ class FrontOfHouseOperationsController extends Controller
             isset($validated['dining_area_id']) ? (int) $validated['dining_area_id'] : null,
         );
 
-        return response()->json(['data' => RestaurantTableResource::collection($tables)]);
+        $combinationCandidates = $this->availabilityService->combinationCandidateTables(
+            $restaurant,
+            Carbon::parse($validated['starts_at']),
+            (int) $validated['party_size'],
+            isset($validated['excluding_reservation_id']) ? (int) $validated['excluding_reservation_id'] : null,
+        );
+        $candidateIds = $combinationCandidates->modelKeys();
+        $candidateTables = $combinationCandidates->keyBy('id');
+        $availableCombinations = $restaurant->tableCombinations()
+            ->where('min_capacity', '<=', (int) $validated['party_size'])
+            ->where('max_capacity', '>=', (int) $validated['party_size'])
+            ->orderBy('id')
+            ->get()
+            ->filter(fn ($combination): bool => collect($combination->table_ids)->every(
+                fn ($tableId): bool => in_array((int) $tableId, $candidateIds, true),
+            ))
+            ->map(fn ($combination): array => [
+                'id' => $combination->id,
+                'dining_area_id' => $combination->dining_area_id,
+                'table_ids' => $combination->table_ids,
+                'min_capacity' => $combination->min_capacity,
+                'max_capacity' => $combination->max_capacity,
+                'tables' => RestaurantTableResource::collection(
+                    collect($combination->table_ids)->map(fn ($tableId) => $candidateTables->get((int) $tableId)),
+                ),
+            ])
+            ->values();
+
+        return response()->json([
+            'data' => RestaurantTableResource::collection($tables),
+            'combination_candidates' => RestaurantTableResource::collection($combinationCandidates),
+            'available_combinations' => $availableCombinations,
+        ]);
     }
 
     /**
@@ -130,7 +167,7 @@ class FrontOfHouseOperationsController extends Controller
             : $this->dateRanges->forDate($restaurant, $validated['date']);
 
         $reservations = $restaurant->reservations()
-            ->with(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->whereIn('status', [ReservationStatus::Cancelled, ReservationStatus::NoShow])
             ->whereBetween('starts_at', [$range['start'], $range['end']])
             ->orderBy('starts_at')

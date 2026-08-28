@@ -287,7 +287,7 @@ class FrontOfHouseController extends Controller
         }
 
         $query = $restaurant->reservations()
-            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->whereIn('status', $statuses)
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
@@ -318,7 +318,7 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
-            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->whereIn('status', [ReservationStatus::Arrived, ReservationStatus::PartiallyArrived])
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
@@ -350,7 +350,7 @@ class FrontOfHouseController extends Controller
 
         $query = $restaurant->waitlistEntries()
             ->seating()
-            ->with(['reservation.reservationGuests', 'table', 'user', 'guestContact'])
+            ->with(['reservation.reservationGuests', 'table', 'assignedTables', 'user', 'guestContact'])
             ->whereIn('status', [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived, WaitlistStatus::Accepted])
             ->orderBy('created_at');
         $this->scopeWaitlist($query, $restaurant, $date, $windowStart, $windowEnd);
@@ -408,7 +408,7 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
-            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->where('status', ReservationStatus::Seated)
             ->orderBy('seated_at');
         $this->scopeSeatedReservations($query, $restaurant, $date, $windowStart, $windowEnd);
@@ -438,7 +438,7 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
-            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->where('status', ReservationStatus::Completed)
             ->orderBy('completed_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);
@@ -468,7 +468,7 @@ class FrontOfHouseController extends Controller
         ['windowStart' => $windowStart, 'windowEnd' => $windowEnd, 'availabilityPeriod' => $availabilityPeriod] = $this->resolveWindow($request, $restaurant, $date);
 
         $query = $restaurant->reservations()
-            ->with(['table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->where('status', ReservationStatus::NoShow)
             ->orderBy('starts_at');
         $this->scopeReservations($query, $restaurant, $date, $windowStart, $windowEnd);

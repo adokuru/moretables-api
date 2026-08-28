@@ -27,12 +27,14 @@ class FrontOfHouseTimelineController extends Controller
         $dayEnd = Carbon::parse($date, $timezone)->endOfDay()->utc();
 
         $activeAreaIds = $restaurant->reservations()
-            ->join('restaurant_tables', 'reservations.restaurant_table_id', '=', 'restaurant_tables.id')
+            ->with(['assignedTables:id,dining_area_id', 'table:id,dining_area_id'])
             ->whereBetween('reservations.starts_at', [$dayStart, $dayEnd])
-            ->whereNotNull('reservations.restaurant_table_id')
             ->whereNotIn('reservations.status', ['cancelled', 'no_show'])
-            ->whereNotNull('restaurant_tables.dining_area_id')
-            ->pluck('restaurant_tables.dining_area_id')
+            ->get()
+            ->flatMap(fn ($reservation) => $reservation->assignedTables->pluck('dining_area_id')->whenEmpty(
+                fn ($areas) => $reservation->table?->dining_area_id ? $areas->push($reservation->table->dining_area_id) : $areas,
+            ))
+            ->filter()
             ->unique();
 
         $floors = $restaurant->diningAreas()
@@ -72,14 +74,31 @@ class FrontOfHouseTimelineController extends Controller
         $dayStart = Carbon::parse($date, $timezone)->startOfDay()->utc();
         $dayEnd = Carbon::parse($date, $timezone)->endOfDay()->utc();
 
-        $reservationsByTable = $restaurant->reservations()
-            ->with('guestContact')
+        $reservations = $restaurant->reservations()
+            ->with(['assignedTables:id', 'guestContact'])
             ->whereBetween('starts_at', [$dayStart, $dayEnd])
-            ->whereIn('restaurant_table_id', $tableIds)
+            ->where(function ($query) use ($tableIds) {
+                $query->whereIn('restaurant_table_id', $tableIds)
+                    ->orWhereHas('assignedTables', fn ($tables) => $tables->whereIn('restaurant_tables.id', $tableIds));
+            })
             ->whereNotIn('status', ['cancelled', 'no_show'])
             ->orderBy('starts_at')
-            ->get()
-            ->groupBy('restaurant_table_id');
+            ->get();
+
+        $reservationsByTable = collect();
+        foreach ($reservations as $reservation) {
+            $assignedTableIds = $reservation->assignedTables->pluck('id');
+            if ($assignedTableIds->isEmpty() && $reservation->restaurant_table_id !== null) {
+                $assignedTableIds = collect([$reservation->restaurant_table_id]);
+            }
+
+            foreach ($assignedTableIds as $tableId) {
+                $reservationsByTable->put(
+                    (int) $tableId,
+                    $reservationsByTable->get((int) $tableId, collect())->push($reservation),
+                );
+            }
+        }
 
         $data = $tables->map(function ($table) use ($reservationsByTable, $timezone) {
             $reservations = ($reservationsByTable[$table->id] ?? collect())->map(function ($res) use ($timezone) {

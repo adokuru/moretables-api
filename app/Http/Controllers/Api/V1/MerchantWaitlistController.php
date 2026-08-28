@@ -12,7 +12,6 @@ use App\Http\Resources\ReservationResource;
 use App\Http\Resources\WaitlistEntryResource;
 use App\Models\GuestContact;
 use App\Models\Restaurant;
-use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Services\AvailabilityAlertService;
@@ -34,7 +33,7 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $entries = $restaurant->waitlistEntries()
-            ->with(['restaurant', 'reservation.reservationGuests', 'table', 'user', 'guestContact'])
+            ->with(['restaurant', 'reservation.reservationGuests', 'table', 'assignedTables', 'user', 'guestContact'])
             ->latest('preferred_starts_at')
             ->paginate(20);
 
@@ -88,7 +87,7 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'table', 'user', 'guestContact']));
+        return WaitlistEntryResource::make($waitlistEntry->load(['restaurant', 'reservation', 'table', 'assignedTables', 'user', 'guestContact']));
     }
 
     public function update(UpdateMerchantWaitlistEntryRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
@@ -105,7 +104,7 @@ class MerchantWaitlistController extends Controller
         }
 
         $waitlistEntry->update($validated);
-        $waitlistEntry->refresh()->load(['restaurant', 'reservation', 'table', 'user', 'guestContact']);
+        $waitlistEntry->refresh()->load(['restaurant', 'reservation', 'table', 'assignedTables', 'user', 'guestContact']);
         event(new WaitlistEntryUpdated($waitlistEntry, 'updated'));
 
         return response()->json([
@@ -164,11 +163,12 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        $table = RestaurantTable::query()
-            ->where('restaurant_id', $restaurant->id)
-            ->findOrFail($request->integer('restaurant_table_id'));
-
-        $reservation = $this->reservationService->assignWaitlistEntryToTable($waitlistEntry, $table, $request->user());
+        $tables = $this->reservationService->resolveTableSelection(
+            $restaurant,
+            $request->validated(),
+            $waitlistEntry->party_size,
+        );
+        $reservation = $this->reservationService->assignWaitlistEntryToTables($waitlistEntry, $tables, $request->user());
 
         return response()->json([
             'message' => 'Waitlist entry assigned to a table successfully.',
@@ -187,11 +187,12 @@ class MerchantWaitlistController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
         abort_unless($waitlistEntry->restaurant_id === $restaurant->id, 404);
 
-        $table = RestaurantTable::query()
-            ->where('restaurant_id', $restaurant->id)
-            ->findOrFail($request->integer('restaurant_table_id'));
-
-        $entry = $this->reservationService->preassignWaitlistEntryToTable($waitlistEntry, $table, $request->user());
+        $tables = $this->reservationService->resolveTableSelection(
+            $restaurant,
+            $request->validated(),
+            $waitlistEntry->party_size,
+        );
+        $entry = $this->reservationService->preassignWaitlistEntryToTables($waitlistEntry, $tables, $request->user());
 
         return response()->json([
             'message' => 'Table pre-assigned without seating the waitlist party.',

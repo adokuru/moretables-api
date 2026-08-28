@@ -150,8 +150,11 @@ class FrontOfHouseFloorPlanController extends Controller
             : $dateRange['end'];
 
         $reservationQuery = $restaurant->reservations()
-            ->with(['user', 'guestContact'])
-            ->whereIn('restaurant_table_id', $tableIds)
+            ->with(['assignedTables:id', 'user', 'guestContact'])
+            ->where(function ($query) use ($tableIds) {
+                $query->whereIn('restaurant_table_id', $tableIds)
+                    ->orWhereHas('assignedTables', fn ($tables) => $tables->whereIn('restaurant_tables.id', $tableIds));
+            })
             ->where(function ($query) use ($dateRange, $serviceDayRange, $seatedRangeEnd) {
                 // A party that is still seated owns the table even when its
                 // booking began earlier in this service day. Do not leak a
@@ -179,12 +182,22 @@ class FrontOfHouseFloorPlanController extends Controller
 
         // A table may have several bookings in the service window. Always let the
         // currently seated party win over an upcoming reservation on that table.
-        $reservationsByTable = $reservationQuery
-            ->get()
-            ->groupBy('restaurant_table_id')
-            ->map(fn ($reservations) => $reservations->first(
+        $reservationsByTable = collect();
+        foreach ($reservationQuery->get() as $reservation) {
+            $assignedTableIds = $reservation->assignedTables->pluck('id');
+            if ($assignedTableIds->isEmpty() && $reservation->restaurant_table_id !== null) {
+                $assignedTableIds = collect([$reservation->restaurant_table_id]);
+            }
+
+            foreach ($assignedTableIds as $tableId) {
+                $reservationsByTable->push(['table_id' => (int) $tableId, 'reservation' => $reservation]);
+            }
+        }
+        $reservationsByTable = $reservationsByTable
+            ->groupBy('table_id')
+            ->map(fn ($rows) => $rows->pluck('reservation')->first(
                 fn ($reservation): bool => $this->isSeatedReservation($reservation),
-            ) ?? $reservations->sortBy('starts_at')->first());
+            ) ?? $rows->pluck('reservation')->sortBy('starts_at')->first());
 
         // Build enriched table list
         $enrichedTables = $tables->map(function ($table) use ($reservationsByTable) {

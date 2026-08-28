@@ -9,11 +9,29 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class WaitlistEntry extends Model
 {
     /** @use HasFactory<WaitlistEntryFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::created(function (WaitlistEntry $entry): void {
+            if ($entry->restaurant_table_id !== null) {
+                $entry->assignedTables()->syncWithoutDetaching([$entry->restaurant_table_id]);
+            }
+        });
+
+        static::updated(function (WaitlistEntry $entry): void {
+            if ($entry->wasChanged('restaurant_table_id')) {
+                $entry->assignedTables()->sync(
+                    $entry->restaurant_table_id === null ? [] : [$entry->restaurant_table_id],
+                );
+            }
+        });
+    }
 
     protected $fillable = [
         'restaurant_id',
@@ -77,6 +95,11 @@ class WaitlistEntry extends Model
     public function table(): BelongsTo
     {
         return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
+    }
+
+    public function assignedTables(): BelongsToMany
+    {
+        return $this->belongsToMany(RestaurantTable::class, 'waitlist_table_assignments');
     }
 
     /**

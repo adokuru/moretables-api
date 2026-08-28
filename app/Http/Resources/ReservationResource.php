@@ -37,6 +37,7 @@ class ReservationResource extends JsonResource
             'canceled_at' => optional($this->canceled_at)?->toIso8601String(),
             'restaurant' => RestaurantListResource::make($this->whenLoaded('restaurant')),
             'table' => RestaurantTableResource::make($this->whenLoaded('table')),
+            'tables' => RestaurantTableResource::collection($this->whenLoaded('assignedTables')),
             'user' => UserResource::make($this->whenLoaded('user')),
             'guest_contact' => $this->whenLoaded('guestContact', fn () => [
                 'id' => $this->guestContact?->id,

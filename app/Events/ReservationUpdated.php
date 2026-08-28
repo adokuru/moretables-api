@@ -44,6 +44,8 @@ class ReservationUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit, 
      */
     public function broadcastWith(): array
     {
+        $this->reservation->loadMissing('assignedTables:id');
+
         return [
             'id' => $this->reservation->id,
             'reference' => $this->reservation->reservation_reference,
@@ -52,6 +54,7 @@ class ReservationUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit, 
             'action' => $this->action,
             'party_size' => $this->reservation->party_size,
             'restaurant_table_id' => $this->reservation->restaurant_table_id,
+            'restaurant_table_ids' => $this->reservation->assignedTables->modelKeys(),
             'starts_at' => $this->reservation->starts_at?->toIso8601String(),
             'ends_at' => $this->reservation->ends_at?->toIso8601String(),
             'actor_name' => $this->actor?->fullName(),

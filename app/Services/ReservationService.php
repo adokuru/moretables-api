@@ -13,6 +13,7 @@ use App\Models\ReservationGuest;
 use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\Role;
+use App\Models\TableCombination;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\GuestWaitlistOfferExpiredMailNotification;
@@ -35,6 +36,7 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -463,13 +465,20 @@ class ReservationService
 
     public function cancelReservation(Reservation $reservation, ?User $actor, string $action = 'cancelled'): Reservation
     {
+        $wasSeated = $reservation->status === ReservationStatus::Seated;
+        $tables = $this->reservationTables($reservation);
+
         $reservation->forceFill([
             'status' => ReservationStatus::Cancelled,
             'canceled_at' => now(),
             'canceled_by_user_id' => $actor?->id,
         ])->save();
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        if ($wasSeated) {
+            $this->setTableStatuses($tables, TableStatus::Available);
+        }
+
+        $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
 
         $this->auditLogService->log(
             action: 'reservation.cancelled',
@@ -493,74 +502,86 @@ class ReservationService
         return $reservation;
     }
 
+    /**
+     * @param  array<string, mixed>  $selection
+     * @return Collection<int, RestaurantTable>
+     */
+    public function resolveTableSelection(Restaurant $restaurant, array $selection, int $partySize): Collection
+    {
+        if (isset($selection['table_combination_id'])) {
+            $combination = TableCombination::query()
+                ->where('restaurant_id', $restaurant->id)
+                ->findOrFail((int) $selection['table_combination_id']);
+
+            if ($partySize < $combination->min_capacity || $partySize > $combination->max_capacity) {
+                throw ValidationException::withMessages([
+                    'table_combination_id' => ["This combination seats {$combination->min_capacity}-{$combination->max_capacity} guests and does not fit a party of {$partySize}."],
+                ]);
+            }
+
+            $tableIds = TableCombination::normalizeTableIds($combination->table_ids);
+        } elseif (isset($selection['restaurant_table_ids'])) {
+            $tableIds = TableCombination::normalizeTableIds($selection['restaurant_table_ids']);
+        } else {
+            $tableIds = [(int) $selection['restaurant_table_id']];
+        }
+
+        $tablesById = $restaurant->tables()->whereIn('id', $tableIds)->get()->keyBy('id');
+        if ($tablesById->count() !== count($tableIds)) {
+            throw ValidationException::withMessages([
+                'restaurant_table_ids' => ['Every selected table must belong to this restaurant.'],
+            ]);
+        }
+
+        $tables = new Collection(array_map(fn (int $id): RestaurantTable => $tablesById->get($id), $tableIds));
+
+        if (isset($selection['restaurant_table_ids']) && $tables->sum('max_capacity') < $partySize) {
+            throw ValidationException::withMessages([
+                'restaurant_table_ids' => ["The selected tables seat {$tables->sum('max_capacity')} guests and do not fit a party of {$partySize}."],
+            ]);
+        }
+
+        return $tables;
+    }
+
     public function assignTable(Reservation $reservation, RestaurantTable $table, User $actor): Reservation
     {
-        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $table, $actor): Reservation {
-            return DB::transaction(function () use ($reservation, $table, $actor): Reservation {
+        return $this->assignTables($reservation, new Collection([$table]), $actor);
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
+    public function assignTables(Reservation $reservation, Collection $tables, User $actor): Reservation
+    {
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $tables, $actor): Reservation {
+            return DB::transaction(function () use ($reservation, $tables, $actor): Reservation {
                 $reservation = Reservation::query()
-                    ->with(['restaurant', 'table'])
+                    ->with(['restaurant', 'table', 'assignedTables'])
                     ->lockForUpdate()
                     ->findOrFail($reservation->id);
-                $previousTable = $reservation->table;
+                $previousTables = $this->reservationTables($reservation);
 
-                if ($previousTable?->id === $table->id) {
+                if ($previousTables->pluck('id')->sort()->values()->all() === $tables->pluck('id')->sort()->values()->all()) {
                     return $reservation->load(['user', 'guestContact', 'reservationGuests']);
                 }
 
-                // Only an already-Seated reservation being physically moved to a
-                // new table right now needs an availability/occupancy check here.
-                // A not-yet-seated reservation is a preassignment — the table is
-                // just tentatively attached, no conflict check at this point. The
-                // real "can't double-seat a table" guard runs later, at actual
-                // seat time (seatReservation()), which already produces a
-                // specific error naming the blocking reservation.
-                if ($reservation->status === ReservationStatus::Seated) {
-                    $seatedOnTable = Reservation::query()
-                        ->with(['user', 'guestContact'])
-                        ->where('restaurant_table_id', $table->id)
-                        ->where('status', ReservationStatus::Seated)
-                        ->whereKeyNot($reservation->id)
-                        ->first();
-
-                    if ($seatedOnTable !== null) {
-                        throw ValidationException::withMessages([
-                            'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $seatedOnTable)],
-                        ]);
-                    }
-
-                    if (! $this->availabilityService->isTableAvailable(
-                        restaurant: $reservation->restaurant,
-                        table: $table,
-                        startsAt: now(),
-                        partySize: $reservation->party_size,
-                        excludingReservationId: $reservation->id,
-                    )) {
-                        $reason = $this->availabilityService->explainUnavailable(
-                            restaurant: $reservation->restaurant,
-                            table: $table,
-                            startsAt: now(),
-                            partySize: $reservation->party_size,
-                            excludingReservationId: $reservation->id,
-                        );
-
-                        throw ValidationException::withMessages([
-                            'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $table, $reason)],
-                        ]);
-                    }
+                if ($reservation->status === ReservationStatus::Seated || $tables->count() > 1) {
+                    $this->ensureTablesAvailable(
+                        reservation: $reservation,
+                        tables: $tables,
+                        startsAt: $reservation->status === ReservationStatus::Seated ? now() : $reservation->starts_at,
+                        combination: $tables->count() > 1,
+                    );
                 }
 
-                $reservation->forceFill(['restaurant_table_id' => $table->id])->save();
+                $reservation->forceFill(['restaurant_table_id' => $tables->first()->id])->save();
+                $reservation->assignedTables()->sync($tables->modelKeys());
 
                 if ($reservation->status === ReservationStatus::Seated) {
-                    if ($previousTable) {
-                        $previousTable->update(['status' => TableStatus::Available]);
-                        event(new TableStatusUpdated($previousTable, 'available'));
-                    }
-                    $table->update(['status' => TableStatus::Occupied]);
-                    event(new TableStatusUpdated($table, 'occupied'));
+                    $this->setTableStatuses($previousTables->whereNotIn('id', $tables->modelKeys()), TableStatus::Available);
+                    $this->setTableStatuses($tables, TableStatus::Occupied);
                 }
 
-                $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
 
                 $this->auditLogService->log(
                     action: 'reservation.table_assigned',
@@ -568,7 +589,7 @@ class ReservationService
                     auditable: $reservation,
                     restaurant: $reservation->restaurant,
                     organization: $reservation->restaurant->organization,
-                    description: 'Reservation table assigned',
+                    description: 'Reservation tables assigned',
                 );
 
                 event(new ReservationUpdated($reservation, 'table_assigned', $actor));
@@ -581,20 +602,24 @@ class ReservationService
     public function seatReservation(
         Reservation $reservation,
         User $actor,
-        ?RestaurantTable $requestedTable = null,
+        RestaurantTable|Collection|null $requestedTables = null,
         ?ReservationServiceStage $serviceStage = null,
     ): Reservation {
-        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $actor, $requestedTable, $serviceStage): Reservation {
-            return DB::transaction(function () use ($reservation, $actor, $requestedTable, $serviceStage): Reservation {
+        return $this->withRestaurantReservationLock($reservation->restaurant, function () use ($reservation, $actor, $requestedTables, $serviceStage): Reservation {
+            return DB::transaction(function () use ($reservation, $actor, $requestedTables, $serviceStage): Reservation {
                 $reservation = Reservation::query()
-                    ->with(['restaurant', 'table'])
+                    ->with(['restaurant', 'table', 'assignedTables'])
                     ->lockForUpdate()
                     ->findOrFail($reservation->id);
 
-                if ($requestedTable) {
-                    abort_unless($requestedTable->restaurant_id === $reservation->restaurant_id, 404);
-                    $reservation->forceFill(['restaurant_table_id' => $requestedTable->id]);
-                    $reservation->setRelation('table', $requestedTable);
+                if ($requestedTables !== null) {
+                    $tables = $requestedTables instanceof RestaurantTable
+                        ? new Collection([$requestedTables])
+                        : $requestedTables;
+                    $reservation->forceFill(['restaurant_table_id' => $tables->first()->id])->save();
+                    $reservation->assignedTables()->sync($tables->modelKeys());
+                    $reservation->setRelation('assignedTables', $tables);
+                    $reservation->setRelation('table', $tables->first());
                 }
 
                 if (! in_array($reservation->status, [
@@ -610,46 +635,15 @@ class ReservationService
                     ]);
                 }
 
-                if (! $reservation->restaurant_table_id || ! $reservation->table) {
+                $tables = $this->reservationTables($reservation);
+
+                if ($tables->isEmpty()) {
                     throw ValidationException::withMessages([
                         'restaurant_table_id' => ['Assign an available table before seating this reservation.'],
                     ]);
                 }
 
-                $seatedOnTable = Reservation::query()
-                    ->with(['user', 'guestContact', 'restaurant'])
-                    ->where('restaurant_table_id', $reservation->restaurant_table_id)
-                    ->where('status', ReservationStatus::Seated)
-                    ->whereKeyNot($reservation->id)
-                    ->first();
-
-                if ($seatedOnTable !== null) {
-                    throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $reservation->table, $seatedOnTable)],
-                    ]);
-                }
-
-                $tableIsAvailable = $this->availabilityService->isTableAvailable(
-                    restaurant: $reservation->restaurant,
-                    table: $reservation->table,
-                    startsAt: $reservation->starts_at,
-                    partySize: $reservation->party_size,
-                    excludingReservationId: $reservation->id,
-                );
-
-                if (! $tableIsAvailable) {
-                    $reason = $this->availabilityService->explainUnavailable(
-                        restaurant: $reservation->restaurant,
-                        table: $reservation->table,
-                        startsAt: $reservation->starts_at,
-                        partySize: $reservation->party_size,
-                        excludingReservationId: $reservation->id,
-                    );
-
-                    throw ValidationException::withMessages([
-                        'restaurant_table_id' => [$this->tableUnavailableMessage($reservation->restaurant, $reservation->table, $reason)],
-                    ]);
-                }
+                $this->ensureTablesAvailable($reservation, $tables, $reservation->starts_at, $tables->count() > 1);
 
                 $reservation->forceFill([
                     'status' => ReservationStatus::Seated,
@@ -657,10 +651,9 @@ class ReservationService
                     'seated_at' => now(),
                 ])->save();
 
-                $reservation->table->update(['status' => TableStatus::Occupied]);
-                event(new TableStatusUpdated($reservation->table, 'occupied'));
+                $this->setTableStatuses($tables, TableStatus::Occupied);
 
-                $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+                $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
                 $this->auditLogService->log(
                     action: 'reservation.seated',
                     actor: $actor,
@@ -788,12 +781,9 @@ class ReservationService
             'completed_at' => now(),
         ])->save();
 
-        if ($reservation->table) {
-            $reservation->table->update(['status' => TableStatus::Cleaning]);
-            event(new TableStatusUpdated($reservation->table, 'cleaning'));
-        }
+        $this->setTableStatuses($this->reservationTables($reservation), TableStatus::Cleaning);
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, 'completed', $actor));
 
         if (! $reservation->restaurant->guestSurveys()->where('status', 'published')->exists()) {
@@ -805,6 +795,31 @@ class ReservationService
         $this->maybeAwardReservationPoints($reservation);
 
         $this->dispatchAvailabilityAlertCheck($reservation);
+
+        return $reservation;
+    }
+
+    public function clearReservationTables(Reservation $reservation, User $actor): Reservation
+    {
+        if ($reservation->status !== ReservationStatus::Completed) {
+            throw ValidationException::withMessages([
+                'status' => ['Only a completed reservation can have its tables cleared.'],
+            ]);
+        }
+
+        $this->setTableStatuses($this->reservationTables($reservation), TableStatus::Available);
+        $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
+
+        $this->auditLogService->log(
+            action: 'reservation.tables_cleared',
+            actor: $actor,
+            auditable: $reservation,
+            restaurant: $reservation->restaurant,
+            organization: $reservation->restaurant->organization,
+            description: 'Reservation tables cleared',
+        );
+
+        event(new ReservationUpdated($reservation, 'tables_cleared', $actor));
 
         return $reservation;
     }
@@ -944,16 +959,18 @@ class ReservationService
             }
         }
 
+        $wasSeated = $reservation->status === ReservationStatus::Seated;
+        $tables = $this->reservationTables($reservation);
+
         $reservation->forceFill([
             'status' => ReservationStatus::NoShow,
         ])->save();
 
-        if ($reservation->table) {
-            $reservation->table->update(['status' => TableStatus::Available]);
-            event(new TableStatusUpdated($reservation->table, 'available'));
+        if ($wasSeated) {
+            $this->setTableStatuses($tables, TableStatus::Available);
         }
 
-        $reservation->refresh()->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']);
+        $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show', $actor));
 
         ChargeNoShowFeeJob::dispatch($reservation->id);
@@ -1221,8 +1238,14 @@ class ReservationService
 
     public function assignWaitlistEntryToTable(WaitlistEntry $entry, RestaurantTable $table, User $actor): Reservation
     {
-        return DB::transaction(function () use ($entry, $table, $actor): Reservation {
-            $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+        return $this->assignWaitlistEntryToTables($entry, new Collection([$table]), $actor);
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
+    public function assignWaitlistEntryToTables(WaitlistEntry $entry, Collection $tables, User $actor): Reservation
+    {
+        return DB::transaction(function () use ($entry, $tables, $actor): Reservation {
+            $entry = WaitlistEntry::query()->with('assignedTables')->lockForUpdate()->findOrFail($entry->id);
 
             if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived], true)) {
                 throw ValidationException::withMessages([
@@ -1238,7 +1261,8 @@ class ReservationService
                     'starts_at' => $entry->preferred_starts_at,
                     'party_size' => $entry->party_size,
                     'notes' => $entry->notes,
-                    'restaurant_table_id' => $table->id,
+                    'restaurant_table_id' => $tables->first()->id,
+                    'restaurant_table_ids' => $tables->modelKeys(),
                 ],
                 user: $entry->user,
                 guestContact: $entry->guestContact,
@@ -1266,9 +1290,15 @@ class ReservationService
      */
     public function preassignWaitlistEntryToTable(WaitlistEntry $entry, RestaurantTable $table, User $actor): WaitlistEntry
     {
-        return $this->withRestaurantReservationLock($entry->restaurant, function () use ($entry, $table, $actor): WaitlistEntry {
-            return DB::transaction(function () use ($entry, $table, $actor): WaitlistEntry {
-                $entry = WaitlistEntry::query()->lockForUpdate()->findOrFail($entry->id);
+        return $this->preassignWaitlistEntryToTables($entry, new Collection([$table]), $actor);
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
+    public function preassignWaitlistEntryToTables(WaitlistEntry $entry, Collection $tables, User $actor): WaitlistEntry
+    {
+        return $this->withRestaurantReservationLock($entry->restaurant, function () use ($entry, $tables, $actor): WaitlistEntry {
+            return DB::transaction(function () use ($entry, $tables, $actor): WaitlistEntry {
+                $entry = WaitlistEntry::query()->with('assignedTables')->lockForUpdate()->findOrFail($entry->id);
 
                 if (! in_array($entry->status, [WaitlistStatus::Waiting, WaitlistStatus::Notified, WaitlistStatus::Arrived, WaitlistStatus::PartiallyArrived], true)) {
                     throw ValidationException::withMessages([
@@ -1276,14 +1306,31 @@ class ReservationService
                     ]);
                 }
 
-                // No availability/occupancy check here on purpose — this is a
-                // tentative preassignment, not seating, so a table already in
-                // use by another party is still a valid pick (multiple
-                // not-yet-seated entries can share a preassigned table). The
-                // real "can't double-seat a table" guard runs later, at actual
-                // seat time (assignWaitlistEntryToTable() -> seatReservation()).
-                $entry->forceFill(['restaurant_table_id' => $table->id])->save();
-                $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'table', 'user', 'guestContact']);
+                if ($tables->count() > 1) {
+                    foreach ($tables as $table) {
+                        if (! $this->availabilityService->isCombinationMemberAvailable(
+                            restaurant: $entry->restaurant,
+                            table: $table,
+                            startsAt: $entry->preferred_starts_at,
+                            partySize: $entry->party_size,
+                        )) {
+                            $reason = $this->availabilityService->explainCombinationMemberUnavailable(
+                                restaurant: $entry->restaurant,
+                                table: $table,
+                                startsAt: $entry->preferred_starts_at,
+                                partySize: $entry->party_size,
+                            );
+
+                            throw ValidationException::withMessages([
+                                'restaurant_table_ids' => [$this->tableUnavailableMessage($entry->restaurant, $table, $reason)],
+                            ]);
+                        }
+                    }
+                }
+
+                $entry->forceFill(['restaurant_table_id' => $tables->first()->id])->save();
+                $entry->assignedTables()->sync($tables->modelKeys());
+                $entry->refresh()->load(['restaurant', 'reservation.reservationGuests', 'table', 'assignedTables', 'user', 'guestContact']);
 
                 $this->auditLogService->log(
                     action: 'waitlist.table_preassigned',
@@ -1317,6 +1364,8 @@ class ReservationService
                 $startsAt = Carbon::parse($attributes['starts_at']);
                 $diningAreaId = isset($attributes['dining_area_id']) ? (int) $attributes['dining_area_id'] : null;
                 $hasSelectedTable = isset($attributes['restaurant_table_id']);
+                $selectedTableIds = TableCombination::normalizeTableIds($attributes['restaurant_table_ids'] ?? []);
+                $hasSelectedCombination = count($selectedTableIds) > 1;
 
                 $this->ensureBookableTime($restaurant, $startsAt);
 
@@ -1330,7 +1379,34 @@ class ReservationService
                     ]);
                 }
 
-                if (! $this->availabilityService->isTableAvailable(
+                if ($hasSelectedCombination) {
+                    $selectedTables = $restaurant->tables()->whereIn('id', $selectedTableIds)->get();
+                    if ($selectedTables->count() !== count($selectedTableIds) || $selectedTables->sum('max_capacity') < (int) $attributes['party_size']) {
+                        throw ValidationException::withMessages([
+                            'restaurant_table_ids' => ['The selected table combination does not fit this party.'],
+                        ]);
+                    }
+
+                    foreach ($selectedTables as $selectedTable) {
+                        if (! $this->availabilityService->isCombinationMemberAvailable(
+                            restaurant: $restaurant,
+                            table: $selectedTable,
+                            startsAt: $startsAt,
+                            partySize: (int) $attributes['party_size'],
+                        )) {
+                            $reason = $this->availabilityService->explainCombinationMemberUnavailable(
+                                restaurant: $restaurant,
+                                table: $selectedTable,
+                                startsAt: $startsAt,
+                                partySize: (int) $attributes['party_size'],
+                            );
+
+                            throw ValidationException::withMessages([
+                                'restaurant_table_ids' => [$this->tableUnavailableMessage($restaurant, $selectedTable, $reason)],
+                            ]);
+                        }
+                    }
+                } elseif (! $this->availabilityService->isTableAvailable(
                     restaurant: $restaurant,
                     table: $table,
                     startsAt: $startsAt,
@@ -1372,6 +1448,10 @@ class ReservationService
                     'subscribe_to_promotions' => (bool) ($attributes['subscribe_to_promotions'] ?? false),
                     'internal_notes' => $attributes['internal_notes'] ?? null,
                 ]);
+
+                if ($hasSelectedCombination) {
+                    $reservation->assignedTables()->sync($selectedTableIds);
+                }
 
                 if ($user && ($attributes['use_points'] ?? false)) {
                     $redemption = $this->rewardProgramService->redeemAllPointsForReservation($user, $reservation);
@@ -1521,6 +1601,88 @@ class ReservationService
         }
 
         return sprintf('Table %s is unavailable: %s', $table->name, $reason);
+    }
+
+    /** @return Collection<int, RestaurantTable> */
+    private function reservationTables(Reservation $reservation): Collection
+    {
+        $reservation->loadMissing(['assignedTables', 'table']);
+
+        if ($reservation->assignedTables->isNotEmpty()) {
+            return $reservation->assignedTables;
+        }
+
+        return $reservation->table ? new Collection([$reservation->table]) : new Collection;
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
+    private function ensureTablesAvailable(
+        Reservation $reservation,
+        Collection $tables,
+        CarbonInterface $startsAt,
+        bool $combination,
+    ): void {
+        if ($combination && $tables->sum('max_capacity') < $reservation->party_size) {
+            throw ValidationException::withMessages([
+                'restaurant_table_ids' => ['The assigned table combination no longer fits this party.'],
+            ]);
+        }
+
+        foreach ($tables as $table) {
+            abort_unless($table->restaurant_id === $reservation->restaurant_id, 404);
+
+            $memberAvailable = $this->availabilityService->isCombinationMemberAvailable(
+                restaurant: $reservation->restaurant,
+                table: $table,
+                startsAt: $startsAt,
+                partySize: $reservation->party_size,
+                excludingReservationId: $reservation->id,
+            );
+            $available = $memberAvailable && ($combination || $this->availabilityService->isTableAvailable(
+                restaurant: $reservation->restaurant,
+                table: $table,
+                startsAt: $startsAt,
+                partySize: $reservation->party_size,
+                excludingReservationId: $reservation->id,
+            ));
+
+            if ($available) {
+                continue;
+            }
+
+            $reason = $memberAvailable
+                ? $this->availabilityService->explainUnavailable(
+                    restaurant: $reservation->restaurant,
+                    table: $table,
+                    startsAt: $startsAt,
+                    partySize: $reservation->party_size,
+                    excludingReservationId: $reservation->id,
+                )
+                : $this->availabilityService->explainCombinationMemberUnavailable(
+                    restaurant: $reservation->restaurant,
+                    table: $table,
+                    startsAt: $startsAt,
+                    partySize: $reservation->party_size,
+                    excludingReservationId: $reservation->id,
+                );
+
+            throw ValidationException::withMessages([
+                $combination ? 'restaurant_table_ids' : 'restaurant_table_id' => [
+                    $this->tableUnavailableMessage($reservation->restaurant, $table, $reason),
+                ],
+            ]);
+        }
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
+    private function setTableStatuses(Collection $tables, TableStatus $status): void
+    {
+        DB::transaction(function () use ($tables, $status): void {
+            foreach ($tables as $table) {
+                $table->update(['status' => $status]);
+                event(new TableStatusUpdated($table->refresh(), $status->value));
+            }
+        });
     }
 
     protected function withRestaurantReservationLock(Restaurant $restaurant, Closure $callback): mixed

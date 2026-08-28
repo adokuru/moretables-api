@@ -230,6 +230,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('reservations/{reservation}/assign-table', [MerchantReservationController::class, 'assignTable']);
         Route::post('reservations/{reservation}/seat', [MerchantReservationController::class, 'seat']);
         Route::post('reservations/{reservation}/complete', [MerchantReservationController::class, 'complete']);
+        Route::post('reservations/{reservation}/clear-tables', [MerchantReservationController::class, 'clearTables']);
         Route::patch('reservations/{reservation}/service-stage', [MerchantReservationController::class, 'updateServiceStage']);
         Route::post('reservations/{reservation}/cancel', [MerchantReservationController::class, 'cancel']);
 

@@ -6,9 +6,11 @@ use App\Events\RestaurantShiftNoteUpdated;
 use App\Models\DiningArea;
 use App\Models\GuestContact;
 use App\Models\Reservation;
+use App\Models\Restaurant;
 use App\Models\RestaurantShiftNote;
 use App\Models\RestaurantTable;
 use App\Models\Role;
+use App\Models\TableCombination;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Notifications\AvailabilityAlertNotification;
@@ -927,4 +929,168 @@ it('updates waitlist details and persists the guest seating preference', functio
     expect($entry->refresh()->party_size)->toBe(4)
         ->and($guest->refresh()->first_name)->toBe('Adanna')
         ->and($guest->preferences['seating_preference'])->toBe('window');
+});
+
+it('assigns a saved table combination and moves every table through the service lifecycle', function () {
+    Carbon::setTestNow('2026-08-26 12:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $main = DiningArea::factory()->create(['restaurant_id' => $data['restaurant']->id, 'name' => 'Main']);
+    $first = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => $main->id,
+        'name' => 'M1',
+        'max_capacity' => 4,
+        'layout_type' => 'round',
+        'status' => TableStatus::Available,
+    ]);
+    $second = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => $main->id,
+        'name' => 'T1',
+        'max_capacity' => 4,
+        'layout_type' => 'round',
+        'status' => TableStatus::Available,
+    ]);
+    $combination = TableCombination::query()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'dining_area_id' => $main->id,
+        'table_ids' => [$first->id, $second->id],
+        'min_capacity' => 5,
+        'max_capacity' => 8,
+    ]);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $first->id,
+        'party_size' => 7,
+        'status' => ReservationStatus::Arrived,
+        'starts_at' => now()->addDay()->setTime(18, 0),
+        'ends_at' => now()->addDay()->setTime(20, 0),
+    ]);
+
+    $query = http_build_query([
+        'starts_at' => $reservation->starts_at->toIso8601String(),
+        'party_size' => 7,
+        'excluding_reservation_id' => $reservation->id,
+    ]);
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/available-tables?'.$query))
+        ->assertOk()
+        ->assertJsonPath('available_combinations.0.id', $combination->id)
+        ->assertJsonCount(2, 'available_combinations.0.tables');
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/assign-table'), [
+        'table_combination_id' => $combination->id,
+    ])
+        ->assertOk()
+        ->assertJsonCount(2, 'reservation.tables');
+
+    expect($reservation->refresh()->assignedTables()->pluck('restaurant_tables.id')->sort()->values()->all())
+        ->toBe(collect([$first->id, $second->id])->sort()->values()->all());
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/seat'))
+        ->assertOk();
+
+    expect($first->refresh()->status)->toBe(TableStatus::Occupied)
+        ->and($second->refresh()->status)->toBe(TableStatus::Occupied);
+
+    $date = $reservation->starts_at->timezone($data['restaurant']->timezone)->toDateString();
+    $this->getJson(frontOfHouseUrl($data, "front-of-house/floors/{$main->id}?date={$date}"))
+        ->assertOk()
+        ->assertJsonPath('tables.0.current_reservation.id', $reservation->id)
+        ->assertJsonPath('tables.1.current_reservation.id', $reservation->id);
+    $timeline = $this->getJson(frontOfHouseUrl($data, "front-of-house/timelines?date={$date}"))->assertOk();
+    expect(collect($timeline->json('data'))->sum(
+        fn (array $table): int => collect($table['reservations'])->where('id', $reservation->id)->count(),
+    ))->toBe(2);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/complete'))->assertOk();
+    expect($first->refresh()->status)->toBe(TableStatus::Cleaning)
+        ->and($second->refresh()->status)->toBe(TableStatus::Cleaning);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/clear-tables'))
+        ->assertOk();
+    expect($first->refresh()->status)->toBe(TableStatus::Available)
+        ->and($second->refresh()->status)->toBe(TableStatus::Available);
+});
+
+it('hides combinations with a seated member and validates temporary waitlist combinations', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $second = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'max_capacity' => 4,
+        'status' => TableStatus::Available,
+    ]);
+    $combination = TableCombination::query()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'table_ids' => [$data['table']->id, $second->id],
+        'min_capacity' => 5,
+        'max_capacity' => 8,
+    ]);
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $second->id,
+        'status' => ReservationStatus::Seated,
+        'starts_at' => now()->subHours(4),
+        'ends_at' => now()->subHours(2),
+    ]);
+
+    $startsAt = now()->addDay()->setTime(18, 0);
+    $query = http_build_query(['starts_at' => $startsAt->toIso8601String(), 'party_size' => 6]);
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/available-tables?'.$query))
+        ->assertOk()
+        ->assertJsonCount(0, 'available_combinations');
+
+    $third = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'max_capacity' => 4,
+        'status' => TableStatus::Available,
+    ]);
+    $main = DiningArea::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $terrace = DiningArea::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $data['table']->update(['dining_area_id' => $main->id]);
+    $third->update(['dining_area_id' => $terrace->id]);
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'party_size' => 7,
+        'preferred_starts_at' => $startsAt,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_ids' => [$data['table']->id, $third->id],
+    ])
+        ->assertOk()
+        ->assertJsonCount(2, 'waitlist_entry.tables');
+
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_ids' => [$data['table']->id, $data['table']->id],
+    ])->assertUnprocessable()->assertJsonValidationErrors('restaurant_table_ids.1');
+
+    $small = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'max_capacity' => 1,
+    ]);
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_ids' => [$small->id, $data['table']->id],
+    ])->assertUnprocessable()->assertJsonValidationErrors('restaurant_table_ids');
+
+    $foreignRestaurant = Restaurant::factory()->create();
+    $foreignTable = RestaurantTable::factory()->create(['restaurant_id' => $foreignRestaurant->id]);
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), [
+        'restaurant_table_ids' => [$data['table']->id, $foreignTable->id],
+    ])->assertUnprocessable()->assertJsonValidationErrors('restaurant_table_ids');
+
+    $seatedReservationId = $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/assign-table'), [
+        'restaurant_table_ids' => [$data['table']->id, $third->id],
+    ])
+        ->assertOk()
+        ->assertJsonCount(2, 'reservation.tables')
+        ->json('reservation.id');
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated)
+        ->and(Reservation::query()->findOrFail($seatedReservationId)->assignedTables()->count())->toBe(2)
+        ->and($data['table']->refresh()->status)->toBe(TableStatus::Occupied)
+        ->and($third->refresh()->status)->toBe(TableStatus::Occupied);
 });

@@ -204,7 +204,8 @@
         "value": "application/json"
        }
       ],
-      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/available-tables?starts_at=2026-06-20T18:00:00Z&party_size=2"
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/available-tables?starts_at=2026-06-20T18:00:00Z&party_size=6&excluding_reservation_id={{reservation_id}}",
+      "description": "Returns individually fitting tables in data, reusable saved combinations in available_combinations, and capacity-agnostic physical tables in combination_candidates for temporary combinations. Conflicting combination members are omitted."
      }
     },
     {
@@ -5228,9 +5229,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_table_id\": 1\n}"
+       "raw": "{\n  \"restaurant_table_ids\": [1, 2]\n}"
       },
-      "description": "The requested table is rechecked directly inside the restaurant reservation lock. Retry HTTP 422 validation responses when availability changes during processing."
+      "description": "Assign exactly one selection shape: restaurant_table_id, table_combination_id, or restaurant_table_ids (at least two for a temporary combination). Every member is rechecked inside the restaurant reservation lock."
      }
     },
     {
@@ -5353,9 +5354,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{}"
+       "raw": "{\n  \"table_combination_id\": 1\n}"
       },
-      "description": "Marks the reservation seated and records seated_at only when its assigned table is still available. A table clash returns 422 with errors.restaurant_table_id so front-of-house clients can prompt for reassignment."
+      "description": "Marks the reservation seated and occupies every assigned table. Optionally accepts exactly one table selection shape; omitting one seats at the existing assignment."
      }
     },
     {
@@ -5403,6 +5404,30 @@
        "raw": "{}"
       },
       "description": "Marks the reservation completed and records completed_at. Responses also expose the same value as finished_at for front-of-house clients."
+     }
+    },
+    {
+     "name": "Reservation clear tables",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/clear-tables",
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Marks every physical table assigned to a completed reservation available in one transaction."
      }
     },
     {
@@ -5715,9 +5740,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_table_id\": 1\n}"
+       "raw": "{\n  \"restaurant_table_ids\": [1, 2]\n}"
       },
-      "description": "Assigns the table and immediately converts the waitlist entry into a seated reservation."
+      "description": "Assigns a single table, saved combination, or temporary combination and immediately converts the waitlist entry into a seated reservation."
      }
     },
     {
@@ -5762,9 +5787,9 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\n  \"restaurant_table_id\": 1\n}"
+       "raw": "{\n  \"table_combination_id\": 1\n}"
       },
-      "description": "Stores a table selection while keeping the party in its current waitlist status. It does not seat the party."
+      "description": "Stores a single table, saved combination snapshot, or temporary combination while keeping the party in its current waitlist status. It does not seat the party."
      }
     },
     {

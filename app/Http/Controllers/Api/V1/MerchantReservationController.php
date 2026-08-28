@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Merchant\AssignReservationTableRequest;
+use App\Http\Requests\Merchant\SeatReservationRequest;
 use App\Http\Requests\Merchant\StoreMerchantReservationRequest;
 use App\Http\Requests\Merchant\UpdateMerchantReservationRequest;
 use App\Http\Resources\ReservationResource;
@@ -32,7 +33,7 @@ class MerchantReservationController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
         $reservationsQuery = $restaurant->reservations()
-            ->with(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests'])
+            ->with(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->orderBy('starts_at');
 
@@ -70,7 +71,7 @@ class MerchantReservationController extends Controller
         abort_unless(request()->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
-        return ReservationResource::make($reservation->load(['restaurant', 'table', 'user', 'guestContact', 'reservationGuests']));
+        return ReservationResource::make($reservation->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']));
     }
 
     public function update(UpdateMerchantReservationRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
@@ -122,11 +123,12 @@ class MerchantReservationController extends Controller
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
-        $table = RestaurantTable::query()
-            ->where('restaurant_id', $restaurant->id)
-            ->findOrFail($request->integer('restaurant_table_id'));
-
-        $updatedReservation = $this->reservationService->assignTable($reservation, $table, $request->user());
+        $tables = $this->reservationService->resolveTableSelection(
+            $restaurant,
+            $request->validated(),
+            $reservation->party_size,
+        );
+        $updatedReservation = $this->reservationService->assignTables($reservation, $tables, $request->user());
 
         return response()->json([
             'message' => 'Reservation table assigned successfully.',
@@ -141,32 +143,41 @@ class MerchantReservationController extends Controller
      * seated there or the table now conflicts with another active reservation.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
-    public function seat(Request $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
+    public function seat(SeatReservationRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
         abort_unless($reservation->restaurant_id === $restaurant->id, 404);
 
-        $validated = $request->validate([
-            'restaurant_table_id' => ['nullable', 'integer'],
-            'service_stage' => ['nullable', Rule::in([
-                ReservationServiceStage::PartiallySeated->value,
-                ReservationServiceStage::Seated->value,
-            ])],
-        ]);
-
-        $table = isset($validated['restaurant_table_id'])
-            ? RestaurantTable::query()->where('restaurant_id', $restaurant->id)->findOrFail($validated['restaurant_table_id'])
+        $validated = $request->validated();
+        $hasSelection = isset($validated['restaurant_table_id'])
+            || isset($validated['table_combination_id'])
+            || isset($validated['restaurant_table_ids']);
+        $tables = $hasSelection
+            ? $this->reservationService->resolveTableSelection($restaurant, $validated, $reservation->party_size)
             : null;
 
         $updatedReservation = $this->reservationService->seatReservation(
             $reservation,
             $request->user(),
-            $table,
+            $tables,
             isset($validated['service_stage']) ? ReservationServiceStage::from($validated['service_stage']) : null,
         );
 
         return response()->json([
             'message' => 'Reservation seated successfully.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
+    public function clearTables(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->clearReservationTables($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation tables cleared successfully.',
             'reservation' => ReservationResource::make($updatedReservation),
         ]);
     }

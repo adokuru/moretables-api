@@ -48,6 +48,8 @@ class WaitlistEntryUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit
      */
     public function broadcastWith(): array
     {
+        $this->entry->loadMissing('assignedTables:id');
+
         return [
             'id' => $this->entry->id,
             'restaurant_id' => $this->entry->restaurant_id,
@@ -56,6 +58,8 @@ class WaitlistEntryUpdated implements ShouldBroadcast, ShouldDispatchAfterCommit
             'status' => $this->entry->status->value,
             'action' => $this->action,
             'party_size' => $this->entry->party_size,
+            'restaurant_table_id' => $this->entry->restaurant_table_id,
+            'restaurant_table_ids' => $this->entry->assignedTables->modelKeys(),
             'preferred_starts_at' => $this->entry->preferred_starts_at?->toIso8601String(),
             'notified_at' => $this->entry->notified_at?->toIso8601String(),
             'expires_at' => $this->entry->expires_at?->toIso8601String(),

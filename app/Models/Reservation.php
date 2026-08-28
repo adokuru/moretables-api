@@ -10,6 +10,7 @@ use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
@@ -19,6 +20,23 @@ class Reservation extends Model
 {
     /** @use HasFactory<ReservationFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::created(function (Reservation $reservation): void {
+            if ($reservation->restaurant_table_id !== null) {
+                $reservation->assignedTables()->syncWithoutDetaching([$reservation->restaurant_table_id]);
+            }
+        });
+
+        static::updated(function (Reservation $reservation): void {
+            if ($reservation->wasChanged('restaurant_table_id')) {
+                $reservation->assignedTables()->sync(
+                    $reservation->restaurant_table_id === null ? [] : [$reservation->restaurant_table_id],
+                );
+            }
+        });
+    }
 
     protected $fillable = [
         'restaurant_id',
@@ -83,6 +101,11 @@ class Reservation extends Model
     public function table(): BelongsTo
     {
         return $this->belongsTo(RestaurantTable::class, 'restaurant_table_id');
+    }
+
+    public function assignedTables(): BelongsToMany
+    {
+        return $this->belongsToMany(RestaurantTable::class, 'reservation_table_assignments');
     }
 
     public function canceledBy(): BelongsTo
