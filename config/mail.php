@@ -37,6 +37,13 @@ return [
 
     'mailers' => [
 
+        'zeptomail' => [
+            'transport' => 'zeptomail',
+            'endpoint' => env('ZEPTOMAIL_ENDPOINT', 'https://api.zeptomail.com/v1.1/email'),
+            'token' => env('ZEPTOMAIL_TOKEN'),
+            'timeout' => (int) env('ZEPTOMAIL_TIMEOUT', 10),
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
@@ -116,7 +123,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => 'MoreTables',
+        'name' => env('MAIL_FROM_NAME', 'MoreTables'),
     ],
 
     /*

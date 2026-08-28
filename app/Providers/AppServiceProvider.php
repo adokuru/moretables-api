@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentProvider;
+use App\Mail\ZeptoMailTransport;
 use App\Models\BillingPlan;
 use App\Models\CuisineOption;
 use App\Models\DiningArea;
@@ -44,6 +45,7 @@ use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -60,6 +62,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Mail::extend('zeptomail', fn (array $config): ZeptoMailTransport => new ZeptoMailTransport(
+            url: (string) $config['endpoint'],
+            token: (string) $config['token'],
+            timeout: (int) $config['timeout'],
+        ));
+
         Route::bind('organization', function (string $value): Organization {
             if (! ctype_digit($value)) {
                 abort(404, 'Organization not found.');
