@@ -6951,6 +6951,12 @@
                                                         "amount": {
                                                             "type": "string"
                                                         },
+                                                        "display_amount": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
                                                         "currency": {
                                                             "anyOf": [
                                                                 {
@@ -6975,6 +6981,7 @@
                                                         "name",
                                                         "slug",
                                                         "amount",
+                                                        "display_amount",
                                                         "currency",
                                                         "interval",
                                                         "is_subscribed"

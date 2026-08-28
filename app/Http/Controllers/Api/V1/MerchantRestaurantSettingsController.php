@@ -33,6 +33,7 @@ class MerchantRestaurantSettingsController extends Controller
                     'name' => $plan?->name,
                     'slug' => $plan?->slug?->value ?? $plan?->slug,
                     'amount' => $plan?->amount,
+                    'display_amount' => $plan ? number_format($plan->amount / 100, 2) : null,
                     'currency' => $plan?->currency ?? 'NGN',
                     'interval' => $plan?->interval,
                     'is_subscribed' => $subscription !== null,
