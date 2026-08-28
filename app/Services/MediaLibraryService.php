@@ -96,6 +96,29 @@ class MediaLibraryService
     }
 
     /**
+     * Copies an already-stored media file into a new media row tagged with a
+     * different gallery category. Needed because a media row belongs to
+     * exactly one category (a `gallery_category_id` custom property, not a
+     * many-to-many relation) — showing one photo under two categories means
+     * two rows sharing the same underlying file, same as an upload staged
+     * for multiple categories at once (see `syncUploadedMedia`).
+     */
+    public function duplicateMediaToCategory(Model&HasMedia $model, Media $media, int $categoryId): Media
+    {
+        $this->ensureOwnedMedia($model, $media);
+
+        $customProperties = $media->custom_properties;
+        $customProperties['gallery_category_id'] = $categoryId;
+
+        return $model
+            ->copyMedia($media->getPath())
+            ->usingName($media->name)
+            ->usingFileName($media->file_name)
+            ->withCustomProperties($customProperties)
+            ->toMediaCollection($media->collection_name);
+    }
+
+    /**
      * @param  array<int, int>  $mediaIds
      */
     public function reorderGallery(Model&HasMedia $model, array $mediaIds): void

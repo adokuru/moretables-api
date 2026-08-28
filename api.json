@@ -856,7 +856,7 @@
         "/restaurants/discovery": {
             "get": {
                 "operationId": "publicRestaurantDiscovery.index",
-                "description": "Only includes restaurants that are publicly listed: status active and an active or trialing\nmerchant subscription whose current billing period has not expired.",
+                "description": "Only includes restaurants that are publicly listed: status active and an active or trialing\nmerchant subscription whose current billing period has not expired.\nThe highly rated section excludes restaurants without reviews.",
                 "summary": "Return the homepage discovery rail sections for mobile and web",
                 "tags": [
                     "Public Restaurants"
@@ -1038,7 +1038,7 @@
         "/restaurants/discovery/{section}": {
             "get": {
                 "operationId": "publicRestaurantDiscovery.show",
-                "description": "Only includes restaurants that are publicly listed: status active and an active or trialing\nmerchant subscription whose current billing period has not expired.\n\nSupported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured, timeofday, moretable_lineup.",
+                "description": "Only includes restaurants that are publicly listed: status active and an active or trialing\nmerchant subscription whose current billing period has not expired.\n\nSupported sections: top_booked, top_viewed, top_saved, highly_rated, new_on_moretables, featured, timeofday, moretable_lineup.\nThe highly rated section excludes restaurants without reviews.",
                 "summary": "Return one discovery section with pagination",
                 "tags": [
                     "Public Restaurants"
@@ -1363,7 +1363,7 @@
         "/onboarding-requests": {
             "post": {
                 "operationId": "onboardingRequest.store",
-                "summary": "Submit an onboarding request and notify MoreTables admins by email and database notification",
+                "summary": "Submit an onboarding request and notify admins by email/database and sales by email",
                 "tags": [
                     "Onboarding Requests"
                 ],
@@ -6951,6 +6951,12 @@
                                                         "amount": {
                                                             "type": "string"
                                                         },
+                                                        "display_amount": {
+                                                            "type": [
+                                                                "string",
+                                                                "null"
+                                                            ]
+                                                        },
                                                         "currency": {
                                                             "anyOf": [
                                                                 {
@@ -6975,6 +6981,7 @@
                                                         "name",
                                                         "slug",
                                                         "amount",
+                                                        "display_amount",
                                                         "currency",
                                                         "interval",
                                                         "is_subscribed"
@@ -14350,6 +14357,98 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/merchant/restaurants/{restaurant}/media/{media}/duplicate": {
+            "post": {
+                "operationId": "merchantRestaurantMedia.duplicate",
+                "tags": [
+                    "Merchant Onboarding"
+                ],
+                "parameters": [
+                    {
+                        "name": "restaurant",
+                        "in": "path",
+                        "required": true,
+                        "description": "The restaurant ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "media",
+                        "in": "path",
+                        "required": true,
+                        "description": "The media ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DuplicateMediaRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "const": "Photo added to category successfully."
+                                        },
+                                        "media": {
+                                            "$ref": "#/components/schemas/MediaAssetResource"
+                                        }
+                                    },
+                                    "required": [
+                                        "message",
+                                        "media"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "An error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error overview.",
+                                            "example": ""
+                                        }
+                                    },
+                                    "required": [
+                                        "message"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
                     }
                 }
             }
@@ -25932,7 +26031,6 @@
         "/admin/auth/login": {
             "post": {
                 "operationId": "adminAuth.login",
-                "description": "Starts admin 2FA. Failed attempts are written to audit logs as `admin.auth.login_failed` (who, IP, user agent, reason).",
                 "tags": [
                     "Admin Auth"
                 ],
@@ -25983,7 +26081,6 @@
         "/admin/auth/verify-2fa": {
             "post": {
                 "operationId": "adminAuth.verify",
-                "description": "Completes admin login. Successful sign-ins are audited as `admin.auth.login` with email, roles, IP, platform, browser, device, and timestamp.",
                 "tags": [
                     "Admin Auth"
                 ],
@@ -26059,7 +26156,6 @@
         "/admin/auth/logout": {
             "post": {
                 "operationId": "adminAuth.logout",
-                "description": "Revokes the current admin token and records `admin.auth.logout` in the audit log.",
                 "tags": [
                     "Admin Auth"
                 ],
@@ -29799,7 +29895,7 @@
             },
             "post": {
                 "operationId": "adminOnboardingRequest.store",
-                "summary": "Create an onboarding request and notify MoreTables admins by email and database notification",
+                "summary": "Create an onboarding request and notify admins by email/database and sales by email",
                 "tags": [
                     "Admin Onboarding Requests"
                 ],
@@ -35502,6 +35598,18 @@
                     "is_active"
                 ],
                 "title": "DiningSpotResource"
+            },
+            "DuplicateMediaRequest": {
+                "type": "object",
+                "properties": {
+                    "gallery_category_id": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "gallery_category_id"
+                ],
+                "title": "DuplicateMediaRequest"
             },
             "ForgotPasswordRequest": {
                 "type": "object",

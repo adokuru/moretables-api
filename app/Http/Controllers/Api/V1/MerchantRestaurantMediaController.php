@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\DuplicateMediaRequest;
 use App\Http\Requests\Merchant\ReorderMediaRequest;
 use App\Http\Requests\Merchant\UpdateMediaAssetRequest;
 use App\Http\Requests\Merchant\UploadModelMediaRequest;
@@ -79,6 +80,22 @@ class MerchantRestaurantMediaController extends Controller
             'message' => 'Restaurant media updated successfully.',
             'media' => MediaAssetResource::make($updatedMedia),
         ]);
+    }
+
+    public function duplicate(DuplicateMediaRequest $request, Restaurant $restaurant, Media $media): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('restaurants.manage', $restaurant), 403);
+
+        $newMedia = $this->mediaLibraryService->duplicateMediaToCategory(
+            $restaurant,
+            $media,
+            (int) $request->validated('gallery_category_id'),
+        );
+
+        return response()->json([
+            'message' => 'Photo added to category successfully.',
+            'media' => MediaAssetResource::make($newMedia),
+        ], 201);
     }
 
     public function reorder(ReorderMediaRequest $request, Restaurant $restaurant): JsonResponse
