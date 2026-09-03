@@ -766,6 +766,37 @@ it('validates guest payload using attendee fields', function () {
         ->assertJsonValidationErrors(['guests.0.email_address']);
 });
 
+it('rejects duplicate guest emails with a clear message', function () {
+    $data = createBookableRestaurant();
+    $customer = User::factory()->create();
+
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'user_id' => $customer->id,
+        'restaurant_table_id' => $data['table']->id,
+        'party_size' => 3,
+        'starts_at' => now()->addDays(2)->setTime(19, 0),
+        'ends_at' => now()->addDays(2)->setTime(21, 0),
+    ]);
+
+    Sanctum::actingAs($customer);
+
+    $this->putJson('/api/v1/reservations/'.$reservation->id.'/guests', [
+        'guests' => [
+            [
+                'attendee_name' => 'Guest One',
+                'email_address' => 'same@example.com',
+            ],
+            [
+                'attendee_name' => 'Guest Two',
+                'email_address' => 'SAME@example.com',
+            ],
+        ],
+    ])->assertUnprocessable()
+        ->assertJsonPath('message', 'Each attendee needs a different email address. Please update the duplicate and try again.')
+        ->assertJsonValidationErrors(['guests']);
+});
+
 it('prevents a customer from booking the same restaurant at the same date and time twice', function () {
     Notification::fake();
 

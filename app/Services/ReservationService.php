@@ -402,6 +402,17 @@ class ReservationService
         string $auditDescription,
         string $eventAction,
     ): Reservation {
+        $normalizedEmails = array_map(
+            fn (array $guest): string => Str::lower(trim($guest['email_address'] ?? '')),
+            $guests,
+        );
+
+        if (count($normalizedEmails) !== count(array_unique($normalizedEmails))) {
+            throw ValidationException::withMessages([
+                'guests' => ['Each attendee needs a different email address. Please update the duplicate and try again.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($reservation, $actor, $guests, $auditAction, $auditDescription, $eventAction): Reservation {
             $reservation->loadMissing('reservationGuests');
             $oldGuests = $reservation->guestsForApi();
