@@ -37,6 +37,20 @@ class CustomerRestaurantListController extends Controller
     }
 
     /**
+     * Show a public restaurant list.
+     */
+    public function show(Request $request, UserRestaurantList $restaurantList): JsonResponse
+    {
+        abort_if($restaurantList->is_private, 404);
+
+        $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);
+
+        return response()->json([
+            'data' => $this->serializeList($restaurantList, $request),
+        ]);
+    }
+
+    /**
      * Create a new restaurant list for the authenticated customer.
      */
     public function store(StoreRestaurantListRequest $request): JsonResponse

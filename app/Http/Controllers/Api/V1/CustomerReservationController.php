@@ -141,6 +141,6 @@ class CustomerReservationController extends Controller
     protected function ensureModificationAllowed(Reservation $reservation): void
     {
         $cutoffHours = $reservation->restaurant->policy?->cancellation_cutoff_hours ?? 1;
-        abort_if(Carbon::parse($reservation->starts_at)->subHours($cutoffHours)->isPast(), 422, 'This reservation can no longer be modified.');
+        abort_if(Carbon::parse($reservation->starts_at)->subHours($cutoffHours)->isPast(), 422, 'The modification and cancellation period for this reservation has ended. Please contact the restaurant for help.');
     }
 }

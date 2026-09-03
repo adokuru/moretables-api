@@ -219,10 +219,12 @@ it('prevents customers from modifying reservations after the cutoff window', fun
 
     $this->patchJson('/api/v1/reservations/'.$reservation->id, [
         'notes' => 'Too late',
-    ])->assertUnprocessable();
+    ])->assertUnprocessable()
+        ->assertJsonPath('message', 'The modification and cancellation period for this reservation has ended. Please contact the restaurant for help.');
 
     $this->deleteJson('/api/v1/reservations/'.$reservation->id)
-        ->assertUnprocessable();
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'The modification and cancellation period for this reservation has ended. Please contact the restaurant for help.');
 });
 
 it('does not expose another customers reservation', function () {

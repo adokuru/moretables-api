@@ -400,6 +400,28 @@ it('keeps restaurant list counts aligned with the visible restaurants', function
         ->assertJsonPath('data.0.restaurants.0.id', $visibleRestaurant->id);
 });
 
+it('shows public restaurant lists and hides private ones', function () {
+    $restaurant = createListedRestaurant();
+    $list = UserRestaurantList::factory()->create([
+        'name' => 'Lagos favourites',
+        'is_private' => false,
+    ]);
+
+    UserRestaurantListItem::factory()->create([
+        'user_restaurant_list_id' => $list->id,
+        'restaurant_id' => $restaurant->id,
+    ]);
+
+    $this->getJson('/api/v1/restaurant-lists/'.$list->id)
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Lagos favourites')
+        ->assertJsonPath('data.restaurants.0.id', $restaurant->id);
+
+    $list->update(['is_private' => true]);
+
+    $this->getJson('/api/v1/restaurant-lists/'.$list->id)->assertNotFound();
+});
+
 it('lets authenticated users create update and list restaurant reviews', function () {
     Storage::fake('public');
 

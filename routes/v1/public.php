@@ -47,6 +47,7 @@ Route::get('restaurants/{restaurant:slug}', [PublicRestaurantController::class, 
 Route::get('restaurants/{restaurant:slug}/availability', [PublicRestaurantController::class, 'availability'])->middleware('throttle:public-expensive');
 Route::post('restaurants/{restaurant:slug}/views', [PublicRestaurantViewController::class, 'store'])->middleware('throttle:public-write');
 Route::get('restaurants/{restaurant:slug}/reviews', [RestaurantReviewController::class, 'index'])->middleware('throttle:public-read');
+Route::get('restaurant-lists/{restaurantList}', [CustomerRestaurantListController::class, 'show'])->middleware('throttle:public-read');
 
 Route::middleware(['auth:sanctum', 'throttle:customer-api'])->group(function (): void {
     Route::post('me/expo-push-tokens', [ExpoPushTokenController::class, 'store']);
