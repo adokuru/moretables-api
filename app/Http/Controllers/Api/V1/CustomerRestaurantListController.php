@@ -27,7 +27,6 @@ class CustomerRestaurantListController extends Controller
     {
         $lists = $request->user()
             ->restaurantLists()
-            ->withCount('items')
             ->with(['restaurants.cuisines', 'restaurants.media'])
             ->latest()
             ->get();
@@ -43,7 +42,6 @@ class CustomerRestaurantListController extends Controller
     public function store(StoreRestaurantListRequest $request): JsonResponse
     {
         $restaurantList = $request->user()->restaurantLists()->create($request->validated());
-        $restaurantList->loadCount('items');
         $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);
 
         return response()->json([
@@ -60,7 +58,6 @@ class CustomerRestaurantListController extends Controller
         $this->ensureOwnership($request, $restaurantList);
 
         $restaurantList->update($request->validated());
-        $restaurantList->loadCount('items');
         $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);
 
         return response()->json([
@@ -105,7 +102,6 @@ class CustomerRestaurantListController extends Controller
             ],
         );
 
-        $restaurantList->loadCount('items');
         $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);
 
         return response()->json([
@@ -130,7 +126,6 @@ class CustomerRestaurantListController extends Controller
 
         $this->performanceCache->invalidateRestaurant($restaurant->id);
 
-        $restaurantList->loadCount('items');
         $restaurantList->load(['restaurants.cuisines', 'restaurants.media']);
 
         return response()->json([
@@ -149,17 +144,17 @@ class CustomerRestaurantListController extends Controller
      */
     protected function serializeList(UserRestaurantList $restaurantList, Request $request): array
     {
+        $restaurants = $restaurantList->restaurants
+            ->filter(fn (Restaurant $restaurant): bool => $restaurant->isPubliclyListed())
+            ->values();
+
         return [
             'id' => $restaurantList->id,
             'name' => $restaurantList->name,
             'description' => $restaurantList->description,
             'is_private' => (bool) $restaurantList->is_private,
-            'restaurants_count' => (int) ($restaurantList->items_count ?? $restaurantList->items()->count()),
-            'restaurants' => RestaurantListResource::collection(
-                $restaurantList->restaurants
-                    ->filter(fn (Restaurant $restaurant): bool => $restaurant->isPubliclyListed())
-                    ->values(),
-            )->resolve($request),
+            'restaurants_count' => $restaurants->count(),
+            'restaurants' => RestaurantListResource::collection($restaurants)->resolve($request),
             'created_at' => $restaurantList->created_at?->toIso8601String(),
             'updated_at' => $restaurantList->updated_at?->toIso8601String(),
         ];

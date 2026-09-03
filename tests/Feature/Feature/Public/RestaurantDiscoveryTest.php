@@ -375,6 +375,31 @@ it('lets authenticated users save restaurants and manage custom restaurant lists
         ->assertJsonPath('message', 'Restaurant removed from saved items successfully.');
 });
 
+it('keeps restaurant list counts aligned with the visible restaurants', function () {
+    $customer = User::factory()->create();
+    $visibleRestaurant = createListedRestaurant();
+    $hiddenRestaurant = createListedRestaurant();
+    $list = UserRestaurantList::factory()->for($customer, 'user')->create();
+
+    UserRestaurantListItem::factory()->create([
+        'user_restaurant_list_id' => $list->id,
+        'restaurant_id' => $visibleRestaurant->id,
+    ]);
+    UserRestaurantListItem::factory()->create([
+        'user_restaurant_list_id' => $list->id,
+        'restaurant_id' => $hiddenRestaurant->id,
+    ]);
+    $hiddenRestaurant->update(['status' => RestaurantStatus::Draft]);
+
+    Sanctum::actingAs($customer);
+
+    $this->getJson('/api/v1/me/restaurant-lists')
+        ->assertOk()
+        ->assertJsonPath('data.0.restaurants_count', 1)
+        ->assertJsonCount(1, 'data.0.restaurants')
+        ->assertJsonPath('data.0.restaurants.0.id', $visibleRestaurant->id);
+});
+
 it('lets authenticated users create update and list restaurant reviews', function () {
     Storage::fake('public');
 
