@@ -119,6 +119,7 @@ class PublicRestaurantController extends Controller
     {
         $validated = $request->validated();
         $hasCoordinates = $request->filled('latitude') && $request->filled('longitude');
+        $sort = $validated['sort'] ?? 'featured';
         $user = $this->authenticatedUserFromToken($request);
 
         $payload = $this->performanceCache->flexible(
@@ -129,7 +130,7 @@ class PublicRestaurantController extends Controller
                 hash('sha256', json_encode($validated, JSON_THROW_ON_ERROR)),
             ),
             'public_fragments',
-            function () use ($hasCoordinates, $request, $validated): array {
+            function () use ($hasCoordinates, $request, $sort, $validated): array {
                 $restaurants = Restaurant::query()
                     ->with([
                         'cuisines',
@@ -154,6 +155,15 @@ class PublicRestaurantController extends Controller
                             $subQuery->where('name', 'like', '%'.$validated['cuisine'].'%');
                         });
                     })
+                    ->when($request->filled('price'), function ($query) use ($validated): void {
+                        $query->where('average_price_range', $validated['price']);
+                    })
+                    ->when($request->filled('seating'), function ($query) use ($validated): void {
+                        $query->whereHas('tables', function ($subQuery) use ($validated): void {
+                            $subQuery->where('table_type', $validated['seating'])
+                                ->where('is_active', true);
+                        });
+                    })
                     ->when($hasCoordinates, function ($query) use ($validated): void {
                         $lat = (float) $validated['latitude'];
                         $lng = (float) $validated['longitude'];
@@ -170,13 +180,17 @@ class PublicRestaurantController extends Controller
                             ->whereNotNull('latitude')
                             ->whereNotNull('longitude')
                             ->whereBetween('latitude', [$bounds['min_latitude'], $bounds['max_latitude']])
-                            ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']])
-                            ->orderByRaw(
-                                'ABS(latitude - ?) + ABS(longitude - ?) asc',
-                                [$lat, $lng],
-                            );
-                    })
-                    ->paginate($validated['per_page'] ?? 15);
+                            ->whereBetween('longitude', [$bounds['min_longitude'], $bounds['max_longitude']]);
+                    });
+
+                match ($sort) {
+                    'distance' => $restaurants->orderBy('distance_km')->orderBy('id'),
+                    'newest' => $restaurants->latest()->orderByDesc('id'),
+                    'rating' => $restaurants->orderByDesc('average_rating')->orderByDesc('reviews_count')->orderBy('id'),
+                    default => $restaurants->orderByDesc('is_featured')->latest()->orderByDesc('id'),
+                };
+
+                $restaurants = $restaurants->paginate($validated['per_page'] ?? 15);
 
                 return RestaurantListResource::collection($restaurants)->resolve($request);
             },
