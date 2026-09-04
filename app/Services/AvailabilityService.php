@@ -41,7 +41,14 @@ class AvailabilityService
         $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
         $endsAt = $this->calculateEndTime($restaurant, $localStartsAt, $partySize);
 
-        return collect($this->effectiveTimeWindows($restaurant, $localStartsAt->toDateString()))
+        if ($this->specialDayForDate($restaurant, $localStartsAt->toDateString())?->is_closed) {
+            return false;
+        }
+
+        return collect([
+            ...$this->effectiveTimeWindows($restaurant, $localStartsAt->toDateString()),
+            ...$this->effectiveTimeWindows($restaurant, $localStartsAt->copy()->subDay()->toDateString()),
+        ])
             ->contains(fn (array $window): bool => $localStartsAt->greaterThanOrEqualTo($this->windowOpens($window))
                 && $endsAt->lessThanOrEqualTo($this->windowCloses($window)));
     }

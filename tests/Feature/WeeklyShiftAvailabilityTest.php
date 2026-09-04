@@ -1,11 +1,14 @@
 <?php
 
+use App\Enums\RestaurantShiftTurnControlReleasePolicy;
+use App\Enums\RestaurantShiftTurnControlRuleType;
 use App\Models\Restaurant;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantAvailabilitySchedule;
 use App\Models\RestaurantHour;
 use App\Models\RestaurantShift;
 use App\Models\RestaurantShiftTableAvailability;
+use App\Models\RestaurantShiftTurnControl;
 use App\Models\RestaurantSpecialDay;
 use App\Models\RestaurantTable;
 use App\RestaurantStatus;
@@ -202,4 +205,43 @@ it('does not silently block a larger party when shifts are auto-seeded from avai
     );
 
     expect($slots)->not->toBeEmpty();
+});
+
+it('resolves overnight shifts and preserves duration and table release after midnight', function (): void {
+    $data = createBookableRestaurant();
+    $restaurant = $data['restaurant'];
+    $restaurant->update(['timezone' => 'Africa/Lagos']);
+    $date = Carbon::tomorrow('Africa/Lagos');
+    $shift = RestaurantShift::factory()->create([
+        'restaurant_id' => $restaurant->id,
+        'day_of_week' => $date->dayOfWeek,
+        'starts_at' => '18:00:00',
+        'ends_at' => '04:00:00',
+        'turn_control_release_policy' => RestaurantShiftTurnControlReleasePolicy::AtShiftStart,
+    ]);
+    $shift->turnTimes()->create(['party_size' => 2, 'duration_minutes' => 60]);
+    RestaurantShiftTurnControl::factory()->create(['restaurant_shift_id' => $shift->id, 'rule_type' => RestaurantShiftTurnControlRuleType::Table, 'restaurant_table_id' => $data['table']->id]);
+    $shift->flowIntervals()->create(['starts_at' => '23:00:00', 'max_covers' => 3]);
+    $slot = $date->copy()->addDay()->setTime(1, 0);
+    $shifts = app(RestaurantShiftService::class);
+    expect($shifts->resolveShiftForSlot($restaurant, $date->copy()->setTime(23, 0))?->id)->toBe($shift->id)
+        ->and($shifts->resolveShiftForSlot($restaurant, $slot)?->id)->toBe($shift->id)
+        ->and($shifts->maxCoversForInterval($shift->fresh(['flowIntervals']), $slot))->toBe(3)
+        ->and($shifts->isTableReleased($shift->fresh(['turnControls']), $data['table'], $slot))->toBeTrue()
+        ->and($this->service->isBookableAt($restaurant, $slot, 2))->toBeTrue()
+        ->and($this->service->calculateEndTime($restaurant, $slot, 2)->format('H:i'))->toBe('02:00')
+        ->and($this->service->isBookableAt($restaurant, $slot->copy()->setTime(3, 30), 2))->toBeFalse()
+        ->and($shifts->resolveShiftForSlot($restaurant, $slot->copy()->setTime(4, 0)))->toBeNull();
+});
+
+it('honours overnight hours without overriding a closed special day', function (): void {
+    $data = createBookableRestaurant();
+    $restaurant = $data['restaurant'];
+    $restaurant->update(['timezone' => 'Africa/Lagos']);
+    $restaurant->hours()->update(['opens_at' => '18:00:00', 'closes_at' => '06:00:00']);
+    $slot = Carbon::tomorrow('Africa/Lagos')->setTime(2, 0);
+    expect($this->service->isBookableAt($restaurant, $slot))->toBeTrue()
+        ->and($this->service->isBookableAt($restaurant, $slot->copy()->setTime(5, 0)))->toBeFalse();
+    RestaurantSpecialDay::factory()->for($restaurant)->closed()->create(['date' => $slot->toDateString()]);
+    expect($this->service->isBookableAt($restaurant->fresh(), $slot))->toBeFalse();
 });

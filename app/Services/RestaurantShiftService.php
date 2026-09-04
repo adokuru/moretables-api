@@ -100,21 +100,22 @@ class RestaurantShiftService
 
     public function resolveShiftForSlot(Restaurant $restaurant, CarbonInterface $localStartsAt): ?RestaurantShift
     {
-        if (! $restaurant->shifts()->exists()) {
-            return null;
-        }
-
-        $time = $localStartsAt->format('H:i:s');
-
         return $restaurant->shifts()
             ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals'])
-            ->where('day_of_week', $localStartsAt->dayOfWeek)
+            ->whereIn('day_of_week', [$localStartsAt->dayOfWeek, $localStartsAt->copy()->subDay()->dayOfWeek])
             ->where('is_active', true)
-            ->where('starts_at', '<=', $time)
-            ->where('ends_at', '>=', $time)
             ->orderBy('sort_order')
             ->orderBy('starts_at')
-            ->first();
+            ->get()
+            ->first(function (RestaurantShift $shift) use ($localStartsAt): bool {
+                $start = $this->shiftStartForSlot($shift, $localStartsAt);
+                $end = $start->copy()->setTimeFromTimeString($shift->ends_at);
+                if ($end->lessThanOrEqualTo($start)) {
+                    $end->addDay();
+                }
+
+                return $localStartsAt->greaterThanOrEqualTo($start) && $localStartsAt->lessThan($end);
+            });
     }
 
     public function turnDurationForPartySize(RestaurantShift $shift, int $partySize, int $fallbackMinutes): int
@@ -192,11 +193,15 @@ class RestaurantShiftService
 
     public function maxCoversForInterval(RestaurantShift $shift, CarbonInterface $slotStart): int
     {
-        $time = $slotStart->format('H:i:s');
+        $shiftStart = $this->shiftStartForSlot($shift, $slotStart);
+        $intervalStart = function ($interval) use ($shiftStart): Carbon {
+            $start = $shiftStart->copy()->setTimeFromTimeString($interval->starts_at);
 
+            return $start->lessThan($shiftStart) ? $start->addDay() : $start;
+        };
         $override = $shift->flowIntervals
-            ->sortByDesc('starts_at')
-            ->first(fn ($interval): bool => $interval->starts_at <= $time);
+            ->sortByDesc($intervalStart)
+            ->first(fn ($interval): bool => $intervalStart($interval)->lessThanOrEqualTo($slotStart));
 
         return $override?->max_covers ?? $shift->flow_default_max_covers;
     }
@@ -496,6 +501,16 @@ class RestaurantShiftService
         }
     }
 
+    private function shiftStartForSlot(RestaurantShift $shift, CarbonInterface $slot): Carbon
+    {
+        $date = Carbon::parse($slot);
+        if ((int) $shift->day_of_week !== $date->dayOfWeek) {
+            $date->subDay();
+        }
+
+        return $date->setTimeFromTimeString($shift->starts_at);
+    }
+
     private function isTurnControlInventoryReleased(RestaurantShift $shift, CarbonInterface $localNow): bool
     {
         $policy = $shift->turn_control_release_policy;
@@ -504,10 +519,7 @@ class RestaurantShiftService
             return false;
         }
 
-        $shiftStart = Carbon::parse(
-            $localNow->toDateString().' '.$shift->starts_at,
-            $localNow->getTimezone(),
-        );
+        $shiftStart = $this->shiftStartForSlot($shift, $localNow);
 
         if ($policy === RestaurantShiftTurnControlReleasePolicy::AtShiftStart) {
             return $localNow->greaterThanOrEqualTo($shiftStart);

@@ -50,7 +50,7 @@ class MerchantReservationController extends Controller
     }
 
     /**
-     * Create a reservation. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
+     * Create a reservation. For overnight service, send starts_at with the actual calendar date and timezone offset; the previous day’s service window and shift rules remain applicable after midnight. Closed special days and reservation duration limits still apply. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreMerchantReservationRequest $request, Restaurant $restaurant): JsonResponse

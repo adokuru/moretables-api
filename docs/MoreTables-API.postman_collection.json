@@ -5148,7 +5148,7 @@
        "mode": "raw",
        "raw": "{\n  \"starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"source\": \"walk_in\",\n  \"notes\": \"Long-form guest special request text is supported here.\",\n  \"guest_contact\": {\n    \"first_name\": \"Walk-in\",\n    \"phone\": null\n  }\n}"
       },
-      "description": "Availability is checked live inside a restaurant-scoped lock. guest_contact.phone is optional. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
+      "description": "Availability is checked live inside a restaurant-scoped lock. For overnight service, starts_at uses the actual calendar date and timezone offset. The previous day service window and shift rules remain applicable after midnight; closed special days and reservation duration limits still apply. guest_contact.phone is optional. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
      }
     },
     {
