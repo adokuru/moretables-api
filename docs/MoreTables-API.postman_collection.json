@@ -5521,7 +5521,54 @@
        "mode": "raw",
        "raw": "{}"
       },
-      "description": "Cancel the reservation as restaurant staff. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format."
+      "description": "Cancel the reservation as restaurant staff. The guest and restaurant organization owner are notified by email and WhatsApp when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Releases reserved preassigned tables, or all assigned tables for a seated party. For an unseated party, occupied, cleaning, and unavailable tables keep their status."
+     }
+    },
+    {
+     "name": "Reservation no-show",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/no-show",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reservations",
+        "{{reservation_id}}",
+        "no-show"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      },
+      "description": "Mark the reservation as no-show as restaurant staff. Releases reserved preassigned tables, or all assigned tables for a seated party. For an unseated party, occupied, cleaning, and unavailable tables keep their status."
      }
     },
     {

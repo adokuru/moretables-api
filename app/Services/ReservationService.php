@@ -485,9 +485,10 @@ class ReservationService
             'canceled_by_user_id' => $actor?->id,
         ])->save();
 
-        if ($wasSeated) {
-            $this->setTableStatuses($tables, TableStatus::Available);
-        }
+        $this->setTableStatuses(
+            $wasSeated ? $tables : $tables->where('status', TableStatus::Reserved),
+            TableStatus::Available,
+        );
 
         $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
 
@@ -977,9 +978,10 @@ class ReservationService
             'status' => ReservationStatus::NoShow,
         ])->save();
 
-        if ($wasSeated) {
-            $this->setTableStatuses($tables, TableStatus::Available);
-        }
+        $this->setTableStatuses(
+            $wasSeated ? $tables : $tables->where('status', TableStatus::Reserved),
+            TableStatus::Available,
+        );
 
         $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
         event(new ReservationUpdated($reservation, $automated ? 'no_show_automated' : 'no_show', $actor));

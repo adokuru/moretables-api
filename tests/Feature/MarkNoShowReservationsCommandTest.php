@@ -2,8 +2,10 @@
 
 use App\Events\ReservationUpdated;
 use App\Models\Reservation;
+use App\Models\RestaurantTable;
 use App\Models\User;
 use App\ReservationStatus;
+use App\Services\ReservationService;
 use App\TableStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
@@ -180,3 +182,29 @@ it('frees an assigned table when marking a reservation as no-show', function ():
     expect($reservation->fresh()->status)->toBe(ReservationStatus::NoShow)
         ->and($data['table']->fresh()->status)->toBe(TableStatus::Available);
 });
+
+it('releases reserved preassignments without changing occupied or blocked tables', function (string $method, ReservationStatus $status): void {
+    $data = createBookableRestaurant();
+    $data['table']->update(['status' => TableStatus::Reserved]);
+    $otherTables = collect([TableStatus::Reserved, TableStatus::Occupied, TableStatus::Cleaning, TableStatus::Unavailable])
+        ->map(fn (TableStatus $tableStatus): RestaurantTable => RestaurantTable::factory()->create([
+            'restaurant_id' => $data['restaurant']->id,
+            'status' => $tableStatus,
+        ]));
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => ReservationStatus::RunningLate,
+    ]);
+    $reservation->assignedTables()->sync([$data['table']->id, ...$otherTables->pluck('id')->all()]);
+
+    app(ReservationService::class)->{$method}($reservation, User::factory()->create());
+
+    expect($reservation->fresh()->status)->toBe($status)
+        ->and($data['table']->fresh()->status)->toBe(TableStatus::Available)
+        ->and($otherTables->map(fn (RestaurantTable $table): TableStatus => $table->fresh()->status)->all())
+        ->toBe([TableStatus::Available, TableStatus::Occupied, TableStatus::Cleaning, TableStatus::Unavailable]);
+})->with([
+    'no-show' => ['noShowReservation', ReservationStatus::NoShow],
+    'cancellation' => ['cancelReservation', ReservationStatus::Cancelled],
+]);

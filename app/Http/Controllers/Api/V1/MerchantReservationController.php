@@ -219,6 +219,12 @@ class MerchantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Cancel a reservation.
+     *
+     * Releases reserved preassigned tables, or all assigned tables for a seated party.
+     * For an unseated party, occupied, cleaning, and unavailable tables keep their status.
+     */
     public function cancel(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
@@ -245,6 +251,12 @@ class MerchantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Mark a reservation as no-show.
+     *
+     * Releases reserved preassigned tables, or all assigned tables for a seated party.
+     * For an unseated party, occupied, cleaning, and unavailable tables keep their status.
+     */
     public function noShow(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
