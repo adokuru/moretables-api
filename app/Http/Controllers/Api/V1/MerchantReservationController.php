@@ -116,6 +116,7 @@ class MerchantReservationController extends Controller
 
     /**
      * Assign the requested table after rechecking it inside the reservation lock. A retryable 422 is returned if it is unavailable.
+     * Saved combinations use their configured capacity range, even when it exceeds the sum of their member tables' capacities.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function assignTable(AssignReservationTableRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
@@ -138,6 +139,7 @@ class MerchantReservationController extends Controller
 
     /**
      * Seat a reservation at its assigned table.
+     * The configured capacity of an exact saved combination is honoured when seating its assigned tables.
      *
      * Returns a retryable 422 on `restaurant_table_id` when another party is
      * seated there or the table now conflicts with another active reservation.

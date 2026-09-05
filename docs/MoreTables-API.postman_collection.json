@@ -5278,7 +5278,7 @@
        "mode": "raw",
        "raw": "{\n  \"restaurant_table_ids\": [1, 2]\n}"
       },
-      "description": "Assign exactly one selection shape: restaurant_table_id, table_combination_id, or restaurant_table_ids (at least two for a temporary combination). Every member is rechecked inside the restaurant reservation lock."
+      "description": "Assign exactly one selection shape: restaurant_table_id, table_combination_id, or restaurant_table_ids (at least two for a temporary combination). Every member is rechecked inside the restaurant reservation lock. Saved combinations honour the configured capacity range even above the member-table total (e.g. 1-22 guests with two 8-seat tables). When table IDs are supplied, an exact saved combination can provide the additional capacity; other temporary combinations use the summed table capacity."
      }
     },
     {
@@ -5403,7 +5403,7 @@
        "mode": "raw",
        "raw": "{\n  \"table_combination_id\": 1\n}"
       },
-      "description": "Marks the reservation seated and occupies every assigned table. Optionally accepts exactly one table selection shape; omitting one seats at the existing assignment."
+      "description": "Marks the reservation seated and occupies every assigned table. Optionally accepts exactly one table selection shape; omitting one seats at the existing assignment. Saved combinations honour the configured capacity range even above the member-table total (e.g. 1-22 guests with two 8-seat tables). When table IDs are supplied, an exact saved combination can provide the additional capacity; other temporary combinations use the summed table capacity."
      }
     },
     {
@@ -5836,7 +5836,7 @@
        "mode": "raw",
        "raw": "{\n  \"restaurant_table_ids\": [1, 2]\n}"
       },
-      "description": "Assigns a single table, saved combination, or temporary combination and immediately converts the waitlist entry into a seated reservation."
+      "description": "Assigns a single table, saved combination, or temporary combination and immediately converts the waitlist entry into a seated reservation. Saved combinations honour the configured capacity range even above the member-table total (e.g. 1-22 guests with two 8-seat tables). When table IDs are supplied, an exact saved combination can provide the additional capacity; other temporary combinations use the summed table capacity."
      }
     },
     {
@@ -5883,7 +5883,7 @@
        "mode": "raw",
        "raw": "{\n  \"table_combination_id\": 1\n}"
       },
-      "description": "Stores a single table, saved combination snapshot, or temporary combination while keeping the party in its current waitlist status. It does not seat the party."
+      "description": "Stores a single table, saved combination snapshot, or temporary combination while keeping the party in its current waitlist status. It does not seat the party. Saved combinations honour the configured capacity range even above the member-table total (e.g. 1-22 guests with two 8-seat tables). When table IDs are supplied, an exact saved combination can provide the additional capacity; other temporary combinations use the summed table capacity."
      }
     },
     {

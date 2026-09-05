@@ -158,6 +158,9 @@ class MerchantWaitlistController extends Controller
         ]);
     }
 
+    /**
+     * Assign tables and seat a waitlist party, honouring an exact saved combination's configured capacity even above the member-table total.
+     */
     public function assignTable(AssignReservationTableRequest $request, Restaurant $restaurant, WaitlistEntry $waitlistEntry): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
@@ -178,6 +181,7 @@ class MerchantWaitlistController extends Controller
 
     /**
      * Pre-assign a table without seating the waitlist party.
+     * Saved combinations use their configured capacity range rather than the sum of their member tables' capacities.
      *
      * The entry remains in its current waitlist status. Use `assign-table` only
      * when the party should be converted to a reservation and seated.

@@ -941,7 +941,7 @@ it('assigns a saved table combination and moves every table through the service 
         'restaurant_id' => $data['restaurant']->id,
         'dining_area_id' => $main->id,
         'name' => 'M1',
-        'max_capacity' => 4,
+        'max_capacity' => 8,
         'layout_type' => 'round',
         'status' => TableStatus::Available,
     ]);
@@ -949,7 +949,7 @@ it('assigns a saved table combination and moves every table through the service 
         'restaurant_id' => $data['restaurant']->id,
         'dining_area_id' => $main->id,
         'name' => 'T1',
-        'max_capacity' => 4,
+        'max_capacity' => 8,
         'layout_type' => 'round',
         'status' => TableStatus::Available,
     ]);
@@ -957,13 +957,13 @@ it('assigns a saved table combination and moves every table through the service 
         'restaurant_id' => $data['restaurant']->id,
         'dining_area_id' => $main->id,
         'table_ids' => [$first->id, $second->id],
-        'min_capacity' => 5,
-        'max_capacity' => 8,
+        'min_capacity' => 1,
+        'max_capacity' => 22,
     ]);
     $reservation = Reservation::factory()->create([
         'restaurant_id' => $data['restaurant']->id,
         'restaurant_table_id' => $first->id,
-        'party_size' => 7,
+        'party_size' => 20,
         'status' => ReservationStatus::Arrived,
         'starts_at' => now()->addDay()->setTime(18, 0),
         'ends_at' => now()->addDay()->setTime(20, 0),
@@ -971,7 +971,7 @@ it('assigns a saved table combination and moves every table through the service 
 
     $query = http_build_query([
         'starts_at' => $reservation->starts_at->toIso8601String(),
-        'party_size' => 7,
+        'party_size' => 20,
         'excluding_reservation_id' => $reservation->id,
     ]);
     $this->getJson(frontOfHouseUrl($data, 'front-of-house/available-tables?'.$query))
@@ -1094,3 +1094,69 @@ it('hides combinations with a seated member and validates temporary waitlist com
         ->and($data['table']->refresh()->status)->toBe(TableStatus::Occupied)
         ->and($third->refresh()->status)->toBe(TableStatus::Occupied);
 });
+
+it('uses the configured combination capacity when preassigning and seating waitlist parties', function (int $partySize, bool $useTableIds) {
+    Carbon::setTestNow('2026-08-26 12:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $data['table']->update(['max_capacity' => 8]);
+    $second = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'max_capacity' => 8,
+        'status' => TableStatus::Available,
+    ]);
+    $combination = TableCombination::query()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'table_ids' => [$data['table']->id, $second->id],
+        'min_capacity' => 1,
+        'max_capacity' => 22,
+    ]);
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'party_size' => $partySize,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+    $base = 'waitlist-entries/'.$entry->id;
+    $this->postJson(frontOfHouseUrl($data, $base.'/preassign-table'), [
+        'table_combination_id' => $combination->id,
+    ])->assertOk()->assertJsonCount(2, 'waitlist_entry.tables');
+
+    $selection = $useTableIds
+        ? ['restaurant_table_ids' => [$second->id, $data['table']->id]]
+        : ['table_combination_id' => $combination->id];
+    $this->postJson(frontOfHouseUrl($data, $base.'/assign-table'), $selection)
+        ->assertOk()->assertJsonCount(2, 'reservation.tables');
+
+    expect($entry->refresh()->status)->toBe(WaitlistStatus::Seated)
+        ->and($data['table']->refresh()->status)->toBe(TableStatus::Occupied)
+        ->and($second->refresh()->status)->toBe(TableStatus::Occupied);
+})->with([[20, false], [22, true]]);
+
+it('rejects parties above the configured combination capacity', function (bool $useTableIds) {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $data['table']->update(['max_capacity' => 8]);
+    $second = RestaurantTable::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'max_capacity' => 8,
+    ]);
+    $combination = TableCombination::query()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'table_ids' => [$data['table']->id, $second->id],
+        'min_capacity' => 1,
+        'max_capacity' => 22,
+    ]);
+    $entry = WaitlistEntry::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'party_size' => 23,
+        'preferred_starts_at' => now()->addDay()->setTime(18, 0),
+    ]);
+    $selection = $useTableIds
+        ? ['restaurant_table_ids' => [$data['table']->id, $second->id]]
+        : ['table_combination_id' => $combination->id];
+    $this->postJson(frontOfHouseUrl($data, 'waitlist-entries/'.$entry->id.'/preassign-table'), $selection)
+        ->assertUnprocessable()->assertJsonValidationErrors(array_key_first($selection));
+    expect($entry->refresh()->assignedTables()->count())->toBe(0);
+})->with([false, true]);

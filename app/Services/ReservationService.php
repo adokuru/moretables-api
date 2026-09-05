@@ -547,7 +547,7 @@ class ReservationService
 
         $tables = new Collection(array_map(fn (int $id): RestaurantTable => $tablesById->get($id), $tableIds));
 
-        if (isset($selection['restaurant_table_ids']) && $tables->sum('max_capacity') < $partySize) {
+        if (isset($selection['restaurant_table_ids']) && ! $this->combinationFitsParty($restaurant, $tables, $partySize)) {
             throw ValidationException::withMessages([
                 'restaurant_table_ids' => ["The selected tables seat {$tables->sum('max_capacity')} guests and do not fit a party of {$partySize}."],
             ]);
@@ -1394,7 +1394,7 @@ class ReservationService
 
                 if ($hasSelectedCombination) {
                     $selectedTables = $restaurant->tables()->whereIn('id', $selectedTableIds)->get();
-                    if ($selectedTables->count() !== count($selectedTableIds) || $selectedTables->sum('max_capacity') < (int) $attributes['party_size']) {
+                    if ($selectedTables->count() !== count($selectedTableIds) || ! $this->combinationFitsParty($restaurant, $selectedTables, (int) $attributes['party_size'])) {
                         throw ValidationException::withMessages([
                             'restaurant_table_ids' => ['The selected table combination does not fit this party.'],
                         ]);
@@ -1629,13 +1629,29 @@ class ReservationService
     }
 
     /** @param Collection<int, RestaurantTable> $tables */
+    private function combinationFitsParty(Restaurant $restaurant, Collection $tables, int $partySize): bool
+    {
+        if ($tables->sum('max_capacity') >= $partySize) {
+            return true;
+        }
+
+        $tableIds = TableCombination::normalizeTableIds($tables->modelKeys());
+
+        return $restaurant->tableCombinations()
+            ->where('min_capacity', '<=', $partySize)
+            ->where('max_capacity', '>=', $partySize)
+            ->get(['table_ids'])
+            ->contains(fn (TableCombination $combination): bool => TableCombination::normalizeTableIds($combination->table_ids) === $tableIds);
+    }
+
+    /** @param Collection<int, RestaurantTable> $tables */
     private function ensureTablesAvailable(
         Reservation $reservation,
         Collection $tables,
         CarbonInterface $startsAt,
         bool $combination,
     ): void {
-        if ($combination && $tables->sum('max_capacity') < $reservation->party_size) {
+        if ($combination && ! $this->combinationFitsParty($reservation->restaurant, $tables, $reservation->party_size)) {
             throw ValidationException::withMessages([
                 'restaurant_table_ids' => ['The assigned table combination no longer fits this party.'],
             ]);

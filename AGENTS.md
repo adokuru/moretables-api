@@ -309,3 +309,14 @@ it('has emails', function (string $email) {
 
 
 Always run vendor/bin/pint
+## FOH configured combination capacity
+
+- `ReservationService::combinationFitsParty` accepts the physical table total or
+  the configured range of a restaurant-owned saved template with exactly the
+  same normalized table IDs. It is shared by table-ID selection validation,
+  waitlist conversion, and assignment/seating availability checks. Explicit
+  `table_combination_id` selections still validate that template’s own range.
+- Capacity overrides never bypass member availability, conflicts, or restaurant
+  ownership. `FrontOfHouseIntegrationTest` covers 16 physical seats with a 1–22
+  saved range: reservation assignment/seating/clearing, waitlist conversion with
+  template or reversed table IDs, and rejecting parties above 22.
