@@ -154,6 +154,8 @@ it('emails the requester a demo booking link', function () {
                 && str_contains($html, 'background-color:#1a1a1a;padding:14px 28px;');
         },
     );
+
+    expect(OnboardingRequest::query()->where('email', 'chidi@bistro.ng')->value('demo_invitation_sent_at'))->not->toBeNull();
 });
 
 it('falls back to the frontend booking path when no calendar url is configured', function () {

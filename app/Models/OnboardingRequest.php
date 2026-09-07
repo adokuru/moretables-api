@@ -46,6 +46,7 @@ class OnboardingRequest extends Model
             'location_count' => OnboardingLocationCount::class,
             'contact_reason' => OnboardingContactReason::class,
             'reviewed_at' => 'datetime',
+            'demo_invitation_sent_at' => 'datetime',
         ];
     }
 

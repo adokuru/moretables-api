@@ -26,6 +26,8 @@ class OnboardingRequestNotificationService
         if (filled($onboardingRequest->email)) {
             Notification::route('mail', $onboardingRequest->email)
                 ->notify(new OnboardingDemoInvitationNotification($onboardingRequest));
+
+            $onboardingRequest->forceFill(['demo_invitation_sent_at' => now()])->save();
         }
     }
 }
