@@ -11,7 +11,7 @@ use Illuminate\Notifications\Notification;
 /**
  * Bell-only restaurant activity (new reservation, table assigned, cancelled,
  * no-show) — database channel only, no mail/push. Deliberately separate from
- * OwnerReservationLifecycleNotification (mail/push, owner-only): this one
+ * OwnerReservationLifecycleNotification (mail/push for owners and reservation operators): this one
  * goes to all restaurant staff, purely to feed the dashboard's notification
  * dropdown.
  */

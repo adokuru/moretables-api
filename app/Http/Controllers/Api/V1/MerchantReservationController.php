@@ -50,7 +50,7 @@ class MerchantReservationController extends Controller
     }
 
     /**
-     * Create a reservation. For overnight service, send starts_at with the actual calendar date and timezone offset; the previous day’s service window and shift rules remain applicable after midnight. Closed special days and reservation duration limits still apply. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
+     * Create a reservation. Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email. For overnight service, send starts_at with the actual calendar date and timezone offset; the previous day’s service window and shift rules remain applicable after midnight. Closed special days and reservation duration limits still apply. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreMerchantReservationRequest $request, Restaurant $restaurant): JsonResponse
@@ -74,6 +74,9 @@ class MerchantReservationController extends Controller
         return ReservationResource::make($reservation->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']));
     }
 
+    /**
+     * Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email.
+     */
     public function update(UpdateMerchantReservationRequest $request, Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
@@ -222,7 +225,7 @@ class MerchantReservationController extends Controller
     }
 
     /**
-     * Cancel a reservation.
+     * Cancel a reservation. Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email.
      *
      * Releases reserved preassigned tables, or all assigned tables for a seated party.
      * For an unseated party, occupied, cleaning, and unavailable tables keep their status.

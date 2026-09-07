@@ -123,11 +123,11 @@ Regards,
 | | |
 |--|--|
 | **File** | `app/Notifications/OwnerReservationLifecycleNotification.php` |
-| **Channels** | Email |
+| **Channels** | Email + database; Expo push when enabled by the recipient |
 | **When** | Reservation **created**, **updated**, or **cancelled** |
-| **Recipient** | Users assigned `organization_owner` for the reservation restaurant's organization |
+| **Recipient** | Active organization owners and staff with `reservations.manage` through an applicable restaurant or organization assignment (including access configs); one notification per email address |
 
-Owners receive restaurant-facing reservation alerts with the restaurant, guest, party size, date/time, reference, and special request when provided.
+Owners and reservation operations staff receive restaurant-facing reservation alerts with the restaurant, guest, party size, date/time, reference, and special request when provided.
 
 ---
 

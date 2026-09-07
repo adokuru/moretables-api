@@ -275,7 +275,7 @@ class ReservationService
                 $participant->notify(new ReservationLifecycleNotification($reservation, 'updated'));
             }
 
-            $this->notifyReservationOwners($reservation, 'updated');
+            $this->notifyReservationStaff($reservation, 'updated');
 
             return $reservation;
         }));
@@ -507,7 +507,7 @@ class ReservationService
             $participant->notify(new ReservationLifecycleNotification($reservation, 'cancelled'));
         }
 
-        $this->notifyReservationOwners($reservation, 'cancelled');
+        $this->notifyReservationStaff($reservation, 'cancelled');
 
         $this->dispatchAvailabilityAlertCheck($reservation);
 
@@ -1493,28 +1493,46 @@ class ReservationService
                     $guestContact->notify(new ReservationLifecycleNotification($reservation, 'created'));
                 }
 
-                $this->notifyReservationOwners($reservation, 'created');
+                $this->notifyReservationStaff($reservation, 'created');
 
                 return $reservation;
             });
         });
     }
 
-    protected function notifyReservationOwners(Reservation $reservation, string $action): void
+    protected function notifyReservationStaff(Reservation $reservation, string $action): void
     {
         $reservation->loadMissing('restaurant.organization');
 
-        $owners = User::query()
+        $recipients = User::query()
+            ->where('status', UserStatus::Active->value)
             ->whereNotNull('email')
             ->whereHas('roleAssignments', function ($query) use ($reservation): void {
                 $query
-                    ->where('organization_id', $reservation->restaurant->organization_id)
-                    ->whereHas('role', fn ($roleQuery) => $roleQuery->where('name', Role::OrganizationOwner));
+                    ->where(function ($scopeQuery) use ($reservation): void {
+                        $scopeQuery->where('restaurant_id', $reservation->restaurant_id)
+                            ->orWhere(function ($organizationQuery) use ($reservation): void {
+                                $organizationQuery
+                                    ->where('organization_id', $reservation->restaurant->organization_id)
+                                    ->whereNull('restaurant_id');
+                            });
+                    })
+                    ->where(function ($permissionQuery): void {
+                        $permissionQuery
+                            ->whereHas('accessConfig', fn ($configQuery) => $configQuery->whereJsonContains('permissions', 'reservations.manage'))
+                            ->orWhere(function ($roleQuery): void {
+                                $roleQuery->whereNull('access_config_id')
+                                    ->whereHas('role', function ($query): void {
+                                        $query->where('name', Role::OrganizationOwner)
+                                            ->orWhereHas('permissions', fn ($permissionQuery) => $permissionQuery->where('name', 'reservations.manage'));
+                                    });
+                            });
+                    });
             })
             ->get()
             ->unique('email');
 
-        Notification::send($owners, new OwnerReservationLifecycleNotification($reservation, $action));
+        Notification::send($recipients, new OwnerReservationLifecycleNotification($reservation, $action));
     }
 
     /**

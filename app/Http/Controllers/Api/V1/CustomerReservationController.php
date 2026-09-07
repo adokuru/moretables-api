@@ -33,7 +33,7 @@ class CustomerReservationController extends Controller
     }
 
     /**
-     * Create a reservation. Set `use_points` to true to deduct the customer's entire available points balance and record it on the reservation. A 422 is returned when no points are available, the requested time is outside effective booking hours, or availability changes while processing. The guest and restaurant owner are notified by email.
+     * Create a reservation. Set `use_points` to true to deduct the customer's entire available points balance and record it on the reservation. A 422 is returned when no points are available, the requested time is outside effective booking hours, or availability changes while processing. The guest, active organization owners, and staff with reservations.manage access for this restaurant are notified by email.
      *
      * Slots under a card-hold cancellation policy require `card_hold_reference`: either a `rch_` reference from the card-hold endpoint, or the reference of a Paystack transaction the frontend collected itself. In the latter case the transaction is verified here, the card authorization is saved, and the verification charge is refunded. A 422 is returned when the reference cannot be verified or has already been used.
      */
@@ -58,6 +58,9 @@ class CustomerReservationController extends Controller
         return ReservationResource::make($reservation->load(['restaurant.cuisines', 'restaurant.media', 'table', 'reservationGuests']));
     }
 
+    /**
+     * Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email.
+     */
     public function update(UpdateReservationRequest $request, Reservation $reservation): JsonResponse
     {
         abort_unless($reservation->user_id === $request->user()->id, 404);
@@ -71,6 +74,9 @@ class CustomerReservationController extends Controller
         ]);
     }
 
+    /**
+     * Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email.
+     */
     public function destroy(Reservation $reservation): JsonResponse
     {
         abort_unless($reservation->user_id === request()->user()->id, 404);

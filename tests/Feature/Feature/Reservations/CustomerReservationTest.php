@@ -1,8 +1,10 @@
 <?php
 
 use App\Events\ReservationUpdated;
+use App\Models\Organization;
 use App\Models\Reservation;
 use App\Models\ReservationGuest;
+use App\Models\Restaurant;
 use App\Models\RestaurantAvailabilityPeriod;
 use App\Models\RestaurantSpecialDay;
 use App\Models\Role;
@@ -10,6 +12,7 @@ use App\Models\User;
 use App\Notifications\OwnerReservationLifecycleNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\ReservationStatus;
+use App\UserStatus;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -45,6 +48,64 @@ it('creates a reservation for an active customer and assigns a table', function 
     Notification::assertSentTo($owner, OwnerReservationLifecycleNotification::class);
     Event::assertDispatched(ReservationUpdated::class);
 });
+
+it('notifies only the reservation restaurant owners and operators once per lifecycle change', function (string $action) {
+    Notification::fake();
+    Event::fake([ReservationUpdated::class]);
+    $this->seed(RoleAndPermissionSeeder::class);
+
+    $data = createBookableRestaurant();
+    $otherRestaurant = Restaurant::factory()->create(['organization_id' => $data['organization']->id]);
+    $customer = User::factory()->create();
+    $owner = User::factory()->create();
+    $operator = User::factory()->create();
+    $configuredOperator = User::factory()->create();
+    $readOnlyStaff = User::factory()->create();
+    $otherOperator = User::factory()->create();
+    $otherOwner = User::factory()->create();
+    $inactiveOperator = User::factory()->create(['status' => UserStatus::Suspended]);
+
+    assignScopedRole($owner, Role::OrganizationOwner, $data['organization']);
+    assignScopedRole($owner, Role::Operations, $data['organization'], $data['restaurant']);
+    assignScopedRole($operator, Role::Operations, $data['organization'], $data['restaurant']);
+    grantAccessConfigPermissions($configuredOperator, $data['restaurant'], ['reservations.manage']);
+    grantAccessConfigPermissions($readOnlyStaff, $data['restaurant'], ['reservations.view']);
+    assignScopedRole($otherOperator, Role::Operations, $data['organization'], $otherRestaurant);
+    assignScopedRole($otherOwner, Role::OrganizationOwner, Organization::factory()->create());
+    assignScopedRole($inactiveOperator, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($customer);
+
+    if ($action === 'created') {
+        $this->postJson('/api/v1/reservations', [
+            'restaurant_id' => $data['restaurant']->id,
+            'starts_at' => now()->addDays(3)->setTime(18, 0)->toDateTimeString(),
+            'party_size' => 2,
+        ])->assertCreated();
+    } else {
+        $reservation = Reservation::factory()->create([
+            'restaurant_id' => $data['restaurant']->id,
+            'restaurant_table_id' => $data['table']->id,
+            'user_id' => $customer->id,
+            'starts_at' => now()->addDays(3)->setTime(18, 0),
+            'ends_at' => now()->addDays(3)->setTime(20, 0),
+        ]);
+
+        if ($action === 'updated') {
+            $this->patchJson('/api/v1/reservations/'.$reservation->id, ['notes' => 'Window seat please'])->assertOk();
+        } else {
+            $this->deleteJson('/api/v1/reservations/'.$reservation->id)->assertOk();
+        }
+    }
+
+    foreach ([$owner, $operator, $configuredOperator] as $recipient) {
+        Notification::assertSentToTimes($recipient, OwnerReservationLifecycleNotification::class, 1);
+        Notification::assertSentTo($recipient, OwnerReservationLifecycleNotification::class,
+            fn (OwnerReservationLifecycleNotification $notification): bool => $notification->toArray($recipient)['action'] === $action);
+    }
+
+    Notification::assertNotSentTo([$customer, $readOnlyStaff, $otherOperator, $otherOwner, $inactiveOperator], OwnerReservationLifecycleNotification::class);
+})->with(['created', 'updated', 'cancelled']);
 
 it('accepts long-form special requests when creating a reservation', function () {
     $data = createBookableRestaurant();
