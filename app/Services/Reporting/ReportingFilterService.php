@@ -25,6 +25,8 @@ class ReportingFilterService
         'last_year',
         'all_time',
         'last_4_weeks',
+        'last_3_months',
+        'last_6_months',
     ];
 
     public function __construct(
@@ -47,7 +49,7 @@ class ReportingFilterService
             'compare_date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:compare_date_from', 'after_or_equal:compare_date_from'],
             'shift_id' => ['nullable', 'integer'],
             'meal_type_id' => ['nullable', 'integer'],
-            'day_of_week' => ['nullable'],
+            'day_of_week' => ['nullable', Rule::in(['all', 0, 1, 2, 3, 4, 5, 6])],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'export' => ['nullable', 'boolean'],
@@ -56,6 +58,7 @@ class ReportingFilterService
 
         if ($options['include_status'] ?? false) {
             $rules['status'] = ['nullable', 'string', Rule::in([
+                'all',
                 'not_confirmed',
                 ...array_column(ReservationStatus::cases(), 'value'),
             ])];
@@ -74,6 +77,10 @@ class ReportingFilterService
     public function resolveContext(Request $request, Restaurant $restaurant, array $options = []): ReportingFilterContext
     {
         $validated = $this->validate($request, $options);
+        $request->validate([
+            'shift_id' => ['nullable', 'integer', Rule::exists('restaurant_shifts', 'id')->where('restaurant_id', $restaurant->id)],
+            'meal_type_id' => ['nullable', 'integer', Rule::exists('restaurant_meal_types', 'id')->where('restaurant_id', $restaurant->id)],
+        ]);
         $timezone = $this->timezone($restaurant);
         $now = CarbonImmutable::now($timezone);
 
@@ -105,7 +112,7 @@ class ReportingFilterService
             $dayOfWeek = (int) $validated['day_of_week'];
         }
 
-        $statusFilter = $validated['status'] ?? null;
+        $statusFilter = $validated['status'] ?? (($options['include_status'] ?? false) ? 'all' : null);
 
         return new ReportingFilterContext(
             periodStartUtc: $periodStartUtc,
@@ -172,6 +179,10 @@ class ReportingFilterService
 
     private function applyStatusFilter(Builder|HasMany $query, ?string $statusFilter): void
     {
+        if ($statusFilter === 'all') {
+            return;
+        }
+
         if ($statusFilter === null || $statusFilter === '') {
             $query->whereNotIn('status', [ReservationStatus::Cancelled, ReservationStatus::NoShow]);
 
@@ -223,16 +234,18 @@ class ReportingFilterService
         $period = $validated['period'] ?? 'this_month';
 
         return match ($period) {
-            'this_week' => [$now->startOfWeek(CarbonImmutable::SUNDAY), $now->endOfWeek(CarbonImmutable::SATURDAY)->addDay()->startOfDay()],
+            'this_week' => [$now->startOfWeek(CarbonImmutable::MONDAY), $now->addDay()->startOfDay()],
             'last_week' => [
-                $now->subWeek()->startOfWeek(CarbonImmutable::SUNDAY),
-                $now->subWeek()->endOfWeek(CarbonImmutable::SATURDAY)->addDay()->startOfDay(),
+                $now->subWeek()->startOfWeek(CarbonImmutable::MONDAY),
+                $now->subWeek()->endOfWeek(CarbonImmutable::SUNDAY)->addDay()->startOfDay(),
             ],
+            'last_3_months' => [$now->subMonthsNoOverflow(3)->startOfDay(), $now->addDay()->startOfDay()],
+            'last_6_months' => [$now->subMonthsNoOverflow(6)->startOfDay(), $now->addDay()->startOfDay()],
             'last_month' => [
                 $now->subMonthNoOverflow()->startOfMonth(),
                 $now->subMonthNoOverflow()->endOfMonth()->addDay()->startOfDay(),
             ],
-            'this_year' => [$now->startOfYear(), $now->endOfYear()->addDay()->startOfDay()],
+            'this_year' => [$now->startOfYear(), $now->addDay()->startOfDay()],
             'last_year' => [
                 $now->subYear()->startOfYear(),
                 $now->subYear()->endOfYear()->addDay()->startOfDay(),
@@ -241,8 +254,8 @@ class ReportingFilterService
                 CarbonImmutable::parse($restaurant->created_at)->setTimezone($this->timezone($restaurant))->startOfDay(),
                 $now->addDay()->startOfDay(),
             ],
-            'last_4_weeks' => [$now->subWeeks(4)->startOfDay(), $now->addDay()->startOfDay()],
-            default => [$now->startOfMonth(), $now->endOfMonth()->addDay()->startOfDay()],
+            'last_4_weeks' => [$now->subDays(27)->startOfDay(), $now->addDay()->startOfDay()],
+            default => [$now->startOfMonth(), $now->addDay()->startOfDay()],
         };
     }
 
@@ -266,17 +279,12 @@ class ReportingFilterService
         $comparePeriod = $validated['compare_period'] ?? 'last_year';
 
         if ($comparePeriod === 'last_4_weeks') {
-            $durationDays = max(1, (int) $periodStart->diffInDays($periodEnd));
-
-            return [
-                $periodStart->subWeeks(4),
-                $periodStart->subWeeks(4)->addDays($durationDays),
-            ];
+            return [$periodStart->subDays(28), $periodStart];
         }
 
         return [
-            $periodStart->subYear(),
-            $periodEnd->subYear(),
+            $periodStart->subYearNoOverflow(),
+            $periodEnd->subDay()->subYearNoOverflow()->addDay(),
         ];
     }
 

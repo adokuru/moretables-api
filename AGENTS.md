@@ -320,3 +320,10 @@ Always run vendor/bin/pint
   ownership. `FrontOfHouseIntegrationTest` covers 16 physical seats with a 1–22
   saved range: reservation assignment/seating/clearing, waitlist conversion with
   template or reversed table IDs, and rejecting parties above 22.
+
+## Reporting accuracy and business group reports
+
+- `ReportingFilterService` owns timezone-aware presets, paired explicit dates, Monday weeks, previous-year/28-day comparisons and restaurant-owned shift validation. Reservations use all statuses; attendance excludes removed bookings.
+- `ReportingQueryService` separates parties/covers/actual guest visits, classifies first visits against full prior history, and returns chronological chart series plus Visits/Covers variants. Spend is null; CSV exports cover the entire filtered result.
+- `GroupReportingService` shares business eligibility between `MerchantRestaurantController::index` metadata and `GroupReportingRequest` authorization: active business Premium, two restaurants minimum, organization-scoped view/export permissions. `MerchantGroupReportingController` serves `/merchant/businesses/{organization}/reporting/group` and `/export` with real ratings, seated covers and same-period benchmarks.
+- Focused tests: `tests/Feature/Merchant/MerchantReportingTest.php`, `ReportingAccuracyTest.php`, `GroupReportingTest.php`. Contract/access details: `docs/PLAN_PERMISSIONS.md` and the Postman reporting folder; Scramble reads the new Form Request/controller annotations.

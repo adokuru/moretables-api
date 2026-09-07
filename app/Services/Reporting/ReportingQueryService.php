@@ -66,8 +66,8 @@ class ReportingQueryService
 
         $sources = [];
         foreach (ReportingSourceMapper::chartKeys() as $key) {
-            $actual = $this->coversForChartKey($current, $key);
-            $compareTotal = $this->coversForChartKey($compare, $key);
+            $actual = $current->filter(fn (Reservation $r) => ReportingSourceMapper::chartKey($r->source) === $key)->count();
+            $compareTotal = $compare->filter(fn (Reservation $r) => ReportingSourceMapper::chartKey($r->source) === $key)->count();
             $sources[] = [
                 'label' => ReportingSourceMapper::displayLabel($key),
                 'actual' => $actual,
@@ -125,7 +125,7 @@ class ReportingQueryService
         return [
             'summary' => $summary,
             'info' => $info,
-            'sourceStats' => $this->buildSourceStatsSeries($current, $context),
+            'sourceStats' => $this->buildSourceStatsSeries($current, $context, $restaurant),
             'coversOverTime' => $this->buildCoversOverTime($current, $context),
         ];
     }
@@ -155,12 +155,12 @@ class ReportingQueryService
         $info = [
             [
                 'label' => 'First-time guests',
-                'value' => (string) $classified['firstTime']->count(),
+                'value' => (string) $classified['firstTime']->map(fn (Reservation $r) => $this->guestKey($r))->unique()->count(),
                 'subtitle' => $firstTimeCovers.' covers',
             ],
             [
                 'label' => 'Repeat guests',
-                'value' => (string) $classified['repeat']->count(),
+                'value' => (string) $classified['repeat']->map(fn (Reservation $r) => $this->guestKey($r))->unique()->count(),
                 'subtitle' => $repeatCovers.' covers',
             ],
             [
@@ -175,8 +175,10 @@ class ReportingQueryService
             'summary' => $summary,
             'info' => $info,
             'lineChart' => $this->buildFirstTimeLineChart($classified, $context),
-            'sourceStats' => $this->buildSourceStatsFromVisits($classified['firstTime'], $context),
+            'lineChartVisits' => $this->buildFirstTimeLineChart($classified, $context, true),
+            'sourceStats' => $this->buildSourceStatsSeries($classified['firstTime'], $context, $restaurant),
             'partySizeChart' => $this->buildPartySizeChart($classified, $compareClassified, $context),
+            'partySizeChartVisits' => $this->buildPartySizeChart($classified, $compareClassified, $context, true),
         ];
     }
 
@@ -273,6 +275,9 @@ class ReportingQueryService
             }
 
             $minutes = (int) $reservation->seated_at->diffInMinutes($reservation->completed_at);
+            if ($reservation->completed_at->lessThan($reservation->seated_at)) {
+                return null;
+            }
             $localStart = $reservation->starts_at->setTimezone($context->timezone);
             $shift = $this->shiftService->resolveShiftForSlot($restaurant, $localStart);
             $settingMinutes = $shift instanceof RestaurantShift
@@ -426,9 +431,9 @@ class ReportingQueryService
                 $row['lastVisit'],
                 $row['covers'],
                 $row['visits'],
-                $row['totalSpend'],
+                $row['totalSpend'] ?? '—',
                 $row['lifetimeVisits'],
-                $row['lifetimeSpend'],
+                $row['lifetimeSpend'] ?? '—',
                 $row['lifetimeCovers'] ?? 0,
             ]);
         }
@@ -558,7 +563,7 @@ class ReportingQueryService
             ? fn (Reservation $r) => $this->shiftLabel($r, $restaurant, $context)
             : fn (Reservation $r) => $this->periodLabel($r->starts_at, $context);
 
-        $grouped = $reservations->groupBy($labelFn);
+        $grouped = $reservations->sortBy('starts_at')->groupBy($labelFn);
 
         return $grouped->map(function (Collection $items, string $name): array {
             $walk = $this->sumCovers($items->filter(fn (Reservation $r) => ReportingSourceMapper::isWalkIn($r->source)));
@@ -568,7 +573,7 @@ class ReportingQueryService
                 'res' => $this->sumCovers($items) - $walk,
                 'walk' => $walk,
             ];
-        })->sortKeys()->values()->all();
+        })->values()->all();
     }
 
     /**
@@ -582,6 +587,7 @@ class ReportingQueryService
             : fn (Reservation $r) => $this->periodLabel($r->starts_at, $context);
 
         return $reservations
+            ->sortBy('starts_at')
             ->groupBy($labelFn)
             ->map(function (Collection $items, string $name): array {
                 $stats = $this->emptySourceStats($name);
@@ -592,18 +598,9 @@ class ReportingQueryService
 
                 return $stats;
             })
-            ->sortKeys()
+
             ->values()
             ->all();
-    }
-
-    /**
-     * @param  EloquentCollection<int, Reservation>  $firstTime
-     * @return list<array{name: string, walkin: int, phone: int, network: int, moretables: int}>
-     */
-    private function buildSourceStatsFromVisits(EloquentCollection $firstTime, ReportingFilterContext $context): array
-    {
-        return $this->buildSourceStatsSeries($firstTime, $context);
     }
 
     /**
@@ -627,12 +624,13 @@ class ReportingQueryService
     private function buildCoversOverTime(EloquentCollection $reservations, ReportingFilterContext $context): array
     {
         return $reservations
+            ->sortBy('starts_at')
             ->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context))
             ->map(fn (Collection $items, string $name) => [
                 'name' => $name,
                 'covers' => $this->sumCovers($items),
             ])
-            ->sortKeys()
+
             ->values()
             ->all();
     }
@@ -643,9 +641,9 @@ class ReportingQueryService
 
         return match ($context->chartGroup) {
             'month' => $local->format('M Y'),
-            'week' => 'W'.$local->isoWeek.' '.$local->format('Y'),
-            'day' => $local->format('M j'),
-            default => $context->dayCount <= 31 ? $local->format('M j') : $local->format('M Y'),
+            'week' => 'W'.$local->isoWeek.' '.$local->isoWeekYear,
+            'day' => $local->format('M j, Y'),
+            default => $context->dayCount <= 31 ? $local->format('M j, Y') : $local->format('M Y'),
         };
     }
 
@@ -668,7 +666,7 @@ class ReportingQueryService
             }
 
             return max(0, $reservation->created_at->diffInHours($reservation->starts_at) / 24);
-        })->filter();
+        })->filter(fn (?float $sample): bool => $sample !== null);
 
         return $samples->isEmpty() ? 0.0 : round($samples->avg(), 1);
     }
@@ -688,7 +686,7 @@ class ReportingQueryService
      */
     private function classifyFirstTimeVisits(Restaurant $restaurant, EloquentCollection $visits): array
     {
-        $priorCounts = $this->priorVisitCounts($restaurant, $visits);
+        $firstVisitIds = $this->firstVisitIds($restaurant, $visits);
 
         $firstTime = collect();
         $repeat = collect();
@@ -699,14 +697,13 @@ class ReportingQueryService
                 continue;
             }
 
-            $seenBefore = ($priorCounts[$key] ?? 0) > 0;
+            $seenBefore = ($firstVisitIds[$key] ?? null) !== $visit->id;
             if ($seenBefore) {
                 $repeat->push($visit);
             } else {
                 $firstTime->push($visit);
             }
 
-            $priorCounts[$key] = ($priorCounts[$key] ?? 0) + 1;
         }
 
         return [
@@ -719,23 +716,24 @@ class ReportingQueryService
      * @param  EloquentCollection<int, Reservation>  $visits
      * @return array<string, int>
      */
-    private function priorVisitCounts(Restaurant $restaurant, EloquentCollection $visits): array
+    private function firstVisitIds(Restaurant $restaurant, EloquentCollection $visits): array
     {
         if ($visits->isEmpty()) {
             return [];
         }
 
-        $earliest = $visits->min('starts_at');
+        $latest = $visits->max('starts_at');
         $guestKeys = $visits->map(fn (Reservation $r) => $this->guestKey($r))->filter()->unique()->values();
 
         $prior = $restaurant->reservations()
-            ->where('starts_at', '<', $earliest)
+            ->where('starts_at', '<=', $latest)
             ->whereIn('status', [ReservationStatus::Seated, ReservationStatus::Completed])
             ->where(function ($builder): void {
                 $builder->whereNull('guest_contact_id')
                     ->orWhereHas('guestContact', fn ($guest) => $guest->where('is_temporary', false));
             })
-            ->get(['guest_contact_id', 'user_id']);
+            ->orderBy('starts_at')->orderBy('id')
+            ->get(['id', 'guest_contact_id', 'user_id']);
 
         $counts = [];
         foreach ($prior as $reservation) {
@@ -743,7 +741,7 @@ class ReportingQueryService
             if ($key === null || ! $guestKeys->contains($key)) {
                 continue;
             }
-            $counts[$key] = ($counts[$key] ?? 0) + 1;
+            $counts[$key] ??= $reservation->id;
         }
 
         return $counts;
@@ -753,16 +751,16 @@ class ReportingQueryService
      * @param  array{firstTime: EloquentCollection<int, Reservation>, repeat: EloquentCollection<int, Reservation>}  $classified
      * @return list<array{name: string, firstTime: int, repeat: int}>
      */
-    private function buildFirstTimeLineChart(array $classified, ReportingFilterContext $context): array
+    private function buildFirstTimeLineChart(array $classified, ReportingFilterContext $context, bool $visits = false): array
     {
         $labels = $classified['firstTime']
             ->merge($classified['repeat'])
+            ->sortBy('starts_at')
             ->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context))
             ->keys()
-            ->sort()
             ->values();
 
-        return $labels->map(function (string $name) use ($classified, $context): array {
+        return $labels->map(function (string $name) use ($classified, $context, $visits): array {
             $first = $classified['firstTime']->filter(
                 fn (Reservation $r) => $this->periodLabel($r->starts_at, $context) === $name
             );
@@ -772,8 +770,8 @@ class ReportingQueryService
 
             return [
                 'name' => $name,
-                'firstTime' => $this->sumCovers($first),
-                'repeat' => $this->sumCovers($repeat),
+                'firstTime' => $visits ? $first->count() : $this->sumCovers($first),
+                'repeat' => $visits ? $repeat->count() : $this->sumCovers($repeat),
             ];
         })->all();
     }
@@ -783,15 +781,15 @@ class ReportingQueryService
      * @param  array{firstTime: EloquentCollection<int, Reservation>, repeat: EloquentCollection<int, Reservation>}  $compareClassified
      * @return list<array<string, int|string>>
      */
-    private function buildPartySizeChart(array $classified, array $compareClassified, ReportingFilterContext $context): array
+    private function buildPartySizeChart(array $classified, array $compareClassified, ReportingFilterContext $context, bool $visits = false): array
     {
         $labels = ['1', '2', '3', '4', '5', '6+'];
 
-        return collect($labels)->map(function (string $label) use ($classified, $compareClassified): array {
-            $firstTime = $this->sumCoversForPartyLabel($classified['firstTime'], $label);
-            $repeat = $this->sumCoversForPartyLabel($classified['repeat'], $label);
-            $lastYearFirst = $this->sumCoversForPartyLabel($compareClassified['firstTime'], $label);
-            $lastYearRepeat = $this->sumCoversForPartyLabel($compareClassified['repeat'], $label);
+        return collect($labels)->map(function (string $label) use ($classified, $compareClassified, $visits): array {
+            $firstTime = $this->sumCoversForPartyLabel($classified['firstTime'], $label, $visits);
+            $repeat = $this->sumCoversForPartyLabel($classified['repeat'], $label, $visits);
+            $lastYearFirst = $this->sumCoversForPartyLabel($compareClassified['firstTime'], $label, $visits);
+            $lastYearRepeat = $this->sumCoversForPartyLabel($compareClassified['repeat'], $label, $visits);
 
             return [
                 'name' => $label,
@@ -807,11 +805,11 @@ class ReportingQueryService
     /**
      * @param  EloquentCollection<int, Reservation>  $reservations
      */
-    private function sumCoversForPartyLabel(EloquentCollection $reservations, string $label): int
+    private function sumCoversForPartyLabel(EloquentCollection $reservations, string $label, bool $visits = false): int
     {
-        return (int) $reservations
-            ->filter(fn (Reservation $r) => $this->partySizeLabel($r->party_size) === $label)
-            ->sum('party_size');
+        $matching = $reservations->filter(fn (Reservation $r) => $this->partySizeLabel($r->party_size) === $label);
+
+        return $visits ? $matching->count() : (int) $matching->sum('party_size');
     }
 
     private function partySizeLabel(int $partySize): string
@@ -824,7 +822,7 @@ class ReportingQueryService
      */
     private function buildGuestRows(Restaurant $restaurant, HasMany $query, ReportingFilterContext $context): Collection
     {
-        $reservations = $this->loadReservations($query);
+        $reservations = $this->visitReservations($query);
         $lifetime = $this->lifetimeGuestStats($restaurant);
 
         $grouped = [];
@@ -841,9 +839,9 @@ class ReportingQueryService
                     'lastVisit' => $reservation->starts_at->setTimezone($context->timezone)->format('M j, Y'),
                     'covers' => 0,
                     'visits' => 0,
-                    'totalSpend' => $this->formatCurrency(0),
+                    'totalSpend' => null,
                     'lifetimeVisits' => $lifetime[$key]['visits'] ?? 0,
-                    'lifetimeSpend' => $this->formatCurrency(0),
+                    'lifetimeSpend' => null,
                     'lifetimeCovers' => $lifetime[$key]['covers'] ?? 0,
                     '_lastVisitAt' => $reservation->starts_at,
                 ];
@@ -988,11 +986,6 @@ class ReportingQueryService
         }
 
         return 'Guest';
-    }
-
-    private function formatCurrency(int $amount): string
-    {
-        return '₦'.number_format($amount);
     }
 
     private function formatDuration(int $minutes): string

@@ -6,20 +6,18 @@ use App\Models\Role;
 use App\Models\User;
 use App\ReservationSource;
 use App\ReservationStatus;
+use Carbon\CarbonImmutable;
 use Database\Seeders\BillingPlanSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function (): void {
+    $this->travelTo(CarbonImmutable::parse('2026-09-07 12:00:00', 'UTC'));
     $this->seed(RoleAndPermissionSeeder::class);
     $this->seed(BillingPlanSeeder::class);
 
     $this->data = createBookableRestaurant();
     activateMerchantBilling($this->data['restaurant']);
-    // Customizable Advanced Analytics (this whole Reporting page) is
-    // Premium-only (docs/PLAN_PERMISSIONS.md) — this file's existing tests
-    // predate that gate and expect every report to just work, so default to
-    // Premium. The plan-gating tests further down explicitly downgrade instead.
     setRestaurantBillingPlan($this->data['restaurant'], BillingPlanSlug::Premium);
 
     $this->staff = User::factory()->create();
@@ -265,34 +263,15 @@ it('exports guest list as csv', function (): void {
     expect($response->headers->get('content-type'))->toContain('text/csv');
 });
 
-// Plan-tier gating — Customizable Advanced Analytics (the entire Reporting page)
-// is Premium-only (docs/PLAN_PERMISSIONS.md), not just Group Reporting. Foundation
-// AND Core are both blocked. $this->data['restaurant'] is Premium by default (see
-// beforeEach); these tests explicitly downgrade it.
-
-it('rejects viewing reports for a restaurant below Premium with an upgrade message', function (): void {
-    setRestaurantBillingPlan($this->data['restaurant'], BillingPlanSlug::Foundation);
-
-    $this->getJson($this->reportingBase.'/shift-occupancy?'.$this->periodQuery)
-        ->assertForbidden()
-        ->assertJsonPath('message', 'Upgrade to Premium to access Reporting.');
-});
-
-it('rejects viewing reports for a restaurant on Core too, not just Foundation', function (): void {
-    setRestaurantBillingPlan($this->data['restaurant'], BillingPlanSlug::Core);
-
-    $this->getJson($this->reportingBase.'/shift-occupancy?'.$this->periodQuery)
-        ->assertForbidden()
-        ->assertJsonPath('message', 'Upgrade to Premium to access Reporting.');
-});
-
-it('rejects exporting reports for a restaurant below Premium, even with reporting.export', function (): void {
-    setRestaurantBillingPlan($this->data['restaurant'], BillingPlanSlug::Foundation);
+it('allows ordinary reporting on every active plan', function (BillingPlanSlug $plan): void {
+    setRestaurantBillingPlan($this->data['restaurant'], $plan);
+    foreach (['filters', 'shift-occupancy', 'cover-trends', 'first-time-visits', 'guest-frequency', 'guest-export', 'reservations', 'turn-times'] as $report) {
+        $this->getJson($this->reportingBase.'/'.$report.'?'.$this->periodQuery)->assertOk();
+    }
     $exporter = User::factory()->create();
     grantAccessConfigPermissions($exporter, $this->data['restaurant'], ['reporting.export']);
     Sanctum::actingAs($exporter);
-
-    $this->getJson($this->reportingBase.'/guest-frequency/export?'.$this->periodQuery.'&frequency_period=all_time')
-        ->assertForbidden()
-        ->assertJsonPath('message', 'Upgrade to Premium to access Reporting.');
-});
+    foreach (['guest-frequency', 'guest-export', 'reservations'] as $report) {
+        $this->get($this->reportingBase.'/'.$report.'/export?'.$this->periodQuery)->assertOk();
+    }
+})->with(BillingPlanSlug::cases());

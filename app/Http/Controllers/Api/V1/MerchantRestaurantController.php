@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Services\AuditLogService;
 use App\Services\CuisineOptionRestaurantSyncService;
 use App\Services\MediaLibraryService;
+use App\Services\Reporting\GroupReportingService;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -52,13 +53,20 @@ class MerchantRestaurantController extends Controller
             ->orderBy('name')
             ->get();
 
+        $groupAccess = [];
+
         return response()->json([
-            'restaurants' => $restaurants->map(function (Restaurant $restaurant) use ($user) {
+            'restaurants' => $restaurants->map(function (Restaurant $restaurant) use ($user, &$groupAccess) {
                 /** @var ?Media $cover */
                 $cover = $restaurant->media->firstWhere('collection_name', 'featured')
                     ?? $restaurant->media->where('collection_name', 'gallery')->sortBy('order_column')->first();
 
+                $groupAccess[$restaurant->organization_id] ??= $restaurant->organization
+                    ? app(GroupReportingService::class)->access($user, $restaurant->organization)
+                    : ['can_view' => false, 'can_export' => false];
+
                 return [
+                    'group_reporting' => $groupAccess[$restaurant->organization_id],
                     'id' => $restaurant->id,
                     'name' => $restaurant->name,
                     'organization_id' => $restaurant->organization_id,

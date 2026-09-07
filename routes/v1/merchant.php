@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\MerchantBusinessBillingController;
 use App\Http\Controllers\Api\V1\MerchantDashboardPreferencesController;
 use App\Http\Controllers\Api\V1\MerchantDiningAreaController;
 use App\Http\Controllers\Api\V1\MerchantDiningSpotController;
+use App\Http\Controllers\Api\V1\MerchantGroupReportingController;
 use App\Http\Controllers\Api\V1\MerchantGuestCommunicationController;
 use App\Http\Controllers\Api\V1\MerchantGuestSurveyController;
 use App\Http\Controllers\Api\V1\MerchantMenuCategoryController;
@@ -62,6 +63,13 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])
         Route::get('verify/{reference}', [MerchantBusinessBillingController::class, 'verify']);
         Route::get('invoices', [MerchantBusinessBillingController::class, 'invoices']);
         Route::get('invoices/{invoice}/download', [MerchantBusinessBillingController::class, 'downloadInvoice']);
+    });
+
+Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])
+    ->prefix('merchant/businesses/{organization}/reporting/group')
+    ->group(function (): void {
+        Route::get('/', [MerchantGroupReportingController::class, 'show'])->name('merchant.reporting.group');
+        Route::get('/export', [MerchantGroupReportingController::class, 'export'])->name('merchant.reporting.group.export');
     });
 
 Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])->prefix('merchant/restaurants/{restaurant}')->group(function (): void {
