@@ -9,12 +9,18 @@ use App\Notifications\Contracts\Unsubscribable;
 use Illuminate\Notifications\Channels\MailChannel;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class MoreTablesMailChannel extends MailChannel
 {
     public function send($notifiable, Notification $notification)
     {
         if ($notification instanceof Unsubscribable && $this->isUnsubscribed($notifiable, $notification)) {
+            Log::info('Suppressed email to unsubscribed recipient.', [
+                'notification' => $notification::class,
+                'recipients' => $notifiable->routeNotificationFor('mail', $notification),
+            ]);
+
             return;
         }
 

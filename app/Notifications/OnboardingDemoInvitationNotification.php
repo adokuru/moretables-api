@@ -41,17 +41,21 @@ class OnboardingDemoInvitationNotification extends Notification implements Shoul
                 'subject' => $subject,
                 'recipientName' => $firstName,
                 'greeting' => "Hi {$firstName},",
-                'bodyPrimary' => "Thanks for reaching out about {$restaurantName} — we'd love to show you around. Pick a time that suits your service hours and we'll walk you through MoreTables in 20 minutes. No slides, just your restaurant.",
-                'bodySecondary' => "What we'll cover:\n"
-                    ."• Taking reservations from Google, Instagram and your own site\n"
-                    ."• Cutting no-shows with automatic reminders and deposits\n"
-                    ."• Turning tables faster with a live floor view your team will actually use\n\n"
-                    .'Prefer to talk it through by email instead? Just reply to this message.',
+                'bodyPrimary' => "Thanks for requesting a MoreTables demo.\n\n"
+                    ."We’d love to show you how MoreTables can help {$restaurantName} simplify reservations, optimize your tables, reduce no-shows, and turn more diners into regulars.",
+                'bodySecondary' => "In a 30-45 minute demo, we’ll cover:\n\n"
+                    ."The Diner Experience — see how your guests can easily discover your restaurant, check availability, book a table, and manage their reservation from start to finish.\n"
+                    ."Reservations — real-time availability, booking management & waitlists\n"
+                    ."Guest Management — guest profiles, preferences & dining history\n"
+                    ."No-Show Protection — reminders, reservation holds & smarter cancellation management\n"
+                    ."Guest Loyalty — rewards and tools to encourage repeat visits\n"
+                    ."Analytics & Reporting — actionable insights into bookings, covers, revenue, guest behavior & restaurant performance\n\n"
+                    .'Pick a time that works for you, and we’ll take care of the rest.',
                 'ctaUrl' => $bookingUrl,
                 'ctaLabel' => 'Book a demo',
                 'ctaButton' => true,
                 'showCta' => true,
-                'signOff' => 'Talk soon,',
+                'signOff' => 'See you soon',
                 'signature' => 'The MoreTables Team',
                 'footerLine1' => 'MoreTables',
                 'footerLine2' => 'Lagos, Nigeria.',

@@ -146,6 +146,21 @@ it('emails the requester a demo booking link', function () {
         function (OnboardingDemoInvitationNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool {
             $html = (string) $notification->toMail(new stdClass)->render();
 
+            $copy = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            expect($copy)->toContain(
+                'Thanks for requesting a MoreTables demo.',
+                'We’d love to show you how MoreTables can help Chidi\'s Bistro simplify reservations, optimize your tables, reduce no-shows, and turn more diners into regulars.',
+                'In a 30-45 minute demo, we’ll cover:',
+                'The Diner Experience — see how your guests can easily discover your restaurant, check availability, book a table, and manage their reservation from start to finish.',
+                'Reservations — real-time availability, booking management & waitlists',
+                'Guest Management — guest profiles, preferences & dining history',
+                'No-Show Protection — reminders, reservation holds & smarter cancellation management',
+                'Guest Loyalty — rewards and tools to encourage repeat visits',
+                'Analytics & Reporting — actionable insights into bookings, covers, revenue, guest behavior & restaurant performance',
+                'Pick a time that works for you, and we’ll take care of the rest.',
+                'See you soon',
+            )->not->toContain('20 minutes', 'No slides', 'Talk soon');
+
             return $notifiable->routes['mail'] === 'chidi@bistro.ng'
                 && $channels === ['mail']
                 && str_contains($html, 'Hi Chidi,')
