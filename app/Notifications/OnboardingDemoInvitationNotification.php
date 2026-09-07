@@ -33,7 +33,7 @@ class OnboardingDemoInvitationNotification extends Notification implements Shoul
             ?: (explode(' ', (string) $this->onboardingRequest->owner_name)[0] ?: 'there');
         $restaurantName = $this->onboardingRequest->restaurant_name ?: 'your restaurant';
         $subject = 'Book your MoreTables demo';
-        $bookingUrl = $this->demoBookingUrl();
+        $bookingUrl = static::bookingUrl();
 
         $message = (new MailMessage)
             ->subject($subject)
@@ -76,8 +76,13 @@ class OnboardingDemoInvitationNotification extends Notification implements Shoul
         ];
     }
 
-    protected function demoBookingUrl(): string
+    /**
+     * Calendar link behind the "Book a demo" button. Static so bulk senders can
+     * show and validate the link before mailing anyone.
+     */
+    public static function bookingUrl(): string
     {
-        return config('services.demo_booking.url') ?: $this->frontendBaseUrl().'/book-a-demo';
+        return config('services.demo_booking.url')
+            ?: rtrim((string) (config('app.frontend_urls.main') ?: config('app.url')), '/').'/book-a-demo';
     }
 }

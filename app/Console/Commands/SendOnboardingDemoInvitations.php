@@ -25,6 +25,15 @@ class SendOnboardingDemoInvitations extends Command
             return self::SUCCESS;
         }
 
+        $bookingUrl = OnboardingDemoInvitationNotification::bookingUrl();
+        $this->line("Booking button links to: {$bookingUrl}");
+
+        if ($this->isUnreachableUrl($bookingUrl)) {
+            $this->error("Refusing to send: {$bookingUrl} is not reachable by a recipient. Set DEMO_BOOKING_URL (or FRONTEND_URL) for this environment first.");
+
+            return self::FAILURE;
+        }
+
         if ($this->option('dry-run')) {
             foreach ($recipients as $requests) {
                 $this->line("  {$requests->first()->email} ({$requests->count()} request(s))");
@@ -55,6 +64,17 @@ class SendOnboardingDemoInvitations extends Command
         $this->info("Queued {$recipients->count()} demo invitation(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * A localhost or unset host means the environment is misconfigured, and a blast
+     * of dead links cannot be taken back.
+     */
+    protected function isUnreachableUrl(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return $host === null || $host === false || in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     }
 
     /**

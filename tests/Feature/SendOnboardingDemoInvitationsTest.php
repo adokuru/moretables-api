@@ -5,6 +5,10 @@ use App\Notifications\OnboardingDemoInvitationNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
+beforeEach(function () {
+    config(['services.demo_booking.url' => 'https://cal.com/moretables/demo']);
+});
+
 it('emails every requester that has not been invited yet', function () {
     Notification::fake();
 
@@ -84,4 +88,27 @@ it('skips requests without an email address', function () {
         ->assertSuccessful();
 
     Notification::assertNothingSent();
+});
+
+it('refuses to send when the booking link is not reachable by a recipient', function () {
+    Notification::fake();
+    config(['services.demo_booking.url' => null, 'app.frontend_urls.main' => null, 'app.url' => 'http://localhost:8000']);
+
+    $request = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+
+    $this->artisan('onboarding-requests:send-demo-invites --force')
+        ->expectsOutputToContain('Refusing to send')
+        ->assertFailed();
+
+    Notification::assertNothingSent();
+    expect($request->refresh()->demo_invitation_sent_at)->toBeNull();
+});
+
+it('shows the booking link before sending', function () {
+    Notification::fake();
+    OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+
+    $this->artisan('onboarding-requests:send-demo-invites --dry-run')
+        ->expectsOutputToContain('Booking button links to: https://cal.com/moretables/demo')
+        ->assertSuccessful();
 });
