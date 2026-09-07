@@ -70,7 +70,7 @@ class AdminOnboardingRequestController extends Controller
     }
 
     /**
-     * Create an onboarding request and notify admins by email/database and sales by email.
+     * Create an onboarding request, notify admins by email/database and sales by email, and email the requester a demo booking link.
      */
     public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {
@@ -78,7 +78,7 @@ class AdminOnboardingRequestController extends Controller
 
         $onboardingRequest = OnboardingRequest::query()->create($request->validated())->refresh();
 
-        $notifications->notifyAdmins($onboardingRequest);
+        $notifications->notifySubmission($onboardingRequest);
 
         $this->logAdminAudit(
             $request,

@@ -62,6 +62,10 @@ return [
         ],
     ],
 
+    'demo_booking' => [
+        'url' => env('DEMO_BOOKING_URL'),
+    ],
+
     'expo' => [
         'push_url' => env('EXPO_PUSH_URL', 'https://exp.host/--/api/v2/push/send'),
         'access_token' => env('EXPO_ACCESS_TOKEN'),

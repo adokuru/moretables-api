@@ -3,6 +3,7 @@
 use App\Models\OnboardingRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\OnboardingDemoInvitationNotification;
 use App\Notifications\OnboardingRequestSubmittedNotification;
 use App\OnboardingContactReason;
 use App\OnboardingJobTitle;
@@ -123,4 +124,43 @@ it('accepts optional address and notes fields', function () {
     $response->assertCreated()
         ->assertJsonPath('onboarding_request.address', '10 Victoria Island, Lagos')
         ->assertJsonPath('onboarding_request.notes', 'Looking forward to partnering with you.');
+});
+
+it('emails the requester a demo booking link', function () {
+    Notification::fake();
+    config(['services.demo_booking.url' => 'https://cal.com/moretables/demo']);
+
+    $this->postJson('/api/v1/onboarding-requests', [
+        'first_name' => 'Chidi',
+        'last_name' => 'Okeke',
+        'email' => 'chidi@bistro.ng',
+        'phone' => '+2348011223344',
+        'restaurant_name' => 'Chidi\'s Bistro',
+        'job_title' => OnboardingJobTitle::Owner->value,
+        'location_count' => OnboardingLocationCount::One->value,
+        'contact_reason' => OnboardingContactReason::BookADemo->value,
+    ])->assertCreated();
+
+    Notification::assertSentOnDemand(
+        OnboardingDemoInvitationNotification::class,
+        function (OnboardingDemoInvitationNotification $notification, array $channels, AnonymousNotifiable $notifiable): bool {
+            $html = (string) $notification->toMail(new stdClass)->render();
+
+            return $notifiable->routes['mail'] === 'chidi@bistro.ng'
+                && $channels === ['mail']
+                && str_contains($html, 'Hi Chidi,')
+                && str_contains($html, 'https://cal.com/moretables/demo')
+                && str_contains($html, 'Book a demo')
+                && str_contains($html, 'background-color:#1a1a1a;padding:14px 28px;');
+        },
+    );
+});
+
+it('falls back to the frontend booking path when no calendar url is configured', function () {
+    config(['services.demo_booking.url' => null, 'app.frontend_urls.main' => 'https://www.moretables.com']);
+
+    $request = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng']);
+    $html = (string) (new OnboardingDemoInvitationNotification($request))->toMail(new stdClass)->render();
+
+    expect($html)->toContain('https://www.moretables.com/book-a-demo');
 });

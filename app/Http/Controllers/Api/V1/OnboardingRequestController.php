@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 class OnboardingRequestController extends Controller
 {
     /**
-     * Submit an onboarding request and notify admins by email/database and sales by email.
+     * Submit an onboarding request, notify admins by email/database and sales by email, and email the requester a demo booking link.
      */
     public function store(StoreOnboardingRequestRequest $request, OnboardingRequestNotificationService $notifications): JsonResponse
     {
@@ -27,7 +27,7 @@ class OnboardingRequestController extends Controller
 
         $onboardingRequest = OnboardingRequest::query()->create($validated);
 
-        $notifications->notifyAdmins($onboardingRequest);
+        $notifications->notifySubmission($onboardingRequest);
 
         return response()->json([
             'message' => 'Onboarding request submitted successfully.',

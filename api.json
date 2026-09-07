@@ -1363,7 +1363,7 @@
         "/onboarding-requests": {
             "post": {
                 "operationId": "onboardingRequest.store",
-                "summary": "Submit an onboarding request and notify admins by email/database and sales by email",
+                "summary": "Submit an onboarding request, notify admins by email/database and sales by email, and email the requester a demo booking link",
                 "tags": [
                     "Onboarding Requests"
                 ],
@@ -29895,7 +29895,7 @@
             },
             "post": {
                 "operationId": "adminOnboardingRequest.store",
-                "summary": "Create an onboarding request and notify admins by email/database and sales by email",
+                "summary": "Create an onboarding request, notify admins by email/database and sales by email, and email the requester a demo booking link",
                 "tags": [
                     "Admin Onboarding Requests"
                 ],

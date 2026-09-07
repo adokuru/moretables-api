@@ -34,6 +34,7 @@
     $footerLink2Url = $footerLink2Url ?? config('app.url');
     $footerLink2Label = $footerLink2Label ?? 'Unsubscribe';
     $showCta = $showCta ?? true;
+    $ctaButton = $ctaButton ?? false;
     $closingBlock = $closingBlock ?? null;
     $footerNote = $footerNote ?? '';
 @endphp
@@ -132,7 +133,11 @@ a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !im
 <tr><td><div style="mso-line-height-rule:exactly;mso-line-height-alt:28px;line-height:28px;font-size:1px;display:block;">&nbsp;</div></td></tr>
 <tr><td align="left">
 <table role="presentation" cellpadding="0" cellspacing="0" style="Margin-right:auto;"><tr><td>
+@if($ctaButton)
+<table role="presentation" cellpadding="0" cellspacing="0" style="border-radius:6px;background-color:#1a1a1a;"><tr><td align="center" style="border-radius:6px;background-color:#1a1a1a;padding:14px 28px;"><a href="{{ $ctaUrl }}" style="display:inline-block;font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:600;color:#FFFFFF;text-decoration:none;" target="_blank">{{ $ctaLabel }}</a></td></tr></table>
+@else
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td><a href="{{ $ctaUrl }}" style="font-family:'Avenir Next','Avenir','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:26px;font-weight:400;color:#333333;text-decoration:underline;" target="_blank">{{ $ctaLabel }}</a></td></tr></table>
+@endif
 </td></tr></table>
 </td></tr>
 <tr><td><div style="mso-line-height-rule:exactly;mso-line-height-alt:28px;line-height:28px;font-size:1px;display:block;">&nbsp;</div></td></tr>
