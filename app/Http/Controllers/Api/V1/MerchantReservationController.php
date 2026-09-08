@@ -243,6 +243,27 @@ class MerchantReservationController extends Controller
         ]);
     }
 
+    /**
+     * Return an arrived or partially arrived reservation to pending.
+     *
+     * Restores the confirmed pre-arrival status and clears arrived_at and service_stage.
+     * Preserves the booking and assigned tables. Requires reservations.manage.
+     * Other current statuses return 422.
+     */
+    #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
+    public function pending(Restaurant $restaurant, Reservation $reservation): JsonResponse
+    {
+        abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);
+        abort_unless($reservation->restaurant_id === $restaurant->id, 404);
+
+        $updatedReservation = $this->reservationService->pendingReservation($reservation, request()->user());
+
+        return response()->json([
+            'message' => 'Reservation returned to pending.',
+            'reservation' => ReservationResource::make($updatedReservation),
+        ]);
+    }
+
     public function arrive(Restaurant $restaurant, Reservation $reservation): JsonResponse
     {
         abort_unless(request()->user()->hasRestaurantPermission('reservations.manage', $restaurant), 403);

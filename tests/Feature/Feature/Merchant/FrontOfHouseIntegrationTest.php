@@ -1160,3 +1160,78 @@ it('rejects parties above the configured combination capacity', function (bool $
         ->assertUnprocessable()->assertJsonValidationErrors(array_key_first($selection));
     expect($entry->refresh()->assignedTables()->count())->toBe(0);
 })->with([false, true]);
+
+it('returns an arrival to pending and records a fresh subsequent arrival', function (ReservationStatus $status) {
+    Carbon::setTestNow('2026-07-14 10:15:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'status' => $status,
+        'arrived_at' => now()->subMinutes(10),
+        'service_stage' => null,
+        'starts_at' => now()->addHour(),
+        'ends_at' => now()->addHours(2),
+    ]);
+    $reservation->assignedTables()->sync([$data['table']->id]);
+    $before = $reservation->fresh()->getAttributes();
+    $tableStatus = $data['table']->fresh()->status;
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/pending'))
+        ->assertOk()
+        ->assertJsonPath('reservation.status', 'confirmed')
+        ->assertJsonPath('reservation.arrived_at', null)
+        ->assertJsonPath('reservation.service_stage', null)
+        ->assertJsonPath('reservation.tables.0.id', $data['table']->id);
+
+    $reservation->refresh();
+    foreach (['restaurant_table_id', 'party_size', 'starts_at', 'ends_at', 'notes', 'reservation_reference'] as $field) {
+        expect($reservation->getAttributes()[$field])->toBe($before[$field]);
+    }
+    expect($data['table']->fresh()->status)->toBe($tableStatus);
+    $this->getJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id))
+        ->assertOk()->assertJsonPath('data.status', 'confirmed')
+        ->assertJsonPath('data.arrived_at', null);
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/reservations?date=2026-07-14'))
+        ->assertOk()->assertJsonPath('data.0.id', $reservation->id)
+        ->assertJsonPath('data.0.status', 'confirmed');
+    $this->getJson(frontOfHouseUrl($data, 'front-of-house/arrived?date=2026-07-14'))
+        ->assertOk()->assertJsonCount(0, 'data');
+
+    Carbon::setTestNow('2026-07-14 10:30:00');
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/arrive'))
+        ->assertOk()->assertJsonPath('reservation.arrived_at', '2026-07-14T10:30:00+00:00');
+})->with([ReservationStatus::Arrived, ReservationStatus::PartiallyArrived]);
+
+it('rejects returning other reservation states to pending', function (ReservationStatus $status) {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => $status,
+    ]);
+
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/pending'))
+        ->assertUnprocessable()->assertJsonValidationErrors('reservation');
+    expect($reservation->fresh()->status)->toBe($status);
+})->with(array_values(array_filter(ReservationStatus::cases(), fn (ReservationStatus $status) => ! in_array($status, [ReservationStatus::Arrived, ReservationStatus::PartiallyArrived], true))));
+
+it('requires restaurant permission and ownership to return a reservation to pending', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'status' => ReservationStatus::Arrived,
+    ]);
+    Sanctum::actingAs(User::factory()->create());
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$reservation->id.'/pending'))->assertForbidden();
+
+    actingAsFrontOfHouse($data);
+    $other = Reservation::factory()->create(['status' => ReservationStatus::Arrived]);
+    $this->postJson(frontOfHouseUrl($data, 'reservations/'.$other->id.'/pending'))->assertNotFound();
+    expect($reservation->fresh()->status)->toBe(ReservationStatus::Arrived)
+        ->and($other->fresh()->status)->toBe(ReservationStatus::Arrived);
+});

@@ -911,6 +911,30 @@ class ReservationService
         );
     }
 
+    public function pendingReservation(Reservation $reservation, User $actor): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $actor): Reservation {
+            $reservation = Reservation::query()->lockForUpdate()->findOrFail($reservation->id);
+
+            if (! in_array($reservation->status, [ReservationStatus::Arrived, ReservationStatus::PartiallyArrived], true)) {
+                throw ValidationException::withMessages([
+                    'reservation' => ['Only arrived or partially arrived reservations can be returned to pending.'],
+                ]);
+            }
+
+            $reservation->forceFill([
+                'status' => ReservationStatus::Confirmed,
+                'arrived_at' => null,
+                'service_stage' => null,
+            ])->save();
+
+            $reservation->refresh()->load(['restaurant', 'table', 'assignedTables', 'user', 'guestContact', 'reservationGuests']);
+            event(new ReservationUpdated($reservation, 'pending', $actor));
+
+            return $reservation;
+        });
+    }
+
     public function arriveReservation(Reservation $reservation, User $actor): Reservation
     {
         $reservation->forceFill([

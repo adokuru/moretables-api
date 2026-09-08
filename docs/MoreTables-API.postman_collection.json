@@ -5511,6 +5511,45 @@
      }
     },
     {
+     "name": "Reservation return to pending",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reservations/{{reservation_id}}/pending",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "api",
+        "v1",
+        "merchant",
+        "restaurants",
+        "{{restaurant_id}}",
+        "reservations",
+        "{{reservation_id}}",
+        "pending"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "description": "Returns an arrived or partially arrived reservation to the confirmed pre-arrival (pending) state. Clears arrived_at and service_stage; preserves booking details and assigned tables. Requires reservations.manage for this restaurant. Returns 422 for other current statuses."
+     }
+    },
+    {
      "name": "Reservation partially arrive",
      "request": {
       "method": "POST",

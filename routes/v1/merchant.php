@@ -258,6 +258,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
         Route::post('waitlist-entries/{waitlistEntry}/cancel', [MerchantWaitlistController::class, 'cancel']);
 
         // Status transitions
+        Route::post('reservations/{reservation}/pending', [MerchantReservationController::class, 'pending']);
         Route::post('reservations/{reservation}/arrive', [MerchantReservationController::class, 'arrive']);
         Route::post('reservations/{reservation}/partially-arrive', [MerchantReservationController::class, 'partiallyArrive']);
         Route::post('reservations/{reservation}/left-message', [MerchantReservationController::class, 'leftMessage']);
