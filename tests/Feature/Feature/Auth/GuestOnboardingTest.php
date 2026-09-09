@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\AuthChallenge;
+use App\Models\GuestContact;
+use App\Models\Reservation;
 use App\Models\User;
 use App\Notifications\AuthChallengeCodeNotification;
+use App\ReservationSource;
 use App\UserAuthMethod;
 use App\UserStatus;
 use Illuminate\Support\Facades\Notification;
@@ -181,4 +184,29 @@ it('does not allow customer accounts to request password reset links', function 
         ->assertJsonPath('message', 'If the account exists, a reset link has been sent.');
 
     Password::shouldNotHaveReceived('sendResetLink');
+});
+
+it('claims guest reservations only after email verification without changing walk-in source or existing owners', function () {
+    Notification::fake();
+    $guest = GuestContact::factory()->create(['email' => 'Future@example.com']);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $guest->restaurant_id, 'guest_contact_id' => $guest->id,
+        'user_id' => null, 'source' => ReservationSource::WalkIn, 'booking_email' => strtolower($guest->email),
+    ]);
+    $owner = User::factory()->create();
+    $owned = Reservation::factory()->create([
+        'guest_contact_id' => $guest->id, 'user_id' => $owner->id,
+    ]);
+    $this->postJson('/api/v1/auth/start', ['email' => 'future@example.com'])->assertCreated();
+    $user = User::where('email', 'future@example.com')->firstOrFail();
+    expect($reservation->fresh()->user_id)->toBeNull();
+    $challenge = AuthChallenge::where('user_id', $user->id)->firstOrFail();
+    $this->postJson('/api/v1/auth/verify-otp', [
+        'challenge_token' => $challenge->challenge_token, 'code' => '1234',
+    ])->assertOk();
+    expect($reservation->fresh()->user_id)->toBe($user->id);
+    expect($reservation->fresh()->source)->toBe(ReservationSource::WalkIn);
+    expect($owned->fresh()->user_id)->toBe($owner->id);
+    $user->claimGuestReservations();
+    expect($user->reservations()->count())->toBe(1);
 });

@@ -195,6 +195,20 @@
      }
     },
     {
+     "name": "List Available Booking Times",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       }
+      ],
+      "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/front-of-house/availability?date=2026-07-14&party_size=2",
+      "description": "Requires reservations.view for this restaurant. Optional dining_area_id filters to a seating area belonging to this restaurant. Returns restaurant_id, timezone and slots at 15-minute intervals after checking service hours, party capacity, turn time and occupied tables. Slots include UTC starts_at/ends_at, restaurant-local local_starts_at/local_ends_at and table_id. Empty slots means no availability; creation must revalidate availability. Works for unpublished merchant restaurants."
+     }
+    },
+    {
      "name": "Available Tables",
      "request": {
       "method": "GET",
@@ -5346,7 +5360,7 @@
        "mode": "raw",
        "raw": "{\n  \"starts_at\": \"2025-12-25T18:00:00Z\",\n  \"party_size\": 2,\n  \"source\": \"walk_in\",\n  \"notes\": \"Long-form guest special request text is supported here.\",\n  \"guest_contact\": {\n    \"first_name\": \"Walk-in\",\n    \"phone\": null\n  }\n}"
       },
-      "description": "Availability is checked live inside a restaurant-scoped lock. For overnight service, starts_at uses the actual calendar date and timezone offset. The previous day service window and shift rules remain applicable after midnight; closed special days and reservation duration limits still apply. guest_contact.phone is optional. The guest, active organization owners, and staff with reservations.manage access for this restaurant are notified by email. Guest WhatsApp notifications are sent when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
+      "description": "Supply guest_contact_id to reuse a permanent guest from this restaurant, or guest_contact for a new guest. guest_contact.email is optional. A matching verified email links the user without changing source (walk_in stays walk_in). Unowned reservations are linked after OTP or social email verification using the immutable booking_email saved at booking time. Legacy rows without a booking_email are not guessed or backfilled. Phone alone is not used for account ownership or new-guest deduplication; select guest_contact_id to reuse a phone-only guest. Availability is checked live inside a restaurant-scoped lock. For overnight service, starts_at uses the actual calendar date and timezone offset. The previous day service window and shift rules remain applicable after midnight; closed special days and reservation duration limits still apply. guest_contact.phone is optional. The guest, active organization owners, and staff with reservations.manage access for this restaurant are notified by email. Guest WhatsApp notifications are sent when phone details and WhatsApp credentials/templates are configured. Nigerian local phone formats such as 08012345678 are normalized to Meta's 2348012345678 format. Retry HTTP 422 validation responses when availability changes during processing."
      }
     },
     {

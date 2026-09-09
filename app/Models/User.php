@@ -59,6 +59,18 @@ class User extends Authenticatable implements HasMedia
         'remember_token',
     ];
 
+    public function claimGuestReservations(): void
+    {
+        if (! $this->email_verified_at || blank($this->email)) {
+            return;
+        }
+
+        Reservation::query()
+            ->whereNull('user_id')
+            ->where('booking_email', strtolower(trim($this->email)))
+            ->update(['user_id' => $this->id]);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

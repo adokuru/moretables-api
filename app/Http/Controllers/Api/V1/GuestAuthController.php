@@ -93,6 +93,8 @@ class GuestAuthController extends Controller
             'last_active_at' => now(),
         ])->save();
 
+        $user->claimGuestReservations();
+
         $token = $user->createToken($request->input('device_name', 'customer-api'))->plainTextToken;
 
         return response()->json([

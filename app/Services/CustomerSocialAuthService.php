@@ -77,6 +77,7 @@ class CustomerSocialAuthService
             }
 
             $this->assignCustomerRole($user);
+            $user->claimGuestReservations();
 
             SocialAccount::query()->updateOrCreate(
                 [

@@ -381,6 +381,7 @@ class AvailabilityService
         string $date,
         int $partySize,
         ?string $requesterTimezone = null,
+        ?int $diningAreaId = null,
     ): array {
         $windows = $this->effectiveTimeWindows($restaurant, $date);
 
@@ -388,7 +389,9 @@ class AvailabilityService
             return [];
         }
 
-        $tables = $this->eligibleTablesQuery($restaurant, $partySize)->get();
+        $tables = $this->eligibleTablesQuery($restaurant, $partySize)
+            ->when($diningAreaId, fn ($query) => $query->where('dining_area_id', $diningAreaId))
+            ->get();
 
         if ($tables->isEmpty()) {
             return [];

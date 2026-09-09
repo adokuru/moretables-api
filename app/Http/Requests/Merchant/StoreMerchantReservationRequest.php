@@ -16,6 +16,7 @@ class StoreMerchantReservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'guest_contact_id' => ['nullable', 'integer', Rule::exists('guest_contacts', 'id')->where('restaurant_id', $this->route('restaurant')->id)->where('is_temporary', 0)],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'restaurant_table_id' => ['nullable', 'integer', 'exists:restaurant_tables,id'],
             'dining_area_id' => ['nullable', 'integer', 'exists:dining_areas,id'],

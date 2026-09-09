@@ -148,9 +148,11 @@ class ReservationService
      */
     public function createMerchantReservation(User $actor, Restaurant $restaurant, array $attributes): Reservation
     {
-        $guestContact = null;
+        $guestContact = ! empty($attributes['guest_contact_id'])
+            ? $restaurant->guestContacts()->where('is_temporary', false)->findOrFail($attributes['guest_contact_id'])
+            : null;
 
-        if (! empty($attributes['guest_contact']) && empty($attributes['user_id'])) {
+        if (! $guestContact && ! empty($attributes['guest_contact']) && empty($attributes['user_id'])) {
             $contact = $attributes['guest_contact'];
 
             // Support a single `full_name` field — split on first space.
@@ -160,12 +162,10 @@ class ReservationService
                 $contact['last_name'] = $parts[1] ?? null;
             }
 
-            $guestContact = ! empty($contact['phone'])
-                ? GuestContact::query()
-                    ->where('restaurant_id', $restaurant->id)
-                    ->where('phone', $contact['phone'])
-                    ->where('is_temporary', false)
-                    ->first()
+            $email = filled($contact['email'] ?? null) ? strtolower(trim($contact['email'])) : null;
+            $contact['email'] = $email;
+            $guestContact = $email
+                ? $restaurant->guestContacts()->where('is_temporary', false)->whereRaw('LOWER(email) = ?', [$email])->first()
                 : null;
 
             if ($guestContact) {
@@ -190,12 +190,20 @@ class ReservationService
             $this->updateGuestContactFromBooking($guestContact, $contact);
         }
 
+        $customer = isset($attributes['user_id']) ? User::query()->findOrFail($attributes['user_id']) : null;
+        if (! $customer && filled($guestContact?->email)) {
+            $customer = User::query()
+                ->whereRaw('LOWER(email) = ?', [strtolower(trim($guestContact->email))])
+                ->whereNotNull('email_verified_at')
+                ->first();
+        }
+
         return $this->createReservation(
             actor: $actor,
             restaurant: $restaurant,
             source: ReservationSource::from($attributes['source']),
             attributes: $attributes,
-            user: isset($attributes['user_id']) ? User::query()->findOrFail($attributes['user_id']) : null,
+            user: $customer,
             guestContact: $guestContact,
         );
     }
@@ -1479,6 +1487,7 @@ class ReservationService
                     'restaurant_id' => $restaurant->id,
                     'user_id' => $user?->id,
                     'guest_contact_id' => $guestContact?->id,
+                    'booking_email' => filled($guestContact?->email) ? strtolower(trim($guestContact->email)) : null,
                     'restaurant_table_id' => $table->id,
                     'reservation_reference' => $this->generateReference(),
                     'source' => $source,

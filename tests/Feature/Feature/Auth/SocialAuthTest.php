@@ -1,8 +1,11 @@
 <?php
 
+use App\Models\GuestContact;
+use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\ReservationSource;
 use App\Services\SocialIdentityVerifier;
 use App\Services\VerifiedSocialIdentity;
 use App\SocialAuthProvider;
@@ -26,6 +29,12 @@ it('creates a customer account from a google identity token', function () {
             ));
     });
 
+    $guest = GuestContact::factory()->create(['email' => 'google-customer@example.com']);
+    $reservation = Reservation::factory()->create([
+        'restaurant_id' => $guest->restaurant_id, 'guest_contact_id' => $guest->id,
+        'user_id' => null, 'source' => ReservationSource::WalkIn, 'booking_email' => strtolower($guest->email),
+    ]);
+
     $response = $this->postJson('/api/v1/auth/google', [
         'id_token' => 'google-id-token',
         'device_name' => 'expo-ios',
@@ -40,6 +49,8 @@ it('creates a customer account from a google identity token', function () {
     $user = User::query()->where('email', 'google-customer@example.com')->firstOrFail();
 
     expect($user->hasRole(Role::Customer))->toBeTrue();
+    expect($reservation->fresh()->user_id)->toBe($user->id);
+    expect($reservation->fresh()->source)->toBe(ReservationSource::WalkIn);
 
     $this->assertDatabaseHas('social_accounts', [
         'user_id' => $user->id,

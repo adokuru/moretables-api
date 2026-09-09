@@ -285,6 +285,7 @@ Route::middleware(['auth:sanctum', 'merchant.access', 'throttle:merchant-api'])-
 
         // Front of House
         Route::prefix('front-of-house')->group(function (): void {
+            Route::get('availability', [FrontOfHouseOperationsController::class, 'availability']);
             Route::get('service-periods', [FrontOfHouseOperationsController::class, 'servicePeriods']);
             Route::get('available-tables', [FrontOfHouseOperationsController::class, 'availableTables']);
             Route::get('removed', [FrontOfHouseOperationsController::class, 'removed']);

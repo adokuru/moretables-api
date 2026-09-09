@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Merchant\BookingAvailabilityRequest;
 use App\Http\Resources\ReservationResource;
 use App\Http\Resources\RestaurantTableResource;
 use App\Models\Restaurant;
@@ -89,6 +90,25 @@ class FrontOfHouseOperationsController extends Controller
             ->values();
 
         return response()->json(['timezone' => $timezone, 'data' => $periods]);
+    }
+
+    /**
+     * List available booking times in 15-minute intervals for a date and party size.
+     */
+    public function availability(BookingAvailabilityRequest $request, Restaurant $restaurant): JsonResponse
+    {
+        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+
+        return response()->json([
+            'restaurant_id' => $restaurant->id,
+            'timezone' => $restaurant->timezone ?: config('app.timezone'),
+            'slots' => $this->availabilityService->listAvailableSlots(
+                restaurant: $restaurant,
+                date: $request->string('date')->toString(),
+                partySize: $request->integer('party_size'),
+                diningAreaId: $request->filled('dining_area_id') ? $request->integer('dining_area_id') : null,
+            ),
+        ]);
     }
 
     /**

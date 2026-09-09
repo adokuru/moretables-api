@@ -45,6 +45,7 @@ class Reservation extends Model
         'restaurant_table_id',
         'canceled_by_user_id',
         'reservation_reference',
+        'booking_email',
         'source',
         'status',
         'service_stage',

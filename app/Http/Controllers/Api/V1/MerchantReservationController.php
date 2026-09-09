@@ -50,7 +50,7 @@ class MerchantReservationController extends Controller
     }
 
     /**
-     * Create a reservation. Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email. For overnight service, send starts_at with the actual calendar date and timezone offset; the previous day’s service window and shift rules remain applicable after midnight. Closed special days and reservation duration limits still apply. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
+     * Create a reservation. Supply guest_contact_id to reuse a permanent guest from this restaurant, or guest_contact to add a guest. Email is optional; a matching verified email links the reservation to the user while preserving source (including walk_in). Unowned reservations are linked after the booking-time email is verified during customer sign-in; later guestbook edits do not change ownership eligibility. Phone-only new guests are not deduplicated by phone. Notifies the guest, active organization owners, and staff with reservations.manage access for this restaurant by email. For overnight service, send starts_at with the actual calendar date and timezone offset; the previous day’s service window and shift rules remain applicable after midnight. Closed special days and reservation duration limits still apply. A 422 is returned when the requested time is outside effective booking hours or availability changes while processing.
      */
     #[Response(422, type: 'array{message: string, errors: array<string, list<string>>}')]
     public function store(StoreMerchantReservationRequest $request, Restaurant $restaurant): JsonResponse

@@ -1235,3 +1235,143 @@ it('requires restaurant permission and ownership to return a reservation to pend
     expect($reservation->fresh()->status)->toBe(ReservationStatus::Arrived)
         ->and($other->fresh()->status)->toBe(ReservationStatus::Arrived);
 });
+
+it('lists merchant booking availability in quarter hours and excludes occupied or undersized tables', function () {
+    Carbon::setTestNow('2026-07-14 08:00:00');
+    $data = createBookableRestaurant();
+    $data['restaurant']->update(['timezone' => 'Africa/Lagos', 'is_profile_published' => false]);
+    $data['restaurant']->hours()->update(['opens_at' => '12:00:00', 'closes_at' => '16:00:00', 'is_closed' => false]);
+    $data['restaurant']->policy()->update(['reservation_duration_minutes' => 60]);
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $url = frontOfHouseUrl($data, 'front-of-house/availability');
+    $slots = $this->getJson($url.'?date=2026-07-14&party_size=2')
+        ->assertOk()->assertJsonPath('timezone', 'Africa/Lagos')->json('slots');
+    expect($slots)->toHaveCount(13);
+    expect($slots[0]['local_starts_at'])->toBe('2026-07-14T12:00:00+01:00');
+    expect($slots[1]['local_starts_at'])->toBe('2026-07-14T12:15:00+01:00');
+    expect($slots[12]['local_starts_at'])->toBe('2026-07-14T15:00:00+01:00');
+
+    Reservation::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'restaurant_table_id' => $data['table']->id,
+        'starts_at' => '2026-07-14 11:00:00',
+        'ends_at' => '2026-07-14 15:00:00',
+        'status' => ReservationStatus::Confirmed,
+    ]);
+    $this->getJson($url.'?date=2026-07-14&party_size=2')->assertOk()->assertJsonPath('slots', []);
+    $this->getJson($url.'?date=2026-07-14&party_size=5')->assertOk()->assertJsonPath('slots', []);
+    $this->getJson($url.'?date=invalid&party_size=0')->assertUnprocessable()->assertJsonValidationErrors(['date', 'party_size']);
+
+    $other = createBookableRestaurant();
+    activateMerchantBilling($other['restaurant']);
+    $this->getJson(frontOfHouseUrl($other, 'front-of-house/availability').'?date=2026-07-14&party_size=2')->assertForbidden();
+});
+
+it('links walk-in reservations to matching email accounts and reuses selected restaurant guests', function () {
+    Carbon::setTestNow('2026-07-14 08:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $customer = User::factory()->create(['email' => 'diner@example.com']);
+    $payload = [
+        'starts_at' => '2026-07-14T12:00:00Z', 'party_size' => 2, 'source' => 'walk_in',
+        'guest_contact' => ['first_name' => 'Diner', 'email' => 'DINER@example.com', 'phone' => '+2348012345678'],
+    ];
+    $id = $this->postJson(frontOfHouseUrl($data, 'reservations'), $payload)->assertCreated()->json('reservation.id');
+    $reservation = Reservation::findOrFail($id);
+    expect($reservation->user_id)->toBe($customer->id);
+    expect($reservation->source->value)->toBe('walk_in');
+    expect($reservation->guestContact->email)->toBe('diner@example.com');
+
+    unset($payload['guest_contact']);
+    $payload['guest_contact_id'] = $reservation->guest_contact_id;
+    $payload['starts_at'] = '2026-07-14T16:00:00Z';
+    $secondId = $this->postJson(frontOfHouseUrl($data, 'reservations'), $payload)->assertCreated()->json('reservation.id');
+    expect(Reservation::findOrFail($secondId)->guest_contact_id)->toBe($reservation->guest_contact_id);
+    expect($data['restaurant']->guestContacts()->count())->toBe(1);
+    $foreignGuest = GuestContact::factory()->create();
+    $payload['guest_contact_id'] = $foreignGuest->id;
+    $this->postJson(frontOfHouseUrl($data, 'reservations'), $payload)->assertUnprocessable()->assertJsonValidationErrors(['guest_contact_id']);
+});
+
+it('keeps email optional for walk-in bookings and does not link by unverified email or phone alone', function () {
+    Carbon::setTestNow('2026-07-14 08:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    User::factory()->create(['phone' => '+2348012345678']);
+    User::factory()->unverified()->create(['email' => 'unverified@example.com']);
+    foreach ([null, 'unverified@example.com'] as $index => $email) {
+        $id = $this->postJson(frontOfHouseUrl($data, 'reservations'), [
+            'starts_at' => $index === 0 ? '2026-07-14T12:00:00Z' : '2026-07-14T16:00:00Z',
+            'party_size' => 2, 'source' => 'walk_in',
+            'guest_contact' => ['first_name' => 'Guest', 'phone' => '+2348012345678', 'email' => $email],
+        ])->assertCreated()->json('reservation.id');
+        expect(Reservation::findOrFail($id)->user_id)->toBeNull();
+        expect(Reservation::findOrFail($id)->source->value)->toBe('walk_in');
+    }
+});
+
+it('keeps shared-phone guests separate and claims only the email recorded on each booking', function () {
+    Carbon::setTestNow('2026-07-14 08:00:00');
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $alice = User::factory()->create(['email' => 'alice@example.com']);
+    $aliceContact = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id, 'first_name' => 'Alice', 'email' => $alice->email, 'phone' => '+2348012345678', 'is_temporary' => false]);
+    $id = $this->postJson(frontOfHouseUrl($data, 'reservations'), [
+        'starts_at' => '2026-07-14T12:00:00Z', 'party_size' => 2, 'source' => 'walk_in',
+        'guest_contact' => ['first_name' => 'Bob', 'phone' => $aliceContact->phone],
+    ])->assertCreated()->json('reservation.id');
+    $booking = Reservation::findOrFail($id);
+    expect($booking->user_id)->toBeNull();
+    expect($booking->booking_email)->toBeNull();
+    expect($booking->guest_contact_id)->not->toBe($aliceContact->id);
+    expect($aliceContact->fresh()->first_name)->toBe('Alice');
+    $booking->guestContact->update(['email' => $alice->email]);
+    $alice->claimGuestReservations();
+    expect($booking->fresh()->user_id)->toBeNull();
+
+    $id = $this->postJson(frontOfHouseUrl($data, 'reservations'), [
+        'starts_at' => '2026-07-14T16:00:00Z', 'party_size' => 2, 'source' => 'walk_in',
+        'guest_contact' => ['first_name' => 'Future', 'phone' => $aliceContact->phone, 'email' => 'future@example.com'],
+    ])->assertCreated()->json('reservation.id');
+    $futureBooking = Reservation::findOrFail($id);
+    expect($futureBooking->booking_email)->toBe('future@example.com');
+    $futureBooking->guestContact->update(['email' => $alice->email]);
+    $alice->claimGuestReservations();
+    expect($futureBooking->fresh()->user_id)->toBeNull();
+    $future = User::factory()->create(['email' => 'future@example.com']);
+    $future->claimGuestReservations();
+    expect($futureBooking->fresh()->user_id)->toBe($future->id);
+    expect($futureBooking->fresh()->source->value)->toBe('walk_in');
+});
+
+it('filters booking times by dining area and rejects another restaurants dining area', function () {
+    Carbon::setTestNow('2026-07-14 08:00:00');
+    $data = createBookableRestaurant();
+    $data['restaurant']->update(['timezone' => 'UTC']);
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $main = DiningArea::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $terrace = DiningArea::factory()->create(['restaurant_id' => $data['restaurant']->id]);
+    $data['table']->update(['dining_area_id' => $main->id]);
+    RestaurantTable::factory()->create(['restaurant_id' => $data['restaurant']->id, 'dining_area_id' => $terrace->id, 'min_capacity' => 1, 'max_capacity' => 4]);
+    Reservation::factory()->create(['restaurant_id' => $data['restaurant']->id, 'restaurant_table_id' => $data['table']->id, 'starts_at' => '2026-07-14T09:00:00Z', 'ends_at' => '2026-07-14T22:00:00Z', 'status' => ReservationStatus::Confirmed]);
+    $url = frontOfHouseUrl($data, 'front-of-house/availability').'?date=2026-07-14&party_size=2&dining_area_id=';
+    $this->getJson($url.$main->id)->assertOk()->assertJsonPath('slots', []);
+    expect($this->getJson($url.$terrace->id)->assertOk()->json('slots'))->not->toBeEmpty();
+    $this->getJson($url.DiningArea::factory()->create()->id)->assertUnprocessable()->assertJsonValidationErrors(['dining_area_id']);
+});
+
+it('finds restaurant guests by local or international phone formats and email', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $guest = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id, 'phone' => '+234 801 234 5678', 'email' => 'find@example.com', 'is_temporary' => false]);
+    foreach (['08012345678', '+2348012345678', '+234 (801) 234-5678', 'find@example.com'] as $term) {
+        $this->getJson(frontOfHouseUrl($data, 'guests').'?'.http_build_query(['search_term' => $term, 'contact_only' => true]))
+            ->assertOk()->assertJsonPath('data.0.id', $guest->id);
+    }
+});
