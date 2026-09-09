@@ -1375,3 +1375,27 @@ it('finds restaurant guests by local or international phone formats and email', 
             ->assertOk()->assertJsonPath('data.0.id', $guest->id);
     }
 });
+
+it('adds selected or new waitlist guests without changing the requested time', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+    $guest = GuestContact::factory()->create(['restaurant_id' => $data['restaurant']->id, 'phone' => null, 'email' => null, 'is_temporary' => false]);
+    $url = frontOfHouseUrl($data, 'waitlist-entries');
+    $payload = ['preferred_starts_at' => '2099-01-01T12:15:00Z', 'party_size' => 2, 'guest_contact_id' => $guest->id];
+    $id = $this->postJson($url, $payload)->assertCreated()->json('waitlist_entry.id');
+    $entry = WaitlistEntry::findOrFail($id);
+    expect($entry->guest_contact_id)->toBe($guest->id);
+    expect($entry->preferred_starts_at->toIso8601String())->toBe('2099-01-01T12:15:00+00:00');
+    expect($data['restaurant']->guestContacts()->count())->toBe(1);
+    $payload['guest_contact_id'] = GuestContact::factory()->create(['is_temporary' => false])->id;
+    $this->postJson($url, $payload)->assertUnprocessable()->assertJsonValidationErrors(['guest_contact_id']);
+    unset($payload['guest_contact_id']);
+    $this->postJson($url, $payload)->assertUnprocessable()->assertJsonValidationErrors(['guest_contact.first_name']);
+    $payload['guest_contact'] = ['first_name' => 'New Guest', 'phone' => '08012345678'];
+    $id = $this->postJson($url, $payload)->assertCreated()->json('waitlist_entry.id');
+    $entry = WaitlistEntry::findOrFail($id);
+    expect($entry->guestContact->first_name)->toBe('New Guest');
+    expect($entry->guestContact->email)->toBeNull();
+    expect($entry->preferred_starts_at->toIso8601String())->toBe('2099-01-01T12:15:00+00:00');
+});

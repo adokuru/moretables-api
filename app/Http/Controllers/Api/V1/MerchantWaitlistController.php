@@ -40,16 +40,22 @@ class MerchantWaitlistController extends Controller
         return response()->json(WaitlistEntryResource::collection($entries));
     }
 
+    /**
+     * Add to waitlist using guest_contact_id for an existing restaurant guest, or
+     * guest_contact for a new guest. Email is optional; preferred time is preserved.
+     */
     public function store(StoreMerchantWaitlistEntryRequest $request, Restaurant $restaurant): JsonResponse
     {
         abort_unless($request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
-        $guestContact = null;
-        if (! empty($request->validated('guest_contact')) && ! $request->filled('user_id')) {
-            $guestContact = $request->filled('guest_contact.phone')
+        $guestContact = $request->filled('guest_contact_id')
+            ? $restaurant->guestContacts()->where('is_temporary', false)->findOrFail($request->integer('guest_contact_id'))
+            : null;
+        if (! $guestContact && ! empty($request->validated('guest_contact')) && ! $request->filled('user_id')) {
+            $guestContact = $request->filled('guest_contact.email')
                 ? GuestContact::query()
                     ->where('restaurant_id', $restaurant->id)
-                    ->where('phone', $request->input('guest_contact.phone'))
+                    ->whereRaw('LOWER(email) = ?', [strtolower(trim($request->input('guest_contact.email')))])
                     ->where('is_temporary', false)
                     ->first()
                 : null;

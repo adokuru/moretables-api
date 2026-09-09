@@ -19,7 +19,8 @@ class MerchantRestaurantGuestController extends Controller
      */
     public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
-        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
+        abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant)
+            || $request->user()->hasRestaurantPermission('waitlist.manage', $restaurant), 403);
 
         $guests = $restaurant->guestContacts()
             ->where('is_temporary', false)

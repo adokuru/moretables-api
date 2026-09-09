@@ -5957,6 +5957,7 @@
     {
      "name": "Waitlist entry create",
      "request": {
+      "description": "Supply guest_contact_id for an existing permanent guest from this restaurant or guest_contact for a new guest. Email is optional. Search via restaurant guests with contact_only=true; waitlist.manage is sufficient. The preferred time is unchanged. New guests are not matched by shared phone.",
       "method": "POST",
       "header": [
        {
