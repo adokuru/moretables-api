@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\GuestWaitlistCreatedMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
@@ -467,6 +468,31 @@ it('emails a guest when operations staff creates a walk-in reservation with gues
                 && $notification->toArray((object) [])['action'] === 'created';
         },
     );
+});
+
+it('emails a guest when operations staff adds them to the waitlist with an email', function () {
+    Notification::fake();
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/waitlist-entries', [
+        'preferred_starts_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'guest_contact' => [
+            'first_name' => 'Waitlist',
+            'last_name' => 'Guest',
+            'email' => 'guest.waitlist@example.com',
+            'phone' => '+2348099999999',
+        ],
+    ])->assertCreated();
+
+    Notification::assertSentOnDemand(GuestWaitlistCreatedMailNotification::class, function ($notification, $channels, $notifiable): bool {
+        return ($notifiable->routes['mail'] ?? null) === 'guest.waitlist@example.com';
+    });
 });
 
 it('allows operations staff to notify waitlist guests', function () {
