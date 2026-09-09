@@ -588,3 +588,41 @@ it('allows operations staff to create a guest-only waitlist entry without phone'
         'is_temporary' => false,
     ]);
 });
+
+it('returns the restaurant guest list wrapped in data/meta and filters by search term', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    GuestContact::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'first_name' => 'Ada',
+        'last_name' => 'Lovelace',
+        'email' => 'ada.lovelace@example.com',
+        'is_temporary' => false,
+    ]);
+    GuestContact::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
+        'email' => 'grace.hopper@example.com',
+        'is_temporary' => false,
+    ]);
+
+    Sanctum::actingAs($operations);
+
+    // Unfiltered — the response must be wrapped in `data` (with pagination
+    // `meta`), not a bare array, or every frontend caller reading
+    // response.data silently sees nothing.
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guests')
+        ->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('meta.total', 2);
+
+    // Filtered by a fragment of the email.
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guests?search_term=ada.lovelace')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.email', 'ada.lovelace@example.com');
+});
