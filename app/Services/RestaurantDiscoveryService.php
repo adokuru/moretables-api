@@ -109,8 +109,24 @@ class RestaurantDiscoveryService
      */
     protected function sectionQuery(string $section, array $filters, ?int $userId = null): Builder
     {
+        return $this->applySort($this->baseQuery($filters, $userId), $section);
+    }
+
+    public function applySort(Builder $query, string $section): Builder
+    {
         $normalizedSection = $this->normalizeSection($section);
-        $query = $this->queryWithDiscoveryMetrics($filters, $userId);
+        $query
+            ->withCount([
+                'reservations as bookings_count' => fn (Builder $query) => $query
+                    ->whereIn('status', self::BOOKING_STATUSES)
+                    ->where('starts_at', '>=', now()->subDays(30)),
+                'views as views_count' => fn (Builder $query) => $query
+                    ->where('created_at', '>=', now()->subDays(30)),
+                'savedEntries as saves_count',
+                'listItems as list_adds_count',
+                'reviews as reviews_count',
+            ])
+            ->withAvg('reviews as average_rating', 'rating');
 
         return match ($normalizedSection) {
             'top_booked' => $query
@@ -152,25 +168,6 @@ class RestaurantDiscoveryService
                 ->orderByDesc('created_at'),
             default => abort(404),
         };
-    }
-
-    /**
-     * @param  array<string, mixed>  $filters
-     */
-    protected function queryWithDiscoveryMetrics(array $filters, ?int $userId = null): Builder
-    {
-        return $this->baseQuery($filters, $userId)
-            ->withCount([
-                'reservations as bookings_count' => fn (Builder $query) => $query
-                    ->whereIn('status', self::BOOKING_STATUSES)
-                    ->where('starts_at', '>=', now()->subDays(30)),
-                'views as views_count' => fn (Builder $query) => $query
-                    ->where('created_at', '>=', now()->subDays(30)),
-                'savedEntries as saves_count',
-                'listItems as list_adds_count',
-                'reviews as reviews_count',
-            ])
-            ->withAvg('reviews as average_rating', 'rating');
     }
 
     /**

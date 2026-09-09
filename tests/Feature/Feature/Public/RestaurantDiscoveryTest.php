@@ -189,6 +189,18 @@ it('returns discovery sections for top booked viewed saved rated new featured ti
             ],
         ]);
 
+    foreach ([
+        'top_booked' => $bookedChampion,
+        'top_viewed' => $viewedChampion,
+        'top_saved' => $savedChampion,
+        'timeofday' => $bookedChampion,
+    ] as $sort => $champion) {
+        $this->getJson('/api/v1/restaurants?sort='.$sort.'&per_page=1')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.id', $champion->id);
+    }
+
     $sectionResponse = $this->getJson('/api/v1/restaurants/discovery/top-saved?per_page=2&date='.$tomorrow->toDateString().'&party_size=2&reservation_times_limit=2');
 
     $sectionResponse->assertOk()
@@ -509,3 +521,54 @@ it('lets authenticated users create update and list restaurant reviews', functio
         ->assertJsonPath('data.0.reviewer.name', 'Ada Okafor')
         ->assertJsonPath('data.0.reviewer.initials', 'AO');
 });
+
+it('changes timeofday sorting at the time bucket boundary and ignores old or cancelled bookings', function () {
+    $this->travelTo(now()->setTime(11, 59, 59));
+    $morning = createListedRestaurant(['created_at' => now()->subDays(2)]);
+    $afternoon = createListedRestaurant();
+
+    foreach ([[$morning, 9], [$afternoon, 14]] as [$restaurant, $hour]) {
+        Reservation::factory()->create([
+            'restaurant_id' => $restaurant->id,
+            'restaurant_table_id' => null,
+            'status' => ReservationStatus::Completed,
+            'starts_at' => now()->subDays(40)->setTime($hour, 0),
+            'ends_at' => now()->subDays(40)->setTime($hour + 1, 0),
+        ]);
+    }
+
+    foreach ([[ReservationStatus::Cancelled, 1], [ReservationStatus::Completed, 61]] as [$status, $days]) {
+        Reservation::factory()->count(2)->create([
+            'restaurant_id' => $afternoon->id,
+            'restaurant_table_id' => null,
+            'status' => $status,
+            'starts_at' => now()->subDays($days)->setTime(9, 0),
+            'ends_at' => now()->subDays($days)->setTime(10, 0),
+        ]);
+    }
+
+    $this->getJson('/api/v1/restaurants?sort=timeofday')->assertOk()->assertJsonPath('0.id', $morning->id);
+    $this->travel(1)->seconds();
+    $this->getJson('/api/v1/restaurants?sort=timeofday')->assertOk()->assertJsonPath('0.id', $afternoon->id);
+});
+
+it('preserves listing filters and coordinates with discovery sorts', function (string $sort) {
+    $restaurant = createListedRestaurant([
+        'city' => 'Lagos',
+        'average_price_range' => '10k and under',
+        'latitude' => 6.45,
+        'longitude' => 3.45,
+    ]);
+    createListedRestaurant(['city' => 'Abuja']);
+    $hidden = createListedRestaurant(['city' => 'Lagos']);
+    $hidden->update(['status' => RestaurantStatus::Draft]);
+
+    $this->getJson('/api/v1/restaurants?'.http_build_query([
+        'sort' => $sort,
+        'city' => 'Lagos',
+        'price' => '10k and under',
+        'latitude' => 6.451,
+        'longitude' => 3.451,
+    ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $restaurant->id)
+        ->assertJsonStructure([['distance_km']]);
+})->with(['timeofday', 'top_booked', 'top_viewed', 'top_saved']);

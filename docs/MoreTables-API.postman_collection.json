@@ -1455,8 +1455,17 @@
         "api",
         "v1",
         "restaurants"
+       ],
+       "query": [
+        {
+         "key": "sort",
+         "value": "top_booked",
+         "description": "featured | distance | newest | rating | timeofday | top_booked | top_viewed | top_saved",
+         "disabled": true
+        }
        ]
-      }
+      },
+      "description": "Public restaurant listing. sort: featured (default), distance (requires latitude and longitude), newest, rating, timeofday, top_booked, top_viewed, top_saved. top_booked counts booked/confirmed/arrived/seated/completed reservations starting within the last 30 days or later; top_viewed counts views from the last 30 days; top_saved ranks all saves then list additions. timeofday ranks eligible reservations from the last 60 days or later in the current application-clock bucket: 05:00-11:59, 12:00-16:59, or 17:00-23:59 (before noon uses the morning bucket). Rankings match discovery. price is a separate filter. Existing city, cuisine, seating, coordinates and pagination filters apply."
      },
      "description": "Public restaurant listing. Only active restaurants with an active or trialing merchant subscription (current billing period not expired) are returned. Response includes hours summarized from preferred meal schedules (earliest opens_at to latest closes_at per day, falling back to legacy hours)."
     },

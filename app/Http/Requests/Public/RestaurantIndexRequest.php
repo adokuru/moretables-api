@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 
 class RestaurantIndexRequest extends FormRequest
 {
-    public const SORTS = ['featured', 'distance', 'newest', 'rating'];
+    public const SORTS = ['featured', 'distance', 'newest', 'rating', 'timeofday', 'top_booked', 'top_viewed', 'top_saved'];
 
     public function authorize(): bool
     {

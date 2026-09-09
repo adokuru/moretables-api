@@ -14,6 +14,7 @@ use App\Models\RestaurantReview;
 use App\Models\SavedRestaurant;
 use App\Services\AvailabilityService;
 use App\Services\PerformanceCacheService;
+use App\Services\RestaurantDiscoveryService;
 use App\Services\RestaurantReviewSummaryService;
 use App\Services\RestaurantSearchService;
 use Carbon\Carbon;
@@ -32,6 +33,7 @@ class PublicRestaurantController extends Controller
         protected RestaurantSearchService $restaurantSearchService,
         protected RestaurantReviewSummaryService $reviewSummary,
         protected PerformanceCacheService $performanceCache,
+        protected RestaurantDiscoveryService $restaurantDiscovery,
     ) {}
 
     /**
@@ -114,6 +116,7 @@ class PublicRestaurantController extends Controller
      * Only restaurants that are publicly listed are returned: status active and an active or trialing
      * merchant subscription whose current billing period has not expired.
      */
+    #[QueryParameter('sort', description: 'featured, distance (requires coordinates), newest, rating, timeofday (current time bucket bookings over 60 days), top_booked (eligible bookings over 30 days), top_viewed (views over 30 days), top_saved (all saves, then list additions). Discovery rankings use the application clock.', default: 'featured', example: 'top_booked')]
     #[Response(200, description: 'Paginated list of publicly listed restaurants (active with active or trialing merchant subscription).')]
     public function index(RestaurantIndexRequest $request): JsonResponse
     {
@@ -128,18 +131,21 @@ class PublicRestaurantController extends Controller
                 'restaurants',
                 (string) $request->integer('page', 1),
                 hash('sha256', json_encode($validated, JSON_THROW_ON_ERROR)),
+                $sort === 'timeofday' ? $this->restaurantDiscovery->sectionLabel('timeofday') : '',
             ),
             'public_fragments',
             function () use ($hasCoordinates, $request, $sort, $validated): array {
                 $restaurants = Restaurant::query()
+                    ->select('restaurants.*')
                     ->with([
                         'cuisines',
                         'media',
                         'hours' => fn ($query) => $query->orderBy('day_of_week'),
                         'availabilitySchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('opens_at'),
                     ])
-                    ->withCount('reviews as reviews_count')
-                    ->withAvg('reviews as average_rating', 'rating')
+                    ->when(in_array($sort, ['featured', 'distance', 'newest', 'rating'], true), fn ($query) => $query
+                        ->withCount('reviews as reviews_count')
+                        ->withAvg('reviews as average_rating', 'rating'))
                     ->publiclyListed()
                     ->when($request->filled('q'), function ($query) use ($validated) {
                         $query->where(function ($subQuery) use ($validated): void {
@@ -184,6 +190,7 @@ class PublicRestaurantController extends Controller
                     });
 
                 match ($sort) {
+                    'timeofday', 'top_booked', 'top_viewed', 'top_saved' => $this->restaurantDiscovery->applySort($restaurants, $sort)->orderByDesc('id'),
                     'distance' => $restaurants->orderBy('distance_km')->orderBy('id'),
                     'newest' => $restaurants->latest()->orderByDesc('id'),
                     'rating' => $restaurants->orderByDesc('average_rating')->orderByDesc('reviews_count')->orderBy('id'),
