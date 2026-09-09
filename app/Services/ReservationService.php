@@ -16,6 +16,7 @@ use App\Models\Role;
 use App\Models\TableCombination;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\GuestWaitlistCreatedMailNotification;
 use App\Notifications\GuestWaitlistOfferExpiredMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\GuestWaitlistTableUnavailableMailNotification;
@@ -1063,6 +1064,13 @@ class ReservationService
         );
 
         event(new WaitlistEntryUpdated($entry, 'created'));
+
+        if ($entry->user) {
+            $entry->user->notify(new GuestWaitlistCreatedMailNotification($entry));
+        } elseif ($this->guestContactHasEmail($entry->guestContact)) {
+            Notification::route('mail', $entry->guestContact->email)
+                ->notify(new GuestWaitlistCreatedMailNotification($entry));
+        }
 
         return $entry;
     }

@@ -6,13 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GuestContactResource;
 use App\Models\Restaurant;
 use Dedoc\Scramble\Attributes\Group;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 #[Group('Merchant Guests', weight: 37)]
 class MerchantRestaurantGuestController extends Controller
 {
-    public function index(Request $request, Restaurant $restaurant): JsonResponse
+    public function index(Request $request, Restaurant $restaurant): AnonymousResourceCollection
     {
         abort_unless($request->user()->hasRestaurantPermission('reservations.view', $restaurant), 403);
 
@@ -29,6 +29,13 @@ class MerchantRestaurantGuestController extends Controller
             })
             ->paginate(20);
 
-        return response()->json(GuestContactResource::collection($guests));
+        // Returning the resource collection directly (rather than manually
+        // wrapping it in response()->json()) lets Laravel's routing layer
+        // apply its standard paginated-resource response — {data, links,
+        // meta} — automatically. The previous response()->json(...) call
+        // bypassed that pipeline entirely and serialized a bare array with
+        // no `data`/`meta` keys at all, which every frontend caller of this
+        // endpoint (GuestContactListResponse) expects to exist.
+        return GuestContactResource::collection($guests);
     }
 }

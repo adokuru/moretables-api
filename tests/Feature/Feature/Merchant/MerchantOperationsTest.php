@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Notifications\GuestWaitlistCreatedMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
@@ -469,6 +470,31 @@ it('emails a guest when operations staff creates a walk-in reservation with gues
     );
 });
 
+it('emails a guest when operations staff adds them to the waitlist with an email', function () {
+    Notification::fake();
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/waitlist-entries', [
+        'preferred_starts_at' => now()->addDay()->setTime(20, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'guest_contact' => [
+            'first_name' => 'Waitlist',
+            'last_name' => 'Guest',
+            'email' => 'guest.waitlist@example.com',
+            'phone' => '+2348099999999',
+        ],
+    ])->assertCreated();
+
+    Notification::assertSentOnDemand(GuestWaitlistCreatedMailNotification::class, function ($notification, $channels, $notifiable): bool {
+        return ($notifiable->routes['mail'] ?? null) === 'guest.waitlist@example.com';
+    });
+});
+
 it('allows operations staff to notify waitlist guests', function () {
     Notification::fake();
 
@@ -561,4 +587,42 @@ it('allows operations staff to create a guest-only waitlist entry without phone'
         'phone' => null,
         'is_temporary' => false,
     ]);
+});
+
+it('returns the restaurant guest list wrapped in data/meta and filters by search term', function () {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    GuestContact::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'first_name' => 'Ada',
+        'last_name' => 'Lovelace',
+        'email' => 'ada.lovelace@example.com',
+        'is_temporary' => false,
+    ]);
+    GuestContact::factory()->create([
+        'restaurant_id' => $data['restaurant']->id,
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
+        'email' => 'grace.hopper@example.com',
+        'is_temporary' => false,
+    ]);
+
+    Sanctum::actingAs($operations);
+
+    // Unfiltered — the response must be wrapped in `data` (with pagination
+    // `meta`), not a bare array, or every frontend caller reading
+    // response.data silently sees nothing.
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guests')
+        ->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('meta.total', 2);
+
+    // Filtered by a fragment of the email.
+    $this->getJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/guests?search_term=ada.lovelace')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.email', 'ada.lovelace@example.com');
 });

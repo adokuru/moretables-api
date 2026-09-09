@@ -91,6 +91,7 @@ class AuthController extends Controller
             'roleAssignments.restaurant.activeBillingSubscription.plan',
             'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
             'roleAssignments.restaurant.latestBillingSubscription.plan',
+            'roleAssignments.restaurant.organization.latestBillingSubscription.plan',
         ]);
         $user->forceFill(['last_active_at' => now()])->save();
 
@@ -133,6 +134,7 @@ class AuthController extends Controller
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.latestBillingSubscription.plan',
             ])),
         ]);
     }
@@ -163,6 +165,7 @@ class AuthController extends Controller
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.latestBillingSubscription.plan',
             ])),
         ]);
     }
@@ -183,6 +186,7 @@ class AuthController extends Controller
                 'roleAssignments.restaurant.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.organization.activeBillingSubscription.plan',
                 'roleAssignments.restaurant.latestBillingSubscription.plan',
+                'roleAssignments.restaurant.organization.latestBillingSubscription.plan',
             ])),
         ]);
     }
