@@ -76,8 +76,15 @@ class UserResource extends JsonResource
                     ->filter()
                     ->first();
 
+                // A restaurant covered purely by a business-level subscription (the current
+                // model — see docs/PLAN_PERMISSIONS.md) has no restaurant-scoped
+                // latestBillingSubscription of its own, so fall back to the organization's
+                // latest one. Without this, `status` silently defaults to 'unpaid' below even
+                // when the business genuinely has (or once had) a subscription — is_active/plan
+                // above don't have this gap since effectiveBillingSubscription() already falls
+                // back to the business level for the active case.
                 $latestSubscription = $restaurants
-                    ->map(fn ($r) => $r->latestBillingSubscription)
+                    ->map(fn ($r) => $r->latestBillingSubscription ?? $r->organization?->latestBillingSubscription)
                     ->filter()
                     ->first();
 
