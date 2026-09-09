@@ -19,6 +19,7 @@ class MerchantReportingController extends Controller
         private readonly ReportingQueryService $reporting,
     ) {}
 
+    /** Reporting-authorized shift options include IDs, weekdays and start/end times. */
     public function filters(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -26,6 +27,7 @@ class MerchantReportingController extends Controller
         return response()->json($this->reporting->filtersMetadata($restaurant));
     }
 
+    /** Calendar series include empty buckets; summary trend is null when the comparison total is zero. */
     public function shiftOccupancy(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -34,6 +36,7 @@ class MerchantReportingController extends Controller
         return response()->json($this->reporting->shiftOccupancy($restaurant, $context));
     }
 
+    /** Calendar series include empty buckets; summary trend is null when the comparison total is zero. */
     public function coverTrends(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -42,6 +45,7 @@ class MerchantReportingController extends Controller
         return response()->json($this->reporting->coverTrends($restaurant, $context));
     }
 
+    /** Calendar series include empty buckets; summary trend is null when the comparison total is zero. */
     public function firstTimeVisits(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -76,6 +80,7 @@ class MerchantReportingController extends Controller
         );
     }
 
+    /** Reservation parties and covers; summary trends are null when their comparison totals are zero. */
     public function reservations(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -102,6 +107,7 @@ class MerchantReportingController extends Controller
         );
     }
 
+    /** Measured turn times compared with sampled visits' shift settings; missing averages display —. */
     public function turnTimes(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
@@ -110,19 +116,21 @@ class MerchantReportingController extends Controller
         return response()->json($this->reporting->turnTimes($restaurant, $context));
     }
 
+    /** Guest visits filtered by frequency_period (all_time or last_month), or explicit inclusive dates. */
     public function guestExport(Request $request, Restaurant $restaurant): JsonResponse
     {
         $this->authorizeReporting($request, $restaurant);
-        $context = $this->filters->resolveContext($request, $restaurant);
+        $context = $this->filters->resolveContext($request, $restaurant, ['include_frequency_period' => true]);
 
         return response()->json($this->reporting->guestExport($restaurant, $context));
     }
 
+    /** Complete CSV for the same guest period; pagination does not limit the export. */
     public function exportGuestExport(Request $request, Restaurant $restaurant): StreamedResponse
     {
         $this->authorizeExport($request, $restaurant);
         $request->merge(['export' => true]);
-        $context = $this->filters->resolveContext($request, $restaurant);
+        $context = $this->filters->resolveContext($request, $restaurant, ['include_frequency_period' => true]);
 
         $payload = $this->reporting->guestExport($restaurant, $context);
 

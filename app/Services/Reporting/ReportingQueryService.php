@@ -76,6 +76,9 @@ class ReportingQueryService
         }
 
         $chart = $this->buildResWalkChart($current, $context, $restaurant);
+        if ($context->chartGroup !== 'shift') {
+            $chart = $this->fillCalendarSeries($chart, $context, ['res' => 0, 'walk' => 0]);
+        }
         $sourceStats = $this->buildSourceStatsSeries($current, $context, $restaurant);
         $circleStats = [
             'resPct' => $totalCovers > 0 ? round(($resCovers / $totalCovers) * 100, 1) : 0.0,
@@ -302,13 +305,13 @@ class ReportingQueryService
         $averageCards = [
             [
                 'title' => 'Average turn time',
-                'value' => $this->formatDuration($overallAvg),
+                'value' => $durations->isEmpty() ? '—' : $this->formatDuration($overallAvg),
                 'subtitle' => 'Across all completed visits',
             ],
             [
                 'title' => 'Average vs setting',
-                'value' => $this->formatDifference($overallAvg - $overallSetting),
-                'subtitle' => 'Setting '.$this->formatDuration($overallSetting),
+                'value' => $durations->isEmpty() ? '—' : $this->formatDifference($overallAvg - $overallSetting),
+                'subtitle' => 'Setting '.($durations->isEmpty() ? '—' : $this->formatDuration($overallSetting)),
             ],
         ];
 
@@ -341,7 +344,9 @@ class ReportingQueryService
                 ? (int) round($bucketDurations->avg('minutes'))
                 : 0;
 
-            $settingMin = $this->settingForBucket($restaurant, $bucket['settingSize'], $context);
+            $settingMin = $bucketDurations->isNotEmpty()
+                ? (int) round($bucketDurations->avg('settingMinutes'))
+                : $this->settingForBucket($restaurant, $bucket['settingSize'], $context);
 
             return [
                 'size' => $bucket['label'],
@@ -393,6 +398,8 @@ class ReportingQueryService
                 'id' => $shift->id,
                 'name' => $shift->name,
                 'day_of_week' => $shift->day_of_week,
+                'starts_at' => $shift->starts_at,
+                'ends_at' => $shift->ends_at,
             ])->values()->all(),
             'statuses' => array_merge(
                 [['value' => 'not_confirmed', 'label' => 'Not confirmed']],
@@ -527,7 +534,7 @@ class ReportingQueryService
     }
 
     /**
-     * @return array{title: string, value: int|string, trend: float}
+     * @return array{title: string, value: int|string, trend: float|null}
      */
     private function summaryCard(string $title, int|float $current, int|float $previous): array
     {
@@ -538,10 +545,10 @@ class ReportingQueryService
         ];
     }
 
-    private function percentageChange(int|float $current, int|float $previous): float
+    private function percentageChange(int|float $current, int|float $previous): ?float
     {
         if ((float) $previous === 0.0) {
-            return (float) $current === 0.0 ? 0.0 : 100.0;
+            return null;
         }
 
         return round((($current - $previous) / $previous) * 100, 1);
@@ -586,7 +593,7 @@ class ReportingQueryService
             ? fn (Reservation $r) => $this->shiftLabel($r, $restaurant, $context)
             : fn (Reservation $r) => $this->periodLabel($r->starts_at, $context);
 
-        return $reservations
+        $series = $reservations
             ->sortBy('starts_at')
             ->groupBy($labelFn)
             ->map(function (Collection $items, string $name): array {
@@ -601,6 +608,10 @@ class ReportingQueryService
 
             ->values()
             ->all();
+
+        return $context->chartGroup === 'shift' ? $series : $this->fillCalendarSeries(
+            $series, $context, array_fill_keys(ReportingSourceMapper::chartKeys(), 0)
+        );
     }
 
     /**
@@ -623,7 +634,7 @@ class ReportingQueryService
      */
     private function buildCoversOverTime(EloquentCollection $reservations, ReportingFilterContext $context): array
     {
-        return $reservations
+        $series = $reservations
             ->sortBy('starts_at')
             ->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context))
             ->map(fn (Collection $items, string $name) => [
@@ -633,6 +644,29 @@ class ReportingQueryService
 
             ->values()
             ->all();
+
+        return $this->fillCalendarSeries($series, $context, ['covers' => 0]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $series
+     * @param  array<string, int>  $zeros
+     * @return list<array<string, mixed>>
+     */
+    private function fillCalendarSeries(array $series, ReportingFilterContext $context, array $zeros): array
+    {
+        $byLabel = collect($series)->keyBy('name');
+        $result = [];
+        $end = $context->periodEndUtc->setTimezone($context->timezone);
+        for ($day = $context->periodStartUtc->setTimezone($context->timezone); $day->lessThan($end); $day = $day->addDay()) {
+            if ($context->dayOfWeek !== null && $day->dayOfWeek !== $context->dayOfWeek) {
+                continue;
+            }
+            $name = $this->periodLabel($day, $context);
+            $result[$name] ??= $byLabel->get($name, ['name' => $name, ...$zeros]);
+        }
+
+        return array_values($result);
     }
 
     private function periodLabel(CarbonInterface $startsAt, ReportingFilterContext $context): string
@@ -760,7 +794,7 @@ class ReportingQueryService
             ->keys()
             ->values();
 
-        return $labels->map(function (string $name) use ($classified, $context, $visits): array {
+        $series = $labels->map(function (string $name) use ($classified, $context, $visits): array {
             $first = $classified['firstTime']->filter(
                 fn (Reservation $r) => $this->periodLabel($r->starts_at, $context) === $name
             );
@@ -774,6 +808,8 @@ class ReportingQueryService
                 'repeat' => $visits ? $repeat->count() : $this->sumCovers($repeat),
             ];
         })->all();
+
+        return $this->fillCalendarSeries($series, $context, ['firstTime' => 0, 'repeat' => 0]);
     }
 
     /**

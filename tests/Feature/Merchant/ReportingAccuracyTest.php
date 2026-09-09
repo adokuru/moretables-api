@@ -100,10 +100,10 @@ it('orders chart dates chronologically across months and years', function (): vo
     $query = '?date_from=2025-01-01&date_to=2026-01-02&chart_group=day';
     $expected = ['Jan 1, 2025', 'Dec 31, 2025', 'Jan 1, 2026', 'Jan 2, 2026'];
     $response = $this->getJson($this->base.'/cover-trends'.$query)->assertOk();
-    expect(array_column($response->json('coversOverTime'), 'name'))->toBe($expected)
-        ->and(array_column($response->json('sourceStats'), 'name'))->toBe($expected);
-    expect(array_column($this->getJson($this->base.'/shift-occupancy'.$query)->assertOk()->json('chart'), 'name'))->toBe($expected);
-    expect(array_column($this->getJson($this->base.'/first-time-visits'.$query)->assertOk()->json('lineChart'), 'name'))->toBe($expected);
+    expect(array_column(array_filter($response->json('coversOverTime'), fn ($row) => $row['covers'] > 0), 'name'))->toBe($expected)
+        ->and(array_column(array_filter($response->json('sourceStats'), fn ($row) => $row['moretables'] > 0), 'name'))->toBe($expected);
+    expect(array_column(array_filter($this->getJson($this->base.'/shift-occupancy'.$query)->assertOk()->json('chart'), fn ($row) => $row['res'] > 0), 'name'))->toBe($expected);
+    expect(array_column(array_filter($this->getJson($this->base.'/first-time-visits'.$query)->assertOk()->json('lineChart'), fn ($row) => $row['firstTime'] > 0), 'name'))->toBe($expected);
 });
 
 it('keeps zero lead times and rejects negative turn durations', function (): void {
@@ -134,3 +134,70 @@ it('still requires active billing for ordinary reports', function (): void {
     $this->data['restaurant']->activeBillingSubscription()->update(['current_period_end' => now()->subDay()]);
     $this->getJson($this->base.'/reservations?period=this_month')->assertPaymentRequired();
 });
+
+it('honors guest export periods in both the list and full CSV', function (): void {
+    ($this->visit)(['starts_at' => '2026-08-15 12:00:00']);
+    ($this->visit)(['starts_at' => '2026-09-07 12:00:00']);
+    $this->getJson($this->base.'/guest-export?frequency_period=all_time')->assertOk()->assertJsonPath('meta.total', 2);
+    $this->getJson($this->base.'/guest-export?frequency_period=last_month')->assertOk()
+        ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.lastVisit', 'Aug 15, 2026');
+    $all = $this->get($this->base.'/guest-export/export?frequency_period=all_time&per_page=1&page=2')->assertOk()->streamedContent();
+    expect($all)->toContain('Aug 15, 2026')->toContain('Sep 7, 2026');
+    $last = $this->get($this->base.'/guest-export/export?frequency_period=last_month')->assertOk()->streamedContent();
+    expect($last)->toContain('Aug 15, 2026')->not->toContain('Sep 7, 2026');
+    $this->getJson($this->base.'/guest-export?frequency_period=invalid')->assertUnprocessable();
+});
+
+it('provides shift labels to reporting-only staff without granting restaurant settings access', function (): void {
+    $shift = RestaurantShift::factory()->create(['restaurant_id' => $this->data['restaurant']->id, 'starts_at' => '18:00', 'ends_at' => '22:00']);
+    $response = $this->getJson($this->base.'/filters')->assertOk();
+    $option = collect($response->json('shifts'))->firstWhere('id', $shift->id);
+    expect($option['starts_at'])->toStartWith('18:00')->and($option['ends_at'])->toStartWith('22:00');
+    $this->getJson('/api/v1/merchant/restaurants/'.$this->data['restaurant']->id.'/shifts')->assertForbidden();
+});
+
+it('returns unavailable growth when the comparison has no covers', function (): void {
+    $this->getJson($this->base.'/cover-trends?period=this_month')->assertOk()->assertJsonPath('summary.trend', null);
+    ($this->visit)(['party_size' => 20]);
+    $this->getJson($this->base.'/cover-trends?period=this_month')->assertOk()->assertJsonPath('summary.trend', null);
+    $this->getJson($this->base.'/shift-occupancy?period=this_month')->assertOk()->assertJsonPath('summary.0.trend', null);
+    $this->getJson($this->base.'/reservations?period=this_month')->assertOk()->assertJsonPath('summary.totalCovers.trend', null);
+    $this->getJson($this->base.'/first-time-visits?period=this_month')->assertOk()->assertJsonPath('summary.trend', null);
+    ($this->visit)(['party_size' => 10, 'starts_at' => '2025-09-07 12:00:00']);
+    expect((float) $this->getJson($this->base.'/cover-trends?period=this_month')->assertOk()->json('summary.trend'))->toBe(100.0);
+});
+
+it('uses the visited shift settings for turn-time rows and leaves empty averages unavailable', function (): void {
+    $this->getJson($this->base.'/turn-times?period=this_month')->assertOk()
+        ->assertJsonPath('averageCards.0.value', '—')->assertJsonPath('averageCards.1.value', '—');
+    $restaurant = $this->data['restaurant'];
+    $restaurant->shifts()->delete();
+    $lunch = RestaurantShift::factory()->create(['restaurant_id' => $restaurant->id, 'day_of_week' => 1, 'starts_at' => '12:00', 'ends_at' => '15:00']);
+    $dinner = RestaurantShift::factory()->create(['restaurant_id' => $restaurant->id, 'day_of_week' => 1, 'starts_at' => '18:00', 'ends_at' => '23:00']);
+    $lunch->turnTimes()->create(['party_size' => 2, 'duration_minutes' => 60]);
+    $dinner->turnTimes()->create(['party_size' => 2, 'duration_minutes' => 180]);
+    ($this->visit)(['starts_at' => '2026-09-07 18:00:00', 'seated_at' => '2026-09-07 18:00:00', 'completed_at' => '2026-09-07 21:00:00']);
+    $this->getJson($this->base.'/turn-times?period=this_month')->assertOk()
+        ->assertJsonPath('averageCards.1.value', '+0 min')->assertJsonPath('partyRows.0.settingMin', 180)->assertJsonPath('partyRows.0.difference', '+0 min');
+    ($this->visit)(['starts_at' => '2026-09-07 12:00:00', 'seated_at' => '2026-09-07 12:00:00', 'completed_at' => '2026-09-07 13:00:00']);
+    $this->getJson($this->base.'/turn-times?period=this_month')->assertOk()
+        ->assertJsonPath('averageCards.1.value', '+0 min')->assertJsonPath('partyRows.0.settingMin', 120)->assertJsonPath('partyRows.0.difference', '+0 min');
+});
+
+it('keeps zero calendar buckets in all time series', function (string $group, string $from, string $to, string $first, string $last): void {
+    ($this->visit)(['starts_at' => $first.' 12:00:00']);
+    ($this->visit)(['starts_at' => $last.' 12:00:00']);
+    $query = '?date_from='.$from.'&date_to='.$to.'&chart_group='.$group;
+    $cover = $this->getJson($this->base.'/cover-trends'.$query)->assertOk()->assertJsonCount(3, 'coversOverTime');
+    expect(array_column($cover->json('coversOverTime'), 'covers'))->toBe([2, 0, 2]);
+    expect(array_column($cover->json('sourceStats'), 'moretables'))->toBe([2, 0, 2]);
+    $occupancy = $this->getJson($this->base.'/shift-occupancy'.$query)->assertOk();
+    expect(array_column($occupancy->json('chart'), 'res'))->toBe([2, 0, 2]);
+    $firstTime = $this->getJson($this->base.'/first-time-visits'.$query)->assertOk();
+    expect(array_column($firstTime->json('lineChart'), 'firstTime'))->toBe([2, 0, 2])
+        ->and(array_column($firstTime->json('lineChartVisits'), 'firstTime'))->toBe([1, 0, 1]);
+})->with([
+    ['day', '2026-09-01', '2026-09-03', '2026-09-01', '2026-09-03'],
+    ['week', '2025-12-22', '2026-01-11', '2025-12-22', '2026-01-11'],
+    ['month', '2025-12-01', '2026-02-28', '2025-12-01', '2026-02-28'],
+]);

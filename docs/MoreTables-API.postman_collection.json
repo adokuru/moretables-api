@@ -3136,7 +3136,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/filters",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range. Reporting-authorized metadata includes shift id, name, day_of_week, starts_at and ends_at; restaurant settings permissions are not needed."
        }
       },
       {
@@ -3150,7 +3150,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/shift-occupancy?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3164,7 +3164,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/cover-trends?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3178,7 +3178,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/first-time-visits?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3192,7 +3192,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/guest-frequency?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3206,7 +3206,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/guest-export?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range. Guest list and CSV accept frequency_period=all_time or last_month; explicit paired dates take precedence. CSV includes all filtered guests regardless of pagination."
        }
       },
       {
@@ -3220,7 +3220,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/reservations?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3234,7 +3234,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/turn-times?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range. Party-row settings average the applicable settings of sampled visits, matching the headline calculation; absent measured averages display \u2014."
        }
       },
       {
@@ -3248,7 +3248,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/guest-frequency/export?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
@@ -3262,7 +3262,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/guest-export/export?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range. Guest list and CSV accept frequency_period=all_time or last_month; explicit paired dates take precedence. CSV includes all filtered guests regardless of pagination."
        }
       },
       {
@@ -3276,7 +3276,7 @@
          }
         ],
         "url": "{{baseUrl}}/api/v1/merchant/restaurants/{{restaurant_id}}/reporting/reservations/export?period=this_month",
-        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination."
+        "description": "Ordinary reports require active billing and restaurant view permissions on every plan; CSV requires reporting.export or restaurants.manage. Presets resolve in the restaurant timezone, Monday weeks, current periods through today. Explicit paired date_from/date_to override presets. All-time must use period=all_time. Comparison last_year uses the selected range one year earlier; last_4_weeks is the preceding 28 days. All-status reservation totals include removed bookings; guest visits count seated/completed only. Spend is null/unavailable. Exports include all filtered rows regardless of pagination. Summary growth is null when the comparison total is zero. Calendar charts include zero-valued buckets throughout the selected range."
        }
       },
       {
