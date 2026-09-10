@@ -67,7 +67,7 @@ class ReservationService
             ]);
         }
 
-        $startsAt = Carbon::parse($attributes['starts_at']);
+        $startsAt = $this->parseRestaurantDateTime($attributes['starts_at'], $restaurant);
 
         $duplicate = Reservation::query()
             ->where('user_id', $user->id)
@@ -229,7 +229,7 @@ class ReservationService
 
             if (isset($attributes['starts_at']) || isset($attributes['party_size'])) {
                 $startsAt = isset($attributes['starts_at'])
-                    ? Carbon::parse($attributes['starts_at'])
+                    ? $this->parseRestaurantDateTime($attributes['starts_at'], $reservation->restaurant)
                     : $reservation->starts_at;
                 $partySize = $attributes['party_size'] ?? $reservation->party_size;
 
@@ -258,6 +258,15 @@ class ReservationService
                 $attributes['ends_at'] = $this->availabilityService
                     ->calculateEndTime($reservation->restaurant, $startsAt, $partySize)
                     ->toDateTimeString();
+
+                // `$reservation->fill($attributes)` below re-parses any raw
+                // `starts_at` string through the model's own `datetime` cast,
+                // which has no restaurant-timezone awareness — overwrite it
+                // with the already-corrected UTC instant so that re-parse is
+                // a no-op instead of silently reintroducing the same bug.
+                if (isset($attributes['starts_at'])) {
+                    $attributes['starts_at'] = $startsAt->toDateTimeString();
+                }
             }
 
             $reservation->fill($attributes);
@@ -703,7 +712,9 @@ class ReservationService
                     ->lockForUpdate()
                     ->findOrFail($reservation->id);
                 $previousTable = $reservation->table;
-                $startsAt = $requestedStartsAt ? Carbon::parse($requestedStartsAt) : $reservation->starts_at;
+                $startsAt = $requestedStartsAt
+                    ? $this->parseRestaurantDateTime($requestedStartsAt, $reservation->restaurant)
+                    : $reservation->starts_at;
                 $table = $requestedTable ?? $reservation->table;
 
                 $this->ensureBookableTime($reservation->restaurant, $startsAt);
@@ -1054,8 +1065,8 @@ class ReservationService
             'guest_contact_id' => $guestContact?->id,
             'status' => WaitlistStatus::Waiting,
             'party_size' => $attributes['party_size'],
-            'preferred_starts_at' => Carbon::parse($attributes['preferred_starts_at']),
-            'preferred_ends_at' => isset($attributes['preferred_ends_at']) ? Carbon::parse($attributes['preferred_ends_at']) : null,
+            'preferred_starts_at' => $this->parseRestaurantDateTime($attributes['preferred_starts_at'], $restaurant),
+            'preferred_ends_at' => isset($attributes['preferred_ends_at']) ? $this->parseRestaurantDateTime($attributes['preferred_ends_at'], $restaurant) : null,
             'notes' => $attributes['notes'] ?? null,
             'occasion' => $attributes['occasion'] ?? null,
         ]);
@@ -1414,7 +1425,7 @@ class ReservationService
     ): Reservation {
         return $this->withRestaurantReservationLock($restaurant, function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
             return DB::transaction(function () use ($actor, $restaurant, $source, $attributes, $user, $guestContact): Reservation {
-                $startsAt = Carbon::parse($attributes['starts_at']);
+                $startsAt = $this->parseRestaurantDateTime($attributes['starts_at'], $restaurant);
                 $diningAreaId = isset($attributes['dining_area_id']) ? (int) $attributes['dining_area_id'] : null;
                 $hasSelectedTable = isset($attributes['restaurant_table_id']);
                 $selectedTableIds = TableCombination::normalizeTableIds($attributes['restaurant_table_ids'] ?? []);
@@ -1603,6 +1614,25 @@ class ReservationService
                 'starts_at' => ['The selected time is outside the restaurant booking hours.'],
             ]);
         }
+    }
+
+    /**
+     * `Carbon::parse($value)` alone interprets a naive datetime string (no
+     * embedded offset/`Z`) using `config('app.timezone')` (UTC in this app),
+     * not the restaurant's own timezone — every staff-facing time field is
+     * picked as restaurant-local wall-clock time, so that silently stored the
+     * wrong instant (confirmed live: picking "3:00 PM" for a Lagos restaurant
+     * persisted as 3:00 PM *UTC*, which reads back as 4:00 PM Lagos local —
+     * the reported "adds 1hr" bug). Passing `$restaurant->timezone` as
+     * Carbon's second argument is only used to interpret a naive string; a
+     * value that already carries an explicit offset or `Z` (e.g. the UTC
+     * `starts_at` returned by the availability endpoint) ignores it per
+     * PHP's own `DateTime` docs, so this is safe to apply unconditionally at
+     * every call site that accepts a user-supplied start time.
+     */
+    public function parseRestaurantDateTime(string $value, Restaurant $restaurant): Carbon
+    {
+        return Carbon::parse($value, $restaurant->timezone ?: config('app.timezone'))->utc();
     }
 
     private function guestDisplayName(Reservation $reservation): string

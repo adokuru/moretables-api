@@ -221,7 +221,12 @@ it('lets a customer update a future reservation', function () {
 
     Sanctum::actingAs($customer);
 
-    $newStartsAt = now()->addDays(4)->setTime(19, 0);
+    // A naive `starts_at` string (no offset/`Z`) is interpreted in the
+    // restaurant's own timezone, not UTC — matches how a real client picks a
+    // restaurant-local wall-clock time. Build it explicitly in that timezone
+    // so this assertion exercises (and pins) that conversion rather than
+    // assuming UTC, which is what caused a real "adds 1hr" bug in production.
+    $newStartsAt = now($data['restaurant']->timezone)->addDays(4)->setTime(19, 0);
 
     $this->patchJson('/api/v1/reservations/'.$reservation->id, [
         'starts_at' => $newStartsAt->toDateTimeString(),
@@ -233,8 +238,10 @@ it('lets a customer update a future reservation', function () {
 
     $reservation->refresh();
 
-    expect($reservation->starts_at->toDateTimeString())->toBe($newStartsAt->toDateTimeString());
-    expect($reservation->ends_at->toDateTimeString())->toBe($newStartsAt->copy()->addHours(2)->toDateTimeString());
+    expect($reservation->starts_at->copy()->timezone($data['restaurant']->timezone)->format('Y-m-d H:i:s'))
+        ->toBe($newStartsAt->format('Y-m-d H:i:s'));
+    expect($reservation->ends_at->copy()->timezone($data['restaurant']->timezone)->format('Y-m-d H:i:s'))
+        ->toBe($newStartsAt->copy()->addHours(2)->format('Y-m-d H:i:s'));
     Event::assertDispatched(ReservationUpdated::class);
     Notification::assertSentTo($customer, ReservationLifecycleNotification::class);
 });
