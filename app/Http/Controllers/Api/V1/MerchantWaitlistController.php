@@ -109,6 +109,21 @@ class MerchantWaitlistController extends Controller
             $this->updateGuestContact($waitlistEntry->guestContact, $guestContact);
         }
 
+        // `$waitlistEntry->update($validated)` re-parses a raw
+        // `preferred_starts_at`/`preferred_ends_at` string through the
+        // model's own `datetime` cast, which has no restaurant-timezone
+        // awareness (see `ReservationService::parseRestaurantDateTime`'s own
+        // doc comment for the confirmed "adds 1hr" bug this caused) —
+        // convert them to the corrected UTC instant first.
+        if (isset($validated['preferred_starts_at'])) {
+            $validated['preferred_starts_at'] = $this->reservationService
+                ->parseRestaurantDateTime($validated['preferred_starts_at'], $restaurant);
+        }
+        if (isset($validated['preferred_ends_at'])) {
+            $validated['preferred_ends_at'] = $this->reservationService
+                ->parseRestaurantDateTime($validated['preferred_ends_at'], $restaurant);
+        }
+
         $waitlistEntry->update($validated);
         $waitlistEntry->refresh()->load(['restaurant', 'reservation', 'table', 'assignedTables', 'user', 'guestContact']);
         event(new WaitlistEntryUpdated($waitlistEntry, 'updated'));
