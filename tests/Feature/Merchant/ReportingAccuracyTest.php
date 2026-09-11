@@ -96,8 +96,23 @@ it('resolves rolling quick-filter periods and compares against the window immedi
     expect($context->compareStartUtc->toDateTimeString())->toBe('2026-08-28 23:00:00')
         ->and($context->compareEndUtc->toDateTimeString())->toBe('2026-08-31 23:00:00');
 
+    // Omitting compare_period must land on the same window the UI captions the
+    // cards with, or the caption describes a different range than the trend.
+    $explicit = $filters->resolveContext(
+        new Request(['period' => 'last_7_days', 'compare_period' => 'previous_period']),
+        $this->data['restaurant'],
+    );
+    $implicit = $filters->resolveContext(new Request(['period' => 'last_7_days']), $this->data['restaurant']);
+    expect($implicit->compareStartUtc->equalTo($explicit->compareStartUtc))->toBeTrue()
+        ->and($implicit->compareEndUtc->equalTo($explicit->compareEndUtc))->toBeTrue();
+
     $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=previous_period')->assertOk();
     $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=nonsense')->assertUnprocessable();
+
+    // Every quick-filter period must be accepted by every reporting endpoint.
+    foreach (ReportingFilterService::PERIODS as $period) {
+        $this->getJson($this->base.'/reservations?period='.$period)->assertOk();
+    }
 });
 
 it('counts phone bookings as part of your own network rather than a separate source', function (): void {
@@ -240,8 +255,11 @@ it('returns unavailable growth when the comparison has no covers', function (): 
     $this->getJson($this->base.'/shift-occupancy?period=this_month')->assertOk()->assertJsonPath('summary.0.trend', null);
     $this->getJson($this->base.'/reservations?period=this_month')->assertOk()->assertJsonPath('summary.totalCovers.trend', null);
     $this->getJson($this->base.'/first-time-visits?period=this_month')->assertOk()->assertJsonPath('summary.trend', null);
+    // A year-ago visit only lands in the comparison window when that's the
+    // comparison asked for — the default is now the immediately preceding period.
     ($this->visit)(['party_size' => 10, 'starts_at' => '2025-09-07 12:00:00']);
-    expect((float) $this->getJson($this->base.'/cover-trends?period=this_month')->assertOk()->json('summary.trend'))->toBe(100.0);
+    expect((float) $this->getJson($this->base.'/cover-trends?period=this_month&compare_period=last_year')->assertOk()->json('summary.trend'))->toBe(100.0);
+    $this->getJson($this->base.'/cover-trends?period=this_month')->assertOk()->assertJsonPath('summary.trend', null);
 });
 
 it('uses the visited shift settings for turn-time rows and leaves empty averages unavailable', function (): void {

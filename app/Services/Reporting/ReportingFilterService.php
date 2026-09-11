@@ -16,7 +16,10 @@ use Illuminate\Validation\Rule;
 
 class ReportingFilterService
 {
-    private const PERIODS = [
+    /** Every period the reporting endpoints accept. GroupReportingRequest validates
+     *  against this same list — it resolves through resolveContext() too, so a period
+     *  valid for one must be valid for the other. */
+    public const PERIODS = [
         'this_week',
         'last_week',
         'last_month',
@@ -286,7 +289,10 @@ class ReportingFilterService
             return [$start, $end];
         }
 
-        $comparePeriod = $validated['compare_period'] ?? 'last_year';
+        // Matches the frontend's own fallback label ('Previous <period>'), so a
+        // report that sends no compare_period can't show a caption describing a
+        // different window than the trend was actually computed against.
+        $comparePeriod = $validated['compare_period'] ?? 'previous_period';
 
         if ($comparePeriod === 'last_4_weeks') {
             return [$periodStart->subDays(28), $periodStart];

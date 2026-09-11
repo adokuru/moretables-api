@@ -4,6 +4,7 @@ namespace App\Http\Requests\Merchant;
 
 use App\Models\Organization;
 use App\Services\Reporting\GroupReportingService;
+use App\Services\Reporting\ReportingFilterService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,9 +28,10 @@ class GroupReportingRequest extends FormRequest
         return [
             'restaurant_id' => ['nullable', 'integer', $restaurant],
             'compare_restaurant_id' => ['nullable', 'integer', $restaurant],
-            // Same quick-filter windows the per-restaurant reports offer, so the period
-            // dropdown means the same thing on every reporting tab.
-            'period' => ['nullable', Rule::in(['last_7_days', 'last_14_days', 'last_30_days', 'last_6_months', 'last_12_months', 'all_time', 'this_week', 'this_month', 'last_month', 'this_year'])],
+            // Group Reporting resolves through the same ReportingFilterService, so it
+            // accepts the same periods rather than keeping a second list that can
+            // fall behind the quick filter.
+            'period' => ['nullable', Rule::in(ReportingFilterService::PERIODS)],
             'date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:date_to'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:date_from', 'after_or_equal:date_from'],
         ];
