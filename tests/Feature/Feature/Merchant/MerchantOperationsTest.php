@@ -6,10 +6,12 @@ use App\Models\Reservation;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\ReservationSource;
 use App\Notifications\GuestWaitlistCreatedMailNotification;
 use App\Notifications\GuestWaitlistTableAvailableMailNotification;
 use App\Notifications\ReservationLifecycleNotification;
 use App\Notifications\WaitlistAvailabilityNotification;
+use App\Services\Reporting\ReportingSourceMapper;
 use Database\Seeders\BillingPlanSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Support\Facades\Notification;
@@ -94,6 +96,37 @@ it('allows operations staff to manage floor resources and walk-in reservations',
         ->assertJsonPath('reservation.source', 'walk_in');
 
     expect(Reservation::query()->count())->toBe(1);
+});
+
+it('records a phone reservation under Your Network, not Walk-in', function () {
+    // The dashboard's "Book a reservation" step 1 lets staff pick Walk-in vs
+    // Phone reservation. Every other merchant-create test sends walk_in, so
+    // this pins the phone path: the endpoint accepts it, the enum round-trips,
+    // and reporting buckets it as network rather than walk-in.
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    $operations = User::factory()->create();
+    assignScopedRole($operations, Role::Operations, $data['organization'], $data['restaurant']);
+
+    Sanctum::actingAs($operations);
+
+    $this->postJson('/api/v1/merchant/restaurants/'.$data['restaurant']->id.'/reservations', [
+        'starts_at' => now()->addDay()->setTime(19, 0)->toDateTimeString(),
+        'party_size' => 2,
+        'source' => 'phone',
+        'guest_contact' => [
+            'first_name' => 'Phone',
+            'last_name' => 'Caller',
+            'phone' => '+2348088888888',
+        ],
+    ])->assertCreated()
+        ->assertJsonPath('reservation.source', 'phone');
+
+    $reservation = Reservation::query()->sole();
+
+    expect($reservation->source)->toBe(ReservationSource::Phone)
+        ->and(ReportingSourceMapper::chartKey($reservation->source))->toBe(ReportingSourceMapper::CHART_NETWORK)
+        ->and(ReportingSourceMapper::isWalkIn($reservation->source))->toBeFalse();
 });
 
 it('validates floor table layout and type values', function () {
