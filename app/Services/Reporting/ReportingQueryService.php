@@ -20,7 +20,6 @@ class ReportingQueryService
     private const SOURCE_COLORS = [
         ReportingSourceMapper::CHART_MORETABLES => '#7880BD',
         ReportingSourceMapper::CHART_NETWORK => '#D34645',
-        ReportingSourceMapper::CHART_PHONE => '#27A001',
         ReportingSourceMapper::CHART_WALKIN => '#EAB94F',
     ];
 
@@ -615,14 +614,13 @@ class ReportingQueryService
     }
 
     /**
-     * @return array{name: string, walkin: int, phone: int, network: int, moretables: int}
+     * @return array{name: string, walkin: int, network: int, moretables: int}
      */
     private function emptySourceStats(string $name): array
     {
         return [
             'name' => $name,
             'walkin' => 0,
-            'phone' => 0,
             'network' => 0,
             'moretables' => 0,
         ];

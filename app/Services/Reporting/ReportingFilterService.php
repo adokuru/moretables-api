@@ -292,13 +292,25 @@ class ReportingFilterService
             return [$periodStart->subDays(28), $periodStart];
         }
 
-        // The window of identical length ending where the selected period begins,
-        // so "last 7 days" compares against the 7 days before it rather than a
-        // fixed 4-week or 1-year offset.
+        // The preceding window of identical length, so "last 7 days" compares
+        // against the 7 days before it rather than a fixed 4-week or 1-year offset.
+        //
+        // Calendar-aligned periods shift by their own unit instead of by their
+        // day count, because they run to *today*: on a Wednesday "this week" is
+        // 3 days long, and the useful comparison is Mon-Wed of last week, not the
+        // 3 days before this Monday. Same length either way, so the trend stays
+        // like-for-like.
         if ($comparePeriod === 'previous_period') {
             $lengthDays = max(1, (int) $periodStart->diffInDays($periodEnd));
 
-            return [$periodStart->subDays($lengthDays), $periodStart];
+            $start = match ($validated['period'] ?? null) {
+                'this_week', 'last_week' => $periodStart->subWeek(),
+                'this_month', 'last_month' => $periodStart->subMonthNoOverflow(),
+                'this_year', 'last_year' => $periodStart->subYearNoOverflow(),
+                default => $periodStart->subDays($lengthDays),
+            };
+
+            return [$start, $start->addDays($lengthDays)];
         }
 
         return [

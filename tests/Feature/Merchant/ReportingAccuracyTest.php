@@ -6,6 +6,7 @@ use App\Models\User;
 use App\ReservationSource;
 use App\ReservationStatus;
 use App\Services\Reporting\ReportingFilterService;
+use App\Services\Reporting\ReportingSourceMapper;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Http\Request;
@@ -70,6 +71,23 @@ it('resolves rolling quick-filter periods and compares against the window immedi
             ->and((int) $context->compareStartUtc->diffInDays($context->compareEndUtc))->toBe($days);
     }
 
+    // A calendar period running to today shifts by its own unit, not its day count:
+    // the clock is Mon 2026-09-07, so "this week" is 1 day long and must compare
+    // against the same 1 day of last week, not the day before this Monday.
+    $context = $filters->resolveContext(
+        new Request(['period' => 'this_week', 'compare_period' => 'previous_period']),
+        $this->data['restaurant'],
+    );
+    expect($context->compareStartUtc->toDateTimeString())->toBe('2026-08-30 23:00:00')
+        ->and($context->dayCount)->toBe((int) $context->compareStartUtc->diffInDays($context->compareEndUtc));
+
+    $context = $filters->resolveContext(
+        new Request(['period' => 'this_month', 'compare_period' => 'previous_period']),
+        $this->data['restaurant'],
+    );
+    expect($context->compareStartUtc->toDateTimeString())->toBe('2026-07-31 23:00:00')
+        ->and($context->dayCount)->toBe((int) $context->compareStartUtc->diffInDays($context->compareEndUtc));
+
     // It works for an explicit custom range too, not just the presets.
     $context = $filters->resolveContext(
         new Request(['date_from' => '2026-09-01', 'date_to' => '2026-09-03', 'compare_period' => 'previous_period']),
@@ -80,6 +98,30 @@ it('resolves rolling quick-filter periods and compares against the window immedi
 
     $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=previous_period')->assertOk();
     $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=nonsense')->assertUnprocessable();
+});
+
+it('counts phone bookings as part of your own network rather than a separate source', function (): void {
+    $mapper = new ReportingSourceMapper;
+
+    expect($mapper::chartKey(ReservationSource::Phone))->toBe(ReportingSourceMapper::CHART_NETWORK)
+        ->and($mapper::chartKey(ReservationSource::Staff))->toBe(ReportingSourceMapper::CHART_NETWORK)
+        ->and($mapper::chartKey(ReservationSource::Customer))->toBe(ReportingSourceMapper::CHART_MORETABLES)
+        ->and($mapper::chartKey(ReservationSource::WalkIn))->toBe(ReportingSourceMapper::CHART_WALKIN)
+        ->and($mapper::chartKey(ReservationSource::Waitlist))->toBe(ReportingSourceMapper::CHART_WALKIN);
+
+    // Three buckets, not four, and every one still has a label and a colour.
+    expect($mapper::chartKeys())->toBe(['walkin', 'network', 'moretables'])
+        ->and(array_keys($mapper::chartKeyLabels()))->toEqualCanonicalizing($mapper::chartKeys());
+
+    ($this->visit)(['source' => ReservationSource::Phone, 'party_size' => 2]);
+    ($this->visit)(['source' => ReservationSource::Staff, 'party_size' => 3]);
+
+    $sources = $this->getJson($this->base.'/reservations?period=this_month')->assertOk()->json('sources');
+
+    expect($sources)->toHaveCount(3);
+    $network = collect($sources)->firstWhere('label', 'Your Network');
+    expect($network['count'])->toBe(5)
+        ->and(collect($sources)->pluck('label'))->not->toContain('Phone/In house');
 });
 
 it('includes every reservation status but counts actual visits separately and exports the full filtered set', function (): void {
