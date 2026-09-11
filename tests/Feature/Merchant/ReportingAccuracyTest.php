@@ -47,6 +47,41 @@ it('resolves local calendar periods and comparisons without UTC date drift', fun
     expect($context->dayCount)->toBe(1)->and($context->compareStartUtc->toDateTimeString())->toBe('2022-12-31 23:00:00');
 });
 
+it('resolves rolling quick-filter periods and compares against the window immediately before', function (): void {
+    $filters = app(ReportingFilterService::class);
+
+    // Rolling windows are inclusive of today, so "last 7 days" spans exactly 7 days.
+    foreach (['last_7_days' => 7, 'last_14_days' => 14, 'last_30_days' => 30] as $period => $days) {
+        $context = $filters->resolveContext(new Request(['period' => $period]), $this->data['restaurant']);
+        expect($context->dayCount)->toBe($days)
+            ->and($context->periodEndUtc->toDateTimeString())->toBe('2026-09-07 23:00:00');
+    }
+
+    $context = $filters->resolveContext(new Request(['period' => 'last_12_months']), $this->data['restaurant']);
+    expect($context->periodStartUtc->toDateTimeString())->toBe('2025-09-06 23:00:00');
+
+    // previous_period must mirror the selected period's own length, whatever it is.
+    foreach (['last_7_days' => 7, 'last_30_days' => 30, 'last_month' => 31] as $period => $days) {
+        $context = $filters->resolveContext(
+            new Request(['period' => $period, 'compare_period' => 'previous_period']),
+            $this->data['restaurant'],
+        );
+        expect($context->compareEndUtc->equalTo($context->periodStartUtc))->toBeTrue()
+            ->and((int) $context->compareStartUtc->diffInDays($context->compareEndUtc))->toBe($days);
+    }
+
+    // It works for an explicit custom range too, not just the presets.
+    $context = $filters->resolveContext(
+        new Request(['date_from' => '2026-09-01', 'date_to' => '2026-09-03', 'compare_period' => 'previous_period']),
+        $this->data['restaurant'],
+    );
+    expect($context->compareStartUtc->toDateTimeString())->toBe('2026-08-28 23:00:00')
+        ->and($context->compareEndUtc->toDateTimeString())->toBe('2026-08-31 23:00:00');
+
+    $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=previous_period')->assertOk();
+    $this->getJson($this->base.'/cover-trends?period=last_7_days&compare_period=nonsense')->assertUnprocessable();
+});
+
 it('includes every reservation status but counts actual visits separately and exports the full filtered set', function (): void {
     foreach (ReservationStatus::cases() as $status) {
         ($this->visit)(['status' => $status, 'party_size' => 3]);

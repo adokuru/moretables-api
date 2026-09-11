@@ -27,7 +27,9 @@ class GroupReportingRequest extends FormRequest
         return [
             'restaurant_id' => ['nullable', 'integer', $restaurant],
             'compare_restaurant_id' => ['nullable', 'integer', $restaurant],
-            'period' => ['nullable', Rule::in(['this_week', 'this_month', 'last_month', 'this_year'])],
+            // Same quick-filter windows the per-restaurant reports offer, so the period
+            // dropdown means the same thing on every reporting tab.
+            'period' => ['nullable', Rule::in(['last_7_days', 'last_14_days', 'last_30_days', 'last_6_months', 'last_12_months', 'all_time', 'this_week', 'this_month', 'last_month', 'this_year'])],
             'date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:date_to'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:date_from', 'after_or_equal:date_from'],
         ];

@@ -27,6 +27,12 @@ class ReportingFilterService
         'last_4_weeks',
         'last_3_months',
         'last_6_months',
+        // Rolling-window presets behind the reporting quick filter. Kept alongside
+        // the calendar-aligned periods above, which the chart dropdowns still send.
+        'last_7_days',
+        'last_14_days',
+        'last_30_days',
+        'last_12_months',
     ];
 
     public function __construct(
@@ -44,7 +50,7 @@ class ReportingFilterService
             'date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:date_to'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:date_from', 'after_or_equal:date_from'],
             'period' => ['nullable', 'string', Rule::in(self::PERIODS)],
-            'compare_period' => ['nullable', 'string', Rule::in(['last_year', 'last_4_weeks'])],
+            'compare_period' => ['nullable', 'string', Rule::in(['last_year', 'last_4_weeks', 'previous_period'])],
             'compare_date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:compare_date_to'],
             'compare_date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:compare_date_from', 'after_or_equal:compare_date_from'],
             'shift_id' => ['nullable', 'integer'],
@@ -255,6 +261,10 @@ class ReportingFilterService
                 $now->addDay()->startOfDay(),
             ],
             'last_4_weeks' => [$now->subDays(27)->startOfDay(), $now->addDay()->startOfDay()],
+            'last_7_days' => [$now->subDays(6)->startOfDay(), $now->addDay()->startOfDay()],
+            'last_14_days' => [$now->subDays(13)->startOfDay(), $now->addDay()->startOfDay()],
+            'last_30_days' => [$now->subDays(29)->startOfDay(), $now->addDay()->startOfDay()],
+            'last_12_months' => [$now->subMonthsNoOverflow(12)->startOfDay(), $now->addDay()->startOfDay()],
             default => [$now->startOfMonth(), $now->addDay()->startOfDay()],
         };
     }
@@ -280,6 +290,15 @@ class ReportingFilterService
 
         if ($comparePeriod === 'last_4_weeks') {
             return [$periodStart->subDays(28), $periodStart];
+        }
+
+        // The window of identical length ending where the selected period begins,
+        // so "last 7 days" compares against the 7 days before it rather than a
+        // fixed 4-week or 1-year offset.
+        if ($comparePeriod === 'previous_period') {
+            $lengthDays = max(1, (int) $periodStart->diffInDays($periodEnd));
+
+            return [$periodStart->subDays($lengthDays), $periodStart];
         }
 
         return [
