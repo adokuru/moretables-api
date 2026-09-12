@@ -19,6 +19,20 @@ class AvailabilityService
 {
     public function __construct(protected RestaurantShiftService $restaurantShiftService) {}
 
+    /**
+     * Both availableTables() and combinationCandidateTables() evaluate every candidate
+     * table, and each evaluation resolves a shift and checks for an active one. Loading
+     * the shifts once up front lets RestaurantShiftService and hasBookableTimes() answer
+     * from memory instead of querying per table.
+     */
+    private function preloadShiftsForTableChecks(Restaurant $restaurant): void
+    {
+        $restaurant->loadMissing(array_map(
+            static fn (string $relation): string => 'shifts.'.$relation,
+            RestaurantShiftService::SLOT_RELATIONS,
+        ));
+    }
+
     public function calculateEndTime(Restaurant $restaurant, CarbonInterface $startsAt, ?int $partySize = null): Carbon
     {
         $parsedStartsAt = Carbon::parse($startsAt);
@@ -70,6 +84,7 @@ class AvailabilityService
         ?int $excludingReservationId = null,
         ?int $diningAreaId = null,
     ): Collection {
+        $this->preloadShiftsForTableChecks($restaurant);
         $restaurantTimezone = $restaurant->timezone ?: config('app.timezone');
         $localStartsAt = Carbon::parse($startsAt)->setTimezone($restaurantTimezone);
         $endsAt = $this->calculateEndTime($restaurant, $localStartsAt, $partySize);
@@ -216,6 +231,8 @@ class AvailabilityService
         int $partySize,
         ?int $excludingReservationId = null,
     ): Collection {
+        $this->preloadShiftsForTableChecks($restaurant);
+
         return $restaurant->tables()
             ->where('is_active', true)
             ->whereNotIn('status', [TableStatus::Unavailable->value, TableStatus::Cleaning->value])

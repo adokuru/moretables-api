@@ -98,15 +98,32 @@ class RestaurantShiftService
         $shift->delete();
     }
 
+    /**
+     * Callers that resolve a shift per reservation (reporting turn-times, availability
+     * loops) must preload the relations first — see shiftsLoadedForResolution(). Without
+     * that this issues one query plus four eager loads on every single call.
+     */
+    public const SLOT_RELATIONS = ['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals'];
+
     public function resolveShiftForSlot(Restaurant $restaurant, CarbonInterface $localStartsAt): ?RestaurantShift
     {
-        return $restaurant->shifts()
-            ->with(['turnTimes', 'tableAvailability', 'turnControls', 'flowIntervals'])
-            ->whereIn('day_of_week', [$localStartsAt->dayOfWeek, $localStartsAt->copy()->subDay()->dayOfWeek])
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('starts_at')
-            ->get()
+        $days = [$localStartsAt->dayOfWeek, $localStartsAt->copy()->subDay()->dayOfWeek];
+
+        $candidates = $this->shiftsLoadedForResolution($restaurant)
+            ? $restaurant->shifts
+                ->whereIn('day_of_week', $days)
+                ->where('is_active', true)
+                ->sortBy([['sort_order', 'asc'], ['starts_at', 'asc']])
+                ->values()
+            : $restaurant->shifts()
+                ->with(self::SLOT_RELATIONS)
+                ->whereIn('day_of_week', $days)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('starts_at')
+                ->get();
+
+        return $candidates
             ->first(function (RestaurantShift $shift) use ($localStartsAt): bool {
                 $start = $this->shiftStartForSlot($shift, $localStartsAt);
                 $end = $start->copy()->setTimeFromTimeString($shift->ends_at);
@@ -116,6 +133,23 @@ class RestaurantShiftService
 
                 return $localStartsAt->greaterThanOrEqualTo($start) && $localStartsAt->lessThan($end);
             });
+    }
+
+    /**
+     * Only filter in memory when every shift carries the relations the query branch
+     * eager-loads — otherwise accessing them would lazy-load per shift, trading one
+     * N+1 for another.
+     */
+    private function shiftsLoadedForResolution(Restaurant $restaurant): bool
+    {
+        if (! $restaurant->relationLoaded('shifts')) {
+            return false;
+        }
+
+        return $restaurant->shifts->every(
+            fn (RestaurantShift $shift): bool => collect(self::SLOT_RELATIONS)
+                ->every(fn (string $relation): bool => $shift->relationLoaded($relation))
+        );
     }
 
     public function turnDurationForPartySize(RestaurantShift $shift, int $partySize, int $fallbackMinutes): int

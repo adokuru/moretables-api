@@ -10,6 +10,7 @@ use App\Services\Reporting\ReportingSourceMapper;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 beforeEach(function (): void {
@@ -137,6 +138,68 @@ it('counts phone bookings as part of your own network rather than a separate sou
     $network = collect($sources)->firstWhere('label', 'Your Network');
     expect($network['count'])->toBe(5)
         ->and(collect($sources)->pluck('label'))->not->toContain('Phone/In house');
+});
+
+it('resolves shifts without querying once per reservation, and reports sub-daily averages', function (): void {
+    foreach (range(1, 40) as $i) {
+        $day = str_pad((string) (($i % 20) + 10), 2, '0', STR_PAD_LEFT);
+        ($this->visit)([
+            'party_size' => 2,
+            'starts_at' => "2026-08-{$day} 12:00:00",
+            'seated_at' => "2026-08-{$day} 12:00:00",
+            'completed_at' => "2026-08-{$day} 13:30:00",
+        ]);
+    }
+
+    $total = (int) $this->getJson($this->base.'/reservations?period=last_30_days&per_page=1')
+        ->assertOk()->json('meta.total');
+    expect($total)->toBeGreaterThan(20);
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $this->getJson($this->base.'/turn-times?period=last_30_days')->assertOk();
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // Was 6 + N (one shift lookup per reservation). Must stay flat as volume grows.
+    expect($queries)->toBeLessThan($total);
+
+    // A source averaging well under one booking a day must not round away to 0.
+    $sources = $this->getJson($this->base.'/shift-occupancy?period=last_30_days&compare_period=last_year')
+        ->assertOk()->json('sources');
+    expect($sources)->not->toBeEmpty()
+        ->and(collect($sources)->pluck('avg')->every(fn ($avg): bool => is_numeric($avg)))->toBeTrue();
+});
+
+it('counts lifetime guest visits across every period, not just the selected one', function (): void {
+    $contact = \App\Models\GuestContact::factory()->create([
+        'restaurant_id' => $this->data['restaurant']->id,
+        'is_temporary' => false,
+    ]);
+
+    // Two visits inside the window, two long before it.
+    ($this->visit)(['guest_contact_id' => $contact->id, 'user_id' => null, 'party_size' => 2, 'starts_at' => '2026-09-02 12:00:00']);
+    ($this->visit)(['guest_contact_id' => $contact->id, 'user_id' => null, 'party_size' => 3, 'starts_at' => '2026-09-04 12:00:00']);
+    ($this->visit)(['guest_contact_id' => $contact->id, 'user_id' => null, 'party_size' => 4, 'starts_at' => '2025-03-01 12:00:00']);
+    ($this->visit)(['guest_contact_id' => $contact->id, 'user_id' => null, 'party_size' => 5, 'starts_at' => '2025-04-01 12:00:00']);
+
+    // A cancelled visit must count towards neither.
+    ($this->visit)([
+        'guest_contact_id' => $contact->id, 'user_id' => null, 'party_size' => 9,
+        'starts_at' => '2026-09-03 12:00:00', 'status' => ReservationStatus::Cancelled,
+    ]);
+
+    $row = collect(
+        $this->getJson($this->base.'/guest-frequency?period=last_30_days')->assertOk()->json('data')
+    )->firstWhere('id', $contact->id);
+
+    expect($row)->not->toBeNull()
+        // Period-scoped: only the two September visits.
+        ->and($row['visits'])->toBe(2)
+        ->and($row['covers'])->toBe(5)
+        // Lifetime: all four seated/completed visits, regardless of the filter.
+        ->and($row['lifetimeVisits'])->toBe(4)
+        ->and($row['lifetimeCovers'])->toBe(14);
 });
 
 it('includes every reservation status but counts actual visits separately and exports the full filtered set', function (): void {

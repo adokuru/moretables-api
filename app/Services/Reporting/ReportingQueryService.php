@@ -269,7 +269,12 @@ class ReportingQueryService
     public function turnTimes(Restaurant $restaurant, ReportingFilterContext $context): array
     {
         $reservations = $this->turnTimeReservations($this->filters->baseQuery($restaurant, $context));
-        $restaurant->loadMissing('shifts.turnTimes');
+        // Resolves a shift per reservation, so the relations must be loaded up front or
+        // RestaurantShiftService falls back to one query (plus four eager loads) each time.
+        $restaurant->loadMissing(array_map(
+            static fn (string $relation): string => 'shifts.'.$relation,
+            RestaurantShiftService::SLOT_RELATIONS,
+        ));
 
         $durations = $reservations->map(function (Reservation $reservation) use ($restaurant, $context): ?array {
             if ($reservation->seated_at === null || $reservation->completed_at === null) {
@@ -389,6 +394,12 @@ class ReportingQueryService
 
         return [
             'periods' => $this->filters->periodPresets(),
+            // Deliberately left exactly as it has always been. This list is stale — it
+            // omits previous_period (now the default the web app sends) — but changing a
+            // response body can break clients outside this repo, so correcting it is a
+            // separate, explicit decision. Nothing in restaurant-web reads this key;
+            // ReportingFilterService::COMPARE_PERIODS is the real source of truth for
+            // which values the API accepts.
             'compare_periods' => [
                 ['value' => 'last_year', 'label' => 'Last Year'],
                 ['value' => 'last_4_weeks', 'label' => 'Last 4 Weeks'],
@@ -584,7 +595,7 @@ class ReportingQueryService
 
     /**
      * @param  EloquentCollection<int, Reservation>  $reservations
-     * @return list<array{name: string, walkin: int, phone: int, network: int, moretables: int}>
+     * @return list<array{name: string, walkin: int, network: int, moretables: int}>
      */
     private function buildSourceStatsSeries(EloquentCollection $reservations, ReportingFilterContext $context, ?Restaurant $restaurant = null): array
     {
@@ -785,20 +796,26 @@ class ReportingQueryService
      */
     private function buildFirstTimeLineChart(array $classified, ReportingFilterContext $context, bool $visits = false): array
     {
+        $labelFor = fn (Reservation $r): string => $this->periodLabel($r->starts_at, $context);
+
+        // Group each set once. The previous shape re-filtered both collections for every
+        // label, so periodLabel() — which parses and reformats a date — ran
+        // O(labels x reservations) times: a year of daily buckets over 10k reservations
+        // is millions of calls. Label order is still taken from the merged, date-sorted
+        // set, so the output is unchanged.
+        $firstByLabel = $classified['firstTime']->groupBy($labelFor);
+        $repeatByLabel = $classified['repeat']->groupBy($labelFor);
+
         $labels = $classified['firstTime']
             ->merge($classified['repeat'])
             ->sortBy('starts_at')
-            ->groupBy(fn (Reservation $r) => $this->periodLabel($r->starts_at, $context))
+            ->groupBy($labelFor)
             ->keys()
             ->values();
 
-        $series = $labels->map(function (string $name) use ($classified, $context, $visits): array {
-            $first = $classified['firstTime']->filter(
-                fn (Reservation $r) => $this->periodLabel($r->starts_at, $context) === $name
-            );
-            $repeat = $classified['repeat']->filter(
-                fn (Reservation $r) => $this->periodLabel($r->starts_at, $context) === $name
-            );
+        $series = $labels->map(function (string $name) use ($firstByLabel, $repeatByLabel, $visits): array {
+            $first = $firstByLabel->get($name) ?? collect();
+            $repeat = $repeatByLabel->get($name) ?? collect();
 
             return [
                 'name' => $name,
@@ -902,27 +919,30 @@ class ReportingQueryService
      */
     private function lifetimeGuestStats(Restaurant $restaurant): array
     {
+        // Aggregated in SQL rather than hydrating every seated/completed reservation the
+        // restaurant has ever had — this runs on every Guest Frequency / Guest Export
+        // request and is unbounded by the selected period.
         $rows = $restaurant->reservations()
             ->whereIn('status', [ReservationStatus::Seated, ReservationStatus::Completed])
             ->where(function ($builder): void {
                 $builder->whereNull('guest_contact_id')
                     ->orWhereHas('guestContact', fn ($guest) => $guest->where('is_temporary', false));
             })
-            ->get(['guest_contact_id', 'user_id', 'party_size']);
+            ->selectRaw('guest_contact_id, user_id, COUNT(*) as visits, COALESCE(SUM(party_size), 0) as covers')
+            ->groupBy('guest_contact_id', 'user_id')
+            ->get();
 
         $stats = [];
-        foreach ($rows as $reservation) {
-            $key = $this->guestKey($reservation);
+        foreach ($rows as $row) {
+            $key = $this->guestKey($row);
             if ($key === null) {
                 continue;
             }
 
-            if (! isset($stats[$key])) {
-                $stats[$key] = ['visits' => 0, 'covers' => 0];
-            }
-
-            $stats[$key]['visits']++;
-            $stats[$key]['covers'] += $reservation->party_size;
+            // guestKey() collapses to guest_contact_id when present, so two grouped rows
+            // (same contact, different user_id) can still land on one key.
+            $stats[$key]['visits'] = ($stats[$key]['visits'] ?? 0) + (int) $row->visits;
+            $stats[$key]['covers'] = ($stats[$key]['covers'] ?? 0) + (int) $row->covers;
         }
 
         return $stats;

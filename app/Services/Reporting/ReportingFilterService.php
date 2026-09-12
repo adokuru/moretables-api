@@ -53,7 +53,7 @@ class ReportingFilterService
             'date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:date_to'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:date_from', 'after_or_equal:date_from'],
             'period' => ['nullable', 'string', Rule::in(self::PERIODS)],
-            'compare_period' => ['nullable', 'string', Rule::in(['last_year', 'last_4_weeks', 'previous_period'])],
+            'compare_period' => ['nullable', 'string', Rule::in(self::COMPARE_PERIODS)],
             'compare_date_from' => ['nullable', 'date_format:Y-m-d', 'required_with:compare_date_to'],
             'compare_date_to' => ['nullable', 'date_format:Y-m-d', 'required_with:compare_date_from', 'after_or_equal:compare_date_from'],
             'shift_id' => ['nullable', 'integer'],
@@ -216,6 +216,12 @@ class ReportingFilterService
     /**
      * @return list<array{value: string, label: string}>
      */
+    /**
+     * Keep in step with the compare_period validation rule below — these are the values
+     * resolveCompareBounds() knows how to resolve.
+     */
+    public const COMPARE_PERIODS = ['previous_period', 'last_year', 'last_4_weeks'];
+
     public function periodPresets(): array
     {
         return array_map(

@@ -1399,3 +1399,39 @@ it('adds selected or new waitlist guests without changing the requested time', f
     expect($entry->guestContact->email)->toBeNull();
     expect($entry->preferred_starts_at->toIso8601String())->toBe('2099-01-01T12:15:00+00:00');
 });
+
+it('checks table availability without querying shifts once per table', function (): void {
+    $data = createBookableRestaurant();
+    activateMerchantBilling($data['restaurant']);
+    actingAsFrontOfHouse($data);
+
+    // Names are pinned, not faked: table labels are unique per restaurant, and the
+    // factory's random 'T1'-'T99' can collide with itself or the seeded table.
+    foreach (range(1, 24) as $n) {
+        \App\Models\RestaurantTable::factory()->create([
+            'restaurant_id' => $data['restaurant']->id,
+            'dining_area_id' => $data['table']->dining_area_id,
+            'name' => 'QueryProbe-'.$n,
+            'min_capacity' => 1,
+            'max_capacity' => 8,
+            'is_active' => true,
+        ]);
+    }
+
+    $url = frontOfHouseUrl($data, 'front-of-house/available-tables?starts_at='
+        .urlencode(now()->addDay()->setTime(18, 0)->toIso8601String()).'&party_size=2');
+
+    \Illuminate\Support\Facades\DB::flushQueryLog();
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $this->getJson($url)->assertOk();
+    $log = collect(\Illuminate\Support\Facades\DB::getQueryLog());
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    // Shifts are loaded once up front, so evaluating 25 candidate tables must not go
+    // back to the database for them. Was 78 shift queries for this same request.
+    $shiftQueries = $log->filter(
+        fn (array $query): bool => str_contains($query['query'], 'restaurant_shifts')
+    )->count();
+
+    expect($shiftQueries)->toBeLessThanOrEqual(6);
+});

@@ -1,0 +1,2501 @@
+{
+    "filters": {
+        "periods": [
+            {
+                "value": "this_week",
+                "label": "This Week"
+            },
+            {
+                "value": "last_week",
+                "label": "Last Week"
+            },
+            {
+                "value": "last_month",
+                "label": "Last Month"
+            },
+            {
+                "value": "this_month",
+                "label": "This Month"
+            },
+            {
+                "value": "this_year",
+                "label": "This Year"
+            },
+            {
+                "value": "last_year",
+                "label": "Last Year"
+            },
+            {
+                "value": "all_time",
+                "label": "All Time"
+            },
+            {
+                "value": "last_4_weeks",
+                "label": "Last 4 Weeks"
+            },
+            {
+                "value": "last_3_months",
+                "label": "Last 3 Months"
+            },
+            {
+                "value": "last_6_months",
+                "label": "Last 6 Months"
+            },
+            {
+                "value": "last_7_days",
+                "label": "Last 7 Days"
+            },
+            {
+                "value": "last_14_days",
+                "label": "Last 14 Days"
+            },
+            {
+                "value": "last_30_days",
+                "label": "Last 30 Days"
+            },
+            {
+                "value": "last_12_months",
+                "label": "Last 12 Months"
+            }
+        ],
+        "compare_periods": [
+            {
+                "value": "last_year",
+                "label": "Last Year"
+            },
+            {
+                "value": "last_4_weeks",
+                "label": "Last 4 Weeks"
+            }
+        ],
+        "shifts": [],
+        "statuses": [
+            {
+                "value": "not_confirmed",
+                "label": "Not confirmed"
+            },
+            {
+                "value": "booked",
+                "label": "Booked"
+            },
+            {
+                "value": "confirmed",
+                "label": "Confirmed"
+            },
+            {
+                "value": "arrived",
+                "label": "Arrived"
+            },
+            {
+                "value": "partially_arrived",
+                "label": "Partially Arrived"
+            },
+            {
+                "value": "left_message",
+                "label": "Left Message"
+            },
+            {
+                "value": "running_late",
+                "label": "Running Late"
+            },
+            {
+                "value": "seated",
+                "label": "Seated"
+            },
+            {
+                "value": "completed",
+                "label": "Completed"
+            },
+            {
+                "value": "cancelled",
+                "label": "Cancelled"
+            },
+            {
+                "value": "no_show",
+                "label": "No Show"
+            }
+        ],
+        "days_of_week": [
+            {
+                "value": 0,
+                "label": "Sunday"
+            },
+            {
+                "value": 1,
+                "label": "Monday"
+            },
+            {
+                "value": 2,
+                "label": "Tuesday"
+            },
+            {
+                "value": 3,
+                "label": "Wednesday"
+            },
+            {
+                "value": 4,
+                "label": "Thursday"
+            },
+            {
+                "value": 5,
+                "label": "Friday"
+            },
+            {
+                "value": 6,
+                "label": "Saturday"
+            }
+        ]
+    },
+    "shift-occupancy": {
+        "summary": [
+            {
+                "title": "Total Covers",
+                "value": 50,
+                "trend": -9.1
+            },
+            {
+                "title": "Reservation Covers",
+                "value": 22,
+                "trend": -4.3
+            },
+            {
+                "title": "Walk-in Covers",
+                "value": 28,
+                "trend": -12.5
+            }
+        ],
+        "sources": [
+            {
+                "label": "Walk-in",
+                "actual": 7,
+                "avg": 0
+            },
+            {
+                "label": "Your Network",
+                "actual": 0,
+                "avg": 0
+            },
+            {
+                "label": "MoreTables Network",
+                "actual": 8,
+                "avg": 0
+            }
+        ],
+        "chart": [
+            {
+                "name": "Aug 9, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "res": 3,
+                "walk": 0
+            },
+            {
+                "name": "Aug 11, 2026",
+                "res": 0,
+                "walk": 4
+            },
+            {
+                "name": "Aug 12, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "res": 1,
+                "walk": 0
+            },
+            {
+                "name": "Aug 15, 2026",
+                "res": 0,
+                "walk": 2
+            },
+            {
+                "name": "Aug 16, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "res": 5,
+                "walk": 0
+            },
+            {
+                "name": "Aug 19, 2026",
+                "res": 0,
+                "walk": 6
+            },
+            {
+                "name": "Aug 20, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "res": 3,
+                "walk": 0
+            },
+            {
+                "name": "Aug 23, 2026",
+                "res": 0,
+                "walk": 4
+            },
+            {
+                "name": "Aug 24, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "res": 1,
+                "walk": 0
+            },
+            {
+                "name": "Aug 27, 2026",
+                "res": 0,
+                "walk": 2
+            },
+            {
+                "name": "Aug 28, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "res": 5,
+                "walk": 0
+            },
+            {
+                "name": "Aug 31, 2026",
+                "res": 0,
+                "walk": 6
+            },
+            {
+                "name": "Sep 1, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "res": 3,
+                "walk": 0
+            },
+            {
+                "name": "Sep 4, 2026",
+                "res": 0,
+                "walk": 4
+            },
+            {
+                "name": "Sep 5, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "res": 1,
+                "walk": 0
+            }
+        ],
+        "sourceStats": [
+            {
+                "name": "Aug 9, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Aug 11, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 12, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            },
+            {
+                "name": "Aug 15, 2026",
+                "walkin": 2,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 16, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 5
+            },
+            {
+                "name": "Aug 19, 2026",
+                "walkin": 6,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 20, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Aug 23, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 24, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            },
+            {
+                "name": "Aug 27, 2026",
+                "walkin": 2,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 28, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 5
+            },
+            {
+                "name": "Aug 31, 2026",
+                "walkin": 6,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 1, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Sep 4, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 5, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            }
+        ],
+        "circleStats": {
+            "resPct": 44,
+            "walkPct": 56,
+            "resCount": 22,
+            "walkCount": 28
+        }
+    },
+    "shift-occupancy.compare-year": {
+        "summary": [
+            {
+                "title": "Total Covers",
+                "value": 8,
+                "trend": null
+            },
+            {
+                "title": "Reservation Covers",
+                "value": 4,
+                "trend": null
+            },
+            {
+                "title": "Walk-in Covers",
+                "value": 4,
+                "trend": null
+            }
+        ],
+        "sources": [
+            {
+                "label": "Walk-in",
+                "actual": 1,
+                "avg": 0
+            },
+            {
+                "label": "Your Network",
+                "actual": 0,
+                "avg": 0
+            },
+            {
+                "label": "MoreTables Network",
+                "actual": 2,
+                "avg": 0
+            }
+        ],
+        "chart": [
+            {
+                "name": "Sep 1, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "res": 3,
+                "walk": 0
+            },
+            {
+                "name": "Sep 4, 2026",
+                "res": 0,
+                "walk": 4
+            },
+            {
+                "name": "Sep 5, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "res": 0,
+                "walk": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "res": 1,
+                "walk": 0
+            }
+        ],
+        "sourceStats": [
+            {
+                "name": "Sep 1, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Sep 4, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 5, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            }
+        ],
+        "circleStats": {
+            "resPct": 50,
+            "walkPct": 50,
+            "resCount": 4,
+            "walkCount": 4
+        }
+    },
+    "cover-trends": {
+        "summary": {
+            "title": "Total Covers",
+            "value": 50,
+            "trend": -9.1
+        },
+        "info": [
+            {
+                "label": "Average lead time",
+                "value": "0 hrs",
+                "subtitle": "vs 0 hrs last period"
+            },
+            {
+                "label": "Average party size",
+                "value": "3.3",
+                "subtitle": "15 reservations"
+            },
+            {
+                "label": "Daily average covers",
+                "value": "1.7",
+                "subtitle": "over 30 days"
+            }
+        ],
+        "sourceStats": [
+            {
+                "name": "Aug 9, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Aug 11, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 12, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            },
+            {
+                "name": "Aug 15, 2026",
+                "walkin": 2,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 16, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 5
+            },
+            {
+                "name": "Aug 19, 2026",
+                "walkin": 6,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 20, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Aug 23, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 24, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            },
+            {
+                "name": "Aug 27, 2026",
+                "walkin": 2,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 28, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 5
+            },
+            {
+                "name": "Aug 31, 2026",
+                "walkin": 6,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 1, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 3
+            },
+            {
+                "name": "Sep 4, 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 5, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 1
+            }
+        ],
+        "coversOverTime": [
+            {
+                "name": "Aug 9, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "covers": 3
+            },
+            {
+                "name": "Aug 11, 2026",
+                "covers": 4
+            },
+            {
+                "name": "Aug 12, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "covers": 1
+            },
+            {
+                "name": "Aug 15, 2026",
+                "covers": 2
+            },
+            {
+                "name": "Aug 16, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "covers": 5
+            },
+            {
+                "name": "Aug 19, 2026",
+                "covers": 6
+            },
+            {
+                "name": "Aug 20, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "covers": 3
+            },
+            {
+                "name": "Aug 23, 2026",
+                "covers": 4
+            },
+            {
+                "name": "Aug 24, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "covers": 1
+            },
+            {
+                "name": "Aug 27, 2026",
+                "covers": 2
+            },
+            {
+                "name": "Aug 28, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "covers": 5
+            },
+            {
+                "name": "Aug 31, 2026",
+                "covers": 6
+            },
+            {
+                "name": "Sep 1, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "covers": 3
+            },
+            {
+                "name": "Sep 4, 2026",
+                "covers": 4
+            },
+            {
+                "name": "Sep 5, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "covers": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "covers": 1
+            }
+        ]
+    },
+    "cover-trends.month-group": {
+        "summary": {
+            "title": "Total Covers",
+            "value": 148,
+            "trend": null
+        },
+        "info": [
+            {
+                "label": "Average lead time",
+                "value": "0 hrs",
+                "subtitle": "vs 0 hrs last period"
+            },
+            {
+                "label": "Average party size",
+                "value": "3.4",
+                "subtitle": "43 reservations"
+            },
+            {
+                "label": "Daily average covers",
+                "value": "0.4",
+                "subtitle": "over 366 days"
+            }
+        ],
+        "sourceStats": [
+            {
+                "name": "Sep 2025",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Oct 2025",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Nov 2025",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Dec 2025",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Jan 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Feb 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Mar 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Apr 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "May 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Jun 2026",
+                "walkin": 14,
+                "network": 0,
+                "moretables": 10
+            },
+            {
+                "name": "Jul 2026",
+                "walkin": 34,
+                "network": 0,
+                "moretables": 26
+            },
+            {
+                "name": "Aug 2026",
+                "walkin": 32,
+                "network": 0,
+                "moretables": 24
+            },
+            {
+                "name": "Sep 2026",
+                "walkin": 4,
+                "network": 0,
+                "moretables": 4
+            }
+        ],
+        "coversOverTime": [
+            {
+                "name": "Sep 2025",
+                "covers": 0
+            },
+            {
+                "name": "Oct 2025",
+                "covers": 0
+            },
+            {
+                "name": "Nov 2025",
+                "covers": 0
+            },
+            {
+                "name": "Dec 2025",
+                "covers": 0
+            },
+            {
+                "name": "Jan 2026",
+                "covers": 0
+            },
+            {
+                "name": "Feb 2026",
+                "covers": 0
+            },
+            {
+                "name": "Mar 2026",
+                "covers": 0
+            },
+            {
+                "name": "Apr 2026",
+                "covers": 0
+            },
+            {
+                "name": "May 2026",
+                "covers": 0
+            },
+            {
+                "name": "Jun 2026",
+                "covers": 24
+            },
+            {
+                "name": "Jul 2026",
+                "covers": 60
+            },
+            {
+                "name": "Aug 2026",
+                "covers": 56
+            },
+            {
+                "name": "Sep 2026",
+                "covers": 8
+            }
+        ]
+    },
+    "first-time-visits": {
+        "summary": {
+            "title": "First-time covers",
+            "value": 0,
+            "trend": null
+        },
+        "info": [
+            {
+                "label": "First-time guests",
+                "value": "0",
+                "subtitle": "0 covers"
+            },
+            {
+                "label": "Repeat guests",
+                "value": "3",
+                "subtitle": "50 covers"
+            },
+            {
+                "label": "First-time share",
+                "value": "0%",
+                "subtitle": "of visit covers",
+                "subtitleClassName": "text-[#27A001]"
+            }
+        ],
+        "lineChart": [
+            {
+                "name": "Aug 9, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "firstTime": 0,
+                "repeat": 3
+            },
+            {
+                "name": "Aug 11, 2026",
+                "firstTime": 0,
+                "repeat": 4
+            },
+            {
+                "name": "Aug 12, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 15, 2026",
+                "firstTime": 0,
+                "repeat": 2
+            },
+            {
+                "name": "Aug 16, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "firstTime": 0,
+                "repeat": 5
+            },
+            {
+                "name": "Aug 19, 2026",
+                "firstTime": 0,
+                "repeat": 6
+            },
+            {
+                "name": "Aug 20, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "firstTime": 0,
+                "repeat": 3
+            },
+            {
+                "name": "Aug 23, 2026",
+                "firstTime": 0,
+                "repeat": 4
+            },
+            {
+                "name": "Aug 24, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 27, 2026",
+                "firstTime": 0,
+                "repeat": 2
+            },
+            {
+                "name": "Aug 28, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "firstTime": 0,
+                "repeat": 5
+            },
+            {
+                "name": "Aug 31, 2026",
+                "firstTime": 0,
+                "repeat": 6
+            },
+            {
+                "name": "Sep 1, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "firstTime": 0,
+                "repeat": 3
+            },
+            {
+                "name": "Sep 4, 2026",
+                "firstTime": 0,
+                "repeat": 4
+            },
+            {
+                "name": "Sep 5, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            }
+        ],
+        "lineChartVisits": [
+            {
+                "name": "Aug 9, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 11, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 12, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 15, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 16, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 19, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 20, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 23, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 24, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 27, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 28, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Aug 31, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Sep 1, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Sep 4, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            },
+            {
+                "name": "Sep 5, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "firstTime": 0,
+                "repeat": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "firstTime": 0,
+                "repeat": 1
+            }
+        ],
+        "sourceStats": [
+            {
+                "name": "Aug 9, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 10, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 11, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 12, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 13, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 14, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 15, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 16, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 17, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 18, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 19, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 20, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 21, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 22, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 23, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 24, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 25, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 26, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 27, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 28, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 29, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 30, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Aug 31, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 1, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 2, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 3, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 4, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 5, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 6, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            },
+            {
+                "name": "Sep 7, 2026",
+                "walkin": 0,
+                "network": 0,
+                "moretables": 0
+            }
+        ],
+        "partySizeChart": [
+            {
+                "name": "1",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 3,
+                "lastYearRepeat": 2
+            },
+            {
+                "name": "2",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 4,
+                "lastYearRepeat": 6
+            },
+            {
+                "name": "3",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 9,
+                "lastYearRepeat": 6
+            },
+            {
+                "name": "4",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 12,
+                "lastYearRepeat": 8
+            },
+            {
+                "name": "5",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 10,
+                "lastYearRepeat": 15
+            },
+            {
+                "name": "6+",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 12,
+                "lastYearRepeat": 18
+            }
+        ],
+        "partySizeChartVisits": [
+            {
+                "name": "1",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 3,
+                "lastYearRepeat": 2
+            },
+            {
+                "name": "2",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 2,
+                "lastYearRepeat": 3
+            },
+            {
+                "name": "3",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 3,
+                "lastYearRepeat": 2
+            },
+            {
+                "name": "4",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 3,
+                "lastYearRepeat": 2
+            },
+            {
+                "name": "5",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 2,
+                "lastYearRepeat": 3
+            },
+            {
+                "name": "6+",
+                "lastYearFirst": 0,
+                "firstTime": 0,
+                "spacer": 0,
+                "repeat": 2,
+                "lastYearRepeat": 3
+            }
+        ]
+    },
+    "guest-frequency": {
+        "data": [
+            {
+                "id": 1,
+                "name": "Guest Number1",
+                "lastVisit": "Sep 7, 2026",
+                "covers": 36,
+                "visits": 15,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 36
+            },
+            {
+                "id": 2,
+                "name": "Guest Number2",
+                "lastVisit": "Aug 30, 2026",
+                "covers": 49,
+                "visits": 14,
+                "totalSpend": null,
+                "lifetimeVisits": 16,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 56
+            },
+            {
+                "id": 3,
+                "name": "Guest Number3",
+                "lastVisit": "Sep 3, 2026",
+                "covers": 63,
+                "visits": 14,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 69
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3
+        }
+    },
+    "guest-frequency.last-month": {
+        "data": [
+            {
+                "id": 2,
+                "name": "Guest Number2",
+                "lastVisit": "Aug 30, 2026",
+                "covers": 21,
+                "visits": 6,
+                "totalSpend": null,
+                "lifetimeVisits": 16,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 56
+            },
+            {
+                "id": 1,
+                "name": "Guest Number1",
+                "lastVisit": "Aug 26, 2026",
+                "covers": 11,
+                "visits": 5,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 36
+            },
+            {
+                "id": 3,
+                "name": "Guest Number3",
+                "lastVisit": "Aug 31, 2026",
+                "covers": 24,
+                "visits": 5,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 69
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3
+        }
+    },
+    "guest-export": {
+        "data": [
+            {
+                "id": 1,
+                "name": "Guest Number1",
+                "lastVisit": "Sep 7, 2026",
+                "covers": 36,
+                "visits": 15,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 36
+            },
+            {
+                "id": 2,
+                "name": "Guest Number2",
+                "lastVisit": "Aug 30, 2026",
+                "covers": 49,
+                "visits": 14,
+                "totalSpend": null,
+                "lifetimeVisits": 16,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 56
+            },
+            {
+                "id": 3,
+                "name": "Guest Number3",
+                "lastVisit": "Sep 3, 2026",
+                "covers": 63,
+                "visits": 14,
+                "totalSpend": null,
+                "lifetimeVisits": 15,
+                "lifetimeSpend": null,
+                "lifetimeCovers": 69
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3
+        }
+    },
+    "reservations": {
+        "summary": {
+            "totalCovers": {
+                "title": "Total Covers",
+                "value": 105,
+                "trend": 0
+            },
+            "totalReservations": {
+                "title": "Total Reservations",
+                "value": 30,
+                "trend": 0
+            }
+        },
+        "sources": [
+            {
+                "label": "Walk-in",
+                "count": 28,
+                "color": "#EAB94F"
+            },
+            {
+                "label": "Your Network",
+                "count": 55,
+                "color": "#D34645"
+            },
+            {
+                "label": "MoreTables Network",
+                "count": 22,
+                "color": "#7880BD"
+            }
+        ],
+        "discoveryCampaign": {
+            "label": "MoreTables discovery",
+            "count": 22,
+            "color": "#F66435"
+        },
+        "data": [
+            {
+                "id": 85,
+                "guestName": "Guest Number1",
+                "visitDate": "Sep 7, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 1,
+                "source": "MoreTables Network",
+                "status": "Completed"
+            },
+            {
+                "id": 84,
+                "guestName": "Guest Number3",
+                "visitDate": "Sep 6, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 83,
+                "guestName": "Guest Number2",
+                "visitDate": "Sep 5, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 5,
+                "source": "Your Network",
+                "status": "Cancelled"
+            },
+            {
+                "id": 82,
+                "guestName": "Guest Number1",
+                "visitDate": "Sep 4, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 4,
+                "source": "Walk-in",
+                "status": "Seated"
+            },
+            {
+                "id": 81,
+                "guestName": "Guest Number3",
+                "visitDate": "Sep 3, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 3,
+                "source": "MoreTables Network",
+                "status": "Completed"
+            },
+            {
+                "id": 80,
+                "guestName": "Guest Number2",
+                "visitDate": "Sep 2, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 79,
+                "guestName": "Guest Number1",
+                "visitDate": "Sep 1, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 1,
+                "source": "Your Network",
+                "status": "Cancelled"
+            },
+            {
+                "id": 78,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 31, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Walk-in",
+                "status": "Seated"
+            },
+            {
+                "id": 77,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 30, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 5,
+                "source": "MoreTables Network",
+                "status": "Completed"
+            },
+            {
+                "id": 76,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 29, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 4,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 75,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 28, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 3,
+                "source": "Your Network",
+                "status": "Cancelled"
+            },
+            {
+                "id": 74,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 27, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Walk-in",
+                "status": "Seated"
+            },
+            {
+                "id": 73,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 26, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 1,
+                "source": "MoreTables Network",
+                "status": "Completed"
+            },
+            {
+                "id": 72,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 25, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 71,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 24, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 5,
+                "source": "Your Network",
+                "status": "Cancelled"
+            },
+            {
+                "id": 70,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 23, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 4,
+                "source": "Walk-in",
+                "status": "Seated"
+            },
+            {
+                "id": 69,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 22, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 3,
+                "source": "MoreTables Network",
+                "status": "Completed"
+            },
+            {
+                "id": 68,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 21, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 67,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 20, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 1,
+                "source": "Your Network",
+                "status": "Cancelled"
+            },
+            {
+                "id": 66,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 19, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Walk-in",
+                "status": "Seated"
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 2,
+            "per_page": 20,
+            "total": 30
+        }
+    },
+    "reservations.status": {
+        "summary": {
+            "totalCovers": {
+                "title": "Total Covers",
+                "value": 32,
+                "trend": 14.3
+            },
+            "totalReservations": {
+                "title": "Total Reservations",
+                "value": 8,
+                "trend": 14.3
+            }
+        },
+        "sources": [
+            {
+                "label": "Walk-in",
+                "count": 0,
+                "color": "#EAB94F"
+            },
+            {
+                "label": "Your Network",
+                "count": 32,
+                "color": "#D34645"
+            },
+            {
+                "label": "MoreTables Network",
+                "count": 0,
+                "color": "#7880BD"
+            }
+        ],
+        "discoveryCampaign": {
+            "label": "MoreTables discovery",
+            "count": 0,
+            "color": "#F66435"
+        },
+        "data": [
+            {
+                "id": 84,
+                "guestName": "Guest Number3",
+                "visitDate": "Sep 6, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 80,
+                "guestName": "Guest Number2",
+                "visitDate": "Sep 2, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 76,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 29, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 4,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 72,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 25, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 68,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 21, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 64,
+                "guestName": "Guest Number1",
+                "visitDate": "Aug 17, 2026 1:00 PM",
+                "phone": "+234800000001",
+                "size": 4,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 60,
+                "guestName": "Guest Number3",
+                "visitDate": "Aug 13, 2026 1:00 PM",
+                "phone": "+234800000003",
+                "size": 6,
+                "source": "Your Network",
+                "status": "No Show"
+            },
+            {
+                "id": 56,
+                "guestName": "Guest Number2",
+                "visitDate": "Aug 9, 2026 1:00 PM",
+                "phone": "+234800000002",
+                "size": 2,
+                "source": "Your Network",
+                "status": "No Show"
+            }
+        ],
+        "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 8
+        }
+    },
+    "turn-times": {
+        "averageCards": [
+            {
+                "title": "Average turn time",
+                "value": "1 hr 22 min",
+                "subtitle": "Across all completed visits"
+            },
+            {
+                "title": "Average vs setting",
+                "value": "-38 min",
+                "subtitle": "Setting 2 hr"
+            }
+        ],
+        "bySourceCards": [
+            {
+                "title": "1-2 guests",
+                "sources": [
+                    {
+                        "name": "Walk-in",
+                        "value": "1 hr 30 min"
+                    },
+                    {
+                        "name": "Your Network",
+                        "value": "—"
+                    },
+                    {
+                        "name": "MoreTables Network",
+                        "value": "1 hr 15 min"
+                    }
+                ]
+            },
+            {
+                "title": "3-4 guests",
+                "sources": [
+                    {
+                        "name": "Walk-in",
+                        "value": "1 hr 30 min"
+                    },
+                    {
+                        "name": "Your Network",
+                        "value": "—"
+                    },
+                    {
+                        "name": "MoreTables Network",
+                        "value": "1 hr 15 min"
+                    }
+                ]
+            }
+        ],
+        "partyRows": [
+            {
+                "size": "1-2",
+                "setting": "2 hr",
+                "average": "1 hr 21 min",
+                "difference": "-39 min",
+                "settingMin": 120,
+                "averageMin": 81,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "3-4",
+                "setting": "2 hr",
+                "average": "1 hr 23 min",
+                "difference": "-37 min",
+                "settingMin": 120,
+                "averageMin": 83,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "5-6",
+                "setting": "2 hr",
+                "average": "1 hr 23 min",
+                "difference": "-37 min",
+                "settingMin": 120,
+                "averageMin": 83,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "7-8",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "9-10",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "11+",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            }
+        ],
+        "sourceRows": [
+            {
+                "source": "Walk-in",
+                "values": [
+                    "1 hr 30 min",
+                    "1 hr 30 min",
+                    "1 hr 30 min",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            },
+            {
+                "source": "Your Network",
+                "values": [
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            },
+            {
+                "source": "MoreTables Network",
+                "values": [
+                    "1 hr 15 min",
+                    "1 hr 15 min",
+                    "1 hr 15 min",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            }
+        ]
+    },
+    "turn-times.this-week": {
+        "averageCards": [
+            {
+                "title": "Average turn time",
+                "value": "1 hr 15 min",
+                "subtitle": "Across all completed visits"
+            },
+            {
+                "title": "Average vs setting",
+                "value": "-45 min",
+                "subtitle": "Setting 2 hr"
+            }
+        ],
+        "bySourceCards": [
+            {
+                "title": "1-2 guests",
+                "sources": [
+                    {
+                        "name": "Walk-in",
+                        "value": "—"
+                    },
+                    {
+                        "name": "Your Network",
+                        "value": "—"
+                    },
+                    {
+                        "name": "MoreTables Network",
+                        "value": "1 hr 15 min"
+                    }
+                ]
+            },
+            {
+                "title": "3-4 guests",
+                "sources": [
+                    {
+                        "name": "Walk-in",
+                        "value": "—"
+                    },
+                    {
+                        "name": "Your Network",
+                        "value": "—"
+                    },
+                    {
+                        "name": "MoreTables Network",
+                        "value": "—"
+                    }
+                ]
+            }
+        ],
+        "partyRows": [
+            {
+                "size": "1-2",
+                "setting": "2 hr",
+                "average": "1 hr 15 min",
+                "difference": "-45 min",
+                "settingMin": 120,
+                "averageMin": 75,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "3-4",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "5-6",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "7-8",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "9-10",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            },
+            {
+                "size": "11+",
+                "setting": "2 hr",
+                "average": "—",
+                "difference": "—",
+                "settingMin": 120,
+                "averageMin": 0,
+                "dotColor": "#27A001"
+            }
+        ],
+        "sourceRows": [
+            {
+                "source": "Walk-in",
+                "values": [
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            },
+            {
+                "source": "Your Network",
+                "values": [
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            },
+            {
+                "source": "MoreTables Network",
+                "values": [
+                    "1 hr 15 min",
+                    "—",
+                    "—",
+                    "—",
+                    "—",
+                    "—"
+                ]
+            }
+        ]
+    },
+    "__csv": {
+        "guest-frequency": "Name,\"Last Visit\",Covers,Visits,\"Total Spend\",\"Lifetime Visits\",\"Lifetime Spend\",\"Lifetime Covers\"\n\"Guest Number1\",\"Sep 7, 2026\",36,15,—,15,—,36\n\"Guest Number2\",\"Aug 30, 2026\",49,14,—,16,—,56\n\"Guest Number3\",\"Sep 3, 2026\",63,14,—,15,—,69\n",
+        "reservations": "\"Guest Name\",\"Visit Date\",Phone,Size,Source,Status\n\"Guest Number1\",\"Sep 7, 2026 1:00 PM\",+234800000001,1,\"MoreTables Network\",Completed\n\"Guest Number3\",\"Sep 6, 2026 1:00 PM\",+234800000003,6,\"Your Network\",\"No Show\"\n\"Guest Number2\",\"Sep 5, 2026 1:00 PM\",+234800000002,5,\"Your Network\",Cancelled\n\"Guest Number1\",\"Sep 4, 2026 1:00 PM\",+234800000001,4,Walk-in,Seated\n\"Guest Number3\",\"Sep 3, 2026 1:00 PM\",+234800000003,3,\"MoreTables Network\",Completed\n\"Guest Number2\",\"Sep 2, 2026 1:00 PM\",+234800000002,2,\"Your Network\",\"No Show\"\n\"Guest Number1\",\"Sep 1, 2026 1:00 PM\",+234800000001,1,\"Your Network\",Cancelled\n\"Guest Number3\",\"Aug 31, 2026 1:00 PM\",+234800000003,6,Walk-in,Seated\n\"Guest Number2\",\"Aug 30, 2026 1:00 PM\",+234800000002,5,\"MoreTables Network\",Completed\n\"Guest Number1\",\"Aug 29, 2026 1:00 PM\",+234800000001,4,\"Your Network\",\"No Show\"\n\"Guest Number3\",\"Aug 28, 2026 1:00 PM\",+234800000003,3,\"Your Network\",Cancelled\n\"Guest Number2\",\"Aug 27, 2026 1:00 PM\",+234800000002,2,Walk-in,Seated\n\"Guest Number1\",\"Aug 26, 2026 1:00 PM\",+234800000001,1,\"MoreTables Network\",Completed\n\"Guest Number3\",\"Aug 25, 2026 1:00 PM\",+234800000003,6,\"Your Network\",\"No Show\"\n\"Guest Number2\",\"Aug 24, 2026 1:00 PM\",+234800000002,5,\"Your Network\",Cancelled\n\"Guest Number1\",\"Aug 23, 2026 1:00 PM\",+234800000001,4,Walk-in,Seated\n\"Guest Number3\",\"Aug 22, 2026 1:00 PM\",+234800000003,3,\"MoreTables Network\",Completed\n\"Guest Number2\",\"Aug 21, 2026 1:00 PM\",+234800000002,2,\"Your Network\",\"No Show\"\n\"Guest Number1\",\"Aug 20, 2026 1:00 PM\",+234800000001,1,\"Your Network\",Cancelled\n\"Guest Number3\",\"Aug 19, 2026 1:00 PM\",+234800000003,6,Walk-in,Seated\n\"Guest Number2\",\"Aug 18, 2026 1:00 PM\",+234800000002,5,\"MoreTables Network\",Completed\n\"Guest Number1\",\"Aug 17, 2026 1:00 PM\",+234800000001,4,\"Your Network\",\"No Show\"\n\"Guest Number3\",\"Aug 16, 2026 1:00 PM\",+234800000003,3,\"Your Network\",Cancelled\n\"Guest Number2\",\"Aug 15, 2026 1:00 PM\",+234800000002,2,Walk-in,Seated\n\"Guest Number1\",\"Aug 14, 2026 1:00 PM\",+234800000001,1,\"MoreTables Network\",Completed\n\"Guest Number3\",\"Aug 13, 2026 1:00 PM\",+234800000003,6,\"Your Network\",\"No Show\"\n\"Guest Number2\",\"Aug 12, 2026 1:00 PM\",+234800000002,5,\"Your Network\",Cancelled\n\"Guest Number1\",\"Aug 11, 2026 1:00 PM\",+234800000001,4,Walk-in,Seated\n\"Guest Number3\",\"Aug 10, 2026 1:00 PM\",+234800000003,3,\"MoreTables Network\",Completed\n\"Guest Number2\",\"Aug 9, 2026 1:00 PM\",+234800000002,2,\"Your Network\",\"No Show\"\n",
+        "guest-export": "Name,\"Last Visit\",Covers,Visits,\"Total Spend\",\"Lifetime Visits\",\"Lifetime Spend\",\"Lifetime Covers\"\n\"Guest Number1\",\"Sep 7, 2026\",36,15,—,15,—,36\n\"Guest Number2\",\"Aug 30, 2026\",49,14,—,16,—,56\n\"Guest Number3\",\"Sep 3, 2026\",63,14,—,15,—,69\n"
+    }
+}
