@@ -50,7 +50,7 @@ class PublicRestaurantController extends Controller
         $limit = (int) ($validated['limit'] ?? 5);
 
         $payload = $this->performanceCache->flexible(
-            $this->performanceCache->versionedKey('public-fragments', 'typeahead', hash('sha256', "{$query}:{$limit}")),
+            $this->performanceCache->versionedKey('public-fragments', 'typeahead', hash('sha256', "{$query}:{$limit}:".(Restaurant::demoRestaurantsVisible() ? '1' : '0'))),
             'public_fragments',
             function () use ($limit, $query): array {
                 $results = $this->restaurantSearchService->search(
@@ -132,6 +132,7 @@ class PublicRestaurantController extends Controller
                 (string) $request->integer('page', 1),
                 hash('sha256', json_encode($validated, JSON_THROW_ON_ERROR)),
                 $sort === 'timeofday' ? $this->restaurantDiscovery->sectionLabel('timeofday') : '',
+                Restaurant::demoRestaurantsVisible() ? 'demo' : '',
             ),
             'public_fragments',
             function () use ($hasCoordinates, $request, $sort, $validated): array {

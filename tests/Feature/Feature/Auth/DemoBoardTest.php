@@ -92,6 +92,23 @@ it('replaces its own bookings but never a reviewer\'s', function () {
         ->and(Reservation::query()->where('restaurant_id', $restaurant->id)->count())->toBe($seeded + 1);
 });
 
+it('gives the customer-app reviewer their own booking history', function () {
+    $this->artisan('app:refresh-demo-reservations')->assertSuccessful();
+
+    $challenge = $this->postJson('/api/v1/auth/start', ['email' => 'demo@moretables.com'])
+        ->assertCreated()->json('challenge_token');
+
+    $token = $this->postJson('/api/v1/auth/verify-otp', [
+        'challenge_token' => $challenge,
+        'code' => '5678',
+    ])->assertOk()->json('token');
+
+    $body = $this->withToken($token)->getJson('/api/v1/me/reservations')->assertOk();
+
+    // Paginated resource collections serialize without a top-level data key here.
+    expect($body->getContent())->toContain('moretables-demo-kitchen');
+});
+
 it('does nothing when the demo restaurant has not been provisioned', function () {
     Restaurant::query()->where('slug', 'moretables-demo-kitchen')->delete();
 

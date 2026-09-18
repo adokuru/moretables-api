@@ -127,6 +127,7 @@ class ProvisionDemoAccounts extends Command
         $restaurant->forceFill([
             'status' => RestaurantStatus::Active->value,
             'is_profile_published' => true,
+            'is_demo' => true,
         ])->save();
 
         // A fresh database has no roles or access configs yet (this command can

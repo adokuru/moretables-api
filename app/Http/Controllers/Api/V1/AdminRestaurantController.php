@@ -50,6 +50,7 @@ class AdminRestaurantController extends Controller
         abort_unless($request->user()->hasAnyRole([Role::BusinessAdmin, Role::DevAdmin, Role::SuperAdmin]), 403);
 
         $restaurants = Restaurant::query()
+            ->unless(Restaurant::demoRestaurantsVisible(), fn ($query) => $query->where('is_demo', false))
             ->with([
                 'organization',
                 'policy',

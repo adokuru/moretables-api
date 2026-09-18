@@ -72,6 +72,7 @@ class Restaurant extends Model implements HasMedia
         'onboarding_current_step',
         'onboarding_last_step',
         'is_profile_published',
+        'is_demo',
         'contact_email_verified_at',
         'contact_phone_verified_at',
         'widget_settings',
@@ -133,6 +134,7 @@ class Restaurant extends Model implements HasMedia
             'show_guest_preferences' => 'boolean',
             'show_cleaned_tables' => 'boolean',
             'is_profile_published' => 'boolean',
+            'is_demo' => 'boolean',
             'contact_email_verified_at' => 'datetime',
             'contact_phone_verified_at' => 'datetime',
         ];
@@ -450,6 +452,7 @@ class Restaurant extends Model implements HasMedia
     public function scopePubliclyListed(Builder $query): Builder
     {
         return $query
+            ->unless(static::demoRestaurantsVisible(), fn (Builder $demoQuery): Builder => $demoQuery->where('is_demo', false))
             ->where('status', RestaurantStatus::Active->value)
             ->where('is_profile_published', true)
             ->where(function (Builder $bookableQuery): void {
@@ -487,8 +490,24 @@ class Restaurant extends Model implements HasMedia
         });
     }
 
+    /**
+     * Whether the store-review demo restaurant is currently shown anywhere.
+     * Env-driven (DEMO_RESTAURANT_VISIBLE) rather than per-viewer, because the
+     * public feeds are cached on keys that carry no viewer — a viewer-scoped
+     * rule would let a reviewer's request cache the demo restaurant into the
+     * fragment every real diner then reads.
+     */
+    public static function demoRestaurantsVisible(): bool
+    {
+        return (bool) config('auth.demo.restaurant.visible');
+    }
+
     public function isPubliclyListed(): bool
     {
+        if ($this->is_demo && ! static::demoRestaurantsVisible()) {
+            return false;
+        }
+
         if ($this->status !== RestaurantStatus::Active) {
             return false;
         }

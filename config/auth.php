@@ -129,6 +129,12 @@ return [
             'email' => env('DEMO_RESTAURANT_EMAIL'),
             'password' => env('DEMO_RESTAURANT_PASSWORD'),
             'name' => env('DEMO_RESTAURANT_NAME', 'MoreTables Demo Kitchen'),
+
+            // The kill switch. False (the default) hides the demo restaurant
+            // from public feeds, search and the admin dashboard, so a real
+            // diner can never book a table nobody will honour. Turn it on for
+            // the review window, off once the build is approved.
+            'visible' => filter_var(env('DEMO_RESTAURANT_VISIBLE', false), FILTER_VALIDATE_BOOL),
         ],
 
         // Derived, so a demo address can never be provisioned without also

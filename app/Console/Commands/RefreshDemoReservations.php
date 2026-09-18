@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\GuestContact;
 use App\Models\Reservation;
 use App\Models\Restaurant;
+use App\Models\User;
 use App\Models\RestaurantTable;
 use App\Models\WaitlistEntry;
 use App\ReservationServiceStage;
@@ -152,6 +153,41 @@ class RefreshDemoReservations extends Command
         }
 
         $this->resetTableStatuses($restaurant);
+        $this->attachCustomerHistory($restaurant);
+    }
+
+    /**
+     * Without this the customer-app reviewer signs in to an empty "My
+     * reservations" screen: the seeded bookings belong to walk-in guest
+     * contacts, and that screen filters on user_id. Gives them one upcoming
+     * booking and one past one.
+     */
+    protected function attachCustomerHistory(Restaurant $restaurant): void
+    {
+        $email = trim((string) config('auth.demo.customer.email'));
+
+        if ($email === '') {
+            return;
+        }
+
+        $customer = User::query()->where('email', $email)->first();
+
+        if (! $customer) {
+            return;
+        }
+
+        Reservation::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->whereJsonContains('metadata->demo_seed', true)
+            ->whereIn('status', [
+                ReservationStatus::Booked->value,
+                ReservationStatus::Confirmed->value,
+                ReservationStatus::Completed->value,
+            ])
+            ->update([
+                'user_id' => $customer->id,
+                'booking_email' => $customer->email,
+            ]);
     }
 
     protected function arrivedAt(ReservationStatus $status, Carbon $startsAt): ?Carbon

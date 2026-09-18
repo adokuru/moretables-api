@@ -51,7 +51,7 @@ class RestaurantDiscoveryService
                 $this->performanceCache->versionedKey(
                     'discovery-v2',
                     $section,
-                    hash('sha256', json_encode([$filters, $limit, $this->currentTimeOfDay()], JSON_THROW_ON_ERROR)),
+                    hash('sha256', json_encode([$filters, $limit, $this->currentTimeOfDay(), Restaurant::demoRestaurantsVisible()], JSON_THROW_ON_ERROR)),
                 ),
                 'public_fragments',
                 fn (): array => $this->sectionQuery($section, $filters)
