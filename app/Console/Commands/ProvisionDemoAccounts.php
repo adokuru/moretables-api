@@ -36,6 +36,15 @@ class ProvisionDemoAccounts extends Command
     /** Shared with RefreshDemoReservations, which tops this restaurant's board up daily. */
     public const RESTAURANT_SLUG = 'moretables-demo-kitchen';
 
+    /**
+     * Distinct numbers from the Ofcom drama-reserved range (07700 900xxx), which
+     * never routes to a real subscriber. users.phone is unique, so the two demo
+     * accounts cannot share one.
+     */
+    private const CUSTOMER_PHONE = '+447700900123';
+
+    private const RESTAURANT_PHONE = '+447700900124';
+
     protected $signature = 'app:provision-demo';
 
     protected $description = 'Create or repair the App Store / Play Store review demo accounts.';
@@ -73,7 +82,7 @@ class ProvisionDemoAccounts extends Command
             return;
         }
 
-        $user = $this->upsertUser($email, 'MoreTables', 'Demo', password: null);
+        $user = $this->upsertUser($email, 'MoreTables', 'Demo', password: null, phone: self::CUSTOMER_PHONE);
 
         $this->attachGlobalRole($user, Role::Customer);
 
@@ -100,7 +109,7 @@ class ProvisionDemoAccounts extends Command
             return;
         }
 
-        $user = $this->upsertUser($email, 'Demo', 'Manager', password: $password);
+        $user = $this->upsertUser($email, 'Demo', 'Manager', password: $password, phone: self::RESTAURANT_PHONE);
 
         $organization = Organization::query()->firstOrCreate(
             ['slug' => 'moretables-demo'],
@@ -157,7 +166,7 @@ class ProvisionDemoAccounts extends Command
         $this->info("Restaurant demo ready: {$email} (code ".config('auth.demo.code').") — {$restaurant->name}");
     }
 
-    protected function upsertUser(string $email, string $firstName, string $lastName, ?string $password): User
+    protected function upsertUser(string $email, string $firstName, string $lastName, ?string $password, string $phone): User
     {
         $user = User::query()->firstOrCreate(
             ['email' => $email],
@@ -168,7 +177,14 @@ class ProvisionDemoAccounts extends Command
             ],
         );
 
+        // first_name, last_name AND phone must all be present: the customer app
+        // routes to the Create-account screen instead of Home unless all three
+        // come back on the verify-otp response (app/otpScreen.tsx).
         $user->forceFill(array_filter([
+            'name' => $user->name ?: $firstName.' '.$lastName,
+            'first_name' => $user->first_name ?: $firstName,
+            'last_name' => $user->last_name ?: $lastName,
+            'phone' => $user->phone ?: $phone,
             'status' => UserStatus::Active->value,
             'auth_method' => $password === null ? UserAuthMethod::Passwordless->value : UserAuthMethod::Password->value,
             'email_verified_at' => $user->email_verified_at ?? now(),
