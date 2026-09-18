@@ -15,6 +15,9 @@ Schedule::command('app:mark-no-show-reservations')->everyTenMinutes()->onOneServ
 Schedule::command('billing:sync-subscriptions')->daily()->onOneServer()->withoutOverlapping();
 Schedule::command('billing:expire-subscriptions')->dailyAt('01:00')->onOneServer()->withoutOverlapping();
 Schedule::command('app:expire-reward-points')->daily()->onOneServer()->withoutOverlapping();
+// Store-review demo board. Bookings are dated, so without this the reviewer
+// opens the app to an empty board. No-ops when no demo restaurant exists.
+Schedule::command('app:refresh-demo-reservations')->dailyAt('03:00')->onOneServer()->withoutOverlapping();
 Schedule::command('guest-surveys:send-due')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('queue:monitor redis:default,redis:notifications,redis:realtime --max='.(int) config('performance.monitoring.queue_backlog'))

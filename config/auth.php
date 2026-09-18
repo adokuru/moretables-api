@@ -103,6 +103,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Demo Accounts (App Store / Play Store review)
+    |--------------------------------------------------------------------------
+    |
+    | App-store reviewers cannot receive our OTP emails, so the addresses below
+    | always get "code" instead of a random one. Everything else about the
+    | challenge is unchanged: it still expires, still counts failed attempts,
+    | and is still single-use.
+    |
+    | "customer" signs into the MoreTables app; "restaurant" signs into
+    | MoreTables for Restaurants and owns a self-contained demo restaurant, so
+    | reviewers never see a real customer's guest data. Unset email = that
+    | account is off. Provision both with: php artisan app:provision-demo
+    |
+    */
+
+    'demo' => [
+        'code' => (string) env('DEMO_LOGIN_CODE', '1234'),
+
+        'customer' => [
+            'email' => env('DEMO_CUSTOMER_EMAIL'),
+        ],
+
+        'restaurant' => [
+            'email' => env('DEMO_RESTAURANT_EMAIL'),
+            'password' => env('DEMO_RESTAURANT_PASSWORD'),
+            'name' => env('DEMO_RESTAURANT_NAME', 'MoreTables Demo Kitchen'),
+        ],
+
+        // Derived, so a demo address can never be provisioned without also
+        // getting the fixed code (and vice versa). This is the list
+        // AuthChallengeService checks.
+        'emails' => array_values(array_unique(array_filter([
+            trim((string) env('DEMO_CUSTOMER_EMAIL', '')),
+            trim((string) env('DEMO_RESTAURANT_EMAIL', '')),
+        ]))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Password Confirmation Timeout
     |--------------------------------------------------------------------------
     |

@@ -25,7 +25,7 @@ class AuthChallengeService
                 ->where('status', AuthChallengeStatus::Pending->value)
                 ->update(['status' => AuthChallengeStatus::Cancelled->value]);
 
-            $code = $this->generateCode();
+            $code = $this->generateCode($user->email);
 
             $challenge = AuthChallenge::query()->create([
                 'user_id' => $user->id,
@@ -67,7 +67,7 @@ class AuthChallengeService
                 ->where('status', AuthChallengeStatus::Pending->value)
                 ->update(['status' => AuthChallengeStatus::Cancelled->value]);
 
-            $code = $this->generateCode();
+            $code = $this->generateCode($email);
 
             $challenge = AuthChallenge::query()->create([
                 'user_id' => $user->id,
@@ -100,7 +100,7 @@ class AuthChallengeService
             ]);
         }
 
-        $code = $this->generateCode();
+        $code = $this->generateCode($challenge->user->email);
 
         $challenge->forceFill([
             'code_hash' => Hash::make($code),
@@ -165,12 +165,35 @@ class AuthChallengeService
         return $challenge->refresh();
     }
 
-    protected function generateCode(): string
+    protected function generateCode(?string $email = null): string
     {
+        if ($email !== null && $this->isDemoAccount($email)) {
+            return (string) config('auth.demo.code');
+        }
+
         if (app()->environment('testing')) {
             return '1234';
         }
 
         return str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * App-store reviewers can't receive our OTP email, so the addresses in
+     * config('auth.demo.emails') always get the fixed demo code. Deliberately
+     * only the code is special-cased: verify() is untouched, so expiry, the
+     * attempt counter and single-use consumption still apply to demo logins.
+     *
+     * ponytail: flat in_array over an env list. Move to a DB flag if demo
+     * accounts ever need to be managed without a deploy.
+     */
+    protected function isDemoAccount(string $email): bool
+    {
+        $demoEmails = array_map(
+            static fn (string $demo): string => Str::lower(trim($demo)),
+            (array) config('auth.demo.emails', []),
+        );
+
+        return $demoEmails !== [] && in_array(Str::lower(trim($email)), $demoEmails, true);
     }
 }
