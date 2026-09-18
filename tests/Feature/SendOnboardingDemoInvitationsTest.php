@@ -2,6 +2,7 @@
 
 use App\Models\OnboardingRequest;
 use App\Notifications\OnboardingDemoInvitationNotification;
+use App\OnboardingContactReason;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
@@ -12,8 +13,8 @@ beforeEach(function () {
 it('emails every requester that has not been invited yet', function () {
     Notification::fake();
 
-    $pending = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
-    $alreadySent = OnboardingRequest::factory()->create(['email' => 'old@bistro.ng', 'demo_invitation_sent_at' => now()->subDay()]);
+    $pending = OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    $alreadySent = OnboardingRequest::factory()->bookADemo()->create(['email' => 'old@bistro.ng', 'demo_invitation_sent_at' => now()->subDay()]);
 
     $this->artisan('onboarding-requests:send-demo-invites --force')
         ->expectsOutputToContain('Queued 1 demo invitation(s).')
@@ -32,8 +33,8 @@ it('emails every requester that has not been invited yet', function () {
 it('emails a repeat requester once and stamps all of their requests', function () {
     Notification::fake();
 
-    $first = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
-    $second = OnboardingRequest::factory()->create(['email' => 'LEAD@bistro.ng', 'demo_invitation_sent_at' => null]);
+    $first = OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    $second = OnboardingRequest::factory()->bookADemo()->create(['email' => 'LEAD@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --force')->assertSuccessful();
 
@@ -44,7 +45,7 @@ it('emails a repeat requester once and stamps all of their requests', function (
 
 it('does not send twice when run again', function () {
     Notification::fake();
-    OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --force')->assertSuccessful();
     $this->artisan('onboarding-requests:send-demo-invites --force')
@@ -56,7 +57,7 @@ it('does not send twice when run again', function () {
 
 it('sends nothing on a dry run', function () {
     Notification::fake();
-    $request = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    $request = OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --dry-run')
         ->expectsOutputToContain('lead@bistro.ng')
@@ -69,7 +70,7 @@ it('sends nothing on a dry run', function () {
 
 it('sends nothing when the confirmation is declined', function () {
     Notification::fake();
-    OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites')
         ->expectsConfirmation('Send the demo invitation to 1 requester(s)?', 'no')
@@ -81,7 +82,7 @@ it('sends nothing when the confirmation is declined', function () {
 
 it('skips requests without an email address', function () {
     Notification::fake();
-    OnboardingRequest::factory()->create(['email' => '', 'demo_invitation_sent_at' => null]);
+    OnboardingRequest::factory()->bookADemo()->create(['email' => '', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --force')
         ->expectsOutputToContain('No onboarding requesters are awaiting a demo invitation.')
@@ -94,7 +95,7 @@ it('refuses to send when the booking link is not reachable by a recipient', func
     Notification::fake();
     config(['services.demo_booking.url' => null, 'app.frontend_urls.main' => null, 'app.url' => 'http://localhost:8000']);
 
-    $request = OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    $request = OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --force')
         ->expectsOutputToContain('Refusing to send')
@@ -106,9 +107,27 @@ it('refuses to send when the booking link is not reachable by a recipient', func
 
 it('shows the booking link before sending', function () {
     Notification::fake();
-    OnboardingRequest::factory()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
+    OnboardingRequest::factory()->bookADemo()->create(['email' => 'lead@bistro.ng', 'demo_invitation_sent_at' => null]);
 
     $this->artisan('onboarding-requests:send-demo-invites --dry-run')
         ->expectsOutputToContain('Booking button links to: https://cal.com/moretables/demo')
         ->assertSuccessful();
+});
+
+it('never invites a requester whose contact reason is not book a demo', function () {
+    Notification::fake();
+    config(['services.demo_booking.url' => 'https://cal.com/moretables/demo']);
+
+    $support = OnboardingRequest::factory()->create([
+        'email' => 'support@bistro.ng',
+        'contact_reason' => OnboardingContactReason::Support,
+        'demo_invitation_sent_at' => null,
+    ]);
+
+    $this->artisan('onboarding-requests:send-demo-invites --force')
+        ->expectsOutputToContain('No onboarding requesters are awaiting a demo invitation.')
+        ->assertSuccessful();
+
+    Notification::assertNothingSent();
+    expect($support->refresh()->demo_invitation_sent_at)->toBeNull();
 });

@@ -3,6 +3,7 @@
 use App\Models\OnboardingRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\OnboardingAcknowledgementNotification;
 use App\Notifications\OnboardingDemoInvitationNotification;
 use App\Notifications\OnboardingRequestSubmittedNotification;
 use App\OnboardingContactReason;
@@ -180,4 +181,112 @@ it('falls back to the frontend booking path when no calendar url is configured',
     $html = (string) (new OnboardingDemoInvitationNotification($request))->toMail(new stdClass)->render();
 
     expect($html)->toContain('https://www.moretables.com/book-a-demo');
+});
+
+it('replies with the reason-specific acknowledgement instead of the demo pitch', function (string $reason, string $subject, array $expectedCopy) {
+    Notification::fake();
+
+    $this->postJson('/api/v1/onboarding-requests', [
+        'first_name' => 'Chidi',
+        'last_name' => 'Okeke',
+        'email' => 'chidi@bistro.ng',
+        'phone' => '+2348011223344',
+        'restaurant_name' => 'Chidi\'s Bistro',
+        'job_title' => OnboardingJobTitle::Owner->value,
+        'location_count' => OnboardingLocationCount::One->value,
+        'contact_reason' => $reason,
+    ])->assertCreated();
+
+    Notification::assertSentOnDemandTimes(OnboardingDemoInvitationNotification::class, 0);
+
+    Notification::assertSentOnDemand(
+        OnboardingAcknowledgementNotification::class,
+        function (OnboardingAcknowledgementNotification $notification, array $channels, AnonymousNotifiable $notifiable) use ($subject, $expectedCopy): bool {
+            $mail = $notification->toMail(new stdClass);
+            $copy = html_entity_decode(strip_tags((string) $mail->render()), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+            expect($copy)->toContain(...$expectedCopy)
+                ->not->toContain('Book a demo', 'In a 30-45 minute demo');
+
+            return $notifiable->routes['mail'] === 'chidi@bistro.ng'
+                && $channels === ['mail']
+                && $mail->subject === $subject
+                && str_contains($copy, 'Hi Chidi,');
+        },
+    );
+
+    expect(OnboardingRequest::query()->where('email', 'chidi@bistro.ng')->value('demo_invitation_sent_at'))->toBeNull();
+})->with([
+    'pricing' => [
+        OnboardingContactReason::Pricing->value,
+        'Thanks for your MoreTables pricing enquiry',
+        [
+            'Thanks for reaching out to MoreTables!',
+            'We’ve received your pricing enquiry. A member of our Sales Team will be in touch shortly to share more information about our plans, pricing, and the solutions available for Chidi\'s Bistro.',
+            'We look forward to helping you find the right fit for your restaurant.',
+        ],
+    ],
+    'support' => [
+        OnboardingContactReason::Support->value,
+        'We’ve received your MoreTables support request',
+        [
+            'Thanks for reaching out to MoreTables!',
+            'We’ve received your support request, and a member of our Support Team will be in touch shortly to assist you.',
+            'We’re here to make sure you get the help you need.',
+        ],
+    ],
+    'restaurant onboarding falls back to support' => [
+        OnboardingContactReason::RestaurantOnboarding->value,
+        'We’ve received your MoreTables support request',
+        [
+            'Thanks for reaching out to MoreTables!',
+            'We’ve received your support request, and a member of our Support Team will be in touch shortly to assist you.',
+            'We’re here to make sure you get the help you need.',
+        ],
+    ],
+    'general inquiry falls back to support' => [
+        OnboardingContactReason::GeneralInquiry->value,
+        'We’ve received your MoreTables support request',
+        [
+            'Thanks for reaching out to MoreTables!',
+            'We’ve received your support request, and a member of our Support Team will be in touch shortly to assist you.',
+            'We’re here to make sure you get the help you need.',
+        ],
+    ],
+    'partnership' => [
+        OnboardingContactReason::Partnership->value,
+        'Thanks for your interest in partnering with MoreTables',
+        [
+            'Thanks for your interest in partnering with MoreTables!',
+            'We’ve received your partnership enquiry. A member of our Sales Team will be in touch shortly to learn more about your proposal and explore how we can work together.',
+            'We look forward to connecting and exploring what’s possible.',
+        ],
+    ],
+    'other' => [
+        OnboardingContactReason::Other->value,
+        'Thanks for reaching out to MoreTables',
+        [
+            'Thanks for reaching out to MoreTables!',
+            'We’ve received your enquiry and will make sure it gets to the right team. A member of our team will be in touch shortly to learn more about how we can help.',
+            'We look forward to connecting.',
+        ],
+    ],
+]);
+
+it('never sends the demo acknowledgement to a demo request', function () {
+    Notification::fake();
+
+    $this->postJson('/api/v1/onboarding-requests', [
+        'first_name' => 'Chidi',
+        'last_name' => 'Okeke',
+        'email' => 'chidi@bistro.ng',
+        'phone' => '+2348011223344',
+        'restaurant_name' => 'Chidi\'s Bistro',
+        'job_title' => OnboardingJobTitle::Owner->value,
+        'location_count' => OnboardingLocationCount::One->value,
+        'contact_reason' => OnboardingContactReason::BookADemo->value,
+    ])->assertCreated();
+
+    Notification::assertSentOnDemandTimes(OnboardingAcknowledgementNotification::class, 0);
+    Notification::assertSentOnDemand(OnboardingDemoInvitationNotification::class);
 });

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\OnboardingRequest;
 use App\Notifications\OnboardingDemoInvitationNotification;
+use App\OnboardingContactReason;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -78,8 +79,10 @@ class SendOnboardingDemoInvitations extends Command
     }
 
     /**
-     * Pending requests grouped by lower-cased email so a requester who submitted
-     * several times is emailed once and every one of their rows is stamped.
+     * Pending demo requests grouped by lower-cased email so a requester who
+     * submitted several times is emailed once and every one of their rows is
+     * stamped. Other contact reasons are answered at submission time and must
+     * never receive the demo pitch.
      *
      * ponytail: loads all pending rows; leads are a small table. Chunk it if that changes.
      *
@@ -88,6 +91,7 @@ class SendOnboardingDemoInvitations extends Command
     protected function pendingRecipients(): Collection
     {
         return OnboardingRequest::query()
+            ->where('contact_reason', OnboardingContactReason::BookADemo->value)
             ->whereNull('demo_invitation_sent_at')
             ->whereNotNull('email')
             ->where('email', '!=', '')

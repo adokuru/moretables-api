@@ -41,4 +41,11 @@ class OnboardingRequestFactory extends Factory
             'reviewed_at' => null,
         ];
     }
+
+    public function bookADemo(): static
+    {
+        return $this->state(fn (): array => [
+            'contact_reason' => OnboardingContactReason::BookADemo,
+        ]);
+    }
 }
